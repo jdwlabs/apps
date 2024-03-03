@@ -4,13 +4,8 @@
     "defaultBase": "main"
   },
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
-    "production": [
-      "default"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": ["default"],
     "sharedGlobals": []
   },
   "nxCloudAccessToken": "MmUyM2U4ZDEtN2FiYS00ZjVjLTgwZDQtN2MyNDZjYzc4NWNlfHJlYWQtd3JpdGU="

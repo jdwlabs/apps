@@ -1,0 +1,5 @@
+/dist
+/coverage
+/.nx/cache
+.angular
+tsconfig.base.json
