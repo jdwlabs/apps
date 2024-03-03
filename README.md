@@ -1,5 +1,7 @@
 # JDW Monorepo
 
+[![CI](https://github.com/jdwillmsen/jdw/actions/workflows/ci.yml/badge.svg)](https://github.com/jdwillmsen/jdw/actions/workflows/ci.yml)
+
 ## Running tasks
 
 To execute tasks with Nx use the following syntax:
