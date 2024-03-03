@@ -22,9 +22,9 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - run: npx nx-cloud start-ci-run --distribute-on="5 linux-medium-js" --stop-agents-after="e2e-ci"
+#      - run: npx nx-cloud start-ci-run --distribute-on="5 linux-medium-js" --stop-agents-after="e2e-ci"
       - run: npm ci
-      - uses: nrwl/nx-set-shas@v3
+      - uses: nrwl/nx-set-shas@v4
       - run: git branch --track main origin/main
       - run: npx nx-cloud record -- nx format:check
       - run: npx nx affected -t lint test build e2e-ci
