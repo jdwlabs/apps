@@ -4,23 +4,33 @@
   "projectType": "application",
   "prefix": "jdw",
   "sourceRoot": "apps/angular/container/container/src",
-  "tags": ["type:app", "scope:container", "framework:angular"],
+  "tags": [
+    "type:app",
+    "scope:container",
+    "framework:angular"
+  ],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/angular/container/container",
         "index": "apps/angular/container/container/src/index.html",
         "main": "apps/angular/container/container/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/angular/container/container/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
           "apps/angular/container/container/src/favicon.ico",
           "apps/angular/container/container/src/assets"
         ],
-        "styles": ["apps/angular/container/container/src/styles.scss"],
+        "styles": [
+          "apps/angular/container/container/src/styles.scss"
+        ],
         "scripts": [],
         "customWebpackConfig": {
           "path": "apps/angular/container/container/webpack.config.ts"
@@ -80,7 +90,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/angular/container/container/jest.config.ts"
       }
@@ -90,6 +102,22 @@
       "options": {
         "buildTarget": "container:build",
         "port": 4200
+      }
+    },
+    "container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "npx nx build container",
+            "forwardAllArgs": false
+          },
+          "docker build -f apps/angular/container/container/Dockerfile . -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{args.image-version}"
+        ],
+        "parallel": false
+      },
+      "env": {
+        "NX_NATIVE_COMMAND_RUNNER": false
       }
     }
   }
