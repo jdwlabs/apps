@@ -24,6 +24,6 @@
       "executor": "@nx/eslint:lint"
     }
   },
-  "tags": [],
+  "tags": ["type:e2e","scope:container","framework:cypress"],
   "implicitDependencies": ["container"]
 }
