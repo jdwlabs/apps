@@ -9,6 +9,13 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 * **container:** add version targets and version support ([ca77c2b](/jdwillmsen/jdw/commit/ca77c2b4f5c2cb4b574d28bbfd74d95dfcfae8bc))
 
+## [0.2.0](/jdwillmsen/jdw/compare/container-0.1.0...container-0.2.0) (2024-03-06)
+
+
+### Features
+
+* **container:** add version targets and version support ([ca77c2b](/jdwillmsen/jdw/commit/ca77c2b4f5c2cb4b574d28bbfd74d95dfcfae8bc))
+
 ## 0.1.0 (2024-03-06)
 
 
