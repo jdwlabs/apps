@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.2.0](/jdwillmsen/jdw/compare/container-0.1.0...container-0.2.0) (2024-03-06)
+
+
+### Features
+
+* add @jscutlery/semver package and initiation ([ec457f3](/jdwillmsen/jdw/commit/ec457f35a7881226ca2c7ad13abaf6a0c4c16c4f))
+
 ## 0.1.0 (2024-03-06)
 
 
