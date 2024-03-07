@@ -116,7 +116,7 @@
       }
     },
     "save-image": {
-      "command": "bash tools/create-version.sh {version} {projectRoot}/src"
+      "command": "bash tools/create-version.sh {version} {projectRoot}/src {projectName}"
     },
     "container-jdw": {
       "executor": "nx:run-commands",
