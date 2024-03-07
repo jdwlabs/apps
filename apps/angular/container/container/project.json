@@ -110,15 +110,24 @@
       "options": {
         "preset": "conventionalcommits",
         "postTargets": [
-          "save-image",
-          "container-jdw"
+          "github",
+          "save-version",
+          "build-image",
+          "push-image"
         ]
       }
     },
-    "save-image": {
+    "github": {
+      "executor": "@jscutlery/semver:github",
+      "options": {
+        "tag": "{tag}",
+        "notes": "{notes}"
+      }
+    },
+    "save-version": {
       "command": "bash tools/create-version.sh {version} {projectRoot}/src {projectName}"
     },
-    "container-jdw": {
+    "build-image": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
@@ -132,6 +141,22 @@
           }
         ],
         "parallel": false
+      }
+    },
+    "push-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker push jdwillmsen/jdw-container:latest",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "docker push jdwillmsen/jdw-container:{version}",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": true
       }
     }
   }
