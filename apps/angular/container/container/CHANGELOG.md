@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.0](/jdwillmsen/jdw/compare/container-0.3.0...container-0.4.0) (2024-03-13)
+
+
+### Features
+
+* add github target ([80800da](/jdwillmsen/jdw/commit/80800da7edd9676d2461fa35f91c5fcfa465ba69))
+
 ## [0.3.0](/jdwillmsen/jdw/compare/container-0.2.0...container-0.3.0) (2024-03-13)
 
 
