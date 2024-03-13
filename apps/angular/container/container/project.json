@@ -117,7 +117,7 @@
         ]
       }
     },
-    "github": {
+    "github-tst": {
       "executor": "@jscutlery/semver:github",
       "options": {
         "tag": "{tag}",
