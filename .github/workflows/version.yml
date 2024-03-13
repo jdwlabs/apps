@@ -21,6 +21,10 @@ jobs:
           node-version: 20
           cache: 'npm'
       - run: npm ci
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Bot"
+          git config user.email "gituser@example.com"
       - name: Version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
