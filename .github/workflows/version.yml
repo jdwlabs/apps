@@ -28,4 +28,4 @@ jobs:
       - name: Version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx nx version container --target
+        run: npx nx version container
