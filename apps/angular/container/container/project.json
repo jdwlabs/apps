@@ -108,7 +108,7 @@
     "github-tst": {
       "executor": "@jscutlery/semver:github",
       "options": {
-        "tag": "${tag}"
+        "tag": "container-0.4.0"
       }
     },
     "save-version": {
