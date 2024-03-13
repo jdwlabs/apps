@@ -110,7 +110,7 @@
       "options": {
         "preset": "conventionalcommits",
         "postTargets": [
-          "github",
+          "github-tst",
           "save-version",
           "build-image",
           "push-image"
