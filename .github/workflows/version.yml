@@ -24,4 +24,4 @@ jobs:
       - name: Version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx nx affected --target=version
+        run: npx nx version container
