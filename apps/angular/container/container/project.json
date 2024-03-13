@@ -107,7 +107,9 @@
     },
     "github-tst": {
       "executor": "@jscutlery/semver:github",
-      "options": {}
+      "options": {
+        "tag": "${tag}"
+      }
     },
     "save-version": {
       "command": "bash tools/create-version.sh {version} {projectRoot}/src {projectName}"
