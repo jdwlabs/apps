@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.1.1](/jdwillmsen/jdw/compare/container-0.1.0...container-0.1.1) (2024-03-13)
+
 ## 0.1.0 (2024-03-13)
 
 
@@ -13,4 +15,3 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 * **container:** Add initial container host application ([0a65d2d](/jdwillmsen/jdw/commit/0a65d2da0813beddb63f01a28e0f0efd0b5812b5))
 * **container:** add version targets and version support ([ca77c2b](/jdwillmsen/jdw/commit/ca77c2b4f5c2cb4b574d28bbfd74d95dfcfae8bc))
 * **container:** fix for version workflow ([7c9fd24](/jdwillmsen/jdw/commit/7c9fd244e6170dfb90099c37d050a6901a1f5020))
-
