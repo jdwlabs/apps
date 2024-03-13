@@ -98,17 +98,10 @@
       "options": {
         "preset": "conventionalcommits",
         "postTargets": [
-          "github-tst",
           "save-version",
           "build-image",
           "push-image"
         ]
-      }
-    },
-    "github-tst": {
-      "executor": "@jscutlery/semver:github",
-      "options": {
-        "tag": "container-0.4.0"
       }
     },
     "save-version": {
