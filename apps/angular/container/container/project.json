@@ -97,7 +97,12 @@
       "executor": "@jscutlery/semver:version",
       "options": {
         "preset": "conventionalcommits",
-        "postTargets": ["save-version", "build-image", "push-image", "update-app"]
+        "postTargets": [
+          "save-version",
+          "build-image",
+          "push-image",
+          "update-app"
+        ]
       }
     },
     "save-version": {

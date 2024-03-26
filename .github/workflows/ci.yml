@@ -30,4 +30,3 @@ jobs:
       - run: npx nx affected -t lint test build e2e-ci
       - if: ${{ github.event_name != 'pull_request' }}
         run: npx nx affected -t version
-
