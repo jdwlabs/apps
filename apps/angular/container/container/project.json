@@ -136,7 +136,7 @@
       }
     },
     "update-apps": {
-      "command": "bash tools/update-app.sh {version} helm/container/Chart.yaml {projectName}"
+      "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
     }
   }
 }
