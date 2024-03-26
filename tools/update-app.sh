@@ -50,6 +50,15 @@ check_uncommitted_changes() {
   fi
 }
 
+# Function to push committed changes in the repository to remote
+push_changes() {
+  if ! git push; then
+    echo "Error: Failed to push changes to remote repository."
+    clean_repository
+    exit 1
+  fi
+}
+
 
 # Function to update a file in a Git repository
 update_file() {
@@ -69,7 +78,7 @@ update_file() {
 
   git add ${file_path}
   git commit -m "chore(${project_name}): update app version to version ${new_version}"
-  git push
+  push_changes
 
   echo "[${project_name}]: appVersion in ${file_path} updated to ${new_version}."
   clean_repository
