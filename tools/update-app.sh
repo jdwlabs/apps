@@ -67,7 +67,7 @@ update_file() {
 
 # Check if correct number of arguments are provided
 if [ "${#}" -lt 3 ]; then
-  echo "Usage: ${0} <version_number> <file_path> <project_name>"
+  echo "Usage: ${0} <file_path> <version_number> <project_name>"
   exit 1
 fi
 
