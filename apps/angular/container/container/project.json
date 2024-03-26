@@ -18,7 +18,8 @@
         "inlineStyleLanguage": "scss",
         "assets": [
           "apps/angular/container/container/src/favicon.ico",
-          "apps/angular/container/container/src/assets"
+          "apps/angular/container/container/src/assets",
+          "apps/angular/container/container/src/VERSION"
         ],
         "styles": ["apps/angular/container/container/src/styles.scss"],
         "scripts": [],
@@ -91,6 +92,56 @@
         "buildTarget": "container:build",
         "port": 4200
       }
+    },
+    "version": {
+      "executor": "@jscutlery/semver:version",
+      "options": {
+        "preset": "conventionalcommits",
+        "postTargets": [
+          "save-version",
+          "build-image",
+          "push-image",
+          "update-app"
+        ]
+      }
+    },
+    "save-version": {
+      "command": "bash tools/create-version.sh {version} {projectRoot}/src {projectName}"
+    },
+    "build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "npx nx build container",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version}",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "push-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker push jdwillmsen/jdw-container:latest",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "docker push jdwillmsen/jdw-container:{version}",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": true
+      }
+    },
+    "update-app": {
+      "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
     }
   }
 }
