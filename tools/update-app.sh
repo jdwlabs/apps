@@ -3,7 +3,7 @@
 # Script: update-app.sh
 # Description:
 # Usage:
-git_repository="git@github.com:jdwillmsen/jdw.git"
+git_repository="git@github.com:jdwillmsen/jdw-apps.git"
 temp_dir=$(mktemp -d)
 
 clone_repository() {
