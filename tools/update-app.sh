@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Script: update-app.sh
-# Description:
-# Usage:
-git_repository="https://github.com/jdwillmsen/jdw-apps.git"
+# Description: This script updates the version number of an application in a Git repository.
+# Usage: update-app.sh <file_path> <version_number> <project_name>
+
+git_repository="git@github.com:jdwillmsen/jdw-apps.git"
 temp_dir=$(mktemp -d)
 
 clone_repository() {
