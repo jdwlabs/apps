@@ -4,10 +4,10 @@
 # Description:
 # Usage:
 git_repository="https://github.com/jdwillmsen/jdw-apps.git"
-destination_dir="jdw-apps"
+temp_dir=$(mktemp -d)
 
 clone_repository() {
-  git clone ${git_repository} ${destination_dir}
+  git clone ${git_repository} ${temp_dir}
   cd ${destination_dir}
 }
 
@@ -72,3 +72,5 @@ if [ "${#}" -lt 3 ]; then
 fi
 
 update_file "${1}" "${2}" "${3}"
+
+rm -rf "${temp_dir}"
