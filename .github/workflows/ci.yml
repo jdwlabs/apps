@@ -34,7 +34,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Setup SSH
+      - if: ${{ github.event_name != 'pull_request' }}
+        name: Setup SSH
         uses: MrSquaare/ssh-setup-action@v3
         with:
           host: github.com
