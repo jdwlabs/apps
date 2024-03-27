@@ -1,0 +1,72 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+@mixin color($theme) {
+  $color-config: mat.get-color-config($theme);
+  $accent-palette: map.get($color-config, 'accent');
+  $is-dark-theme: map.get($color-config, 'is-dark');
+  $light-color: mat.get-color-from-palette($accent-palette, 500);
+  $dark-color: mat.get-color-from-palette($accent-palette, 400);
+  $dark-icon: black;
+  $light-icon: white;
+
+  .nav {
+    .icon {
+      @if $is-dark-theme {
+        color: $light-icon !important;
+      } @else {
+        color: $dark-icon !important;
+      }
+    }
+
+    &.active {
+      @if $is-dark-theme {
+        border-left: 3px solid $dark-color;
+        background-color: color-mix(in srgb, $dark-color 20%, transparent);
+      } @else {
+        border-left: 3px solid $light-color;
+        background-color: color-mix(in srgb, $light-color 20%, transparent);
+      }
+
+      .icon {
+        @if $is-dark-theme {
+          color: $dark-color !important;
+        } @else {
+          color: $light-color !important;
+        }
+      }
+    }
+
+    &:hover {
+      @if $is-dark-theme {
+        background-color: #303030;
+      } @else {
+        background-color: white;
+      }
+
+      @if $is-dark-theme {
+        color: $light-icon !important;
+      } @else {
+        color: $dark-icon !important;
+      }
+    }
+  }
+}
+
+@mixin typography($theme) {
+  $typography-config: mat.get-typography-config($theme);
+}
+
+@mixin theme($theme) {
+  $color-config: mat.get-color-config($theme);
+
+  @if $color-config != null {
+    @include color($theme);
+  }
+
+  $typography-config: mat.get-typography-config($theme);
+
+  @if $typography-config != null {
+    @include typography($theme);
+  }
+}

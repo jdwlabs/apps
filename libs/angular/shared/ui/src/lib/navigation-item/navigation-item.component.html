@@ -1,0 +1,20 @@
+<a
+  mat-list-item
+  [routerLink]="navigationItem.path"
+  [routerLinkActive]="['active']"
+  role="navigation"
+  class="nav"
+  data-cy="navigation-link"
+>
+  <mat-icon matListItemIcon class="icon" data-cy="navigation-icon">
+    {{ navigationItem.icon }}
+  </mat-icon>
+  <span
+    matListItemTitle
+    *ngIf="isExpanded"
+    class="title"
+    data-cy="navigation-title"
+  >
+    {{ navigationItem.title }}
+  </span>
+</a>

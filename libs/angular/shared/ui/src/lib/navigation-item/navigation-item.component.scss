@@ -1,0 +1,18 @@
+.nav {
+  padding-right: 0;
+  margin: 0;
+
+  .icon {
+    margin: 0 16px;
+  }
+
+  .title {
+    margin-right: 16px;
+  }
+
+  &.active {
+    .icon {
+      margin: 0 16px 0 13px;
+    }
+  }
+}
