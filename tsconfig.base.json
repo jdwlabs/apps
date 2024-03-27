@@ -20,6 +20,9 @@
     "paths": {
       "@jdw/angular-shared-ui": [
         "libs/angular/shared/ui/src/index.ts"
+      ],
+      "@jdw/angular-shared-util": [
+        "libs/angular/shared/util/src/index.ts"
       ]
     }
   },
