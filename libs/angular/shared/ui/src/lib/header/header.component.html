@@ -1,1 +1,24 @@
-<p>header works!</p>
+<mat-toolbar [color]="color" data-cy="navbar-header">
+  <button
+    (click)="toggle()"
+    *ngIf="isXSmallScreen"
+    class="menu"
+    data-cy="navbar-button"
+    mat-icon-button
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
+  <a
+    data-cy="navbar-home-button"
+    class="no-underline"
+    mat-button
+    [matTooltip]="appTooltip"
+    [routerLink]="appRouterLink"
+  >
+    <span class="app-title" data-cy="app-title">{{ appTitle }}</span>
+  </a>
+  <span class="spacer"></span>
+  <span class="actions" data-cy="navbar-actions">
+    <ng-content></ng-content>
+  </span>
+</mat-toolbar>
