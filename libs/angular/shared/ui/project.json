@@ -1,0 +1,17 @@
+{
+  "name": "angular-shared-ui",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/angular/shared/ui/src",
+  "prefix": "jdw",
+  "tags": ["type:ui", "scope:shared", "framework:angular"],
+  "projectType": "library",
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/angular/shared/ui/jest.config.ts"
+      }
+    }
+  }
+}

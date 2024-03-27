@@ -17,7 +17,11 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@jdw/angular-shared-ui": [
+        "libs/angular/shared/ui/src/index.ts"
+      ]
+    }
   },
   "exclude": [
     "node_modules",
