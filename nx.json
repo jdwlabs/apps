@@ -59,6 +59,11 @@
           "env": "NX_MF_DEV_SERVER_STATIC_REMOTES"
         }
       ]
+    },
+    "@nx/angular:package": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   },
   "generators": {
