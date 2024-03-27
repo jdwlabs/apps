@@ -1,1 +1,1 @@
-export * from './lib/angular-shared-ui/angular-shared-ui.component';
+export * from './lib/header/header.component';
