@@ -9,6 +9,12 @@ import {
 } from '@jdw/angular-shared-ui';
 import { RouterOutlet } from '@angular/router';
 import { NavigationItem } from '@jdw/angular-shared-util';
+import {
+  MatChip,
+  MatChipListbox,
+  MatChipOption,
+} from '@angular/material/chips';
+import { MatButton } from '@angular/material/button';
 
 @Component({
   selector: 'jdw-main',
@@ -18,6 +24,10 @@ import { NavigationItem } from '@jdw/angular-shared-util';
     HeaderComponent,
     NavigationLayoutComponent,
     RouterOutlet,
+    MatChip,
+    MatButton,
+    MatChipListbox,
+    MatChipOption,
   ],
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss',
@@ -32,12 +42,15 @@ export class MainComponent {
   sideNavMode: MatDrawerMode = 'side';
   isSideNavEnabled = true;
   navigationItems: NavigationItem[] = [];
+  environment = 'default';
 
   constructor(private breakpointObserver: BreakpointObserver) {
     this.breakpointObserver.observe(Breakpoints.XSmall).subscribe((result) => {
       this.isXSmallScreen = result.matches;
       this.updateNavigationBasedOnScreenSize();
     });
+
+    // console.log('ENVIRONMENT: ', process);
   }
 
   handleToggle() {
