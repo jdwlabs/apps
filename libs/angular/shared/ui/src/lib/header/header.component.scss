@@ -1,0 +1,20 @@
+mat-toolbar {
+  height: var(--header-height, 52px);
+
+  .no-underline {
+    text-decoration: none;
+
+    .app-title {
+      font-weight: var(--app-title-font-weight, 700);
+      font-size: var(--app-title-font-size, large);
+    }
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  .menu {
+    margin-left: var(--app-nav-button-margin-left, -10px);
+  }
+}

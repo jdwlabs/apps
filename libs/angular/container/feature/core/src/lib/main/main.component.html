@@ -1,0 +1,18 @@
+<jdw-header
+  (toggleSideNav)="handleToggle()"
+  [appRouterLink]="appRouterLink"
+  [appTitle]="appTitle"
+  [appTooltip]="appTooltip"
+  [color]="headerColor"
+  [isXSmallScreen]="isXSmallScreen"
+>
+</jdw-header>
+<jdw-navigation-layout
+  (sideNavChange)="sideNavChange($event)"
+  [isSideNavEnabled]="isSideNavEnabled"
+  [isSideNavOpened]="isSideNavOpened"
+  [navigationItems]="navigationItems"
+  [sideNavMode]="sideNavMode"
+>
+  <router-outlet></router-outlet>
+</jdw-navigation-layout>

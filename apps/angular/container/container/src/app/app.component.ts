@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { NxWelcomeComponent } from './nx-welcome.component';
+import { MainComponent } from '@jdw/angular-container-feature-core';
 
 @Component({
   standalone: true,
-  imports: [NxWelcomeComponent, RouterModule],
+  imports: [RouterModule, MainComponent],
   selector: 'jdw-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
