@@ -21,6 +21,9 @@
       "@jdw/angular-container-feature-core": [
         "libs/angular/container/feature/core/src/index.ts"
       ],
+      "@jdw/angular-container-util": [
+        "libs/angular/container/util/src/index.ts"
+      ],
       "@jdw/angular-shared-ui": ["libs/angular/shared/ui/src/index.ts"],
       "@jdw/angular-shared-util": ["libs/angular/shared/util/src/index.ts"]
     }
