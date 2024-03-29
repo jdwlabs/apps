@@ -1,0 +1,7 @@
+@use '@angular/material' as mat;
+@use '../styles/components/button/variants' as button-variants;
+
+@mixin all-component-themes($theme) {
+  @include button-variants.theme($theme);
+  @include mat.all-component-themes($theme);
+}
