@@ -1,0 +1,39 @@
+<mat-sidenav-container autosize data-cy="sidenav-container">
+  <mat-sidenav
+    *ngIf="isSideNavEnabled"
+    (openedChange)="openedChanged($event)"
+    [mode]="sideNavMode"
+    [opened]="isSideNavOpened"
+    role="navigation"
+    data-cy="sidenav"
+  >
+    <div class="side-nav-container">
+      <mat-nav-list data-cy="nav-list">
+        <jdw-navigation-item
+          *ngFor="let item of navigationItems"
+          [attr.data-cy]="item.title.toLowerCase() + '-navigation-item'"
+          [navigationItem]="item"
+          [isExpanded]="sideNavMode === 'side' ? isExpanded : true"
+        />
+      </mat-nav-list>
+      <button
+        (click)="toggleSideNav()"
+        *ngIf="sideNavMode === 'side'"
+        [matTooltip]="isExpanded ? 'Toggle Collapse' : 'Toggle Expand'"
+        class="expand"
+        data-cy="expand-toggle-button"
+        mat-icon-button
+      >
+        <mat-icon *ngIf="!isExpanded" data-cy="expand-icon">
+          keyboard_double_arrow_right
+        </mat-icon>
+        <mat-icon *ngIf="isExpanded" data-cy="collapse-icon">
+          keyboard_double_arrow_left
+        </mat-icon>
+      </button>
+    </div>
+  </mat-sidenav>
+  <mat-sidenav-content data-cy="sidenav-content">
+    <ng-content></ng-content>
+  </mat-sidenav-content>
+</mat-sidenav-container>

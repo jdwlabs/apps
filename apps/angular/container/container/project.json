@@ -21,7 +21,49 @@
           "apps/angular/container/container/src/assets",
           "apps/angular/container/container/src/VERSION"
         ],
-        "styles": ["apps/angular/container/container/src/styles.scss"],
+        "styles": [
+          "apps/angular/container/container/src/styles.scss",
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/pink-bluegrey.scss",
+            "bundleName": "pink-bluegrey"
+          },
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/deeppurple-amber.scss",
+            "bundleName": "deeppurple-amber"
+          },
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/indigo-pink.scss",
+            "bundleName": "indigo-pink"
+          },
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/purple-green.scss",
+            "bundleName": "purple-green"
+          },
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/red-teal.scss",
+            "bundleName": "red-teal"
+          },
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/black-white.scss",
+            "bundleName": "black-white"
+          },
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/user-custom-dark.scss",
+            "bundleName": "custom-dark"
+          },
+          {
+            "inject": false,
+            "input": "apps/angular/container/container/src/styles/themes/user-custom-light.scss",
+            "bundleName": "custom-light"
+          }
+        ],
         "scripts": [],
         "customWebpackConfig": {
           "path": "apps/angular/container/container/webpack.config.ts"
@@ -49,7 +91,13 @@
           "vendorChunk": true,
           "extractLicenses": false,
           "sourceMap": true,
-          "namedChunks": true
+          "namedChunks": true,
+          "fileReplacements": [
+            {
+              "replace": "apps/angular/container/container/src/environments/environment.ts",
+              "with": "apps/angular/container/container/src/environments/environment.development.ts"
+            }
+          ]
         }
       },
       "defaultConfiguration": "production"

@@ -1,0 +1,21 @@
+<jdw-header
+  (toggleSideNav)="handleToggle()"
+  [appRouterLink]="appRouterLink"
+  [appTitle]="appTitle"
+  [appTooltip]="appTooltip"
+  [color]="headerColor"
+  [isXSmallScreen]="isXSmallScreen"
+>
+  <button mat-flat-button color="accent">
+    {{ currentEnv | uppercase }}
+  </button>
+</jdw-header>
+<jdw-navigation-layout
+  (sideNavChange)="sideNavChange($event)"
+  [isSideNavEnabled]="isSideNavEnabled"
+  [isSideNavOpened]="isSideNavOpened"
+  [navigationItems]="navigationItems"
+  [sideNavMode]="sideNavMode"
+>
+  <router-outlet></router-outlet>
+</jdw-navigation-layout>
