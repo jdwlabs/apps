@@ -42,7 +42,13 @@ export class MainComponent {
   isSideNavOpened = false;
   sideNavMode: MatDrawerMode = 'side';
   isSideNavEnabled = true;
-  navigationItems: NavigationItem[] = [];
+  navigationItems: NavigationItem[] = [
+    {
+      path: '',
+      icon: 'home',
+      title: 'Home',
+    },
+  ];
   currentEnv: string;
 
   constructor(
