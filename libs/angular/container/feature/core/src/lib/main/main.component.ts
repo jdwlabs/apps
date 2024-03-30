@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemePalette } from '@angular/material/core';
 import { MatDrawerMode } from '@angular/material/sidenav';
@@ -15,6 +15,7 @@ import {
   MatChipOption,
 } from '@angular/material/chips';
 import { MatButton } from '@angular/material/button';
+import { ENVIRONMENT, Environment } from '@jdw/angular-container-util';
 
 @Component({
   selector: 'jdw-main',
@@ -42,15 +43,17 @@ export class MainComponent {
   sideNavMode: MatDrawerMode = 'side';
   isSideNavEnabled = true;
   navigationItems: NavigationItem[] = [];
-  environment = 'default';
+  currentEnv: string;
 
-  constructor(private breakpointObserver: BreakpointObserver) {
+  constructor(
+    @Inject(ENVIRONMENT) private environment: Environment,
+    private breakpointObserver: BreakpointObserver,
+  ) {
     this.breakpointObserver.observe(Breakpoints.XSmall).subscribe((result) => {
       this.isXSmallScreen = result.matches;
       this.updateNavigationBasedOnScreenSize();
     });
-
-    // console.log('ENVIRONMENT: ', process);
+    this.currentEnv = environment.ENVIRONMENT;
   }
 
   handleToggle() {
