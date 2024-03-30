@@ -10,7 +10,10 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
@@ -24,9 +27,16 @@
       "@jdw/angular-container-util": [
         "libs/angular/container/util/src/index.ts"
       ],
-      "@jdw/angular-shared-ui": ["libs/angular/shared/ui/src/index.ts"],
-      "@jdw/angular-shared-util": ["libs/angular/shared/util/src/index.ts"]
+      "@jdw/angular-shared-ui": [
+        "libs/angular/shared/ui/src/index.ts"
+      ],
+      "@jdw/angular-shared-util": [
+        "libs/angular/shared/util/src/index.ts"
+      ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }
