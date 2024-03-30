@@ -4,24 +4,16 @@
   "projectType": "application",
   "prefix": "jdw",
   "sourceRoot": "apps/angular/container/container/src",
-  "tags": [
-    "type:app",
-    "scope:container",
-    "framework:angular"
-  ],
+  "tags": ["type:app", "scope:container", "framework:angular"],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/angular/container/container",
         "index": "apps/angular/container/container/src/index.html",
         "main": "apps/angular/container/container/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/angular/container/container/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -137,9 +129,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/angular/container/container/jest.config.ts"
       }
