@@ -1,0 +1,47 @@
+[
+  {
+    "path": "",
+    "icon": "bug_report",
+    "title": "Debug"
+  },
+  {
+    "path": "home",
+    "icon": "home",
+    "title": "Home"
+  },
+  {
+    "path": "build",
+    "icon": "build",
+    "title": "Build"
+  },
+  {
+    "path": "cached",
+    "icon": "cached",
+    "title": "Cached"
+  },
+  {
+    "path": "calendar",
+    "icon": "calendar_today",
+    "title": "Calendar"
+  },
+  {
+    "path": "code",
+    "icon": "code",
+    "title": "Code"
+  },
+  {
+    "path": "compare",
+    "icon": "compare_arrows",
+    "title": "Compare"
+  },
+  {
+    "path": "dashboard",
+    "icon": "dashboard",
+    "title": "Dashboard"
+  },
+  {
+    "path": "delete",
+    "icon": "delete",
+    "title": "Delete"
+  }
+]
