@@ -66,6 +66,8 @@ export class MainComponent {
     versionService.getVersion().subscribe((version) => {
       this.currentVersion = version;
     });
+    console.log('Env: ', process.env);
+    console.log('Environment: ', process.env['ENVIRONMENT']);
   }
 
   handleToggle() {
