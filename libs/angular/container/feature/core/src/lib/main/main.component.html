@@ -6,9 +6,14 @@
   [color]="headerColor"
   [isXSmallScreen]="isXSmallScreen"
 >
-  <button mat-flat-button color="accent">
-    {{ currentEnv | uppercase }}
-  </button>
+  <div class="header-row">
+    <button mat-flat-button color="accent">
+      {{ currentVersion }}
+    </button>
+    <button mat-flat-button color="accent">
+      {{ currentEnv | uppercase }}
+    </button>
+  </div>
 </jdw-header>
 <jdw-navigation-layout
   (sideNavChange)="sideNavChange($event)"
