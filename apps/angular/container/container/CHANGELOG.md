@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.2.0](https://github.com/jdwillmsen/jdw/compare/container-0.1.0...container-0.2.0) (2024-04-01)
+
+
+### Features
+
+* **container:** add version to header ([c897d3c](https://github.com/jdwillmsen/jdw/commit/c897d3ca198142fdfa0d55085732063b90a9749d))
+
 ## [0.1.0](https://github.com/jdwillmsen/jdw/compare/container-0.0.0...container-0.1.0) (2024-04-01)
 
 ### Features
