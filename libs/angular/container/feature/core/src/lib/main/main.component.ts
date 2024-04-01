@@ -16,6 +16,7 @@ import {
 } from '@angular/material/chips';
 import { MatButton } from '@angular/material/button';
 import { ENVIRONMENT, Environment } from '@jdw/angular-container-util';
+import { VersionService } from '@jdw/angular-container-data-access';
 
 @Component({
   selector: 'jdw-main',
@@ -50,16 +51,21 @@ export class MainComponent {
     },
   ];
   currentEnv: string;
+  currentVersion: string = '';
 
   constructor(
     @Inject(ENVIRONMENT) private environment: Environment,
     private breakpointObserver: BreakpointObserver,
+    private versionService: VersionService,
   ) {
     this.breakpointObserver.observe(Breakpoints.XSmall).subscribe((result) => {
       this.isXSmallScreen = result.matches;
       this.updateNavigationBasedOnScreenSize();
     });
     this.currentEnv = environment.ENVIRONMENT;
+    versionService.getVersion().subscribe((version) => {
+      this.currentVersion = version;
+    });
   }
 
   handleToggle() {
