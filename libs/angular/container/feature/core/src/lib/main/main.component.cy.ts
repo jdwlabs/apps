@@ -3,11 +3,12 @@ import { MainComponent } from './main.component';
 import { ENVIRONMENT } from '@jdw/angular-container-util';
 import { ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe(MainComponent.name, () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule],
+      imports: [BrowserAnimationsModule, HttpClientTestingModule],
     }).overrideComponent(MainComponent, {
       add: {
         imports: [],
