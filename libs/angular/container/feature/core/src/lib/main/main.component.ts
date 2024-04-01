@@ -51,7 +51,7 @@ export class MainComponent {
     },
   ];
   currentEnv: string;
-  currentVersion: string = '';
+  currentVersion = '';
 
   constructor(
     @Inject(ENVIRONMENT) private environment: Environment,
