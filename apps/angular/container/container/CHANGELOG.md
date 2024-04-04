@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.3.0](https://github.com/jdwillmsen/jdw/compare/container-0.2.0...container-0.3.0) (2024-04-04)
+
+
+### Features
+
+* **container:** add dynamic environment variable injection for docker container ([eb038d9](https://github.com/jdwillmsen/jdw/commit/eb038d9284d9a80a2f57177cf2a8e8b180c6f00c))
+
 ## [0.2.0](https://github.com/jdwillmsen/jdw/compare/container-0.1.0...container-0.2.0) (2024-04-01)
 
 ### Features
