@@ -152,7 +152,16 @@
       "command": "bash tools/create-version.sh {version} {projectRoot}/src {projectName}"
     },
     "build-image": {
-      "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version}"
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version}",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
     },
     "push-image": {
       "executor": "nx:run-commands",
