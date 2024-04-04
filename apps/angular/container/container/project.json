@@ -91,13 +91,7 @@
           "vendorChunk": true,
           "extractLicenses": false,
           "sourceMap": true,
-          "namedChunks": true,
-          "fileReplacements": [
-            {
-              "replace": "apps/angular/container/container/src/environments/environment.ts",
-              "with": "apps/angular/container/container/src/environments/environment.development.ts"
-            }
-          ]
+          "namedChunks": true
         }
       },
       "defaultConfiguration": "production"
@@ -158,20 +152,7 @@
       "command": "bash tools/create-version.sh {version} {projectRoot}/src {projectName}"
     },
     "build-image": {
-      "executor": "nx:run-commands",
-      "options": {
-        "commands": [
-          {
-            "command": "npx nx build container",
-            "forwardAllArgs": false
-          },
-          {
-            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version}",
-            "forwardAllArgs": false
-          }
-        ],
-        "parallel": false
-      }
+      "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version}"
     },
     "push-image": {
       "executor": "nx:run-commands",
