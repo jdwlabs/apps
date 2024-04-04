@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.3.1](https://github.com/jdwillmsen/jdw/compare/container-0.3.0...container-0.3.1) (2024-04-04)
+
+
+### Bug Fixes
+
+* **container:** fix build-image target ([1bbf9a0](https://github.com/jdwillmsen/jdw/commit/1bbf9a043b91dfb92ba366d703cb48c4d47bb092))
+
 ## [0.3.0](https://github.com/jdwillmsen/jdw/compare/container-0.2.0...container-0.3.0) (2024-04-04)
 
 ### Features
