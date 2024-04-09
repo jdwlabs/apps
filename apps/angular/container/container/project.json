@@ -141,6 +141,7 @@
         "push": true,
         "preset": "conventionalcommits",
         "postTargets": [
+          "format",
           "save-version",
           "build-image",
           "push-image",
@@ -181,6 +182,9 @@
     },
     "update-app": {
       "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
+    },
+    "format": {
+      "command": "bash tools/format.sh"
     }
   }
 }
