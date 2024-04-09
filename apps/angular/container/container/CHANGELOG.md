@@ -2,6 +2,14 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.0](https://github.com/jdwillmsen/jdw/compare/container-0.3.1...container-0.4.0) (2024-04-09)
+
+
+### Features
+
+* **container:** add favicon ([03e8903](https://github.com/jdwillmsen/jdw/commit/03e8903fd04f7c65e3d25e5bc1d8b632f7ba87b6))
+* **container:** add format target ([32ecb18](https://github.com/jdwillmsen/jdw/commit/32ecb188f3d8c7a57d63ceb6cc8102f9462818e3))
+
 ## [0.3.1](https://github.com/jdwillmsen/jdw/compare/container-0.3.0...container-0.3.1) (2024-04-04)
 
 ### Bug Fixes
