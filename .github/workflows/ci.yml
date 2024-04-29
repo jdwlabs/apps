@@ -44,5 +44,5 @@ jobs:
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          npx nx affected -t version
+          npx nx affected -t version --parallel=1
           git checkout -b develop && git push origin develop
