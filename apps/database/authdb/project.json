@@ -11,11 +11,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": [
-          "format",
-          "build-image",
-          "push-image"
-        ]
+        "postTargets": ["format", "build-image", "push-image"]
       }
     },
     "build-image": {
