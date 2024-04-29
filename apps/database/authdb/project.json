@@ -6,6 +6,12 @@
   "sourceRoot": "apps/database/authdb/src",
   "tags": ["type:app", "scope:authdb", "framework:database"],
   "targets": {
+    "lint": {
+      "command": "echo manual linting for now"
+    },
+    "build": {
+      "command": "echo no build - check out 'npx nx run authdb:build-image'"
+    },
     "version": {
       "executor": "@jscutlery/semver:version",
       "options": {
