@@ -7,9 +7,11 @@
   "tags": ["type:app", "scope:authdb", "framework:database"],
   "targets": {
     "lint": {
+      "cache": true,
       "command": "echo manual linting for now"
     },
     "build": {
+      "cache": true,
       "command": "echo no build - check out 'npx nx run authdb:build-image'"
     },
     "version": {
