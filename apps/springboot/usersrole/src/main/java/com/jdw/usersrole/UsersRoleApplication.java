@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class UsersroleApplication {
+public class UsersRoleApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(UsersroleApplication.class, args);
+		SpringApplication.run(UsersRoleApplication.class, args);
 	}
 
 }
