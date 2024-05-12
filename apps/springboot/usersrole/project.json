@@ -2,5 +2,15 @@
   "name": "usersrole",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/springboot/usersrole/src",
-  "tags": ["type:app", "scope:usersrole", "framework:springboot"]
+  "tags": [
+    "type:app",
+    "scope:usersrole",
+    "framework:springboot"
+  ],
+  "targets": {
+    "lint": {
+      "cache": true,
+      "command": "echo Ignored in project configuration"
+    }
+  }
 }
