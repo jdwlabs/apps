@@ -15,7 +15,7 @@ update_version() {
     fi
 
     # Update version property in the file
-    sed -i "s/version\s*=\s*'\(.*\)'/version = '${new_version}'/g" "${file}"
+    sed -i "s/version = \"\(.*\)\"/version = \"${new_version}\"/g" "${file}"
 }
 
 # Check if correct number of arguments are provided
