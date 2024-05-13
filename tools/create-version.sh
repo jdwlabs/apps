@@ -16,13 +16,13 @@ path=${2}
 project_name=${3}
 
 # Create directory if it doesn't exist
-mkdir -p ${path}
+mkdir -p "${path}"
 
 # Create version file
 file_path="${path}/VERSION"
 echo "${version}" > "${file_path}"
 
-git add ${file_path}
+git add "${file_path}"
 git commit -m "chore(${project_name}): update project version file to version ${version}"
 git push
 
