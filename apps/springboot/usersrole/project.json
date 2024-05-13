@@ -17,7 +17,7 @@
       }
     },
     "update-version": {
-      "command": "bash tools/create-version.sh {projectRoot}/build.gradle.kts 0.0.1 {projectName}"
+      "command": "bash tools/update-version.sh {projectRoot}/build.gradle.kts {version} {projectName}"
     },
     "update-app": {
       "command": "bash tools/update-app.sh helm/usersrole/Chart.yaml {version} {projectName}"
