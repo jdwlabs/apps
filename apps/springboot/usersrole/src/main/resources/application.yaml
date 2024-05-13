@@ -9,7 +9,7 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       pool-name: URPGPool
-      connection-test-query: "SELECT 1"
+      connection-test-query: 'SELECT 1'
       connection-timeout: 20000
       idle-timeout: 300000
       max-lifetime: 300000

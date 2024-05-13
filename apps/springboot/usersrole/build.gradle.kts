@@ -1,12 +1,15 @@
+import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
+
 plugins {
 	java
 	id("org.springframework.boot") version "3.2.5"
 	id("io.spring.dependency-management") version "1.1.4"
+	id("com.diffplug.spotless") version "6.25.0"
 	id("maven-publish")
 }
 
 group = "com.jdw"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1-beta"
 
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
@@ -47,6 +50,18 @@ publishing {
 	publications {
 		create<MavenPublication>("mavenJava") {
 			artifact(tasks.getByName("bootJar"))
+		}
+	}
+}
+
+tasks.named<BootBuildImage>("bootBuildImage") {
+	imageName.set("docker.io/jdwillmsen/jdw-${project.name}:${version}")
+	publish.set(true)
+	tags.set(listOf("docker.io/jdwillmsen/jdw-${project.name}:latest"))
+	docker {
+		publishRegistry {
+			username.set(System.getenv("DOCKERHUB_USERNAME"))
+			password.set(System.getenv("DOCKERHUB_PASSWORD"))
 		}
 	}
 }
