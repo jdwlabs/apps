@@ -14,11 +14,20 @@ permissions:
 jobs:
   main:
     runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      CYPRESS_INTERNAL_BROWSER_CONNECT_TIMEOUT: 300000
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -33,6 +42,8 @@ jobs:
         run: git branch --track main origin/main
       - name: Run Format Check
         run: npx nx-cloud record -- nx format:check
+      - name: Run Clean
+        run: npx nx affected -t clean
       - name: Run Linting, Unit, Component, E2E, & Build Tests
         run: npx nx affected -t lint test build component-test e2e-ci
       - if: ${{ github.event_name != 'pull_request' }}

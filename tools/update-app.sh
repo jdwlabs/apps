@@ -8,12 +8,12 @@ git_repository="git@github.com:jdwillmsen/jdw-apps.git"
 temp_dir=$(mktemp -d)
 
 clone_repository() {
-  git clone ${git_repository} ${temp_dir}
-  cd ${temp_dir}
+  git clone "${git_repository}" "${temp_dir}"
+  cd "${temp_dir}" || exit
 }
 
 clean_repository() {
-  rm -rf ${temp_dir}
+  rm -rf "${temp_dir}"
 }
 
 # Function to check if the repository is a Git repository
@@ -76,7 +76,7 @@ update_file() {
   # Replace the app version line in the file
   sed -i "s/^appVersion: .*/appVersion: \"${new_version}\"/" "${file_path}"
 
-  git add ${file_path}
+  git add "${file_path}"
   git commit -m "chore(${project_name}): update app version to version ${new_version}"
   push_changes
 
