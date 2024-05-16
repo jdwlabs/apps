@@ -52,6 +52,9 @@
     },
     "format": {
       "command": "bash tools/format.sh"
+    },
+    "serve": {
+      "command": "docker run --rm -p 5432:5432 jdwillmsen/jdw-authdb:latest"
     }
   }
 }

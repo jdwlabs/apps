@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: usersrole
+  datasource:
+    url: ${UR_PG_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jdw}
+    username: ${UR_PG_USERNAME:default_user}
+    password: ${UR_PG_PASSWORD:default_password}
+    driver-class-name: org.postgresql.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: URPGPool
+      connection-test-query: 'SELECT 1'
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 300000
+      minimum-idle: 5
+      maximum-pool-size: 50
+      auto-commit: true
+      leak-detection-threshold: 5000
