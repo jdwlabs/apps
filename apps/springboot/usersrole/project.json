@@ -21,6 +21,9 @@
     },
     "update-app": {
       "command": "bash tools/update-app.sh helm/usersrole/Chart.yaml {version} {projectName}"
+    },
+    "format": {
+      "command": "bash tools/format.sh"
     }
   }
 }

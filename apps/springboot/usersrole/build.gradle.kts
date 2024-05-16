@@ -43,9 +43,11 @@ dependencies {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
 springBoot {
 	buildInfo()
 }
+
 publishing {
 	publications {
 		create<MavenPublication>("mavenJava") {
