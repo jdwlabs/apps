@@ -2,7 +2,11 @@
   "name": "usersrole",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/springboot/usersrole/src",
-  "tags": ["type:app", "scope:usersrole", "framework:springboot"],
+  "tags": [
+    "type:app",
+    "scope:usersrole",
+    "framework:springboot"
+  ],
   "targets": {
     "lint": {
       "cache": true,
@@ -13,7 +17,12 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "update-version", "build-image"]
+        "postTargets": [
+          "format",
+          "update-version",
+          "build-image",
+          "update-app"
+        ]
       }
     },
     "update-version": {
