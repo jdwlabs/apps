@@ -13,7 +13,12 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "update-version", "build-image", "update-app"]
+        "postTargets": [
+          "format",
+          "update-version",
+          "build-image",
+          "update-app"
+        ]
       }
     },
     "update-version": {
