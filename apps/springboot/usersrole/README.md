@@ -1,0 +1,8 @@
+# Users Role
+
+## Environment Variables
+```properties
+UR_PG_DATASOURCE_URL=<JDBC URL>
+UR_PG_USERNAME=<POSTGRES USERNAME>
+UR_PG_PASSWORD=<POSTGRES PASSWORD>
+```
