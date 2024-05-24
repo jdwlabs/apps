@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS auth.profiles
     first_name TEXT NOT NULL,
     middle_name TEXT,
     last_name TEXT NOT NULL,
+    birthdate DATE NOT NULL,
     created_by_user_id BIGINT NOT NULL,
     created_time TIMESTAMPTZ NOT NULL,
     modified_by_user_id BIGINT NOT NULL,
