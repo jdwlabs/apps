@@ -1,3 +1,8 @@
+app:
+  jwt:
+    secret-key: ${UR_JWT_SECRET_KEY}
+    expiration-time-ms: ${UR_JWT_EXPIRATION_TIME_MS:7200000}
+
 spring:
   application:
     name: usersrole
