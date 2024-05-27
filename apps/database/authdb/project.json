@@ -34,6 +34,18 @@
         "parallel": false
       }
     },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-authdb:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
     "push-image": {
       "executor": "nx:run-commands",
       "options": {
