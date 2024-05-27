@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS auth;
 CREATE TABLE IF NOT EXISTS auth.roles
 (
     role_id BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY,
-    role_name TEXT NOT NULL,
+    role_name TEXT NOT NULL UNIQUE,
     role_description TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'ACTIVE',
     created_by_user_id BIGINT NOT NULL,
