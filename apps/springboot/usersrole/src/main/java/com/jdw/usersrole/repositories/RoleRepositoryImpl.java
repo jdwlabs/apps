@@ -71,6 +71,7 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     private Optional<Role> getRole(Optional<Role> role) {
+        log.debug("Get optional role: {}", role);
         if (role.isPresent()) {
             List<UserRole> userRoles = userRoleDao.findByRoleId(role.get().id());
             Set<UserRole> userRoleSet = new HashSet<>(userRoles);
@@ -90,6 +91,7 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     private Role getRole(Role role) {
+        log.debug("Get role: {}", role);
         List<UserRole> userRoles = userRoleDao.findByRoleId(role.id());
         Set<UserRole> userRoleSet = new HashSet<>(userRoles);
         return Role.builder()
