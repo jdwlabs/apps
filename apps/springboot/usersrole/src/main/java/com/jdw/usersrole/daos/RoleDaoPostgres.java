@@ -21,7 +21,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public Role create(Role role) {
-        log.debug("Create Role: {}", role);
+        log.debug("Create role: {}", role);
         String sql = """
                 INSERT INTO auth.roles (role_name, role_description, status, created_by_user_id, created_time,
                         modified_by_user_id, modified_time)
@@ -44,7 +44,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public Optional<Role> findById(Long id) {
-        log.debug("Find Role by id: {}", id);
+        log.debug("Find role by id: {}", id);
         String sql = "SELECT * FROM auth.roles WHERE role_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -54,7 +54,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public Optional<Role> findByName(String name) {
-        log.debug("Find Role by name: {}", name);
+        log.debug("Find role by name: {}", name);
         String sql = "SELECT * FROM auth.roles WHERE role_name = :name";
         return jdbcClient.sql(sql)
                 .param("name", name)
@@ -64,7 +64,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public List<Role> findAll() {
-        log.debug("Find all Roles");
+        log.debug("Find all roles");
         String sql = "SELECT * FROM auth.roles";
         return jdbcClient.sql(sql)
                 .query(new RoleRowMapper())
@@ -73,7 +73,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public Role update(Role role) {
-        log.debug("Update Role: {}", role);
+        log.debug("Update role: {}", role);
         String sql = """
                 UPDATE auth.roles
                 SET role_name           = :name,
@@ -96,15 +96,15 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public void deleteById(Long id) {
-        log.debug("Delete Role by id: {}", id);
+        log.debug("Delete role by id: {}", id);
         String sql = "DELETE FROM auth.roles WHERE role_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)
                 .update();
     }
 
-    protected String getStatus(Role role) {
-        log.debug("Get Role status: {}", role);
+    private String getStatus(Role role) {
+        log.debug("Get role status: {}", role);
         return role.status() != null ? role.status() : Status.ACTIVE.name();
     }
 }
