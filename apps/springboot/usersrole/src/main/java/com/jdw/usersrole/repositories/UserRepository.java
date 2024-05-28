@@ -1,10 +1,18 @@
 package com.jdw.usersrole.repositories;
 
 import com.jdw.usersrole.models.User;
-import org.springframework.data.repository.ListCrudRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public interface UserRepository extends ListCrudRepository<User, Long> {
+import java.util.List;
+import java.util.Optional;
 
+public interface UserRepository {
+    Optional<User> findById(Long id);
+
+    List<User> findAll();
+
+    User save(User user);
+
+    void deleteById(Long id);
+
+    boolean existsById(Long id);
 }
