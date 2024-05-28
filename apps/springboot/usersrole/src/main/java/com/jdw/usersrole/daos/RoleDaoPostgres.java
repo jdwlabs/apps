@@ -81,7 +81,7 @@ public class RoleDaoPostgres implements RoleDao {
                     status              = :status,
                     modified_by_user_id = :modifiedByUserId,
                     modified_time       = :modifiedTime
-                WHERE role_id = ?
+                WHERE role_id = :roleId
                 """;
         jdbcClient.sql(sql)
                 .param("name", role.name())
@@ -89,6 +89,7 @@ public class RoleDaoPostgres implements RoleDao {
                 .param("status", getStatus(role))
                 .param("modifiedByUserId", role.modifiedByUserId())
                 .param("modifiedTime", Timestamp.from(Instant.now()))
+                .param("roleId", role.id())
                 .update();
         return findById(role.id()).orElse(null);
     }
@@ -98,7 +99,7 @@ public class RoleDaoPostgres implements RoleDao {
         log.debug("Delete Role by id: {}", id);
         String sql = "DELETE FROM auth.roles WHERE role_id = :id";
         jdbcClient.sql(sql)
-                .param("id", "id")
+                .param("id", id)
                 .update();
     }
 
