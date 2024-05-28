@@ -1,20 +1,20 @@
-package com.jdw.usersrole.repositories;
+package com.jdw.usersrole.daos;
 
 import com.jdw.usersrole.models.Role;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface RoleRepository {
+public interface RoleDao {
+    Role create(Role role);
+
     Optional<Role> findById(Long id);
 
-    Optional<Role> findByName(String roleName);
+    Optional<Role> findByName(String name);
 
     List<Role> findAll();
 
-    Role save(Role role);
+    Role update(Role role);
 
     void deleteById(Long id);
-
-    boolean existsById(Long id);
 }
