@@ -109,7 +109,7 @@ public class RoleService {
     }
 
     public Role updateRole(Long id, Role role) {
-        log.info("Updating role {}", role);
+        log.info("Updating role: id={}, role={}", id, role);
         if (role == null
                 || id == null
                 || role.name() == null
