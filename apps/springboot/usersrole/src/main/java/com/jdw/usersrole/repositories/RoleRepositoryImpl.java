@@ -24,79 +24,37 @@ public class RoleRepositoryImpl implements RoleRepository {
     public Optional<Role> findById(Long id) {
         log.debug("Find role by id: {}", id);
         Optional<Role> role = roleDao.findById(id);
-        if (role.isPresent()) {
-            List<UserRole> userRoles = userRoleDao.findByRoleId(role.get().id());
-            Set<UserRole> userRoleSet = new HashSet<>(userRoles);
-            return Optional.ofNullable(Role.builder()
-                    .id(role.get().id())
-                    .name(role.get().name())
-                    .description(role.get().description())
-                    .status(role.get().status())
-                    .users(userRoleSet)
-                    .createdByUserId(role.get().createdByUserId())
-                    .createdTime(role.get().createdTime())
-                    .modifiedByUserId(role.get().modifiedByUserId())
-                    .modifiedTime(role.get().modifiedTime())
-                    .build());
-        }
-        return role;
+        return getRole(role);
     }
 
     @Override
     public Optional<Role> findByName(String name) {
         log.debug("Find role by name: {}", name);
         Optional<Role> role = roleDao.findByName(name);
-        if (role.isPresent()) {
-            List<UserRole> userRoles = userRoleDao.findByRoleId(role.get().id());
-            Set<UserRole> userRoleSet = new HashSet<>(userRoles);
-            return Optional.ofNullable(Role.builder()
-                    .id(role.get().id())
-                    .name(role.get().name())
-                    .description(role.get().description())
-                    .status(role.get().status())
-                    .users(userRoleSet)
-                    .createdByUserId(role.get().createdByUserId())
-                    .createdTime(role.get().createdTime())
-                    .modifiedByUserId(role.get().modifiedByUserId())
-                    .modifiedTime(role.get().modifiedTime())
-                    .build());
-        }
-        return role;
+        return getRole(role);
     }
 
     @Override
     public List<Role> findAll() {
         log.debug("Find all roles");
         List<Role> roles = roleDao.findAll();
-        return roles.stream().map(role -> {
-            List<UserRole> userRoles = userRoleDao.findByRoleId(role.id());
-            Set<UserRole> userRoleSet = new HashSet<>(userRoles);
-            return Role.builder()
-                    .id(role.id())
-                    .name(role.name())
-                    .description(role.description())
-                    .status(role.status())
-                    .users(userRoleSet)
-                    .createdByUserId(role.createdByUserId())
-                    .createdTime(role.createdTime())
-                    .modifiedByUserId(role.modifiedByUserId())
-                    .modifiedTime(role.modifiedTime())
-                    .build();
-        }).toList();
+        return roles.stream().map(this::getRole).toList();
     }
 
     @Override
     public Role save(Role role) {
         log.debug("Saving role: {}", role);
+        Role updatedRole;
         if (role == null) {
             return null;
         } else if (role.id() == null) {
             log.debug("Saving new role: {}", role);
-            return roleDao.create(role);
+            updatedRole = roleDao.create(role);
         } else {
             log.debug("Updating role: {}", role);
-            return roleDao.update(role);
+            updatedRole = roleDao.update(role);
         }
+        return getRole(updatedRole);
     }
 
     @Override
@@ -109,6 +67,41 @@ public class RoleRepositoryImpl implements RoleRepository {
     @Override
     public boolean existsById(Long id) {
         log.debug("Checking if role with id {} exists", id);
-        return roleDao.findById(id).isEmpty();
+        return roleDao.findById(id).isPresent();
+    }
+
+    private Optional<Role> getRole(Optional<Role> role) {
+        if (role.isPresent()) {
+            List<UserRole> userRoles = userRoleDao.findByRoleId(role.get().id());
+            Set<UserRole> userRoleSet = new HashSet<>(userRoles);
+            return Optional.ofNullable(Role.builder()
+                    .id(role.get().id())
+                    .name(role.get().name())
+                    .description(role.get().description())
+                    .status(role.get().status())
+                    .users(userRoleSet)
+                    .createdByUserId(role.get().createdByUserId())
+                    .createdTime(role.get().createdTime())
+                    .modifiedByUserId(role.get().modifiedByUserId())
+                    .modifiedTime(role.get().modifiedTime())
+                    .build());
+        }
+        return role;
+    }
+
+    private Role getRole(Role role) {
+        List<UserRole> userRoles = userRoleDao.findByRoleId(role.id());
+        Set<UserRole> userRoleSet = new HashSet<>(userRoles);
+        return Role.builder()
+                .id(role.id())
+                .name(role.name())
+                .description(role.description())
+                .status(role.status())
+                .users(userRoleSet)
+                .createdByUserId(role.createdByUserId())
+                .createdTime(role.createdTime())
+                .modifiedByUserId(role.modifiedByUserId())
+                .modifiedTime(role.modifiedTime())
+                .build();
     }
 }
