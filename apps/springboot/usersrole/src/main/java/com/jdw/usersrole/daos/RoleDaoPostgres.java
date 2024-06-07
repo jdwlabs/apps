@@ -1,17 +1,21 @@
 package com.jdw.usersrole.daos;
 
-import com.jdw.usersrole.daos.rowmappers.RoleRowMapper;
 import com.jdw.usersrole.models.Role;
 import com.jdw.usersrole.models.Status;
+import com.jdw.usersrole.models.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -21,7 +25,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public Role create(Role role) {
-        log.debug("Create role: {}", role);
+        log.debug("Creating role: {}", role);
         String sql = """
                 INSERT INTO auth.roles (role_name, role_description, status, created_by_user_id, created_time,
                         modified_by_user_id, modified_time)
@@ -48,7 +52,7 @@ public class RoleDaoPostgres implements RoleDao {
         String sql = "SELECT * FROM auth.roles WHERE role_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
-                .query(new RoleRowMapper())
+                .query(this::roleRowMapper)
                 .optional();
     }
 
@@ -58,7 +62,7 @@ public class RoleDaoPostgres implements RoleDao {
         String sql = "SELECT * FROM auth.roles WHERE role_name = :name";
         return jdbcClient.sql(sql)
                 .param("name", name)
-                .query(new RoleRowMapper())
+                .query(this::roleRowMapper)
                 .optional();
     }
 
@@ -67,7 +71,7 @@ public class RoleDaoPostgres implements RoleDao {
         log.debug("Find all roles");
         String sql = "SELECT * FROM auth.roles";
         return jdbcClient.sql(sql)
-                .query(new RoleRowMapper())
+                .query(this::roleRowMapper)
                 .list();
     }
 
@@ -81,7 +85,7 @@ public class RoleDaoPostgres implements RoleDao {
                     status              = :status,
                     modified_by_user_id = :modifiedByUserId,
                     modified_time       = :modifiedTime
-                WHERE role_id = :roleId
+                WHERE role_id = :id
                 """;
         jdbcClient.sql(sql)
                 .param("name", role.name())
@@ -89,7 +93,7 @@ public class RoleDaoPostgres implements RoleDao {
                 .param("status", getStatus(role))
                 .param("modifiedByUserId", role.modifiedByUserId())
                 .param("modifiedTime", Timestamp.from(Instant.now()))
-                .param("roleId", role.id())
+                .param("id", role.id())
                 .update();
         return findById(role.id()).orElse(null);
     }
@@ -106,5 +110,29 @@ public class RoleDaoPostgres implements RoleDao {
     private String getStatus(Role role) {
         log.debug("Get role status: {}", role);
         return role.status() != null ? role.status() : Status.ACTIVE.name();
+    }
+
+    private Role roleRowMapper(ResultSet rs, int rowNum) throws SQLException {
+        log.debug("Mapping role: rs={}, rowNum={}", rs, rowNum);
+        Long id = rs.getLong("role_id");
+        String name = rs.getString("role_name");
+        String description = rs.getString("role_description");
+        String status = rs.getString("status");
+        Long createdByUserId = rs.getLong("created_by_user_id");
+        Timestamp createdTime = rs.getTimestamp("created_time");
+        Long modifiedByUserId = rs.getLong("modified_by_user_id");
+        Timestamp modifiedTime = rs.getTimestamp("modified_time");
+        Set<UserRole> users = new HashSet<>();
+        return Role.builder()
+                .id(id)
+                .name(name)
+                .description(description)
+                .status(status)
+                .users(users)
+                .createdByUserId(createdByUserId)
+                .createdTime(createdTime)
+                .modifiedByUserId(modifiedByUserId)
+                .modifiedTime(modifiedTime)
+                .build();
     }
 }

@@ -7,6 +7,7 @@ import com.jdw.usersrole.models.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -21,27 +22,31 @@ public class RoleRepositoryImpl implements RoleRepository {
     private final UserRoleDao userRoleDao;
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Role> findById(Long id) {
-        log.debug("Find role by id: {}", id);
+        log.debug("Finding role by id: {}", id);
         Optional<Role> role = roleDao.findById(id);
         return getRole(role);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Role> findByName(String name) {
-        log.debug("Find role by name: {}", name);
+        log.debug("Finding role by name: {}", name);
         Optional<Role> role = roleDao.findByName(name);
         return getRole(role);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Role> findAll() {
-        log.debug("Find all roles");
+        log.debug("Finding all roles");
         List<Role> roles = roleDao.findAll();
         return roles.stream().map(this::getRole).toList();
     }
 
     @Override
+    @Transactional
     public Role save(Role role) {
         log.debug("Saving role: {}", role);
         Role updatedRole;
@@ -58,6 +63,7 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
         log.debug("Deleting role with id {}", id);
         userRoleDao.deleteByRoleId(id);
@@ -65,33 +71,36 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsById(Long id) {
         log.debug("Checking if role with id {} exists", id);
         return roleDao.findById(id).isPresent();
     }
 
     private Optional<Role> getRole(Optional<Role> role) {
-        log.debug("Get optional role: {}", role);
+        log.debug("Getting optional role: {}", role);
         if (role.isPresent()) {
-            List<UserRole> userRoles = userRoleDao.findByRoleId(role.get().id());
+            Role existingRole = role.get();
+            List<UserRole> userRoles = userRoleDao.findByRoleId(existingRole.id());
             Set<UserRole> userRoleSet = new HashSet<>(userRoles);
-            return Optional.ofNullable(Role.builder()
-                    .id(role.get().id())
-                    .name(role.get().name())
-                    .description(role.get().description())
-                    .status(role.get().status())
+            Role transformedRole = Role.builder()
+                    .id(existingRole.id())
+                    .name(existingRole.name())
+                    .description(existingRole.description())
+                    .status(existingRole.status())
                     .users(userRoleSet)
-                    .createdByUserId(role.get().createdByUserId())
-                    .createdTime(role.get().createdTime())
-                    .modifiedByUserId(role.get().modifiedByUserId())
-                    .modifiedTime(role.get().modifiedTime())
-                    .build());
+                    .createdByUserId(existingRole.createdByUserId())
+                    .createdTime(existingRole.createdTime())
+                    .modifiedByUserId(existingRole.modifiedByUserId())
+                    .modifiedTime(existingRole.modifiedTime())
+                    .build();
+            return Optional.ofNullable(transformedRole);
         }
         return role;
     }
 
     private Role getRole(Role role) {
-        log.debug("Get role: {}", role);
+        log.debug("Getting role: {}", role);
         List<UserRole> userRoles = userRoleDao.findByRoleId(role.id());
         Set<UserRole> userRoleSet = new HashSet<>(userRoles);
         return Role.builder()

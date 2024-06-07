@@ -78,7 +78,6 @@ public class RoleService {
         return roleRepository.save(updatedRole);
     }
 
-    @Transactional
     public void deleteRole(Long id) {
         log.info("Deleting role with id {}", id);
         roleRepository.deleteById(id);
