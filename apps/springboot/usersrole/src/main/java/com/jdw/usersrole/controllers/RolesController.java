@@ -47,7 +47,7 @@ public class RolesController {
     public ResponseEntity<Role> createRole(@RequestBody Role role) {
         log.trace("Creating role {}", role);
         Role createdRole = roleService.createRole(role);
-        return new ResponseEntity<>(createdRole, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdRole);
     }
 
     @PutMapping("/{roleId}")

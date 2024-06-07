@@ -1,12 +1,13 @@
 package com.jdw.usersrole.daos;
 
-import com.jdw.usersrole.daos.rowmappers.UserRoleRowMapper;
 import com.jdw.usersrole.models.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -45,7 +46,7 @@ public class UserRoleDaoPostgres implements UserRoleDao {
         String sql = "SELECT * FROM auth.users_roles WHERE role_id = :roleId";
         return jdbcClient.sql(sql)
                 .param("roleId", roleId)
-                .query(new UserRoleRowMapper())
+                .query(this::userRoleRowMapper)
                 .list();
     }
 
@@ -55,7 +56,7 @@ public class UserRoleDaoPostgres implements UserRoleDao {
         String sql = "SELECT * FROM auth.users_roles WHERE user_id = :userId";
         return jdbcClient.sql(sql)
                 .param("userId", userId)
-                .query(new UserRoleRowMapper())
+                .query(this::userRoleRowMapper)
                 .list();
     }
 
@@ -75,6 +76,19 @@ public class UserRoleDaoPostgres implements UserRoleDao {
         jdbcClient.sql(sql)
                 .param("userId", userId)
                 .update();
+    }
 
+    private UserRole userRoleRowMapper(ResultSet rs, int rowNum) throws SQLException {
+        log.debug("Mapping user role: rs={}, rowNum={}", rs, rowNum);
+        Long userId = rs.getLong("user_id");
+        Long roleId = rs.getLong("role_id");
+        Long createdByUserId = rs.getLong("created_by_user_id");
+        Timestamp createdTime = rs.getTimestamp("created_time");
+        return UserRole.builder()
+                .userId(userId)
+                .roleId(roleId)
+                .createdByUserId(createdByUserId)
+                .createdTime(createdTime)
+                .build();
     }
 }

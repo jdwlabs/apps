@@ -13,6 +13,7 @@ public record Address(
         String stateProvince,
         String postalCode,
         String country,
+        Long profileId,
         Long createdByUserId,
         Timestamp createdTime,
         Long modifiedByUserId,
