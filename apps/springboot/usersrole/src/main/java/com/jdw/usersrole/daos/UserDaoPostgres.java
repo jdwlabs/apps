@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashSet;
@@ -46,7 +45,7 @@ public class UserDaoPostgres implements UserDao {
 
     @Override
     public Optional<User> findById(Long id) {
-        log.debug("Find user by id: {}", id);
+        log.debug("Find user with id: {}", id);
         String sql = "SELECT * FROM auth.users WHERE user_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -56,7 +55,7 @@ public class UserDaoPostgres implements UserDao {
 
     @Override
     public Optional<User> findByEmailAddress(String emailAddress) {
-        log.debug("Find user by email address: {}", emailAddress);
+        log.debug("Find user with email address: {}", emailAddress);
         String sql = "SELECT * FROM auth.users WHERE email_address = :emailAddress";
         return jdbcClient.sql(sql)
                 .param("emailAddress", emailAddress)
@@ -98,7 +97,7 @@ public class UserDaoPostgres implements UserDao {
 
     @Override
     public void deleteById(Long id) {
-        log.debug("Deleting user by id: {}", id);
+        log.debug("Deleting user with id: {}", id);
         String sql = "DELETE FROM auth.users WHERE user_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)
@@ -121,14 +120,13 @@ public class UserDaoPostgres implements UserDao {
         Long modifiedByUserId = rs.getLong("modified_by_user_id");
         Timestamp modifiedTime = rs.getTimestamp("modified_time");
         Set<UserRole> roles = new HashSet<>();
-        Profile profile = null;
         return User.builder()
                 .id(id)
                 .emailAddress(emailAddress)
                 .password(password)
                 .status(status)
                 .roles(roles)
-                .profile(profile)
+                .profile(null)
                 .createdByUserId(createdByUserId)
                 .createdTime(createdTime)
                 .modifiedByUserId(modifiedByUserId)

@@ -48,7 +48,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public Optional<Role> findById(Long id) {
-        log.debug("Find role by id: {}", id);
+        log.debug("Find role with id: {}", id);
         String sql = "SELECT * FROM auth.roles WHERE role_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -58,7 +58,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public Optional<Role> findByName(String name) {
-        log.debug("Find role by name: {}", name);
+        log.debug("Find role with name: {}", name);
         String sql = "SELECT * FROM auth.roles WHERE role_name = :name";
         return jdbcClient.sql(sql)
                 .param("name", name)
@@ -100,7 +100,7 @@ public class RoleDaoPostgres implements RoleDao {
 
     @Override
     public void deleteById(Long id) {
-        log.debug("Delete role by id: {}", id);
+        log.debug("Delete role with id: {}", id);
         String sql = "DELETE FROM auth.roles WHERE role_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)

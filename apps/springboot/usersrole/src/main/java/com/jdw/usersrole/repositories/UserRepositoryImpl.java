@@ -25,7 +25,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findById(Long id) {
-        log.debug("Finding user by id: {}", id);
+        log.debug("Finding user with id: {}", id);
         Optional<User> user = userDao.findById(id);
         return getUser(user);
     }
@@ -33,7 +33,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByEmailAddress(String emailAddress) {
-        log.debug("Finding user by email address: {}", emailAddress);
+        log.debug("Finding user with email address: {}", emailAddress);
         Optional<User> user = userDao.findByEmailAddress(emailAddress);
         return getUser(user);
     }
@@ -66,7 +66,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     @Transactional
     public void deleteById(Long id) {
-        log.debug("Deleting user by id: {}", id);
+        log.debug("Deleting user with id: {}", id);
         Profile profile = getProfile(id);
         if (profile != null) {
             addressDao.deleteByProfileId(profile.id());
@@ -75,13 +75,6 @@ public class UserRepositoryImpl implements UserRepository {
         profileDao.deleteByUserId(id);
         userRoleDao.deleteByUserId(id);
         userDao.deleteById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsById(Long id) {
-        log.debug("Checking if user with id {} exists", id);
-        return userDao.findById(id).isPresent();
     }
 
     private Optional<User> getUser(Optional<User> user) {

@@ -47,7 +47,7 @@ public class ProfileDaoPostgres implements ProfileDao {
 
     @Override
     public Optional<Profile> findById(Long id) {
-        log.debug("Find profile by id: {}", id);
+        log.debug("Find profile with id: {}", id);
         String sql = "SELECT * FROM auth.profiles WHERE profile_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -57,7 +57,7 @@ public class ProfileDaoPostgres implements ProfileDao {
 
     @Override
     public Optional<Profile> findByUserId(Long id) {
-        log.debug("Find profile by user id: {}", id);
+        log.debug("Find profile with user id: {}", id);
         String sql = "SELECT * FROM auth.profiles WHERE user_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -101,7 +101,7 @@ public class ProfileDaoPostgres implements ProfileDao {
 
     @Override
     public void deleteById(Long id) {
-        log.debug("Delete profile by id: {}", id);
+        log.debug("Delete profile with id: {}", id);
         String sql = "DELETE FROM auth.profiles WHERE profile_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)
@@ -110,7 +110,7 @@ public class ProfileDaoPostgres implements ProfileDao {
 
     @Override
     public void deleteByUserId(Long id) {
-        log.debug("Delete profile by user id: {}", id);
+        log.debug("Delete profile with user id: {}", id);
         String sql = "DELETE FROM auth.profiles WHERE user_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)

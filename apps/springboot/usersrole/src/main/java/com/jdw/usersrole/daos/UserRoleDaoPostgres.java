@@ -42,7 +42,7 @@ public class UserRoleDaoPostgres implements UserRoleDao {
 
     @Override
     public List<UserRole> findByRoleId(Long roleId) {
-        log.debug("Finding user role by role id: {}", roleId);
+        log.debug("Finding user role with role id: {}", roleId);
         String sql = "SELECT * FROM auth.users_roles WHERE role_id = :roleId";
         return jdbcClient.sql(sql)
                 .param("roleId", roleId)
@@ -52,7 +52,7 @@ public class UserRoleDaoPostgres implements UserRoleDao {
 
     @Override
     public List<UserRole> findByUserId(Long userId) {
-        log.debug("Finding user role by user id: {}", userId);
+        log.debug("Finding user role with user id: {}", userId);
         String sql = "SELECT * FROM auth.users_roles WHERE user_id = :userId";
         return jdbcClient.sql(sql)
                 .param("userId", userId)
@@ -62,7 +62,7 @@ public class UserRoleDaoPostgres implements UserRoleDao {
 
     @Override
     public void deleteByRoleId(Long roleId) {
-        log.debug("Deleting user role by role id: {}", roleId);
+        log.debug("Deleting user role with role id: {}", roleId);
         String sql = "DELETE FROM auth.users_roles WHERE role_id = :roleId";
         jdbcClient.sql(sql)
                 .param("roleId", roleId)
@@ -71,7 +71,7 @@ public class UserRoleDaoPostgres implements UserRoleDao {
 
     @Override
     public void deleteByUserId(Long userId) {
-        log.debug("Deleting user role by user id: {}", userId);
+        log.debug("Deleting user role with user id: {}", userId);
         String sql = "DELETE FROM auth.users_roles WHERE user_id = :userId";
         jdbcClient.sql(sql)
                 .param("userId", userId)
