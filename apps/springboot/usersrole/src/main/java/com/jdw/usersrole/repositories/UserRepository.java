@@ -15,6 +15,4 @@ public interface UserRepository {
     User save(User user);
 
     void deleteById(Long id);
-
-    boolean existsById(Long id);
 }
