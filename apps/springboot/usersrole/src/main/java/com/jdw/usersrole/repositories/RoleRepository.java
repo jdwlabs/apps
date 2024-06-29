@@ -15,6 +15,4 @@ public interface RoleRepository {
     Role save(Role role);
 
     void deleteById(Long id);
-
-    boolean existsById(Long id);
 }

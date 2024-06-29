@@ -42,7 +42,7 @@ public class ProfileIconDaoPostgres implements ProfileIconDao {
 
     @Override
     public Optional<ProfileIcon> findById(Long id) {
-        log.debug("Find profile icon by id: {}", id);
+        log.debug("Find profile icon with id: {}", id);
         String sql = "SELECT * FROM auth.profile_icons WHERE profile_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -52,7 +52,7 @@ public class ProfileIconDaoPostgres implements ProfileIconDao {
 
     @Override
     public Optional<ProfileIcon> findByProfileId(Long id) {
-        log.debug("Find profile icon by profile id: {}", id);
+        log.debug("Find profile icon with profile id: {}", id);
         String sql = "SELECT * FROM auth.profile_icons WHERE profile_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -90,7 +90,7 @@ public class ProfileIconDaoPostgres implements ProfileIconDao {
 
     @Override
     public void deleteById(Long id) {
-        log.debug("Delete profile icon by id: {}", id);
+        log.debug("Delete profile icon with id: {}", id);
         String sql = "DELETE FROM auth.profile_icons WHERE icon_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)
@@ -99,7 +99,7 @@ public class ProfileIconDaoPostgres implements ProfileIconDao {
 
     @Override
     public void deleteByProfileId(Long id) {
-        log.debug("Delete profile icon by profile id: {}", id);
+        log.debug("Delete profile icon with profile id: {}", id);
         String sql = "DELETE FROM auth.profile_icons WHERE profile_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)

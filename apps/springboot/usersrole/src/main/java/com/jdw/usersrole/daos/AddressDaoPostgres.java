@@ -49,7 +49,7 @@ public class AddressDaoPostgres implements AddressDao {
 
     @Override
     public Optional<Address> findById(Long id) {
-        log.debug("Finding address by id: {}", id);
+        log.debug("Finding address with id: {}", id);
         String sql = "SELECT * FROM auth.addresses WHERE address_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -59,7 +59,7 @@ public class AddressDaoPostgres implements AddressDao {
 
     @Override
     public List<Address> findByProfileId(Long id) {
-        log.debug("Finding addresses by profile id: {}", id);
+        log.debug("Finding addresses with profile id: {}", id);
         String sql = "SELECT * FROM auth.addresses WHERE profile_id = :id";
         return jdbcClient.sql(sql)
                 .param("id", id)
@@ -107,7 +107,7 @@ public class AddressDaoPostgres implements AddressDao {
 
     @Override
     public void deleteById(Long id) {
-        log.debug("Deleting address by id: {}", id);
+        log.debug("Deleting address with id: {}", id);
         String sql = "DELETE FROM auth.addresses WHERE address_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)
@@ -116,7 +116,7 @@ public class AddressDaoPostgres implements AddressDao {
 
     @Override
     public void deleteByProfileId(Long id) {
-        log.debug("Deleting addresses by profile id: {}", id);
+        log.debug("Deleting addresses with profile id: {}", id);
         String sql = "DELETE FROM auth.addresses WHERE profile_id = :id";
         jdbcClient.sql(sql)
                 .param("id", id)

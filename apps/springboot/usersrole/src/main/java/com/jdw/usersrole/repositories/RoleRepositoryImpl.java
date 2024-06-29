@@ -24,7 +24,7 @@ public class RoleRepositoryImpl implements RoleRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<Role> findById(Long id) {
-        log.debug("Finding role by id: {}", id);
+        log.debug("Finding role with id: {}", id);
         Optional<Role> role = roleDao.findById(id);
         return getRole(role);
     }
@@ -32,7 +32,7 @@ public class RoleRepositoryImpl implements RoleRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<Role> findByName(String name) {
-        log.debug("Finding role by name: {}", name);
+        log.debug("Finding role with name: {}", name);
         Optional<Role> role = roleDao.findByName(name);
         return getRole(role);
     }
@@ -68,13 +68,6 @@ public class RoleRepositoryImpl implements RoleRepository {
         log.debug("Deleting role with id {}", id);
         userRoleDao.deleteByRoleId(id);
         roleDao.deleteById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsById(Long id) {
-        log.debug("Checking if role with id {} exists", id);
-        return roleDao.findById(id).isPresent();
     }
 
     private Optional<Role> getRole(Optional<Role> role) {
