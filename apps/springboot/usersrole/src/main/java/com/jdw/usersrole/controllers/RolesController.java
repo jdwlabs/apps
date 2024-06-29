@@ -1,7 +1,9 @@
 package com.jdw.usersrole.controllers;
 
+import com.jdw.usersrole.dtos.RoleRequestDTO;
 import com.jdw.usersrole.models.Role;
 import com.jdw.usersrole.services.RoleService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,38 +27,29 @@ public class RolesController {
 
     @GetMapping("/{roleId}")
     public ResponseEntity<Role> getRoleById(@PathVariable Long roleId) {
-        log.trace("Getting role by id {}", roleId);
+        log.trace("Getting role with id {}", roleId);
         Role role = roleService.getRoleById(roleId);
-        if (role == null) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(role);
     }
 
     @GetMapping("/name/{roleName}")
     public ResponseEntity<Role> getRoleByName(@PathVariable String roleName) {
-        log.trace("Getting role by name {}", roleName);
+        log.trace("Getting role with name {}", roleName);
         Role role = roleService.getRoleByName(roleName);
-        if (role == null) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(role);
     }
 
     @PostMapping
-    public ResponseEntity<Role> createRole(@RequestBody Role role) {
+    public ResponseEntity<Role> createRole(@Valid @RequestBody RoleRequestDTO role) {
         log.trace("Creating role {}", role);
         Role createdRole = roleService.createRole(role);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRole);
     }
 
     @PutMapping("/{roleId}")
-    public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestBody Role role) {
+    public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @Valid @RequestBody RoleRequestDTO role) {
         log.trace("Updating role {}", role);
         Role updatedRole = roleService.updateRole(roleId, role);
-        if (updatedRole == null) {
-            return ResponseEntity.badRequest().build();
-        }
         return ResponseEntity.ok(updatedRole);
     }
 
