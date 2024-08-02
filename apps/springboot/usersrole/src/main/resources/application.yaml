@@ -1,6 +1,6 @@
 app:
   jwt:
-    secret-key: ${UR_JWT_SECRET_KEY}
+    secret-key: ${UR_JWT_SECRET_KEY:default-secret-key}
     expiration-time-ms: ${UR_JWT_EXPIRATION_TIME_MS:7200000}
 
 spring:
