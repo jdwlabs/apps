@@ -1,6 +1,7 @@
 package com.jdw.usersrole.services;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -75,7 +76,7 @@ public class JwtService {
         return extractClaim(jwtToken, Claims::getExpiration);
     }
 
-    protected Claims extractAllClaims(String jwtToken) {
+    protected Claims extractAllClaims(String jwtToken) throws JwtException {
         log.info("Extracting all claims with: jwtToken={}", jwtToken);
         return Jwts
                 .parser()
