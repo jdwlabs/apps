@@ -54,4 +54,8 @@ public class SecurityUser implements UserDetails {
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
     }
+
+    public Long getUserId() {
+        return user.id();
+    }
 }
