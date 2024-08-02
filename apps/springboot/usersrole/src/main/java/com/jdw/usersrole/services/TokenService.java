@@ -18,7 +18,7 @@ public class TokenService implements LogoutHandler {
         try {
             request.logout();
         } catch (ServletException e) {
-            log.error(e.getMessage());
+            log.error(e.toString());
         }
     }
 }
