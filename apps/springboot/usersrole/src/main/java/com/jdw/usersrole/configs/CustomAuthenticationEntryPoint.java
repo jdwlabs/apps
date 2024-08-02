@@ -16,6 +16,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint{
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         log.debug("Commencing custom authentication entry point");
         response.addHeader("Access-Denied-Reason", "Authentication Required");
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access-Denied " + authException.getMessage());
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access Denied " + authException.getMessage());
     }
 }

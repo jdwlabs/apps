@@ -3,6 +3,7 @@ package com.jdw.usersrole.configs;
 import com.jdw.usersrole.services.JwtService;
 import com.jdw.usersrole.services.JwtUserDetailService;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,10 +54,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
             }
-        } catch (ExpiredJwtException expiredJwtException) {
+        } catch (JwtException exception) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         }
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        log.trace("Should not filter error dispatch called");
+        return false;
     }
 
 }
