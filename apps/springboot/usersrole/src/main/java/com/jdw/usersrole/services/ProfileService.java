@@ -57,7 +57,7 @@ public class ProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with user id " + profileDTO.userId()));
         profileRepository.findByUserId(profileDTO.userId())
                 .ifPresent(profile -> {
-                    throw new ResourceExistsException("Profile already exists for user with id: " + profileDTO.userId());
+                    throw new ResourceExistsException("Profile already exists for user with id " + profileDTO.userId());
                 });
         Timestamp currentTime = Timestamp.from(Instant.now());
         Profile newProfile = Profile.builder()
