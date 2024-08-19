@@ -1,6 +1,7 @@
 package com.jdw.usersrole.services;
 
 import com.jdw.usersrole.dtos.UserRequestDTO;
+import com.jdw.usersrole.exceptions.ResourceExistsException;
 import com.jdw.usersrole.exceptions.ResourceNotFoundException;
 import com.jdw.usersrole.models.Status;
 import com.jdw.usersrole.models.User;
@@ -42,6 +43,10 @@ public class UserService {
 
     public User createUser(@Valid UserRequestDTO userDTO) {
         log.info("Creating user: {}", userDTO);
+        userRepository.findByEmailAddress(userDTO.emailAddress())
+                .ifPresent(user -> {
+                    throw new ResourceExistsException("User already exists with email address " + userDTO.emailAddress());
+                });
         Timestamp currentTime = Timestamp.from(Instant.now());
         User newUser = User.builder()
                 .emailAddress(userDTO.emailAddress())
