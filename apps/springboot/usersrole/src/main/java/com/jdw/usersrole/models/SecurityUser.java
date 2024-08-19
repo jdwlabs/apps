@@ -58,4 +58,8 @@ public class SecurityUser implements UserDetails {
     public Long getUserId() {
         return user.id();
     }
+
+    public Long getProfileId() {
+        return user.profile().id();
+    }
 }
