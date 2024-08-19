@@ -2,6 +2,7 @@ package com.jdw.usersrole.controllers;
 
 import com.jdw.usersrole.dtos.RoleRequestDTO;
 import com.jdw.usersrole.models.Role;
+import com.jdw.usersrole.services.JwtService;
 import com.jdw.usersrole.services.RoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.List;
 @Slf4j
 public class RolesController {
     private final RoleService roleService;
+    private final JwtService jwtService;
 
     @GetMapping
     public ResponseEntity<List<Role>> getAllRoles() {
@@ -42,25 +44,28 @@ public class RolesController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
-    public ResponseEntity<Role> createRole(@Valid @RequestBody RoleRequestDTO role) {
+    public ResponseEntity<Role> createRole(@Valid @RequestBody RoleRequestDTO role, @RequestHeader(name = "Authorization") String authorizationHeader) {
         log.trace("Creating role {}", role);
-        Role createdRole = roleService.createRole(role);
+        String emailAddress = jwtService.getEmailAddress(authorizationHeader);
+        Role createdRole = roleService.createRole(role, emailAddress);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRole);
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{roleId}")
-    public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @Valid @RequestBody RoleRequestDTO role) {
+    public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @Valid @RequestBody RoleRequestDTO role, @RequestHeader(name = "Authorization") String authorizationHeader) {
         log.trace("Updating role {}", role);
-        Role updatedRole = roleService.updateRole(roleId, role);
+        String emailAddress = jwtService.getEmailAddress(authorizationHeader);
+        Role updatedRole = roleService.updateRole(roleId, role, emailAddress);
         return ResponseEntity.ok(updatedRole);
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{roleId}")
-    public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
+    public ResponseEntity<Void> deleteRole(@PathVariable Long roleId, @RequestHeader(name = "Authorization") String authorizationHeader) {
         log.trace("Deleting role with id {}", roleId);
-        roleService.deleteRole(roleId);
+        String emailAddress = jwtService.getEmailAddress(authorizationHeader);
+        roleService.deleteRole(roleId, emailAddress);
         return ResponseEntity.noContent().build();
     }
 }
