@@ -1,6 +1,7 @@
 package com.jdw.usersrole.services;
 
 import com.jdw.usersrole.dtos.RoleRequestDTO;
+import com.jdw.usersrole.exceptions.ResourceExistsException;
 import com.jdw.usersrole.exceptions.ResourceNotFoundException;
 import com.jdw.usersrole.models.Role;
 import com.jdw.usersrole.models.Status;
@@ -20,6 +21,7 @@ import java.util.List;
 @Slf4j
 public class RoleService {
     private final RoleRepository roleRepository;
+    private final UserService userService;
 
     public List<Role> getAllRoles() {
         log.info("Getting all roles");
@@ -38,8 +40,12 @@ public class RoleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with name " + name));
     }
 
-    public Role createRole(@Valid RoleRequestDTO roleDTO) {
+    public Role createRole(@NotNull @Valid RoleRequestDTO roleDTO, @NotNull String emailAddress) {
         log.info("Creating role {}", roleDTO);
+        roleRepository.findByName(roleDTO.name()).ifPresent(role -> {
+            throw new ResourceExistsException("Role already exists with name " + roleDTO.name());
+        });
+        Long userId = userService.getUserIdByEmailAddress(emailAddress);
         Timestamp currentTime = Timestamp.from(Instant.now());
         Role newRole = Role.builder()
                 .id(null)
@@ -47,18 +53,19 @@ public class RoleService {
                 .description(roleDTO.description())
                 .status(Status.ACTIVE.name())
                 .users(null)
-                .createdByUserId(1L)
+                .createdByUserId(userId)
                 .createdTime(currentTime)
-                .modifiedByUserId(1L)
+                .modifiedByUserId(userId)
                 .modifiedTime(currentTime)
                 .build();
         return roleRepository.save(newRole);
     }
 
-    public Role updateRole(@NotNull Long id, @Valid RoleRequestDTO roleDTO) {
+    public Role updateRole(@NotNull Long id, @NotNull @Valid RoleRequestDTO roleDTO, @NotNull String emailAddress) {
         log.info("Updating role: id={}, role={}", id, roleDTO);
         Role currentRole = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id " + id));
+        Long userId = userService.getUserIdByEmailAddress(emailAddress);
         Timestamp currentTime = Timestamp.from(Instant.now());
         Role updatedRole = Role.builder()
                 .id(id)
@@ -68,14 +75,14 @@ public class RoleService {
                 .users(currentRole.users())
                 .createdByUserId(currentRole.createdByUserId())
                 .createdTime(currentRole.createdTime())
-                .modifiedByUserId(1L)
+                .modifiedByUserId(userId)
                 .modifiedTime(currentTime)
                 .build();
         return roleRepository.save(updatedRole);
     }
 
-    public void deleteRole(@NotNull Long id) {
-        log.info("Deleting role with id {}", id);
+    public void deleteRole(@NotNull Long id, @NotNull String emailAddress) {
+        log.info("Deleting role with: id={}, requester={}", id, emailAddress);
         roleRepository.deleteById(id);
     }
 }
