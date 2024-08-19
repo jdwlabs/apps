@@ -34,6 +34,7 @@ dependencies {
 	implementation("io.jsonwebtoken:jjwt-api:0.12.5")
 	implementation("io.jsonwebtoken:jjwt-impl:0.12.5")
 	implementation("io.jsonwebtoken:jjwt-jackson:0.12.5")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
 	annotationProcessor("org.projectlombok:lombok")
