@@ -27,3 +27,15 @@ spring:
       enabled: true
       max-file-size: 2MB
       max-request-size: 2MB
+
+springdoc:
+  api-docs:
+    path: /openapi/api-docs
+  swagger-ui:
+    path: /openapi/swagger-ui
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "info,health"
