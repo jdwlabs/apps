@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,12 +20,14 @@ import java.util.List;
 public class UsersController {
     private final UserService userService;
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         log.trace("Getting all users");
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
+    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()")
     @GetMapping("/{userId}")
     public ResponseEntity<User> getUserById(@PathVariable Long userId) {
         log.trace("Getting user with id {}", userId);
@@ -32,6 +35,7 @@ public class UsersController {
         return ResponseEntity.ok(user);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN') or #emailAddress == authentication.principal.getUsername()")
     @GetMapping("/email/{emailAddress}")
     public ResponseEntity<User> getUserByEmailAddress(@PathVariable String emailAddress) {
         log.trace("Getting user with email address {}", emailAddress);
@@ -46,6 +50,7 @@ public class UsersController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userCreated);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()")
     @PutMapping("/{userId}")
     public ResponseEntity<User> updateUser(@PathVariable Long userId, @Valid @RequestBody UserRequestDTO user) {
         log.trace("Updating user with id {}", userId);
@@ -53,6 +58,7 @@ public class UsersController {
         return ResponseEntity.ok(userUpdated);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()")
     @DeleteMapping("/{userId}")
     public ResponseEntity<User> deleteUser(@PathVariable Long userId) {
         log.trace("Deleting user with id {}", userId);

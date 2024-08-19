@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,6 +40,7 @@ public class RolesController {
         return ResponseEntity.ok(role);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public ResponseEntity<Role> createRole(@Valid @RequestBody RoleRequestDTO role) {
         log.trace("Creating role {}", role);
@@ -46,6 +48,7 @@ public class RolesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRole);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{roleId}")
     public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @Valid @RequestBody RoleRequestDTO role) {
         log.trace("Updating role {}", role);
@@ -53,6 +56,7 @@ public class RolesController {
         return ResponseEntity.ok(updatedRole);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{roleId}")
     public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
         log.trace("Deleting role with id {}", roleId);
