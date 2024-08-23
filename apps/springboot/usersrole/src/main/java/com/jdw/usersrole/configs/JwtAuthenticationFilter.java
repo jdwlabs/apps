@@ -2,7 +2,6 @@ package com.jdw.usersrole.configs;
 
 import com.jdw.usersrole.services.JwtService;
 import com.jdw.usersrole.services.JwtUserDetailService;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
