@@ -84,6 +84,4 @@ public class SecurityConfig {
         urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
         return urlBasedCorsConfigurationSource;
     }
-
-
 }
