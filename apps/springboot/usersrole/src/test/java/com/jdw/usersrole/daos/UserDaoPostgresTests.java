@@ -164,8 +164,8 @@ class UserDaoPostgresTests {
     void userRowMapper_shouldMapResultSetToUser() throws SQLException {
         ResultSet resultSet = mock(ResultSet.class);
         when(resultSet.getLong("user_id")).thenReturn(1L);
-        when(resultSet.getString("email_address")).thenReturn("user@example.com");
-        when(resultSet.getString("password")).thenReturn("securePassword");
+        when(resultSet.getString("email_address")).thenReturn("user@jdw.com");
+        when(resultSet.getString("password")).thenReturn("P@ssw0rd!");
         when(resultSet.getString("status")).thenReturn(Status.ACTIVE.name());
         when(resultSet.getLong("created_by_user_id")).thenReturn(1L);
         when(resultSet.getTimestamp("created_time")).thenReturn(Timestamp.from(Instant.now()));
@@ -174,8 +174,8 @@ class UserDaoPostgresTests {
 
         User result = userDaoPostgres.userRowMapper(resultSet, 0);
 
-        assertEquals("user@example.com", result.emailAddress());
-        assertEquals("securePassword", result.password());
+        assertEquals("user@jdw.com", result.emailAddress());
+        assertEquals("P@ssw0rd!", result.password());
         assertEquals(Status.ACTIVE.name(), result.status());
     }
 }
