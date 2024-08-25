@@ -8,7 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.sql.*;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -117,7 +120,7 @@ public class ProfileDaoPostgres implements ProfileDao {
                 .update();
     }
 
-    private Profile profileRowMapper(ResultSet rs, int rowNum) throws SQLException {
+    Profile profileRowMapper(ResultSet rs, int rowNum) throws SQLException {
         log.debug("Mapping profile: rs={}, rowNum={}", rs, rowNum);
         Long id = rs.getLong("profile_id");
         Long userId = rs.getLong("user_id");
