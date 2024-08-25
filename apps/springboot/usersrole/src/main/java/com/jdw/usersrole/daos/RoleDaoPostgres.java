@@ -107,12 +107,12 @@ public class RoleDaoPostgres implements RoleDao {
                 .update();
     }
 
-    private String getStatus(Role role) {
+    String getStatus(Role role) {
         log.debug("Get role status: {}", role);
         return role.status() != null ? role.status() : Status.ACTIVE.name();
     }
 
-    private Role roleRowMapper(ResultSet rs, int rowNum) throws SQLException {
+    Role roleRowMapper(ResultSet rs, int rowNum) throws SQLException {
         log.debug("Mapping role: rs={}, rowNum={}", rs, rowNum);
         Long id = rs.getLong("role_id");
         String name = rs.getString("role_name");
