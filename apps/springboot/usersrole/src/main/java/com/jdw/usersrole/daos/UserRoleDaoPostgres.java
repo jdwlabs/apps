@@ -78,7 +78,7 @@ public class UserRoleDaoPostgres implements UserRoleDao {
                 .update();
     }
 
-    private UserRole userRoleRowMapper(ResultSet rs, int rowNum) throws SQLException {
+    UserRole userRoleRowMapper(ResultSet rs, int rowNum) throws SQLException {
         log.debug("Mapping user role: rs={}, rowNum={}", rs, rowNum);
         Long userId = rs.getLong("user_id");
         Long roleId = rs.getLong("role_id");
