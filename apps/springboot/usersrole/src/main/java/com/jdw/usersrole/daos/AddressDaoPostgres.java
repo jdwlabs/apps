@@ -123,7 +123,7 @@ public class AddressDaoPostgres implements AddressDao {
                 .update();
     }
 
-    private Address addressRowMapper(ResultSet rs, int rowNum) throws SQLException {
+    Address addressRowMapper(ResultSet rs, int rowNum) throws SQLException {
         log.debug("Mapping address: rs={}, rowNum={}", rs, rowNum);
         Long id = rs.getLong("address_id");
         Long profileId = rs.getLong("profile_id");
