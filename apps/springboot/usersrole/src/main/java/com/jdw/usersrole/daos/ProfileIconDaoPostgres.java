@@ -106,7 +106,7 @@ public class ProfileIconDaoPostgres implements ProfileIconDao {
                 .update();
     }
 
-    private ProfileIcon profileIconRowMapper(ResultSet rs, int rowNum) throws SQLException {
+    ProfileIcon profileIconRowMapper(ResultSet rs, int rowNum) throws SQLException {
         log.debug("Mapping profile icon: rs={}, rowNum={}", rs, rowNum);
         Long id = rs.getLong("icon_id");
         Long profileId = rs.getLong("profile_id");
