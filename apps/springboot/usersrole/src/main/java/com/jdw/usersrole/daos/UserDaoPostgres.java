@@ -1,6 +1,8 @@
 package com.jdw.usersrole.daos;
 
-import com.jdw.usersrole.models.*;
+import com.jdw.usersrole.models.Status;
+import com.jdw.usersrole.models.User;
+import com.jdw.usersrole.models.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -104,12 +106,12 @@ public class UserDaoPostgres implements UserDao {
                 .update();
     }
 
-    private String getStatus(User user) {
+    String getStatus(User user) {
         log.debug("Get user status: {}", user);
         return user.status() != null ? user.status() : Status.ACTIVE.name();
     }
 
-    private User userRowMapper(ResultSet rs, int rowNum) throws SQLException {
+    User userRowMapper(ResultSet rs, int rowNum) throws SQLException {
         log.debug("Mapping user: rs={}, rowNum={}", rs, rowNum);
         Long id = rs.getLong("user_id");
         String emailAddress = rs.getString("email_address");
