@@ -12,8 +12,6 @@ import java.text.DecimalFormat;
 @Component
 @Slf4j
 public class ExecutionTimeLoggerAspect {
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.000");
-
     @Around("@annotation(executionTimeLogger)")
     public Object executionTimeLogger(ProceedingJoinPoint joinPoint, ExecutionTimeLogger executionTimeLogger) throws Throwable {
         long startTime = System.nanoTime();
@@ -38,14 +36,19 @@ public class ExecutionTimeLoggerAspect {
                     .getDeclaringTypeName()
                     .substring(joinPoint.getSignature().getDeclaringTypeName().lastIndexOf(".") + 1)
                     .trim();
+            DecimalFormat decimalFormat = new DecimalFormat(executionTimeLogger.decimalFormat());
+
+            String timeUnit = switch (executionTimeLogger.timeUnitFormat()) {
+                case LONG_NAME -> unit.getLongName();
+                case SHORT_NAME -> unit.getShortName();
+                case ABBREVIATION -> unit.getAbbreviation();
+            };
 
             if (maxThresholdTime > 0.0d && executionTime > maxThresholdTime) {
                 log.warn("{}: {} was executed in {} {} which was higher than expected max threshold time of {} {}",
-                        className, methodName, DECIMAL_FORMAT.format(executionTime), unit.getLongName(),
-                        maxThresholdTime, unit.getLongName());
+                        className, methodName, decimalFormat.format(executionTime), timeUnit, maxThresholdTime, timeUnit);
             } else {
-                log.info("{}: {} was executed in {} {}", className, methodName, DECIMAL_FORMAT.format(executionTime),
-                        unit.getLongName());
+                log.info("{}: {} was executed in {} {}", className, methodName, decimalFormat.format(executionTime), timeUnit);
             }
         } catch (Throwable t) {
             log.warn("Error occurred while logging execution time. Error={}", t.toString());
