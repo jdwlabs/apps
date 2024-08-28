@@ -11,7 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +32,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.MSEC);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -49,6 +52,8 @@ class ExecutionTimeLoggerAspectTests {
         MethodSignature signature = mock(MethodSignature.class);
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.MSEC);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
         when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
@@ -66,6 +71,8 @@ class ExecutionTimeLoggerAspectTests {
         });
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.NSEC);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.1d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -83,6 +90,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.WEEK);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(Double.MAX_VALUE);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -100,6 +109,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.NSEC);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -117,6 +128,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.USEC);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -134,6 +147,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.MSEC);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -151,6 +166,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -168,6 +185,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.MIN);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -185,6 +204,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.DAY);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -202,6 +223,8 @@ class ExecutionTimeLoggerAspectTests {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.WEEK);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
         MethodSignature signature = mock(MethodSignature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getName()).thenReturn("testMethod");
@@ -215,11 +238,181 @@ class ExecutionTimeLoggerAspectTests {
 
     @Test
     @ExtendWith(OutputCaptureExtension.class)
+    void whenExecutionTimeUnitIsMONTH_thenExecutionTimeIsLoggedInMonth(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.MONTH);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains(ExecutionTimeLogger.ExecutionTimeUnit.MONTH.getLongName()));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenExecutionTimeUnitIsYEAR_thenExecutionTimeIsLoggedInYear(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.MONTH);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains(ExecutionTimeLogger.ExecutionTimeUnit.MONTH.getLongName()));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
     void whenLogExecutionTimeThrowsException_thenExceptionIsLogged(CapturedOutput capturedOutput) throws Throwable {
         when(joinPoint.proceed()).thenReturn(new Object());
         when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.HOUR);
         when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
         when(joinPoint.getSignature()).thenThrow(new RuntimeException("Error occurred while getting signature"));
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains("Error occurred while logging execution time"));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenDecimalFormatIsInvalid_thenExceptionIsLogged(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.00E");
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains("Error occurred while logging execution time"));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenDecimalFormatIsValid_thenExecutionTimeIsLogged(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains("class: testMethod was executed in"));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenDecimalFormatIsNotDefault_thenExecutionTimeIsLogged(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.00000000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains("class: testMethod was executed in"));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenExecutionTimeUnitFormatIsLongName_thenLongNameIsLogged(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.LONG_NAME);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains(ExecutionTimeLogger.ExecutionTimeUnit.SEC.getLongName()));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenExecutionTimeUnitFormatIsShortName_thenShortNameIsLogged(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.SHORT_NAME);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains(ExecutionTimeLogger.ExecutionTimeUnit.SEC.getShortName()));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenExecutionTimeUnitFormatIsAbbreviation_thenAbbreviationIsLogged(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(ExecutionTimeLogger.TimeUnitFormat.ABBREVIATION);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
+
+        aspect.executionTimeLogger(joinPoint, executionTimeLogger);
+
+        verify(joinPoint, times(1)).proceed();
+        assertTrue(capturedOutput.toString().contains(ExecutionTimeLogger.ExecutionTimeUnit.SEC.getAbbreviation()));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void whenExecutionTimeUnitFormatIsInvalid_thenExceptionIsLogged(CapturedOutput capturedOutput) throws Throwable {
+        when(joinPoint.proceed()).thenReturn(new Object());
+        when(executionTimeLogger.executionTimeUnit()).thenReturn(ExecutionTimeLogger.ExecutionTimeUnit.SEC);
+        when(executionTimeLogger.maxThresholdTime()).thenReturn(0.0d);
+        when(executionTimeLogger.decimalFormat()).thenReturn("0.000");
+        when(executionTimeLogger.timeUnitFormat()).thenReturn(null);
+        MethodSignature signature = mock(MethodSignature.class);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(signature.getName()).thenReturn("testMethod");
+        when(signature.getDeclaringTypeName()).thenReturn("package.test.class");
 
         aspect.executionTimeLogger(joinPoint, executionTimeLogger);
 
