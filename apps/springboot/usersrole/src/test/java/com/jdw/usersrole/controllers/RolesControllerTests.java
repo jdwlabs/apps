@@ -36,7 +36,7 @@ class RolesControllerTests {
     private RolesController rolesController;
 
     private Role buildMockRole() {
-        Set<UserRole> mockUsers = new HashSet<>(); // Assuming UserRole is a simple POJO or record
+        Set<UserRole> mockUsers = new HashSet<>();
         return Role.builder()
                 .id(1L)
                 .name("ROLE_ADMIN")
