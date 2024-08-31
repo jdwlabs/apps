@@ -44,8 +44,6 @@ jobs:
         run: npx nx-cloud record -- nx format:check
       - name: Run Clean
         run: npx nx affected -t clean
-      - name: Print Java Version
-        run: java -version
       - name: Run Linting, Unit, Component, E2E, & Build Tests
         run: npx nx affected -t lint test build component-test e2e-ci
       - if: ${{ github.event_name != 'pull_request' }}
