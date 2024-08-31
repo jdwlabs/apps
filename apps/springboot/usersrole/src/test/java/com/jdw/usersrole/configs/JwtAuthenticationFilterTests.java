@@ -152,4 +152,21 @@ class JwtAuthenticationFilterTests {
         assertFalse(result);
     }
 
+    @Test
+    void doFilterInternal_whenRequestIsNull_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () ->
+                jwtAuthenticationFilter.doFilterInternal(null, response, chain));
+    }
+
+    @Test
+    void doFilterInternal_whenResponseIsNull_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () ->
+                jwtAuthenticationFilter.doFilterInternal(request, null, chain));
+    }
+
+    @Test
+    void doFilterInternal_whenFilterChainIsNull_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () ->
+                jwtAuthenticationFilter.doFilterInternal(request, response, null));
+    }
 }
