@@ -107,7 +107,7 @@ class UsersControllerTests {
         Long userId = 1L;
         UserRequestDTO userRequest = new UserRequestDTO("user@jdw.com", "password");
         User updatedUser = buildMockUser();
-        when(jwtService.getEmailAddress(any(String.class))).thenReturn("admin@example.com");
+        when(jwtService.getEmailAddress(any(String.class))).thenReturn("admin@jdw.com");
         when(userService.updateUser(any(Long.class), any(UserRequestDTO.class), any(String.class))).thenReturn(updatedUser);
 
         ResponseEntity<User> response = usersController.updateUser(userId, userRequest, "Bearer token");
