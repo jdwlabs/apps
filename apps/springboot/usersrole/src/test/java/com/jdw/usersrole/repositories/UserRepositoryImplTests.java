@@ -156,7 +156,7 @@ class UserRepositoryImplTests {
 
     @Test
     void findByEmailAddress_shouldReturnEmptyOptionalWhenUserNotFound() {
-        String email = "nonexistent@example.com";
+        String email = "nonexistent@jdw.com";
         when(userDao.findByEmailAddress(email)).thenReturn(Optional.empty());
 
         Optional<User> result = userRepository.findByEmailAddress(email);

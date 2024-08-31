@@ -105,7 +105,7 @@ class RolesControllerTests {
         Long roleId = 1L;
         RoleRequestDTO request = new RoleRequestDTO("ROLE_ADMIN", "Updated administrator role");
         Role updatedRole = buildMockRole();
-        when(jwtService.getEmailAddress(any(String.class))).thenReturn("admin@example.com");
+        when(jwtService.getEmailAddress(any(String.class))).thenReturn("admin@jdw.com");
         when(roleService.updateRole(any(Long.class), any(RoleRequestDTO.class), any(String.class))).thenReturn(updatedRole);
 
         ResponseEntity<Role> response = rolesController.updateRole(roleId, request, "Bearer token");
