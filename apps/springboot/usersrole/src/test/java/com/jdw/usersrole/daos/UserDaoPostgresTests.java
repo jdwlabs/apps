@@ -98,7 +98,7 @@ class UserDaoPostgresTests {
         when(statementSpec.query(Mockito.<RowMapper<User>>any())).thenReturn(userMappedQuerySpec);
         when(userMappedQuerySpec.optional()).thenReturn(Optional.of(mockUser));
 
-        Optional<User> result = userDaoPostgres.findByEmailAddress("user@example.com");
+        Optional<User> result = userDaoPostgres.findByEmailAddress("user@jdw.com");
 
         assertTrue(result.isPresent());
         assertEquals(mockUser, result.get());
