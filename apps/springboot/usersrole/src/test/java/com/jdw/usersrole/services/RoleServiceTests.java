@@ -110,7 +110,7 @@ class RoleServiceTests {
         when(userService.getUserIdByEmailAddress(anyString())).thenReturn(1L);
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Role createdRole = roleService.createRole(roleRequestDTO, "user@example.com");
+        Role createdRole = roleService.createRole(roleRequestDTO, "user@jdw.com");
 
         assertNotNull(createdRole);
         assertEquals("MANAGER", createdRole.name());
@@ -125,7 +125,7 @@ class RoleServiceTests {
         when(roleRepository.findByName(anyString())).thenReturn(Optional.of(Role.builder().build()));
 
         ResourceExistsException exception = assertThrows(ResourceExistsException.class,
-                () -> roleService.createRole(roleRequestDTO, "user@example.com"));
+                () -> roleService.createRole(roleRequestDTO, "user@jdw.com"));
 
         assertEquals("Role already exists with name MANAGER", exception.getMessage());
     }
@@ -144,7 +144,7 @@ class RoleServiceTests {
         when(userService.getUserIdByEmailAddress(anyString())).thenReturn(1L);
         when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Role updatedRole = roleService.updateRole(1L, roleRequestDTO, "user@example.com");
+        Role updatedRole = roleService.updateRole(1L, roleRequestDTO, "user@jdw.com");
 
         assertNotNull(updatedRole);
         assertEquals("MANAGER", updatedRole.name());
@@ -159,7 +159,7 @@ class RoleServiceTests {
         when(roleRepository.findById(anyLong())).thenReturn(Optional.empty());
 
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> roleService.updateRole(1L, roleRequestDTO, "user@example.com"));
+                () -> roleService.updateRole(1L, roleRequestDTO, "user@jdw.com"));
 
         assertEquals("Role not found with id 1", exception.getMessage());
     }
@@ -168,7 +168,7 @@ class RoleServiceTests {
     void deleteRole_ShouldDeleteRole_WhenRoleExists() {
         doNothing().when(roleRepository).deleteById(anyLong());
 
-        roleService.deleteRole(1L, "user@example.com");
+        roleService.deleteRole(1L, "user@jdw.com");
 
         verify(roleRepository, times(1)).deleteById(1L);
     }
