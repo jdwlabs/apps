@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   main:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
