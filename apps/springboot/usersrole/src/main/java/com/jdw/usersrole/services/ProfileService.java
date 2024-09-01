@@ -6,6 +6,7 @@ import com.jdw.usersrole.dtos.ProfileUpdateRequestDTO;
 import com.jdw.usersrole.exceptions.IconUploadException;
 import com.jdw.usersrole.exceptions.ResourceExistsException;
 import com.jdw.usersrole.exceptions.ResourceNotFoundException;
+import com.jdw.usersrole.metrics.ExecutionTimeLogger;
 import com.jdw.usersrole.models.Address;
 import com.jdw.usersrole.models.Profile;
 import com.jdw.usersrole.models.ProfileIcon;
@@ -34,23 +35,27 @@ public class ProfileService {
         log.error("Could not update icon: error={}", e.toString());
     }
 
+    @ExecutionTimeLogger
     public List<Profile> getProfiles() {
         log.info("Getting all profiles");
         return profileRepository.findAll();
     }
 
+    @ExecutionTimeLogger
     public Profile getProfileById(@NotNull Long id) {
         log.info("Getting profile with id {}", id);
         return profileRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + id));
     }
 
+    @ExecutionTimeLogger
     public Profile getProfileByUserId(@NotNull Long id) {
         log.info("Getting profile with user id {}", id);
         return profileRepository.findByUserId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found with user id " + id));
     }
 
+    @ExecutionTimeLogger
     public Profile createProfile(@NotNull @Valid ProfileCreateRequestDTO profileDTO, @NotNull String emailAddress) {
         log.info("Creating profile: profile={}, requester={}", profileDTO, emailAddress);
         userRepository.findById(profileDTO.userId())
@@ -77,6 +82,7 @@ public class ProfileService {
         return profileRepository.save(newProfile);
     }
 
+    @ExecutionTimeLogger
     public Profile updateProfileById(@NotNull Long id,
                                      @NotNull @Valid ProfileUpdateRequestDTO profileDTO,
                                      @NotNull String emailAddress) {
@@ -88,6 +94,7 @@ public class ProfileService {
         return profileRepository.save(updatedProfile);
     }
 
+    @ExecutionTimeLogger
     public Profile updateProfileByUserId(@NotNull Long id,
                                          @NotNull @Valid ProfileUpdateRequestDTO profileDTO,
                                          @NotNull String emailAddress) {
@@ -99,16 +106,19 @@ public class ProfileService {
         return profileRepository.save(updatedProfile);
     }
 
+    @ExecutionTimeLogger
     public void deleteProfileById(@NotNull Long id, @NotNull String emailAddress) {
         log.info("Deleting profile with: id={}, requester={}", id, emailAddress);
         profileRepository.deleteById(id);
     }
 
+    @ExecutionTimeLogger
     public void deleteProfileByUserId(@NotNull Long userId, @NotNull String emailAddress) {
         log.info("Deleting profile with: userId={}, requester={}", userId, emailAddress);
         profileRepository.deleteByUserId(userId);
     }
 
+    @ExecutionTimeLogger
     public Profile addAddress(@NotNull Long id,
                               @NotNull @Valid AddressRequestDTO addressDTO,
                               @NotNull String emailAddress) {
@@ -134,6 +144,7 @@ public class ProfileService {
         return profileRepository.saveAddress(newAddress);
     }
 
+    @ExecutionTimeLogger
     public Profile updateAddress(@NotNull Long profileId,
                                  @NotNull Long addressId,
                                  @NotNull @Valid AddressRequestDTO addressDTO,
@@ -165,11 +176,13 @@ public class ProfileService {
         return profileRepository.saveAddress(updatedAddress);
     }
 
+    @ExecutionTimeLogger
     public void deleteAddress(@NotNull Long profileId, @NotNull Long addressId, @NotNull String emailAddress) {
         log.info("Deleting address with: profileId={}, addressId={}, requester={}", profileId, addressId, emailAddress);
         profileRepository.deleteAddressByAddressId(addressId);
     }
 
+    @ExecutionTimeLogger
     public byte[] getIcon(@NotNull Long profileId) {
         log.info("Getting profile icon with profile id {}", profileId);
         Profile currentProfile = profileRepository.findById(profileId)
@@ -209,6 +222,7 @@ public class ProfileService {
         }
     }
 
+    @ExecutionTimeLogger
     public Profile updateIcon(@NotNull Long id, @NotNull MultipartFile file, @NotNull String emailAddress) {
         log.info("Updating icon with: id={}, requester={}", id, emailAddress);
         Profile currentProfile = profileRepository.findByUserId(id)
@@ -234,11 +248,13 @@ public class ProfileService {
         }
     }
 
+    @ExecutionTimeLogger
     public void deleteIcon(@NotNull Long id, @NotNull String emailAddress) {
         log.info("Deleting icon with: id={}, requester={}", id, emailAddress);
         profileRepository.deleteIconById(id);
     }
 
+    @ExecutionTimeLogger
     public Long getUserIdByEmailAddress(@NotNull String emailAddress) {
         log.info("Getting user id with email address: {}", emailAddress);
         return userRepository.findByEmailAddress(emailAddress)
