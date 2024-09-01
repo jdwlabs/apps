@@ -33,7 +33,9 @@ class JwtServiceTests {
 
     @BeforeEach
     void setUp() throws Exception {
-        injectField(jwtService, "jwtExpirationTimeMs", 1000 * 60 * 60L); // 1 hour expiration
+        long expirationTimeMs = 1000 * 60 * 60L; // 1 hour expiration
+        String expirationTimeMsString = String.valueOf(expirationTimeMs);
+        injectField(jwtService, "jwtExpirationTimeMs", expirationTimeMsString);
         injectField(jwtService, "secretKey", "bXl0dGVzdHNlY3JldGtleWZvcmpzb253d2VidG9rZW4xMjM0NTY3ODkwIC1uCg==");
     }
 
@@ -106,6 +108,14 @@ class JwtServiceTests {
     }
 
     @Test
+    void generateToken_withInvalidExpirationTime_shouldThrowException() throws Exception {
+        injectField(jwtService, "jwtExpirationTimeMs", "invalidNumber");
+
+        assertThrows(NumberFormatException.class, () -> jwtService.generateToken(userDetails),
+                "Generating token should throw NumberFormatException for invalid expiration time");
+    }
+
+    @Test
     void isTokenValid_shouldReturnTrueForValidToken() {
         when(userDetails.getUsername()).thenReturn("user@jdw.com");
         String token = jwtService.generateToken(userDetails);
@@ -115,7 +125,7 @@ class JwtServiceTests {
 
     @Test
     void isTokenValid_shouldReturnFalseForExpiredToken() throws Exception {
-        injectField(jwtService, "jwtExpirationTimeMs", 1L); // 1 millisecond expiration
+        injectField(jwtService, "jwtExpirationTimeMs", "1"); // 1 millisecond expiration
         String token = jwtService.generateToken(userDetails);
 
         // Wait for the token to expire
@@ -152,7 +162,7 @@ class JwtServiceTests {
     @Test
     void isTokenExpired_shouldReturnTrueForExpiredToken() throws Exception {
         // Reduce the expiration time for testing
-        injectField(jwtService, "jwtExpirationTimeMs", 1L); // 1 millisecond expiration
+        injectField(jwtService, "jwtExpirationTimeMs", "1"); // 1 millisecond expiration
         String token = jwtService.generateToken(userDetails);
 
         // Wait for the token to expire
