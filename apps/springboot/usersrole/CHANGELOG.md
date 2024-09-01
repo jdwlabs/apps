@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.4.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.3.2...usersrole-0.4.0) (2024-09-01)
 
-
 ### Features
 
-* **usersrole:** add jwt service string parsing for jwt expiration time ([1da821d](https://github.com/jdwillmsen/jdw/commit/1da821d57ffcf30402140c060c9aa8b22ea68b21))
+- **usersrole:** add jwt service string parsing for jwt expiration time ([1da821d](https://github.com/jdwillmsen/jdw/commit/1da821d57ffcf30402140c060c9aa8b22ea68b21))
 
 ## [0.3.2](https://github.com/jdwillmsen/jdw/compare/usersrole-0.3.1...usersrole-0.3.2) (2024-09-01)
 
