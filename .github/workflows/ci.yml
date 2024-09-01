@@ -68,5 +68,5 @@ jobs:
           npx nx affected -t version --parallel=1
           git fetch origin develop
           git checkout develop
-          git rebase main
+          git pull origin main --rebase
           git push --force-with-lease origin develop
