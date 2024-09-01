@@ -1,5 +1,6 @@
 package com.jdw.usersrole.services;
 
+import com.jdw.usersrole.metrics.ExecutionTimeLogger;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -49,6 +50,7 @@ public class JwtService {
         return generateToken(new HashMap<>(), userDetails);
     }
 
+    @ExecutionTimeLogger
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         log.info("Generating token with: emailAddress={}", userDetails.getUsername());
         return Jwts

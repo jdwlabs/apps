@@ -3,6 +3,7 @@ package com.jdw.usersrole.services;
 import com.jdw.usersrole.dtos.RoleRequestDTO;
 import com.jdw.usersrole.exceptions.ResourceExistsException;
 import com.jdw.usersrole.exceptions.ResourceNotFoundException;
+import com.jdw.usersrole.metrics.ExecutionTimeLogger;
 import com.jdw.usersrole.models.Role;
 import com.jdw.usersrole.models.Status;
 import com.jdw.usersrole.repositories.RoleRepository;
@@ -40,6 +41,7 @@ public class RoleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with name " + name));
     }
 
+    @ExecutionTimeLogger
     public Role createRole(@NotNull @Valid RoleRequestDTO roleDTO, @NotNull String emailAddress) {
         log.info("Creating role {}", roleDTO);
         roleRepository.findByName(roleDTO.name()).ifPresent(role -> {
@@ -61,6 +63,7 @@ public class RoleService {
         return roleRepository.save(newRole);
     }
 
+    @ExecutionTimeLogger
     public Role updateRole(@NotNull Long id, @NotNull @Valid RoleRequestDTO roleDTO, @NotNull String emailAddress) {
         log.info("Updating role: id={}, role={}", id, roleDTO);
         Role currentRole = roleRepository.findById(id)
@@ -81,6 +84,7 @@ public class RoleService {
         return roleRepository.save(updatedRole);
     }
 
+    @ExecutionTimeLogger
     public void deleteRole(@NotNull Long id, @NotNull String emailAddress) {
         log.info("Deleting role with: id={}, requester={}", id, emailAddress);
         roleRepository.deleteById(id);
