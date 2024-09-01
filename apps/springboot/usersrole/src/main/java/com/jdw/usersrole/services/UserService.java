@@ -3,6 +3,7 @@ package com.jdw.usersrole.services;
 import com.jdw.usersrole.dtos.UserRequestDTO;
 import com.jdw.usersrole.exceptions.ResourceExistsException;
 import com.jdw.usersrole.exceptions.ResourceNotFoundException;
+import com.jdw.usersrole.metrics.ExecutionTimeLogger;
 import com.jdw.usersrole.models.Status;
 import com.jdw.usersrole.models.User;
 import com.jdw.usersrole.repositories.UserRepository;
@@ -24,17 +25,20 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @ExecutionTimeLogger
     public List<User> getAllUsers() {
         log.info("Getting all users");
         return userRepository.findAll();
     }
 
+    @ExecutionTimeLogger
     public User getUserById(@NotNull Long id) {
         log.info("Getting user with id: {}", id);
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
     }
 
+    @ExecutionTimeLogger
     public User getUserByEmailAddress(@NotNull String emailAddress) {
         log.info("Getting user with email address: {}", emailAddress);
         return userRepository.findByEmailAddress(emailAddress)
@@ -52,6 +56,7 @@ public class UserService {
         return createUser(userDTO, userId);
     }
 
+    @ExecutionTimeLogger
     public User createUser(@NotNull @Valid UserRequestDTO userDTO, @NotNull Long userId) {
         log.info("Creating user: user={}, requesterId={}", userDTO, userId);
         userRepository.findByEmailAddress(userDTO.emailAddress())
@@ -72,6 +77,7 @@ public class UserService {
         return userRepository.save(newUser);
     }
 
+    @ExecutionTimeLogger
     public User updateUser(@NotNull Long id, @Valid UserRequestDTO userDTO, @NotNull String emailAddress) {
         log.info("Updating user: user={}, requester={}", userDTO, emailAddress);
         User currentUser = userRepository.findById(id)
@@ -93,11 +99,13 @@ public class UserService {
         return userRepository.save(updatedUser);
     }
 
+    @ExecutionTimeLogger
     public void deleteUser(@NotNull Long id, @NotNull String emailAddress) {
         log.info("Deleting user: id={}, requester={}", id, emailAddress);
         userRepository.deleteById(id);
     }
 
+    @ExecutionTimeLogger
     public Long getUserIdByEmailAddress(@NotNull String emailAddress) {
         log.info("Getting user id with email address: {}", emailAddress);
         return getUserByEmailAddress(emailAddress).id();
