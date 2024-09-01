@@ -1,3 +1,8 @@
+app:
+  jwt:
+    secret-key: ${UR_JWT_SECRET_KEY:default-secret-key}
+    expiration-time-ms: ${UR_JWT_EXPIRATION_TIME_MS:7200000}
+
 spring:
   application:
     name: usersrole
@@ -17,3 +22,20 @@ spring:
       maximum-pool-size: 50
       auto-commit: true
       leak-detection-threshold: 5000
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 2MB
+      max-request-size: 2MB
+
+springdoc:
+  api-docs:
+    path: /openapi/api-docs
+  swagger-ui:
+    path: /openapi/swagger-ui
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: 'info,health'
