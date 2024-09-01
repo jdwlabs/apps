@@ -21,7 +21,7 @@ import java.util.function.Function;
 @Slf4j
 public class JwtService {
     @Value("${app.jwt.expiration-time-ms}")
-    private long jwtExpirationTimeMs;
+    private String jwtExpirationTimeMs;
     @Value("${app.jwt.secret-key}")
     private String secretKey;
 
@@ -58,7 +58,7 @@ public class JwtService {
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtExpirationTimeMs))
+                .expiration(new Date(System.currentTimeMillis() + getJwtExpirationTimeMs()))
                 .signWith(getSignInKey())
                 .compact();
     }
@@ -92,5 +92,14 @@ public class JwtService {
         log.info("Retrieving sign in key");
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private long getJwtExpirationTimeMs() {
+        try {
+            return Long.parseLong(jwtExpirationTimeMs);
+        } catch (NumberFormatException e) {
+            log.error("Invalid JWT expiration time format: {}, error={}", jwtExpirationTimeMs, e.toString());
+            throw e;
+        }
     }
 }
