@@ -6,13 +6,11 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.3.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.2.0...usersrole-0.3.0) (2024-09-01)
 
-
 ### Features
 
-* **usersrole:** add basic users implementation for dao, repository, service and controller ([c68a70c](https://github.com/jdwillmsen/jdw/commit/c68a70c11f5423fac15e91c0a1bf137e138690cb))
-* **usersrole:** add basic users implementation for dao, repository, service and controller ([230e7c7](https://github.com/jdwillmsen/jdw/commit/230e7c78bbcbb8a3d28d280a01862f804a38d30a))
-* **usersrole:** add beginning jdbc api implementation ([380431c](https://github.com/jdwillmsen/jdw/commit/380431c777eed03d4a6b881e5e2f3fe0edd5a442))
-* **usersrole:** add beginning jdbc api implementation ([d3c5598](https://github.com/jdwillmsen/jdw/commit/d3c5598faeffb2d3ff2970c35521cdd6119e58f3))
+- **usersrole:** add basic users implementation for dao, repository, service and controller ([c68a70c](https://github.com/jdwillmsen/jdw/commit/c68a70c11f5423fac15e91c0a1bf137e138690cb)) -**usersrole:** add basic users implementation for dao, repository, service and controller ([230e7c7](https://github.com/jdwillmsen/jdw/commit/230e7c78bbcbb8a3d28d280a01862f804a38d30a))
+- **usersrole:** add beginning jdbc api implementation ([380431c](https://github.com/jdwillmsen/jdw/commit/380431c777eed03d4a6b881e5e2f3fe0edd5a442))
+- **usersrole:** add beginning jdbc api implementation ([d3c5598](https://github.com/jdwillmsen/jdw/commit/d3c5598faeffb2d3ff2970c35521cdd6119e58f3))
 
 ## [0.2.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.1.0...usersrole-0.2.0) (2024-09-01)
 
