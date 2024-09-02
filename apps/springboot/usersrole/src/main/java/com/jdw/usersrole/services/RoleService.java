@@ -99,6 +99,7 @@ public class RoleService {
     public Role grantUsersToRole(@NotNull Long id, @NotEmpty List<Long> userIds, @NotNull String emailAddress) {
         log.info("Granting users to role: id={}, userIds={}", id, userIds);
         Long requesterUserId = userService.getUserIdByEmailAddress(emailAddress);
+        userService.validateAdminRoleRequest(List.of(id), requesterUserId);
         List<UserRole> userRoleList = buildUserRoleList(id, userIds, requesterUserId);
         return roleRepository.grantUsers(userRoleList);
     }
@@ -107,6 +108,7 @@ public class RoleService {
     public Role revokeUsersFromRole(@NotNull Long id, @NotEmpty List<Long> userIds, @NotNull String emailAddress) {
         log.info("Revoking users from role: id={}, userIds={}", id, userIds);
         Long requesterUserId = userService.getUserIdByEmailAddress(emailAddress);
+        userService.validateAdminRoleRequest(List.of(id), requesterUserId);
         List<UserRole> userRoleList = buildUserRoleList(id, userIds, requesterUserId);
         return roleRepository.revokeUsers(userRoleList);
     }
