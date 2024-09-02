@@ -70,6 +70,30 @@ public class RoleRepositoryImpl implements RoleRepository {
         roleDao.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public Role grantUsers(List<UserRole> userRoleList) {
+        log.debug("Granting users: {}", userRoleList);
+        userRoleList.forEach(userRole -> {
+            if (userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId()).isEmpty()) {
+                userRoleDao.create(userRole);
+            }
+        });
+        return findById(userRoleList.getFirst().roleId()).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public Role revokeUsers(List<UserRole> userRoleList) {
+        log.debug("Revoking users: {}", userRoleList);
+        userRoleList.forEach(userRole -> {
+            if (userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId()).isPresent()) {
+                userRoleDao.deleteByRoleIdAndUserId(userRole.roleId(), userRole.userId());
+            }
+        });
+        return findById(userRoleList.getFirst().roleId()).orElse(null);
+    }
+
     private Optional<Role> getRole(Optional<Role> role) {
         log.debug("Getting optional role: {}", role);
         if (role.isPresent()) {

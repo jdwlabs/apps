@@ -1,6 +1,7 @@
 package com.jdw.usersrole.repositories;
 
 import com.jdw.usersrole.models.Role;
+import com.jdw.usersrole.models.UserRole;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,4 +16,8 @@ public interface RoleRepository {
     Role save(Role role);
 
     void deleteById(Long id);
+
+    Role grantUsers(List<UserRole> userRoleList);
+
+    Role revokeUsers(List<UserRole> userRoleList);
 }

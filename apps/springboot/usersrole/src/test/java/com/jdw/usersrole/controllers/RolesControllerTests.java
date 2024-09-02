@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -123,5 +123,33 @@ class RolesControllerTests {
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(roleService).deleteRole(roleId, "user@jdw.com");
+    }
+
+    @Test
+    void grantUsersToRole_shouldReturnUpdatedRole() {
+        Long roleId = 1L;
+        List<Long> userIds = List.of(1L, 2L);
+        Role updatedRole = buildMockRole();
+        when(jwtService.getEmailAddress(anyString())).thenReturn("admin@jdw.com");
+        when(roleService.grantUsersToRole(anyLong(), anyList(), anyString())).thenReturn(updatedRole);
+
+        ResponseEntity<Role> response = rolesController.grantUsersToRole(roleId, userIds, "Bearer token");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(updatedRole, response.getBody());
+    }
+
+    @Test
+    void revokeUsersFromRole_shouldReturnUpdatedRole() {
+        Long roleId = 1L;
+        List<Long> userIds = List.of(1L, 2L);
+        Role updatedRole = buildMockRole();
+        when(jwtService.getEmailAddress(anyString())).thenReturn("admin@jdw.com");
+        when(roleService.revokeUsersFromRole(anyLong(), anyList(), anyString())).thenReturn(updatedRole);
+
+        ResponseEntity<Role> response = rolesController.revokeUsersFromRole(roleId, userIds, "Bearer token");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(updatedRole, response.getBody());
     }
 }
