@@ -270,6 +270,44 @@ class UserRepositoryImplTests {
     }
 
     @Test
+    void hasAnyRole_shouldReturnTrueWhenUserHasAnyOfTheRoles() {
+        List<Long> roleIds = List.of(1L, 2L, 3L);
+        UserRole userRole = buildMockUserRole(); // Assume this returns a UserRole with roleId 2L
+
+        when(userRoleDao.findByUserId(1L)).thenReturn(List.of(userRole));
+
+        boolean result = userRepository.hasAnyRole(1L, roleIds);
+
+        assertTrue(result);
+        verify(userRoleDao, times(1)).findByUserId(1L);
+    }
+
+    @Test
+    void hasAnyRole_shouldReturnFalseWhenUserHasNoneOfTheRoles() {
+        List<Long> roleIds = List.of(4L, 5L, 6L);
+        UserRole userRole = buildMockUserRole(); // Assume this returns a UserRole with roleId 2L
+
+        when(userRoleDao.findByUserId(1L)).thenReturn(List.of(userRole));
+
+        boolean result = userRepository.hasAnyRole(1L, roleIds);
+
+        assertFalse(result);
+        verify(userRoleDao, times(1)).findByUserId(1L);
+    }
+
+    @Test
+    void hasAnyRole_shouldReturnFalseWhenUserHasNoRoles() {
+        List<Long> roleIds = List.of(1L, 2L, 3L);
+
+        when(userRoleDao.findByUserId(1L)).thenReturn(List.of());
+
+        boolean result = userRepository.hasAnyRole(1L, roleIds);
+
+        assertFalse(result);
+        verify(userRoleDao, times(1)).findByUserId(1L);
+    }
+
+    @Test
     void grantRoles_shouldCreateRolesWhenNotPresent() {
         UserRole userRole = buildMockUserRole();
 

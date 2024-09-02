@@ -14,6 +14,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -119,6 +120,7 @@ public class UserService {
     public User grantRolesToUser(@NotNull Long id, @NotEmpty List<Long> roleIds, @NotNull String emailAddress) {
         log.info("Grating roles to user: id={}, roleIds={}, requester={}", id, roleIds, emailAddress);
         Long requesterUserId = getUserIdByEmailAddress(emailAddress);
+        validateAdminRoleRequest(roleIds, requesterUserId);
         List<UserRole> userRoleList = buildUserRoleList(id, roleIds, requesterUserId);
         return userRepository.grantRoles(userRoleList);
     }
@@ -127,6 +129,7 @@ public class UserService {
     public User revokeRolesFromUser(@NotNull Long id, @NotEmpty List<Long> roleIds, @NotNull String emailAddress) {
         log.info("Revoking roles from user: id={}, roleIds={}, requester={}", id, roleIds, emailAddress);
         Long requesterUserId = getUserIdByEmailAddress(emailAddress);
+        validateAdminRoleRequest(roleIds, requesterUserId);
         List<UserRole> userRoleList = buildUserRoleList(id, roleIds, requesterUserId);
         return userRepository.revokeRoles(userRoleList);
     }
@@ -145,5 +148,17 @@ public class UserService {
                         .createdTime(currentTime)
                         .build())
                 .toList();
+    }
+
+    void validateAdminRoleRequest(List<Long> roleIds, Long requesterUserId) {
+        List<Long> elevatedRoleIds = List.of(1L);
+        boolean containsElevatedRole = roleIds.stream().anyMatch(elevatedRoleIds::contains);
+
+        if (containsElevatedRole) {
+            boolean requesterHasElevatedRole = userRepository.hasAnyRole(requesterUserId, elevatedRoleIds);
+            if (!requesterHasElevatedRole) {
+                throw new AccessDeniedException("You do not have permission to grant or revoke elevated roles.");
+            }
+        }
     }
 }
