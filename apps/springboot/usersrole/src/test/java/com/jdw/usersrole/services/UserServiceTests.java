@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -330,5 +331,38 @@ class UserServiceTests {
                 () -> userService.revokeRolesFromUser(userId, roleIds, emailAddress));
 
         assertEquals("Role not found with id 2", exception.getMessage());
+    }
+
+    @Test
+    void validateAdminRoleRequest_ShouldNotThrowException_WhenRequesterHasElevatedRole() {
+        Long requesterUserId = 2L;
+        List<Long> roleIds = List.of(1L, 3L); // Contains elevated role (1L)
+        List<Long> elevatedRoleIds = List.of(1L);
+
+        when(userRepository.hasAnyRole(requesterUserId, elevatedRoleIds)).thenReturn(true);
+
+        assertDoesNotThrow(() -> userService.validateAdminRoleRequest(roleIds, requesterUserId));
+    }
+
+    @Test
+    void validateAdminRoleRequest_ShouldThrowAccessDeniedException_WhenRequesterDoesNotHaveElevatedRole() {
+        Long requesterUserId = 2L;
+        List<Long> roleIds = List.of(1L, 3L); // Contains elevated role (1L)
+        List<Long> elevatedRoleIds = List.of(1L);
+
+        when(userRepository.hasAnyRole(requesterUserId, elevatedRoleIds)).thenReturn(false);
+
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> userService.validateAdminRoleRequest(roleIds, requesterUserId));
+
+        assertEquals("You do not have permission to grant or revoke elevated roles.", exception.getMessage());
+    }
+
+    @Test
+    void validateAdminRoleRequest_ShouldNotThrowException_WhenNoElevatedRoleInRoleIds() {
+        Long requesterUserId = 2L;
+        List<Long> roleIds = List.of(2L, 3L); // No elevated role
+
+        assertDoesNotThrow(() -> userService.validateAdminRoleRequest(roleIds, requesterUserId));
     }
 }

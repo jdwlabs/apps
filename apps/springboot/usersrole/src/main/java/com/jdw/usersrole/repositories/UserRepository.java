@@ -17,6 +17,8 @@ public interface UserRepository {
 
     void deleteById(Long id);
 
+    boolean hasAnyRole(Long id, List<Long> roleIds);
+
     User grantRoles(List<UserRole> userRoleList);
 
     User revokeRoles(List<UserRole> userRoleList);

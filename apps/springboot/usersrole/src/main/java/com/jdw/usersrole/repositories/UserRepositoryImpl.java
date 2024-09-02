@@ -79,6 +79,15 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     @Transactional
+    public boolean hasAnyRole(Long id, List<Long> roleIds) {
+        log.debug("Checking if user with id: {} has any role: {}", id, roleIds);
+        return userRoleDao.findByUserId(id).stream()
+                .map(UserRole::roleId)
+                .anyMatch(roleIds::contains);
+    }
+
+    @Override
+    @Transactional
     public User grantRoles(List<UserRole> userRoleList) {
         log.debug("Grating roles: {}", userRoleList);
         userRoleList.forEach(userRole -> {
