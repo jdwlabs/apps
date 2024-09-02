@@ -2,6 +2,14 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.5.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.4.0...usersrole-0.5.0) (2024-09-02)
+
+
+### Features
+
+* **usersrole:** add api for granting and revoking of roles to users ([265522d](https://github.com/jdwillmsen/jdw/commit/265522dbeaf729cb9743dfbda7c4924b3cd9e437))
+* **usersrole:** add api for granting and revoking of users to roles ([6a1029a](https://github.com/jdwillmsen/jdw/commit/6a1029a79fe23e102784ba385fec74cf8ab10196))
+
 ## [0.4.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.3.2...usersrole-0.4.0) (2024-09-01)
 
 ### Features
