@@ -2,6 +2,14 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.6.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.5.0...usersrole-0.6.0) (2024-09-02)
+
+
+### Features
+
+* **usersrole:** add admin role request validation for grant and revoke api for roles ([32b2c06](https://github.com/jdwillmsen/jdw/commit/32b2c062bca40cc45e25be6b219197126bf7d68e))
+* **usersrole:** add admin role request validation for grant and revoke api for users ([5118c71](https://github.com/jdwillmsen/jdw/commit/5118c71bf555afd90efa370fbca44fa941bd0ea2))
+
 ## [0.5.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.4.0...usersrole-0.5.0) (2024-09-02)
 
 ### Features
