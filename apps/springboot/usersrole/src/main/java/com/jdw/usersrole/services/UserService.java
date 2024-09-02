@@ -6,8 +6,11 @@ import com.jdw.usersrole.exceptions.ResourceNotFoundException;
 import com.jdw.usersrole.metrics.ExecutionTimeLogger;
 import com.jdw.usersrole.models.Status;
 import com.jdw.usersrole.models.User;
+import com.jdw.usersrole.models.UserRole;
+import com.jdw.usersrole.repositories.RoleRepository;
 import com.jdw.usersrole.repositories.UserRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,7 @@ import java.util.List;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
     @ExecutionTimeLogger
     public List<User> getAllUsers() {
@@ -109,5 +113,37 @@ public class UserService {
     public Long getUserIdByEmailAddress(@NotNull String emailAddress) {
         log.info("Getting user id with email address: {}", emailAddress);
         return getUserByEmailAddress(emailAddress).id();
+    }
+
+    @ExecutionTimeLogger
+    public User grantRolesToUser(@NotNull Long id, @NotEmpty List<Long> roleIds, @NotNull String emailAddress) {
+        log.info("Grating roles to user: id={}, roleIds={}, requester={}", id, roleIds, emailAddress);
+        Long requesterUserId = getUserIdByEmailAddress(emailAddress);
+        List<UserRole> userRoleList = buildUserRoleList(id, roleIds, requesterUserId);
+        return userRepository.grantRoles(userRoleList);
+    }
+
+    @ExecutionTimeLogger
+    public User revokeRolesFromUser(@NotNull Long id, @NotEmpty List<Long> roleIds, @NotNull String emailAddress) {
+        log.info("Revoking roles from user: id={}, roleIds={}, requester={}", id, roleIds, emailAddress);
+        Long requesterUserId = getUserIdByEmailAddress(emailAddress);
+        List<UserRole> userRoleList = buildUserRoleList(id, roleIds, requesterUserId);
+        return userRepository.revokeRoles(userRoleList);
+    }
+
+     List<UserRole> buildUserRoleList(Long userId, List<Long> roleIds, Long requesterUserId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+        roleIds.forEach(roleId -> roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found with id " + roleId)));
+        Timestamp currentTime = Timestamp.from(Instant.now());
+        return roleIds.stream()
+                .map(roleId -> UserRole.builder()
+                        .userId(userId)
+                        .roleId(roleId)
+                        .createdByUserId(requesterUserId)
+                        .createdTime(currentTime)
+                        .build())
+                .toList();
     }
 }

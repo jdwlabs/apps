@@ -1,10 +1,7 @@
 package com.jdw.usersrole.repositories;
 
 import com.jdw.usersrole.daos.*;
-import com.jdw.usersrole.models.Address;
-import com.jdw.usersrole.models.Profile;
-import com.jdw.usersrole.models.ProfileIcon;
-import com.jdw.usersrole.models.User;
+import com.jdw.usersrole.models.*;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,6 +94,15 @@ class UserRepositoryImplTests {
                 .createdTime(Timestamp.from(Instant.now()))
                 .modifiedByUserId(1L)
                 .modifiedTime(Timestamp.from(Instant.now()))
+                .build();
+    }
+
+    private UserRole buildMockUserRole() {
+        return UserRole.builder()
+                .userId(1L)
+                .roleId(2L)
+                .createdByUserId(1L)
+                .createdTime(Timestamp.from(Instant.now()))
                 .build();
     }
 
@@ -261,5 +267,57 @@ class UserRepositoryImplTests {
         verify(profileIconDao, never()).deleteByProfileId(anyLong());
         verify(userRoleDao, times(1)).deleteByUserId(1L);
         verify(userDao, times(1)).deleteById(1L);
+    }
+
+    @Test
+    void grantRoles_shouldCreateRolesWhenNotPresent() {
+        UserRole userRole = buildMockUserRole();
+
+        when(userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId())).thenReturn(Optional.empty());
+        when(userDao.findById(userRole.userId())).thenReturn(Optional.of(buildMockUser()));
+
+        User result = userRepository.grantRoles(List.of(userRole));
+
+        verify(userRoleDao, times(1)).create(userRole);
+        assertNotNull(result);
+    }
+
+    @Test
+    void grantRoles_shouldNotCreateRolesWhenPresent() {
+        UserRole userRole = buildMockUserRole();
+
+        when(userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId())).thenReturn(Optional.of(userRole));
+        when(userDao.findById(userRole.userId())).thenReturn(Optional.of(buildMockUser()));
+
+        User result = userRepository.grantRoles(List.of(userRole));
+
+        verify(userRoleDao, never()).create(userRole);
+        assertNotNull(result);
+    }
+
+    @Test
+    void revokeRoles_shouldDeleteRolesWhenPresent() {
+        UserRole userRole = buildMockUserRole();
+
+        when(userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId())).thenReturn(Optional.of(userRole));
+        when(userDao.findById(userRole.userId())).thenReturn(Optional.of(buildMockUser()));
+
+        User result = userRepository.revokeRoles(List.of(userRole));
+
+        verify(userRoleDao, times(1)).deleteByRoleIdAndUserId(userRole.roleId(), userRole.userId());
+        assertNotNull(result);
+    }
+
+    @Test
+    void revokeRoles_shouldNotDeleteRolesWhenNotPresent() {
+        UserRole userRole = buildMockUserRole();
+
+        when(userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId())).thenReturn(Optional.empty());
+        when(userDao.findById(userRole.userId())).thenReturn(Optional.of(buildMockUser()));
+
+        User result = userRepository.revokeRoles(List.of(userRole));
+
+        verify(userRoleDao, never()).deleteByRoleIdAndUserId(userRole.roleId(), userRole.userId());
+        assertNotNull(result);
     }
 }

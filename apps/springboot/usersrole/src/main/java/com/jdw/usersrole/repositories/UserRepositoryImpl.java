@@ -77,6 +77,30 @@ public class UserRepositoryImpl implements UserRepository {
         userDao.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public User grantRoles(List<UserRole> userRoleList) {
+        log.debug("Grating roles: {}", userRoleList);
+        userRoleList.forEach(userRole -> {
+            if (userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId()).isEmpty()) {
+                userRoleDao.create(userRole);
+            }
+        });
+        return findById(userRoleList.getFirst().userId()).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public User revokeRoles(List<UserRole> userRoleList) {
+        log.debug("Revoking roles: {}", userRoleList);
+        userRoleList.forEach(userRole -> {
+            if (userRoleDao.findByRoleIdAndUserId(userRole.roleId(), userRole.userId()).isPresent()) {
+                userRoleDao.deleteByRoleIdAndUserId(userRole.roleId(), userRole.userId());
+            }
+        });
+        return findById(userRoleList.getFirst().userId()).orElse(null);
+    }
+
     private Optional<User> getUser(Optional<User> user) {
         log.debug("Getting optional user: {}", user);
         if (user.isPresent()) {
