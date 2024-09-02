@@ -172,4 +172,84 @@ class RoleServiceTests {
 
         verify(roleRepository, times(1)).deleteById(1L);
     }
+
+    @Test
+    void grantUsersToRole_ShouldReturnUpdatedRole() {
+        Long roleId = 1L;
+        List<Long> userIds = List.of(1L, 2L);
+        String emailAddress = "admin@jdw.com";
+        Long requesterUserId = 1L;
+        Role updatedRole = Role.builder()
+                .id(roleId)
+                .name("ADMIN")
+                .description("Administrator")
+                .status("ACTIVE")
+                .build();
+
+        when(userService.getUserIdByEmailAddress(emailAddress)).thenReturn(requesterUserId);
+        when(roleRepository.findById(roleId)).thenReturn(Optional.of(updatedRole));
+        when(roleRepository.grantUsers(any())).thenReturn(updatedRole);
+
+        Role result = roleService.grantUsersToRole(roleId, userIds, emailAddress);
+
+        assertNotNull(result);
+        assertEquals(roleId, result.id());
+        assertEquals("ADMIN", result.name());
+        verify(userService, times(1)).getUserIdByEmailAddress(emailAddress);
+        verify(roleRepository, times(1)).grantUsers(any());
+    }
+
+    @Test
+    void grantUsersToRole_ShouldThrowException_WhenRoleNotFound() {
+        Long roleId = 1L;
+        List<Long> userIds = List.of(1L, 2L);
+        String emailAddress = "admin@jdw.com";
+        when(userService.getUserIdByEmailAddress(emailAddress)).thenReturn(1L);
+        when(roleRepository.findById(roleId)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> roleService.grantUsersToRole(roleId, userIds, emailAddress));
+
+        assertEquals("Role not found with id " + roleId, exception.getMessage());
+    }
+
+    @Test
+    void revokeUsersFromRole_ShouldReturnUpdatedRole() {
+        Long roleId = 1L;
+        List<Long> userIds = List.of(1L, 2L);
+        String emailAddress = "admin@jdw.com";
+        Long requesterUserId = 1L;
+        Role updatedRole = Role.builder()
+                .id(roleId)
+                .name("ADMIN")
+                .description("Administrator")
+                .status("ACTIVE")
+                .build();
+
+        when(userService.getUserIdByEmailAddress(emailAddress)).thenReturn(requesterUserId);
+        when(roleRepository.findById(roleId)).thenReturn(Optional.of(updatedRole));
+        when(roleRepository.revokeUsers(any())).thenReturn(updatedRole);
+
+        Role result = roleService.revokeUsersFromRole(roleId, userIds, emailAddress);
+
+        assertNotNull(result);
+        assertEquals(roleId, result.id());
+        assertEquals("ADMIN", result.name());
+        verify(userService, times(1)).getUserIdByEmailAddress(emailAddress);
+        verify(roleRepository, times(1)).revokeUsers(any());
+    }
+
+    @Test
+    void revokeUsersFromRole_ShouldThrowException_WhenRoleNotFound() {
+        Long roleId = 1L;
+        List<Long> userIds = List.of(1L, 2L);
+        String emailAddress = "admin@jdw.com";
+        when(userService.getUserIdByEmailAddress(emailAddress)).thenReturn(1L);
+        when(roleRepository.findById(roleId)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> roleService.revokeUsersFromRole(roleId, userIds, emailAddress));
+
+        assertEquals("Role not found with id " + roleId, exception.getMessage());
+    }
 }

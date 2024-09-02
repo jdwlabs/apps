@@ -184,4 +184,74 @@ class RoleRepositoryImplTests {
         verify(roleDao, times(1)).findById(1L);
         verify(userRoleDao, times(1)).findByRoleId(1L);
     }
+
+    @Test
+    void grantUsers_ShouldAddUsersToRole() {
+        Role mockRole = buildMockRole();
+        UserRole userRoleToAdd = buildMockUserRole();
+        List<UserRole> userRoleList = List.of(userRoleToAdd);
+
+        when(userRoleDao.findByRoleIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
+        when(roleDao.findById(anyLong())).thenReturn(Optional.of(mockRole));
+        when(userRoleDao.create(any(UserRole.class))).thenReturn(userRoleToAdd);
+
+        Role result = roleRepository.grantUsers(userRoleList);
+
+        assertNotNull(result);
+        assertEquals(mockRole.id(), result.id());
+        verify(userRoleDao, times(1)).findByRoleIdAndUserId(anyLong(), anyLong());
+        verify(userRoleDao, times(1)).create(userRoleToAdd);
+    }
+
+    @Test
+    void grantUsers_ShouldNotAddExistingUsers() {
+        Role mockRole = buildMockRole();
+        UserRole existingUserRole = buildMockUserRole();
+        List<UserRole> userRoleList = List.of(existingUserRole);
+
+        when(userRoleDao.findByRoleIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(existingUserRole));
+        when(roleDao.findById(anyLong())).thenReturn(Optional.of(mockRole));
+
+        Role result = roleRepository.grantUsers(userRoleList);
+
+        assertNotNull(result);
+        assertEquals(mockRole.id(), result.id());
+        verify(userRoleDao, times(1)).findByRoleIdAndUserId(anyLong(), anyLong());
+        verify(userRoleDao, never()).create(any(UserRole.class));
+    }
+
+    @Test
+    void revokeUsers_ShouldRemoveUsersFromRole() {
+        Role mockRole = buildMockRole();
+        UserRole userRoleToRemove = buildMockUserRole();
+        List<UserRole> userRoleList = List.of(userRoleToRemove);
+
+        when(userRoleDao.findByRoleIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(userRoleToRemove));
+        when(roleDao.findById(anyLong())).thenReturn(Optional.of(mockRole));
+        doNothing().when(userRoleDao).deleteByRoleIdAndUserId(anyLong(), anyLong());
+
+        Role result = roleRepository.revokeUsers(userRoleList);
+
+        assertNotNull(result);
+        assertEquals(mockRole.id(), result.id());
+        verify(userRoleDao, times(1)).findByRoleIdAndUserId(anyLong(), anyLong());
+        verify(userRoleDao, times(1)).deleteByRoleIdAndUserId(anyLong(), anyLong());
+    }
+
+    @Test
+    void revokeUsers_ShouldNotRemoveNonExistingUsers() {
+        Role mockRole = buildMockRole();
+        UserRole nonExistingUserRole = buildMockUserRole();
+        List<UserRole> userRoleList = List.of(nonExistingUserRole);
+
+        when(userRoleDao.findByRoleIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
+        when(roleDao.findById(anyLong())).thenReturn(Optional.of(mockRole));
+
+        Role result = roleRepository.revokeUsers(userRoleList);
+
+        assertNotNull(result);
+        assertEquals(mockRole.id(), result.id());
+        verify(userRoleDao, times(1)).findByRoleIdAndUserId(anyLong(), anyLong());
+        verify(userRoleDao, never()).deleteByRoleIdAndUserId(anyLong(), anyLong());
+    }
 }
