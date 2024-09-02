@@ -5,6 +5,7 @@ import com.jdw.usersrole.models.User;
 import com.jdw.usersrole.services.JwtService;
 import com.jdw.usersrole.services.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -69,5 +70,29 @@ public class UsersController {
         String emailAddress = jwtService.getEmailAddress(authorizationHeader);
         userService.deleteUser(userId, emailAddress);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER')")
+    @PutMapping("/{userId}/roles/grant")
+    public ResponseEntity<User> grantRolesToUser(
+            @PathVariable Long userId,
+            @NotEmpty @RequestBody List<Long> roleIds,
+            @RequestHeader(name = "Authorization") String authorizationHeader) {
+        log.trace("Granting roles {} to user with id {}", roleIds, userId);
+        String emailAddress = jwtService.getEmailAddress(authorizationHeader);
+        User updatedUser = userService.grantRolesToUser(userId, roleIds, emailAddress);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER')")
+    @PutMapping("/{userId}/roles/revoke")
+    public ResponseEntity<User> revokeRolesFromUser(
+            @PathVariable Long userId,
+            @NotEmpty @RequestBody List<Long> roleIds,
+            @RequestHeader(name = "Authorization") String authorizationHeader) {
+        log.trace("Revoking roles {} from user with id {}", roleIds, userId);
+        String emailAddress = jwtService.getEmailAddress(authorizationHeader);
+        User updatedUser = userService.revokeRolesFromUser(userId, roleIds, emailAddress);
+        return ResponseEntity.ok(updatedUser);
     }
 }

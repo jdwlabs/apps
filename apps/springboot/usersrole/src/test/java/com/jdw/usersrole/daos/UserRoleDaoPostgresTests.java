@@ -16,8 +16,9 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -121,5 +122,70 @@ class UserRoleDaoPostgresTests {
         assertEquals(1L, result.userId());
         assertEquals(1L, result.roleId());
         assertEquals(1L, result.createdByUserId());
+    }
+
+    @Test
+    void deleteByRoleIdAndUserId_shouldInvokeDeleteOperation() {
+        JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
+        when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
+        when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
+
+        userRoleDaoPostgres.deleteByRoleIdAndUserId(1L, 1L);
+
+        verify(jdbcClient, times(1)).sql("""
+            DELETE FROM auth.users_roles
+            WHERE role_id = :roleId AND user_id = :userId
+            """);
+        verify(statementSpec, times(1)).param("roleId", 1L);
+        verify(statementSpec, times(1)).param("userId", 1L);
+        verify(statementSpec, times(1)).update();
+    }
+
+    @Test
+    void findByRoleIdAndUserId_shouldReturnOptionalUserRole() {
+        UserRole mockUserRole = buildMockUserRole();
+        JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
+        JdbcClient.MappedQuerySpec<UserRole> querySpec = mock(String.valueOf(JdbcClient.MappedQuerySpec.class));
+
+        when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
+        when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
+        when(statementSpec.query(Mockito.<RowMapper<UserRole>>any())).thenReturn(querySpec);
+        when(querySpec.optional()).thenReturn(Optional.of(mockUserRole));
+
+        Optional<UserRole> result = userRoleDaoPostgres.findByRoleIdAndUserId(1L, 1L);
+
+        assertTrue(result.isPresent());
+        assertEquals(mockUserRole, result.get());
+
+        verify(jdbcClient, times(1)).sql("""
+            SELECT * FROM auth.users_roles
+            WHERE role_id = :roleId AND user_id = :userId
+            """);
+        verify(statementSpec, times(1)).param("roleId", 1L);
+        verify(statementSpec, times(1)).param("userId", 1L);
+        verify(statementSpec, times(1)).query(Mockito.<RowMapper<UserRole>>any());
+    }
+
+    @Test
+    void findByRoleIdAndUserId_shouldReturnEmptyOptionalIfNoResult() {
+        JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
+        JdbcClient.MappedQuerySpec<UserRole> querySpec = Mockito.mock(String.valueOf(JdbcClient.MappedQuerySpec.class));
+
+        when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
+        when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
+        when(statementSpec.query(Mockito.<RowMapper<UserRole>>any())).thenReturn(querySpec);
+        when(querySpec.optional()).thenReturn(Optional.empty());
+
+        Optional<UserRole> result = userRoleDaoPostgres.findByRoleIdAndUserId(1L, 1L);
+
+        assertFalse(result.isPresent());
+
+        verify(jdbcClient, times(1)).sql("""
+            SELECT * FROM auth.users_roles
+            WHERE role_id = :roleId AND user_id = :userId
+            """);
+        verify(statementSpec, times(1)).param("roleId", 1L);
+        verify(statementSpec, times(1)).param("userId", 1L);
+        verify(statementSpec, times(1)).query(Mockito.<RowMapper<UserRole>>any());
     }
 }

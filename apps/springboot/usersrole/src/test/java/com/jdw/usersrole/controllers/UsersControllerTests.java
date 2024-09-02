@@ -126,4 +126,36 @@ class UsersControllerTests {
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(userService).deleteUser(userId, "user@jdw.com");
     }
+
+    @Test
+    void grantRolesToUser_shouldReturnUpdatedUser() {
+        Long userId = 1L;
+        List<Long> roleIds = List.of(2L, 3L);
+        User updatedUser = buildMockUser();
+        String emailAddress = "user@jdw.com";
+
+        when(jwtService.getEmailAddress(any(String.class))).thenReturn(emailAddress);
+        when(userService.grantRolesToUser(userId, roleIds, emailAddress)).thenReturn(updatedUser);
+
+        ResponseEntity<User> response = usersController.grantRolesToUser(userId, roleIds, "Bearer token");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(updatedUser, response.getBody());
+    }
+
+    @Test
+    void revokeRolesFromUser_shouldReturnUpdatedUser() {
+        Long userId = 1L;
+        List<Long> roleIds = List.of(2L, 3L);
+        User updatedUser = buildMockUser();
+        String emailAddress = "user@jdw.com";
+
+        when(jwtService.getEmailAddress(any(String.class))).thenReturn(emailAddress);
+        when(userService.revokeRolesFromUser(userId, roleIds, emailAddress)).thenReturn(updatedUser);
+
+        ResponseEntity<User> response = usersController.revokeRolesFromUser(userId, roleIds, "Bearer token");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(updatedUser, response.getBody());
+    }
 }
