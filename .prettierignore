@@ -3,3 +3,4 @@
 /.nx/cache
 .angular
 tsconfig.base.json
+/.nx/workspace-data
