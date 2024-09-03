@@ -1,5 +1,6 @@
 package com.jdw.usersrole.services;
 
+import com.jdw.usersrole.models.SecurityUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.when;
 @Tag("unit")
 class JwtServiceTests {
     @Mock
-    private UserDetails userDetails;
+    private SecurityUser userDetails;
     @InjectMocks
     private JwtService jwtService;
 
@@ -48,7 +49,7 @@ class JwtServiceTests {
     @Test
     void getEmailAddress_shouldReturnCorrectEmail() {
         when(userDetails.getUsername()).thenReturn("user@jdw.com");
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
         String authorizationHeader = "Bearer " + token;
 
         String emailAddress = jwtService.getEmailAddress(authorizationHeader);
@@ -58,7 +59,7 @@ class JwtServiceTests {
 
     @Test
     void getJwtToken_shouldExtractTokenFromAuthorizationHeader() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
         String authorizationHeader = "Bearer " + token;
 
         String extractedToken = jwtService.getJwtToken(authorizationHeader);
@@ -69,7 +70,7 @@ class JwtServiceTests {
     @Test
     void extractEmailAddress_shouldReturnCorrectEmail() {
         when(userDetails.getUsername()).thenReturn("user@jdw.com");
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         String emailAddress = jwtService.extractEmailAddress(token);
 
@@ -79,7 +80,7 @@ class JwtServiceTests {
     @Test
     void extractClaim_shouldReturnCorrectClaim() {
         when(userDetails.getUsername()).thenReturn("user@jdw.com");
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         String subject = jwtService.extractClaim(token, Claims::getSubject);
 
@@ -88,7 +89,7 @@ class JwtServiceTests {
 
     @Test
     void generateToken_shouldReturnValidToken() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         assertNotNull(token, "Generated token should not be null");
         assertFalse(token.isEmpty(), "Generated token should not be empty");
@@ -100,7 +101,7 @@ class JwtServiceTests {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("role", "ADMIN");
 
-        String token = jwtService.generateToken(extraClaims, userDetails);
+        String token = jwtService.generateToken(extraClaims, userDetails, "http://localhost:8080");
         Claims claims = jwtService.extractAllClaims(token);
 
         assertEquals("user@jdw.com", claims.getSubject(), "The subject should match the username");
@@ -111,14 +112,14 @@ class JwtServiceTests {
     void generateToken_withInvalidExpirationTime_shouldThrowException() throws Exception {
         injectField(jwtService, "jwtExpirationTimeMs", "invalidNumber");
 
-        assertThrows(NumberFormatException.class, () -> jwtService.generateToken(userDetails),
+        assertThrows(NumberFormatException.class, () -> jwtService.generateToken(userDetails, "http://localhost:8080"),
                 "Generating token should throw NumberFormatException for invalid expiration time");
     }
 
     @Test
     void isTokenValid_shouldReturnTrueForValidToken() {
         when(userDetails.getUsername()).thenReturn("user@jdw.com");
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         assertTrue(jwtService.isTokenValid(token, userDetails), "Token should be valid for the user");
     }
@@ -126,7 +127,7 @@ class JwtServiceTests {
     @Test
     void isTokenValid_shouldReturnFalseForExpiredToken() throws Exception {
         injectField(jwtService, "jwtExpirationTimeMs", "1"); // 1 millisecond expiration
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         // Wait for the token to expire
         Thread.sleep(2);
@@ -147,14 +148,14 @@ class JwtServiceTests {
         UserDetails userDetails2 = mock(UserDetails.class);
         when(userDetails.getUsername()).thenReturn("user@jdw.com");
         when(userDetails2.getUsername()).thenReturn("user2@jdw.com");
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         assertFalse(jwtService.isTokenValid(token, userDetails2), "Token should be invalid due to mismatched user details");
     }
 
     @Test
     void isTokenExpired_shouldReturnFalseForNewToken() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         assertFalse(jwtService.isTokenExpired(token), "Token should not be expired");
     }
@@ -163,7 +164,7 @@ class JwtServiceTests {
     void isTokenExpired_shouldReturnTrueForExpiredToken() throws Exception {
         // Reduce the expiration time for testing
         injectField(jwtService, "jwtExpirationTimeMs", "1"); // 1 millisecond expiration
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         // Wait for the token to expire
         Thread.sleep(2);
@@ -181,7 +182,7 @@ class JwtServiceTests {
 
     @Test
     void extractExpiration_shouldReturnCorrectExpirationDate() {
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
         Date expirationDate = jwtService.extractExpiration(token);
 
         assertNotNull(expirationDate, "Expiration date should not be null");
@@ -191,7 +192,7 @@ class JwtServiceTests {
     @Test
     void extractAllClaims_shouldReturnClaimsForValidToken() {
         when(userDetails.getUsername()).thenReturn("user@jdw.com");
-        String token = jwtService.generateToken(userDetails);
+        String token = jwtService.generateToken(userDetails, "http://localhost:8080");
 
         Claims claims = jwtService.extractAllClaims(token);
 
