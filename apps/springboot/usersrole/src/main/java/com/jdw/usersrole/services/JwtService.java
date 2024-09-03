@@ -1,6 +1,7 @@
 package com.jdw.usersrole.services;
 
 import com.jdw.usersrole.metrics.ExecutionTimeLogger;
+import com.jdw.usersrole.models.SecurityUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -8,6 +9,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +17,9 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -26,60 +30,72 @@ public class JwtService {
     private String secretKey;
 
     public String getEmailAddress(String authorizationHeader) {
-        log.info("Retrieving email address with: authorizationHeader={}", authorizationHeader);
+        log.debug("Retrieving email address with: authorizationHeader={}", authorizationHeader);
         return extractEmailAddress(getJwtToken(authorizationHeader));
     }
 
     public String getJwtToken(String authorizationHeader) {
-        log.info("Retrieving JWT token with: authorizationHeader={}", authorizationHeader);
+        log.debug("Retrieving JWT token with: authorizationHeader={}", authorizationHeader);
         return authorizationHeader.substring(7);
     }
 
     public String extractEmailAddress(String jwtToken) {
-        log.info("Extracting email address with: jwtToken={}", jwtToken);
+        log.debug("Extracting email address with: jwtToken={}", jwtToken);
         return extractClaim(jwtToken, Claims::getSubject);
     }
 
     public <T> T extractClaim(String jwtToken, Function<Claims, T> claimsResolver) {
-        log.info("Extracting claim with: jwtToken={}", jwtToken);
+        log.debug("Extracting claim with: jwtToken={}", jwtToken);
         return claimsResolver.apply(extractAllClaims(jwtToken));
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(UserDetails userDetails, String issuerUrl) {
         log.info("Generating empty extra claims token with: emailAddress={}", userDetails.getUsername());
-        return generateToken(new HashMap<>(), userDetails);
+        return generateToken(new HashMap<>(), userDetails, issuerUrl);
     }
 
     @ExecutionTimeLogger
-    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, String issuerUrl) {
         log.info("Generating token with: emailAddress={}", userDetails.getUsername());
+        Date now = new Date();
+        Date expiration = new Date(System.currentTimeMillis() + getJwtExpirationTimeMs());
+        Map<String, Object> claims = new HashMap<>(extraClaims);
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+        claims.put("user_id", ((SecurityUser) userDetails).getUserId());
+        claims.put("profile_id", ((SecurityUser) userDetails).getProfileId());
+        claims.put("aud", issuerUrl);
+        claims.put("iss", issuerUrl + "/auth/authenticate");
+        claims.put("jti", UUID.randomUUID().toString());
+        claims.put("nbf", now);
         return Jwts
                 .builder()
-                .claims(extraClaims)
+                .claims(claims)
                 .subject(userDetails.getUsername())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + getJwtExpirationTimeMs()))
+                .issuedAt(now)
+                .expiration(expiration)
                 .signWith(getSignInKey())
                 .compact();
     }
 
     public boolean isTokenValid(String jwtToken, UserDetails userDetails) {
-        log.info("Checking token validation with: jwtToken={}", jwtToken);
+        log.debug("Checking token validation with: jwtToken={}", jwtToken);
         return extractEmailAddress(jwtToken).equals(userDetails.getUsername()) && !isTokenExpired(jwtToken);
     }
 
     public boolean isTokenExpired(String jwtToken) {
-        log.info("Checking token expiration with: jwtToken={}", jwtToken);
+        log.debug("Checking token expiration with: jwtToken={}", jwtToken);
         return extractExpiration(jwtToken).before(new Date());
     }
 
     protected Date extractExpiration(String jwtToken) {
-        log.info("Extracting expiration with: jwtToken={}", jwtToken);
+        log.debug("Extracting expiration with: jwtToken={}", jwtToken);
         return extractClaim(jwtToken, Claims::getExpiration);
     }
 
     protected Claims extractAllClaims(String jwtToken) throws JwtException {
-        log.info("Extracting all claims with: jwtToken={}", jwtToken);
+        log.debug("Extracting all claims with: jwtToken={}", jwtToken);
         return Jwts
                 .parser()
                 .verifyWith(getSignInKey())
@@ -89,7 +105,7 @@ public class JwtService {
     }
 
     protected SecretKey getSignInKey() {
-        log.info("Retrieving sign in key");
+        log.debug("Retrieving sign in key");
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }

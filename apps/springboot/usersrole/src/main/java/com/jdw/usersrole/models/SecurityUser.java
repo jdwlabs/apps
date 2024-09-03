@@ -60,6 +60,9 @@ public class SecurityUser implements UserDetails {
     }
 
     public Long getProfileId() {
-        return user.profile().id();
+        return Optional.ofNullable(user)
+                .map(User::profile)
+                .map(Profile::id)
+                .orElse(null);
     }
 }
