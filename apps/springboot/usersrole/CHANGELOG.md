@@ -4,15 +4,13 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.7.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.6.0...usersrole-0.7.0) (2024-09-03)
 
-
 ### Features
 
-* **usersrole:** add jwt claims enhancements ([b93bdae](https://github.com/jdwillmsen/jdw/commit/b93bdaefb24f6e28b0b548dd68e76e9c031573ab))
-
+- **usersrole:** add jwt claims enhancements ([b93bdae](https://github.com/jdwillmsen/jdw/commit/b93bdaefb24f6e28b0b548dd68e76e9c031573ab))
 
 ### Bug Fixes
 
-* **usersrole:** add fix for handling exceptions from loading users in Spring Security ([359a5e6](https://github.com/jdwillmsen/jdw/commit/359a5e6018250dba895dca79548574022b056447))
+- **usersrole:** add fix for handling exceptions from loading users in Spring Security ([359a5e6](https://github.com/jdwillmsen/jdw/commit/359a5e6018250dba895dca79548574022b056447))
 
 ## [0.6.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.5.0...usersrole-0.6.0) (2024-09-02)
 
