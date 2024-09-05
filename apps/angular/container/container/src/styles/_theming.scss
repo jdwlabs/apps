@@ -24,25 +24,27 @@
   $theme: null;
 
   @if ($create-light-theme) {
+    $color-config: (
+      primary: $primary,
+      accent: $accent,
+      warn: $error,
+    );
     $theme: mat.m2-define-light-theme(
       (
-        color: (
-          primary: $primary,
-          accent: $accent,
-          warn: $error,
-        ),
+        color: $color-config,
         typography: $typography,
         density: $density,
       )
     );
   } @else {
+    $color-config: (
+      primary: $primary,
+      accent: $accent,
+      warn: $error,
+    );
     $theme: mat.m2-define-dark-theme(
       (
-        color: (
-          primary: $primary,
-          accent: $accent,
-          warn: $error,
-        ),
+        color: $color-config,
         typography: $typography,
         density: $density,
       )
