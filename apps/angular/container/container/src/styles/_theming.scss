@@ -13,18 +13,18 @@
 @function define-theme(
   $primary,
   $accent,
-  $warn: mat.$orange-palette,
-  $success: mat.$green-palette,
-  $error: mat.$red-palette,
-  $info: mat.$blue-palette,
+  $warn: mat.$m2-orange-palette,
+  $success: mat.$m2-green-palette,
+  $error: mat.$m2-red-palette,
+  $info: mat.$m2-blue-palette,
   $create-light-theme: true,
-  $typography: mat.define-typography-config(),
+  $typography: mat.m2-define-typography-config(),
   $density: 0
 ) {
   $theme: null;
 
   @if ($create-light-theme) {
-    $theme: mat.define-light-theme(
+    $theme: mat.m2-define-light-theme(
       (
         color: (
           primary: $primary,
@@ -36,7 +36,7 @@
       )
     );
   } @else {
-    $theme: mat.define-dark-theme(
+    $theme: mat.m2-define-dark-theme(
       (
         color: (
           primary: $primary,
@@ -67,7 +67,7 @@
   $extra-dark: 900,
   $text: $default
 ) {
-  $new-palette: mat.define-palette(
+  $new-palette: mat.m2-define-palette(
     $base-palette,
     $default,
     $lighter,
@@ -79,9 +79,9 @@
     extra-light: map-get($base-palette, $extra-light),
     extra-dark: map-get($base-palette, $extra-dark),
     extra-light-contrast:
-      mat.get-contrast-color-from-palette($base-palette, $extra-light),
+      mat.m2-get-contrast-color-from-palette($base-palette, $extra-light),
     extra-dark-contrast:
-      mat.get-contrast-color-from-palette($base-palette, $extra-dark),
+      mat.m2-get-contrast-color-from-palette($base-palette, $extra-dark),
   );
 
   @return map-merge($new-palette, $extra-palette);
