@@ -5,11 +5,11 @@
 
 $theme-primary: theming.define-palette(palette.$black-palette, 900);
 $theme-accent: theming.define-palette(palette.$white-palette, 600);
-$theme-warn: theming.define-palette(mat.$yellow-palette);
-$theme-success: theming.define-palette(mat.$green-palette);
-$theme-error: theming.define-palette(mat.$red-palette);
-$theme-info: theming.define-palette(mat.$blue-palette);
-$theme-typography: mat.define-typography-config();
+$theme-warn: theming.define-palette(mat.$m2-yellow-palette);
+$theme-success: theming.define-palette(mat.$m2-green-palette);
+$theme-error: theming.define-palette(mat.$m2-red-palette);
+$theme-info: theming.define-palette(mat.$m2-blue-palette);
+$theme-typography: mat.m2-define-typography-config();
 $theme-density: 0;
 $theme-light: true;
 $theme: theming.define-theme(
