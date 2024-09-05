@@ -3,14 +3,12 @@ package com.jdw.usersrole;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @Tag("fast")
 @Tag("integration")
-@SpringBootTest
-@TestPropertySource(properties = "server.port=0")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class UsersRoleApplicationTests {
     @Test
     void contextLoads() {
@@ -18,6 +16,7 @@ class UsersRoleApplicationTests {
 
     @Test
     void mainTest() {
-        assertDoesNotThrow(() -> UsersRoleApplication.main(new String[]{}));
+        String[] args = {"--server.port=0"};
+        assertDoesNotThrow(() -> UsersRoleApplication.main(args));
     }
 }
