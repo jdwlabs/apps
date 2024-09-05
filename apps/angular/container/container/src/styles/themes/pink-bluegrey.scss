@@ -3,7 +3,12 @@
 @use '../theming';
 
 $theme-primary: theming.define-palette(mat.$m2-pink-palette);
-$theme-accent: theming.define-palette(mat.$m2-blue-grey-palette, A200, A100, A400);
+$theme-accent: theming.define-palette(
+  mat.$m2-blue-grey-palette,
+  A200,
+  A100,
+  A400
+);
 $theme-warn: theming.define-palette(mat.$m2-orange-palette);
 $theme-success: theming.define-palette(mat.$m2-green-palette);
 $theme-error: theming.define-palette(mat.$m2-red-palette);
