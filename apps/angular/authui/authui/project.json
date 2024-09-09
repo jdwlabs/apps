@@ -106,6 +106,57 @@
           "buildTarget": "authui:build:production"
         }
       }
+    },
+    "version": {
+      "executor": "@jscutlery/semver:version",
+      "options": {
+        "push": true,
+        "preset": "conventionalcommits",
+        "postTargets": [
+          "format",
+          "save-version",
+          "build-image",
+          "push-image",
+          "update-app"
+        ]
+      }
+    },
+    "save-version": {
+      "command": "bash tools/create-version.sh {version} {projectRoot}/public {projectName}"
+    },
+    "build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version}",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "push-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker push jdwillmsen/jdw-authui:latest",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "docker push jdwillmsen/jdw-authui:{version}",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": true
+      }
+    },
+    "update-app": {
+      "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
+    },
+    "format": {
+      "command": "bash tools/format.sh"
     }
   }
 }
