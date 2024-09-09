@@ -33,6 +33,10 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+      # This line enables distribution
+      # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "e2e-ci" targets have been requested
+      - name: Enable NX Cloud Distribution
+        run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
       - name: Install Dependencies
         run: npm ci
       - name: Setup Base and SHAs for 'nx affected'
