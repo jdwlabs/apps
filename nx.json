@@ -54,8 +54,12 @@
       "inputs": [
         {
           "env": "NX_MF_DEV_SERVER_STATIC_REMOTES"
+        },
+        {
+          "env": "NX_MF_DEV_REMOTES"
         }
-      ]
+      ],
+      "dependsOn": ["^build"]
     },
     "@nx/angular:package": {
       "cache": true,
@@ -69,6 +73,9 @@
     },
     "install": {
       "cache": true
+    },
+    "e2e-ci--**/*": {
+      "dependsOn": ["^build"]
     }
   },
   "generators": {
