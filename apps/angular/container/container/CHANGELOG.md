@@ -4,11 +4,10 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.5.0](https://github.com/jdwillmsen/jdw/compare/container-0.4.2...container-0.5.0) (2024-09-09)
 
-
 ### Features
 
-* **authui:** add authui application ([2380ea6](https://github.com/jdwillmsen/jdw/commit/2380ea6dd087859ba8f862d46b7b77cd984918e7))
-* **container:** update base nginx image version ([ee6f31f](https://github.com/jdwillmsen/jdw/commit/ee6f31f86ef4d19a1ac646ffdea5317c061a0a69))
+- **authui:** add authui application ([2380ea6](https://github.com/jdwillmsen/jdw/commit/2380ea6dd087859ba8f862d46b7b77cd984918e7))
+- **container:** update base nginx image version ([ee6f31f](https://github.com/jdwillmsen/jdw/commit/ee6f31f86ef4d19a1ac646ffdea5317c061a0a69))
 
 ## [0.4.2](https://github.com/jdwillmsen/jdw/compare/container-0.4.1...container-0.4.2) (2024-09-05)
 
