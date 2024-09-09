@@ -129,7 +129,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version}",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version} --output type=oci --output type=docker",
             "forwardAllArgs": false
           }
         ],
