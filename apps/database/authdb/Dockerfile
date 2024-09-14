@@ -1,4 +1,4 @@
-FROM postgres:16.2
+FROM postgres:16.4
 LABEL maintainer="Jake Willmsen"
 LABEL description="PostgreSQL image with custom initialization scripts."
 LABEL license="MIT"
