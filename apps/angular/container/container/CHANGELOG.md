@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.7.0](https://github.com/jdwillmsen/jdw/compare/container-0.6.0...container-0.7.0) (2024-09-14)
+
+
+### Features
+
+* **container:** update jq installation in build stage ([fc4708e](https://github.com/jdwillmsen/jdw/commit/fc4708ea1b9707ed186b03a02abcbf29a890464c))
+
 ## [0.6.0](https://github.com/jdwillmsen/jdw/compare/container-0.5.0...container-0.6.0) (2024-09-14)
 
 ### Features
