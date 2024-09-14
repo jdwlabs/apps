@@ -19,7 +19,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "build-image", "push-image"]
+        "postTargets": ["format", "build-image"]
       }
     },
     "build-image": {
@@ -39,27 +39,11 @@
       "options": {
         "commands": [
           {
-            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-authdb:latest",
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authdb:latest .",
             "forwardAllArgs": false
           }
         ],
         "parallel": false
-      }
-    },
-    "push-image": {
-      "executor": "nx:run-commands",
-      "options": {
-        "commands": [
-          {
-            "command": "docker push jdwillmsen/jdw-authdb:latest",
-            "forwardAllArgs": false
-          },
-          {
-            "command": "docker push jdwillmsen/jdw-authdb:{version}",
-            "forwardAllArgs": false
-          }
-        ],
-        "parallel": true
       }
     },
     "format": {
