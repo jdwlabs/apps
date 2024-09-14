@@ -116,7 +116,6 @@
           "format",
           "save-version",
           "build-image",
-          "push-image",
           "update-app"
         ]
       }
@@ -129,31 +128,15 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version} --output type=oci --output type=docker",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version} --push .",
             "forwardAllArgs": false
           }
         ],
         "parallel": false
       }
     },
-    "push-image": {
-      "executor": "nx:run-commands",
-      "options": {
-        "commands": [
-          {
-            "command": "docker push jdwillmsen/jdw-authui:latest",
-            "forwardAllArgs": false
-          },
-          {
-            "command": "docker push jdwillmsen/jdw-authui:{version}",
-            "forwardAllArgs": false
-          }
-        ],
-        "parallel": true
-      }
-    },
     "update-app": {
-      "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
+      "command": "bash tools/update-app.sh helm/authui/Chart.yaml {version} {projectName}"
     },
     "format": {
       "command": "bash tools/format.sh"
