@@ -1,7 +1,10 @@
 FROM docker.io/node:lts-alpine AS builder
 ENV JQ_VERSION=1.7
-RUN wget --no-check-certificate https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 -O /tmp/jq-linux64
-RUN cp /tmp/jq-linux64 /usr/bin/jq
+RUN case "$(uname -m)" in \
+        x86_64) wget --no-check-certificate https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 -O /usr/bin/jq ;; \
+        aarch64) wget --no-check-certificate https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64-arm -O /usr/bin/jq ;; \
+        *) echo "Unsupported architecture: $(uname -m)" && exit 1 ;; \
+    esac
 RUN chmod +x /usr/bin/jq
 WORKDIR /app
 COPY . .
