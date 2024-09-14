@@ -46,8 +46,6 @@ jobs:
         run: git branch --track main origin/main
       - name: Run Format Check
         run: npx nx-cloud record -- nx format:check
-      - name: Run Clean
-        run: npx nx affected -t clean
       - name: Run Linting, Unit, Component, & E2E Tests
         run: npx nx affected -t lint test component-test e2e
       - name: Run Build
