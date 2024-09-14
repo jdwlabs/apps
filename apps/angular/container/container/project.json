@@ -140,13 +140,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": [
-          "format",
-          "save-version",
-          "build-image",
-          "push-image",
-          "update-app"
-        ]
+        "postTargets": ["format", "save-version", "build-image", "update-app"]
       }
     },
     "save-version": {
@@ -157,27 +151,11 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version} --output type=oci --output type=docker",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version} --push .",
             "forwardAllArgs": false
           }
         ],
         "parallel": false
-      }
-    },
-    "push-image": {
-      "executor": "nx:run-commands",
-      "options": {
-        "commands": [
-          {
-            "command": "docker push jdwillmsen/jdw-container:latest",
-            "forwardAllArgs": false
-          },
-          {
-            "command": "docker push jdwillmsen/jdw-container:{version}",
-            "forwardAllArgs": false
-          }
-        ],
-        "parallel": true
       }
     },
     "update-app": {

@@ -46,8 +46,6 @@ jobs:
         run: git branch --track main origin/main
       - name: Run Format Check
         run: npx nx-cloud record -- nx format:check
-      - name: Run Clean
-        run: npx nx affected -t clean
       - name: Run Linting, Unit, Component, & E2E Tests
         run: npx nx affected -t lint test component-test e2e
       - name: Run Build
@@ -69,6 +67,7 @@ jobs:
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
+          docker buildx create --use --name mybuilder --driver docker-container
           npx nx affected -t version --parallel=1
           git fetch origin develop
           git checkout develop
