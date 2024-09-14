@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.2.1](https://github.com/jdwillmsen/jdw/compare/authdb-0.2.0...authdb-0.2.1) (2024-09-09)
+
 ## [0.2.0](https://github.com/jdwillmsen/jdw/compare/authdb-0.1.5...authdb-0.2.0) (2024-09-05)
 
 ### Features
