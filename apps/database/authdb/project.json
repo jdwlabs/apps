@@ -27,7 +27,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker build -f {projectRoot}/Dockerfile . -t jdwillmsen/jdw-authdb:latest -t jdwillmsen/jdw-authdb:{version}",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authdb:latest -t jdwillmsen/jdw-authdb:{version} .",
             "forwardAllArgs": false
           }
         ],
