@@ -1,11 +1,5 @@
 FROM docker.io/node:lts-alpine AS builder
-ENV JQ_VERSION=1.7
-RUN case "$(uname -m)" in \
-        x86_64) wget --no-check-certificate https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 -O /usr/bin/jq ;; \
-        aarch64) wget --no-check-certificate https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64-arm -O /usr/bin/jq ;; \
-        *) echo "Unsupported architecture: $(uname -m)" && exit 1 ;; \
-    esac
-RUN chmod +x /usr/bin/jq
+RUN apk add --no-cache jq
 WORKDIR /app
 COPY . .
 RUN jq 'to_entries | map_values({ (.key) : ("$" + .key) }) | reduce .[] as $item ({}; . + $item)' apps/angular/authui/authui/src/config.json > apps/angular/authui/authui/src/config.tmp.json && mv apps/angular/authui/authui/src/config.tmp.json apps/angular/authui/authui/src/config.json
