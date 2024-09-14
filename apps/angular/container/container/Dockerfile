@@ -1,8 +1,6 @@
 FROM docker.io/node:lts-alpine AS builder
 ENV JQ_VERSION=1.7
-RUN wget --no-check-certificate https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 -O /tmp/jq-linux64
-RUN cp /tmp/jq-linux64 /usr/bin/jq
-RUN chmod +x /usr/bin/jq
+RUN apk add --no-cache jq
 WORKDIR /app
 COPY . .
 RUN jq 'to_entries | map_values({ (.key) : ("$" + .key) }) | reduce .[] as $item ({}; . + $item)' apps/angular/container/container/src/config.json > apps/angular/container/container/src/config.tmp.json && mv apps/angular/container/container/src/config.tmp.json apps/angular/container/container/src/config.json
