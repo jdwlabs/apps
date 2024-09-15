@@ -1,8 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { EmailSignInComponent } from './email-sign-in.component';
-import { Route } from '@angular/router';
+import { provideRouter, Route } from '@angular/router';
 import { Component } from '@angular/core';
-import { RouterTestingModule } from '@angular/router/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -21,10 +20,8 @@ describe(EmailSignInComponent.name, () => {
       },
     ];
     TestBed.configureTestingModule({
-      imports: [
-        BrowserAnimationsModule,
-        RouterTestingModule.withRoutes(routes),
-      ],
+      imports: [BrowserAnimationsModule, MatSnackBarModule],
+      providers: [provideRouter(routes)],
     }).overrideComponent(EmailSignInComponent, {
       add: {
         imports: [MatSnackBarModule],
