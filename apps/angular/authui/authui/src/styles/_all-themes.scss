@@ -1,0 +1,10 @@
+@use '@angular/material' as mat;
+@use './components/button/variants' as button-variants;
+@use '../../../../../../libs/angular/shared/ui/src/lib/navigation-item/navigation-item-theme.component'
+  as navigation-item;
+
+@mixin all-component-themes($theme) {
+  @include button-variants.theme($theme);
+  @include navigation-item.theme($theme);
+  @include mat.all-component-themes($theme);
+}
