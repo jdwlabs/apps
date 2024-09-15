@@ -1,0 +1,20 @@
+{
+  "name": "angular-authui-feature-core",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/angular/authui/feature/core/src",
+  "prefix": "lib",
+  "projectType": "library",
+  "tags": ["type:feature", "scope:authui", "framework:angular"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/angular/authui/feature/core/jest.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}
