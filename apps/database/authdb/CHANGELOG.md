@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.0](https://github.com/jdwillmsen/jdw/compare/authdb-0.3.0...authdb-0.4.0) (2024-09-15)
+
+
+### Features
+
+* **authdb:** add multi-os-arch support ([d66a74f](https://github.com/jdwillmsen/jdw/commit/d66a74fc01a39585b1b6d9c84242e9d20d9d7797))
+
 ## [0.3.0](https://github.com/jdwillmsen/jdw/compare/authdb-0.2.2...authdb-0.3.0) (2024-09-14)
 
 ### Features
