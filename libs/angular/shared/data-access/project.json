@@ -1,5 +1,5 @@
 {
-  "name": "data-access",
+  "name": "angular-shared-data-access",
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/angular/shared/data-access/src",
   "prefix": "lib",
