@@ -1,6 +1,6 @@
 import { Route } from '@angular/router';
-import { RemoteEntryComponent } from './entry.component';
+import { angularAuthuiFeatureCoreRoutes } from '@jdw/angular-authui-feature-core';
 
 export const remoteRoutes: Route[] = [
-  { path: '', component: RemoteEntryComponent },
+  { path: '', children: angularAuthuiFeatureCoreRoutes },
 ];
