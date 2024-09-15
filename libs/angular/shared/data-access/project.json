@@ -4,7 +4,7 @@
   "sourceRoot": "libs/angular/shared/data-access/src",
   "prefix": "lib",
   "projectType": "library",
-  "tags": ["type:data-access", "scope:container", "framework:angular"],
+  "tags": ["type:data-access", "scope:shared", "framework:angular"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",
