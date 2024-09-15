@@ -1,0 +1,48 @@
+<div class="container">
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" data-cy="email-address-field">
+      <mat-label>Enter your email</mat-label>
+      <input
+        formControlName="email"
+        matInput
+        placeholder="Email Address"
+        type="email"
+      />
+      <mat-error *ngIf="this.form.get('email')?.invalid">
+        {{ getErrorMessage('email') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="password-field">
+      <mat-label>Enter your password</mat-label>
+      <input
+        [type]="hide ? 'password' : 'text'"
+        formControlName="password"
+        matInput
+        placeholder="Password"
+      />
+      <button
+        (click)="hide = !hide"
+        [attr.aria-label]="'Hide password'"
+        [attr.aria-pressed]="hide"
+        data-cy="password-visibility-button"
+        mat-icon-button
+        matSuffix
+        type="button"
+      >
+        <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+      <mat-error *ngIf="this.form.get('password')?.invalid">
+        {{ getErrorMessage('password') }}
+      </mat-error>
+    </mat-form-field>
+    <button
+      (click)="signIn()"
+      color="primary"
+      data-cy="sign-in-button"
+      mat-raised-button
+      type="submit"
+    >
+      Sign In
+    </button>
+  </form>
+</div>

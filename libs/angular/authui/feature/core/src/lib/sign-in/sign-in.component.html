@@ -1,1 +1,14 @@
-<p>sign-in works!</p>
+<div class="sign-in">
+  <mat-card>
+    <mat-card-title>
+      <h1 data-cy="title">Sign In</h1>
+    </mat-card-title>
+    <mat-card-content>
+      <lib-email-sign-in data-cy="email-sign-in" />
+    </mat-card-content>
+    <mat-card-actions data-cy="new-user">
+      New User?
+      <a data-cy="sign-up-link" routerLink="/sign-up">Sign up</a>
+    </mat-card-actions>
+  </mat-card>
+</div>
