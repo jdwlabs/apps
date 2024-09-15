@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EmailSignInComponent } from './email-sign-in.component';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 describe('EmailSignInComponent', () => {
   let component: EmailSignInComponent;
@@ -7,7 +9,7 @@ describe('EmailSignInComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EmailSignInComponent],
+      imports: [EmailSignInComponent, NoopAnimationsModule, MatSnackBarModule],
     }).compileComponents();
 
     fixture = TestBed.createComponent(EmailSignInComponent);
