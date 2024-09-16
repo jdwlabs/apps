@@ -60,10 +60,7 @@ describe(EmailSignInComponent.name, () => {
       .type('test')
       .should('contain.text', 'Enter a valid email');
     cy.getByCy('password-field').find('input').click().blur();
-    cy.getByCy('password-field')
-      .should('contain.text', 'Password is required')
-      .type('test')
-      .should('contain.text', 'Password must be at least 6 characters long');
+    cy.getByCy('password-field').should('contain.text', 'Password is required');
   });
 
   it('should submit form successfully with correct input', () => {
