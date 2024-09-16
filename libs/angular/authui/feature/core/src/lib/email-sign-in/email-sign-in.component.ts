@@ -38,10 +38,7 @@ export class EmailSignInComponent {
       Validators.required,
       Validators.pattern(EMAIL_VALIDATOR_PATTERN),
     ]),
-    password: new FormControl('', [
-      Validators.required,
-      Validators.minLength(6),
-    ]),
+    password: new FormControl('', [Validators.required]),
   });
   hide = true;
   validationMessages = {
@@ -51,10 +48,6 @@ export class EmailSignInComponent {
     ],
     password: [
       { type: 'required', message: PASSWORD_REQUIRED_VALIDATION_MESSAGE },
-      {
-        type: 'minlength',
-        message: PASSWORD_MIN_LENGTH_VALIDATION_MESSAGE,
-      },
     ],
   };
 
