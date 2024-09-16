@@ -5,4 +5,5 @@ export default defineConfig({
   component: nxComponentTestingPreset(__filename, {
     buildTarget: 'container:build',
   }),
+  port: 9001,
 });
