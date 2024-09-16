@@ -1,0 +1,123 @@
+<div class="sign-up">
+  <mat-card>
+    <mat-card-title>
+      <h1 data-cy="title">Sign Up</h1>
+    </mat-card-title>
+    <mat-card-content>
+      <form [formGroup]="signUpForm">
+        <mat-form-field appearance="outline" data-cy="email-address-field">
+          <mat-label>Enter your email</mat-label>
+          <input
+            formControlName="email"
+            matInput
+            placeholder="Email Address"
+            required
+            type="email"
+          />
+          <mat-error *ngIf="this.signUpForm.get('email')?.invalid">
+            {{ getErrorMessage('email') }}
+          </mat-error>
+        </mat-form-field>
+        <ng-container formGroupName="matchingPassword">
+          <mat-form-field appearance="outline" data-cy="password-field">
+            <mat-label>Enter your password</mat-label>
+            <input
+              [type]="hide ? 'password' : 'text'"
+              formControlName="password"
+              matInput
+              placeholder="Password"
+              required
+            />
+            <button
+              (click)="hide = !hide"
+              [attr.aria-label]="'Hide password'"
+              [attr.aria-pressed]="hide"
+              data-cy="password-visibility-button"
+              mat-icon-button
+              matSuffix
+              type="button"
+            >
+              <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error
+              *ngIf="
+                this.signUpForm.get('matchingPassword')?.get('password')
+                  ?.invalid
+              "
+            >
+              {{ getPasswordErrorMessage('password') }}
+            </mat-error>
+          </mat-form-field>
+          <mat-form-field
+            [subscriptSizing]="
+              this.signUpForm.get('matchingPassword')?.invalid &&
+              (this.signUpForm.get('matchingPassword')?.get('confirmPassword')
+                ?.dirty ||
+                this.signUpForm.get('matchingPassword')?.get('confirmPassword')
+                  ?.touched)
+                ? 'dynamic'
+                : 'fixed'
+            "
+            appearance="outline"
+            data-cy="confirm-password-field"
+          >
+            <mat-label>Enter your confirm password</mat-label>
+            <input
+              [type]="hide ? 'password' : 'text'"
+              formControlName="confirmPassword"
+              matInput
+              placeholder="Confirm Password"
+              required
+            />
+            <button
+              (click)="hide = !hide"
+              [attr.aria-label]="'Hide password'"
+              [attr.aria-pressed]="hide"
+              data-cy="confirm-password-visibility-button"
+              mat-icon-button
+              matSuffix
+              type="button"
+            >
+              <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error
+              *ngIf="
+                this.signUpForm.get('matchingPassword')?.get('confirmPassword')
+                  ?.invalid
+              "
+            >
+              {{ getPasswordErrorMessage('confirmPassword') }}
+            </mat-error>
+          </mat-form-field>
+          <mat-error
+            *ngIf="
+              this.signUpForm.get('matchingPassword')?.invalid &&
+              (this.signUpForm.get('matchingPassword')?.get('confirmPassword')
+                ?.dirty ||
+                this.signUpForm.get('matchingPassword')?.get('confirmPassword')
+                  ?.touched) &&
+              getErrorMessage('matchingPassword') !== ''
+            "
+            class="match-password"
+            data-cy="matching-password-error"
+          >
+            {{ getErrorMessage('matchingPassword') }}
+          </mat-error>
+        </ng-container>
+        <button
+          (click)="signUp()"
+          color="primary"
+          data-cy="sign-up-button"
+          mat-raised-button
+          type="submit"
+        >
+          Sign Up
+        </button>
+      </form>
+    </mat-card-content>
+    <mat-card-actions data-cy="sign-in">
+      Already have an account?
+      <a data-cy="sign-in-link" routerLink="/sign-in">Sign in</a>
+    </mat-card-actions>
+  </mat-card>
+</div>
