@@ -17,6 +17,7 @@
       "executor": "@nx/eslint:lint"
     },
     "component-test": {
+      "cache": true,
       "executor": "@nx/cypress:cypress",
       "options": {
         "cypressConfig": "libs/angular/authui/feature/core/cypress.config.ts",
