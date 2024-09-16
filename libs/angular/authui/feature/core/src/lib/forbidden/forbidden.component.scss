@@ -1,0 +1,15 @@
+.forbidden-container {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 16px;
+
+  .forbidden-text {
+    margin: 0;
+  }
+
+  .forbidden-number {
+    font-size: 96px;
+    font-weight: bolder;
+  }
+}
