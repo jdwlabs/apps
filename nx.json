@@ -76,6 +76,9 @@
     },
     "e2e-ci--**/*": {
       "dependsOn": ["^build"]
+    },
+    "@nxrocks/nx-spring-boot:test": {
+      "cache": true
     }
   },
   "generators": {
