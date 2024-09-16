@@ -14,6 +14,7 @@
       }
     },
     "component-test": {
+      "cache": true,
       "executor": "@nx/cypress:cypress",
       "options": {
         "cypressConfig": "libs/angular/container/feature/core/cypress.config.ts",
