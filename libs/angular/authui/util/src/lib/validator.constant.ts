@@ -6,7 +6,7 @@ export const PASSWORD_REQUIRED_VALIDATION_MESSAGE = 'Password is required';
 export const EMAIL_VALIDATOR_PATTERN =
   '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}';
 export const PASSWORD_VALIDATOR_PATTERN =
-  '^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$';
+  '^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};\':"\\\\|,.<>\\/?~`])[A-Za-z\\d!@#$%^&*()_+\\-=\\[\\]{};\':"\\\\|,.<>\\/?~`]{8,}$';
 export const CONFIRM_PASSWORD_REQUIRED_VALIDATION_MESSAGE =
   'Confirm password is required';
 export const PASSWORD_MATCH_VALIDATION_MESSAGE = 'Passwords must match';
