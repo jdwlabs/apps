@@ -1,5 +1,6 @@
 package com.jdw.usersrole.controllers;
 
+import com.jdw.usersrole.dtos.AuthResponseDTO;
 import com.jdw.usersrole.dtos.UserRequestDTO;
 import com.jdw.usersrole.models.User;
 import com.jdw.usersrole.services.AuthService;
@@ -23,10 +24,10 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/authenticate")
-    public ResponseEntity<String> authenticate(@Valid @RequestBody UserRequestDTO user) {
+    public ResponseEntity<AuthResponseDTO> authenticate(@Valid @RequestBody UserRequestDTO user) {
         log.trace("Authenticating user {}", user);
-        String token = authService.authenticate(user);
-        return ResponseEntity.ok(token);
+        AuthResponseDTO responseDTO = authService.authenticate(user);
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PostMapping("/user")
