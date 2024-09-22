@@ -1,5 +1,6 @@
 package com.jdw.usersrole.services;
 
+import com.jdw.usersrole.dtos.AuthResponseDTO;
 import com.jdw.usersrole.dtos.UserRequestDTO;
 import com.jdw.usersrole.models.SecurityUser;
 import com.jdw.usersrole.models.User;
@@ -30,11 +31,13 @@ public class AuthService {
         return "%s://%s:%d%s".formatted(scheme, serverName, serverPort, contextPath);
     }
 
-    public String authenticate(@Valid UserRequestDTO userRequestDTO) {
+    public AuthResponseDTO authenticate(@Valid UserRequestDTO userRequestDTO) {
         log.info("Authenticating user with: emailAddress={}", userRequestDTO.emailAddress());
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(userRequestDTO.emailAddress(), userRequestDTO.password()));
         User user = userService.getUserByEmailAddress(userRequestDTO.emailAddress());
-        return jwtService.generateToken(new SecurityUser(user, roleRepository), getCurrentUrl());
+        return AuthResponseDTO.builder()
+                .jwtToken(jwtService.generateToken(new SecurityUser(user, roleRepository), getCurrentUrl()))
+                .build();
     }
 }

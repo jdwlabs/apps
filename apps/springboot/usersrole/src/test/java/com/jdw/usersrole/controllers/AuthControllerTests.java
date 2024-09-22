@@ -1,5 +1,6 @@
 package com.jdw.usersrole.controllers;
 
+import com.jdw.usersrole.dtos.AuthResponseDTO;
 import com.jdw.usersrole.dtos.UserRequestDTO;
 import com.jdw.usersrole.models.User;
 import com.jdw.usersrole.services.AuthService;
@@ -33,13 +34,13 @@ class AuthControllerTests {
     @Test
     void authenticate_shouldReturnToken() {
         UserRequestDTO userRequestDTO = new UserRequestDTO("user@jdw.com", "P@ssw0rd!");
-        String mockToken = "mock-jwt-token";
-        when(authService.authenticate(userRequestDTO)).thenReturn(mockToken);
+        AuthResponseDTO mockResponse = AuthResponseDTO.builder().jwtToken("mock-jwt-token").build();
+        when(authService.authenticate(userRequestDTO)).thenReturn(mockResponse);
 
-        ResponseEntity<String> response = authController.authenticate(userRequestDTO);
+        ResponseEntity<AuthResponseDTO> response = authController.authenticate(userRequestDTO);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(mockToken, response.getBody());
+        assertEquals(mockResponse, response.getBody());
     }
 
     @Test

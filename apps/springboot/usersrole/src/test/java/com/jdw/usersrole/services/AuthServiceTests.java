@@ -1,5 +1,6 @@
 package com.jdw.usersrole.services;
 
+import com.jdw.usersrole.dtos.AuthResponseDTO;
 import com.jdw.usersrole.dtos.UserRequestDTO;
 import com.jdw.usersrole.models.SecurityUser;
 import com.jdw.usersrole.models.User;
@@ -37,6 +38,7 @@ class AuthServiceTests {
     void authenticate_shouldReturnTokenWhenCredentialsAreValid() {
         UserRequestDTO requestDTO = new UserRequestDTO("user@jdw.com", "P@ssw0rd!");
         User user = new User(1L, "user@jdw.com", "encodedPassword", null, null, null, null, null, null, null);
+        AuthResponseDTO expectedResponse = AuthResponseDTO.builder().jwtToken("mocked-jwt-token").build();
 
         when(request.getScheme()).thenReturn("http");
         when(request.getServerName()).thenReturn("localhost");
@@ -45,13 +47,13 @@ class AuthServiceTests {
         when(userService.getUserByEmailAddress(requestDTO.emailAddress())).thenReturn(user);
         when(jwtService.generateToken(any(SecurityUser.class), anyString())).thenReturn("mocked-jwt-token");
 
-        String token = authService.authenticate(requestDTO);
+        AuthResponseDTO actualResponse = authService.authenticate(requestDTO);
 
         verify(authenticationManager).authenticate(
                 new UsernamePasswordAuthenticationToken(requestDTO.emailAddress(), requestDTO.password()));
         verify(userService).getUserByEmailAddress(requestDTO.emailAddress());
         verify(jwtService).generateToken(any(SecurityUser.class), anyString());
-        assertEquals("mocked-jwt-token", token);
+        assertEquals(expectedResponse, actualResponse);
     }
 
     @Test
