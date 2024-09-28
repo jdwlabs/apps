@@ -4,11 +4,10 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.8.0](https://github.com/jdwillmsen/jdw/compare/container-0.7.1...container-0.8.0) (2024-09-28)
 
-
 ### Features
 
-* **container:** add environment config updates ([6803e9f](https://github.com/jdwillmsen/jdw/commit/6803e9f58ce36ab443f11e4b688f95b48e44d452))
-* **container:** add snackbar theme mixins ([11de6e2](https://github.com/jdwillmsen/jdw/commit/11de6e236c15b0d62f4ff26e6cd99c2e9f95f937))
+- **container:** add environment config updates ([6803e9f](https://github.com/jdwillmsen/jdw/commit/6803e9f58ce36ab443f11e4b688f95b48e44d452))
+- **container:** add snackbar theme mixins ([11de6e2](https://github.com/jdwillmsen/jdw/commit/11de6e236c15b0d62f4ff26e6cd99c2e9f95f937))
 
 ## [0.7.1](https://github.com/jdwillmsen/jdw/compare/container-0.7.0...container-0.7.1) (2024-09-15)
 
