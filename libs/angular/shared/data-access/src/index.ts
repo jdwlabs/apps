@@ -1,1 +1,2 @@
-export * from './lib/data-access/data-access.component';
+export * from './lib/auth/auth.service';
+export * from './lib/snackbar/snackbar.service';
