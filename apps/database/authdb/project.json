@@ -51,6 +51,12 @@
     },
     "serve": {
       "command": "docker run --rm -p 5432:5432 jdwillmsen/jdw-authdb:latest"
+    },
+    "serve-cache": {
+      "command": "docker run --rm -v authdb-data:/var/lib/postgresql/data -p 5432:5432 jdwillmsen/jdw-authdb:latest"
+    },
+    "clear-cache": {
+      "command": "docker volume rm authdb-data || true"
     }
   }
 }
