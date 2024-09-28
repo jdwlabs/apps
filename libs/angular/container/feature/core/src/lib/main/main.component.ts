@@ -8,14 +8,17 @@ import {
   NavigationLayoutComponent,
 } from '@jdw/angular-shared-ui';
 import { RouterOutlet } from '@angular/router';
-import { NavigationItem } from '@jdw/angular-shared-util';
+import {
+  Environment,
+  ENVIRONMENT,
+  NavigationItem,
+} from '@jdw/angular-shared-util';
 import {
   MatChip,
   MatChipListbox,
   MatChipOption,
 } from '@angular/material/chips';
 import { MatButton } from '@angular/material/button';
-import { ENVIRONMENT, Environment } from '@jdw/angular-container-util';
 import { VersionService } from '@jdw/angular-container-data-access';
 
 @Component({
