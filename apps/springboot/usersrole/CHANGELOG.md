@@ -2,6 +2,14 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.8.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.7.5...usersrole-0.8.0) (2024-09-28)
+
+
+### Features
+
+* **usersrole:** add more special characters to password regex ([f71ab17](https://github.com/jdwillmsen/jdw/commit/f71ab176b6c3be0db2a76c2fa8ee920f17d80558))
+* **usersrole:** update token response type for auth controller ([9fc20d3](https://github.com/jdwillmsen/jdw/commit/9fc20d3d2c838a15212523984cb31259a07abf99))
+
 ## [0.7.5](https://github.com/jdwillmsen/jdw/compare/usersrole-0.7.4...usersrole-0.7.5) (2024-09-15)
 
 ## [0.7.4](https://github.com/jdwillmsen/jdw/compare/usersrole-0.7.3...usersrole-0.7.4) (2024-09-14)
