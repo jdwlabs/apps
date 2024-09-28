@@ -2,6 +2,17 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.0](https://github.com/jdwillmsen/jdw/compare/authui-0.3.1...authui-0.4.0) (2024-09-28)
+
+
+### Features
+
+* **authui:** add angular material theming ([aa8c583](https://github.com/jdwillmsen/jdw/commit/aa8c583593626970b2b699090dbaa040f8fa1a05))
+* **authui:** add default route handling ([31e6348](https://github.com/jdwillmsen/jdw/commit/31e63481ea7826b8cd3421972af3e93887568fe7))
+* **authui:** add environment config updates ([d7f00a4](https://github.com/jdwillmsen/jdw/commit/d7f00a467529bf33aefe97c9f5ac2816ced7690e))
+* **authui:** add snackbar theme mixins ([e1a85ef](https://github.com/jdwillmsen/jdw/commit/e1a85ef95b1b3f587f7f96337b1959f2f55a706a))
+* **authui:** update entry routes and component to point to library ([d0eebca](https://github.com/jdwillmsen/jdw/commit/d0eebcad49487c175e58b4d1289b26ea1e447899))
+
 ## [0.3.1](https://github.com/jdwillmsen/jdw/compare/authui-0.3.0...authui-0.3.1) (2024-09-15)
 
 ## [0.3.0](https://github.com/jdwillmsen/jdw/compare/authui-0.2.0...authui-0.3.0) (2024-09-14)
