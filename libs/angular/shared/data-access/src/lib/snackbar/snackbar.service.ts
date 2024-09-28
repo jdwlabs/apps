@@ -5,8 +5,10 @@ import {
   MatSnackBarHorizontalPosition,
   MatSnackBarVerticalPosition,
 } from '@angular/material/snack-bar';
-import { SnackbarComponent } from '@jdw/angular-shared-ui';
 import { PaletteColors, SnackbarOptions } from '@jdw/angular-shared-util';
+/* eslint-disable @nx/enforce-module-boundaries */
+import { SnackbarComponent } from '@jdw/angular-shared-ui';
+/* eslint-enable @nx/enforce-module-boundaries */
 
 @Injectable({
   providedIn: 'root',
@@ -33,7 +35,7 @@ export class SnackbarService {
         ? options?.autoCloseTimeout
           ? options.autoCloseTimeout
           : this.duration
-        : undefined,
+        : 0,
       horizontalPosition:
         options?.horizontalPosition || this.horizontalPosition,
       verticalPosition: options?.verticalPosition || this.verticalPosition,

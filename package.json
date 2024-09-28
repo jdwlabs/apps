@@ -57,6 +57,7 @@
     "jest-preset-angular": "14.1.1",
     "jsonc-eslint-parser": "^2.1.0",
     "ng-packagr": "~18.2.1",
+    "ngx-cookie-service": "^18.0.0",
     "nx": "19.6.4",
     "postcss": "^8.4.44",
     "postcss-url": "~10.1.3",
