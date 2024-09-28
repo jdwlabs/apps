@@ -4,6 +4,9 @@ import { provideRouter, Route } from '@angular/router';
 import { Component } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ENVIRONMENT } from '@jdw/angular-shared-util';
 
 describe(EmailSignInComponent.name, () => {
   beforeEach(() => {
@@ -21,7 +24,15 @@ describe(EmailSignInComponent.name, () => {
     ];
     TestBed.configureTestingModule({
       imports: [BrowserAnimationsModule, MatSnackBarModule],
-      providers: [provideRouter(routes)],
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ENVIRONMENT,
+          useValue: {},
+        },
+      ],
     }).overrideComponent(EmailSignInComponent, {
       add: {
         imports: [MatSnackBarModule],

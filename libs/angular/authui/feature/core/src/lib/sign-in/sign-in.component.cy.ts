@@ -3,11 +3,22 @@ import { SignInComponent } from './sign-in.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ENVIRONMENT } from '@jdw/angular-shared-util';
 
 describe(SignInComponent.name, () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [BrowserAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ENVIRONMENT,
+          useValue: {},
+        },
+      ],
     }).overrideComponent(SignInComponent, {
       add: {
         imports: [MatSnackBarModule],

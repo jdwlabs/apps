@@ -2,11 +2,22 @@ import { TestBed } from '@angular/core/testing';
 import { SignUpComponent } from './sign-up.component';
 import { ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ENVIRONMENT } from '@jdw/angular-shared-util';
 
 describe(SignUpComponent.name, () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [BrowserAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ENVIRONMENT,
+          useValue: {},
+        },
+      ],
     }).overrideComponent(SignUpComponent, {
       add: {
         imports: [],

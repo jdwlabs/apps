@@ -4,8 +4,8 @@ import { SignUpComponent } from './sign-up/sign-up.component';
 import { ForbiddenComponent } from './forbidden/forbidden.component';
 
 export const angularAuthuiFeatureCoreRoutes: Route[] = [
-  { path: '', component: SignInComponent },
   { path: 'sign-in', component: SignInComponent },
   { path: 'sign-up', component: SignUpComponent },
   { path: 'forbidden', component: ForbiddenComponent },
+  { path: '**', redirectTo: 'sign-in' },
 ];

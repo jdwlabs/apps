@@ -20,12 +20,14 @@ import {
   PASSWORD_REQUIRED_VALIDATION_MESSAGE,
   PASSWORD_VALIDATOR_PATTERN,
 } from '@jdw/angular-authui-util';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { CreateUserRequest } from '@jdw/angular-shared-util';
+import { AuthService } from '@jdw/angular-shared-data-access';
 
 @Component({
   selector: 'lib-sign-up',
@@ -111,6 +113,8 @@ export class SignUpComponent {
     ],
   };
   private router = inject(Router);
+  private authService = inject(AuthService);
+  private route = inject(ActivatedRoute);
 
   signUp() {
     const emailControl = this.signUpForm.get('email');
@@ -121,26 +125,17 @@ export class SignUpComponent {
       emailControl.valid &&
       matchingPasswordControl.valid
     ) {
-      const email = emailControl.value;
+      const emailAddress = emailControl.value;
       const passwordControl = matchingPasswordControl.get('password');
       if (passwordControl) {
         const password = passwordControl.value;
-        // const roles: Role[] = ['user'];
-        // const user: CreateUserRequest = { email, displayName, password, roles };
-        // this.usersService.create(user).subscribe({
-        //   next: () => {
-        //     this.signUpForm.reset();
-        //     this.snackbarService.success(
-        //       SIGN_UP_SUCCESS_MESSAGE,
-        //       {
-        //         variant: 'filled',
-        //         autoClose: true,
-        //       },
-        //       true,
-        //     );
-        //     this.router.navigate(['sign-in']);
-        //   },
-        // });
+        const user: CreateUserRequest = { emailAddress, password };
+        this.authService.signUp(user).subscribe({
+          next: () => {
+            this.signUpForm.reset();
+            this.router.navigate(['../sign-in'], { relativeTo: this.route });
+          },
+        });
       }
     }
   }

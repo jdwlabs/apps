@@ -3,6 +3,9 @@ import { SignInComponent } from './sign-in.component';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ENVIRONMENT } from '@jdw/angular-shared-util';
 
 describe('SignInComponent', () => {
   let component: SignInComponent;
@@ -12,8 +15,14 @@ describe('SignInComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SignInComponent, MatSnackBarModule, NoopAnimationsModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
+          useValue: {},
+        },
+        {
+          provide: ENVIRONMENT,
           useValue: {},
         },
       ],

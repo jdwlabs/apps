@@ -2,6 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SignUpComponent } from './sign-up.component';
 import { ActivatedRoute } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ENVIRONMENT } from '@jdw/angular-shared-util';
 
 describe('SignUpComponent', () => {
   let component: SignUpComponent;
@@ -11,9 +14,15 @@ describe('SignUpComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SignUpComponent, NoopAnimationsModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
           useValue: ActivatedRoute,
+        },
+        {
+          provide: ENVIRONMENT,
+          useValue: {},
         },
       ],
     }).compileComponents();

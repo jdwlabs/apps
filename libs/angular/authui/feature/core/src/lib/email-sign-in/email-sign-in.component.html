@@ -3,13 +3,13 @@
     <mat-form-field appearance="outline" data-cy="email-address-field">
       <mat-label>Enter your email</mat-label>
       <input
-        formControlName="email"
+        formControlName="emailAddress"
         matInput
         placeholder="Email Address"
         type="email"
       />
-      <mat-error *ngIf="this.form.get('email')?.invalid">
-        {{ getErrorMessage('email') }}
+      <mat-error *ngIf="this.form.get('emailAddress')?.invalid">
+        {{ getErrorMessage('emailAddress') }}
       </mat-error>
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="password-field">
