@@ -2,8 +2,8 @@
 @use './components/button/variants' as button-variants;
 @use '../../../../../../libs/angular/shared/ui/src/lib/navigation-item/navigation-item-theme.component'
   as navigation-item;
-@use '../../../../../../libs/angular/shared/ui/src/lib/snackbar/snackbar-theme.component' as snackbar;
-
+@use '../../../../../../libs/angular/shared/ui/src/lib/snackbar/snackbar-theme.component'
+  as snackbar;
 
 @mixin all-component-themes($theme) {
   @include button-variants.theme($theme);
