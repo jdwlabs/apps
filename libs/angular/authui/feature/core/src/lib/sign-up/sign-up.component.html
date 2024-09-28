@@ -5,7 +5,11 @@
     </mat-card-title>
     <mat-card-content>
       <form [formGroup]="signUpForm">
-        <mat-form-field appearance="outline" class="email-field" data-cy="email-address-field">
+        <mat-form-field
+          appearance="outline"
+          class="email-field"
+          data-cy="email-address-field"
+        >
           <mat-label>Enter your email</mat-label>
           <input
             formControlName="email"
@@ -19,7 +23,11 @@
           </mat-error>
         </mat-form-field>
         <ng-container formGroupName="matchingPassword">
-          <mat-form-field appearance="outline" class="password-field" data-cy="password-field">
+          <mat-form-field
+            appearance="outline"
+            class="password-field"
+            data-cy="password-field"
+          >
             <mat-label>Enter your password</mat-label>
             <input
               [type]="hide ? 'password' : 'text'"
