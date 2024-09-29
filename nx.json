@@ -15,7 +15,7 @@
       "!{projectRoot}/**/*.cy.[jt]s?(x)",
       "!{projectRoot}/cypress.config.[jt]s"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": ["{workspaceRoot}/go.work"]
   },
   "nxCloudAccessToken": "MmUyM2U4ZDEtN2FiYS00ZjVjLTgwZDQtN2MyNDZjYzc4NWNlfHJlYWQtd3JpdGU=",
   "targetDefaults": {
@@ -125,7 +125,8 @@
         "buildImageTargetName": "build-image",
         "buildInfoTargetName": "build-info"
       }
-    }
+    },
+    "@nx-go/nx-go"
   ],
   "defaultBase": "main"
 }
