@@ -33,6 +33,10 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
       # This line enables distribution
       # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "e2e-ci" targets have been requested
       # - name: Enable NX Cloud Distribution
