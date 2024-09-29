@@ -1,0 +1,15 @@
+.fallback-container {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 16px;
+
+  .fallback-text {
+    margin: 0;
+  }
+
+  .button-row {
+    display: flex;
+    gap: 16px;
+  }
+}

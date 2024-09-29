@@ -1,0 +1,26 @@
+<div class="fallback-container">
+  <h1 class="fallback-text" data-cy="title">Feature Unavailable</h1>
+  <p data-cy="message">
+    An error occurred. Please contact support if the issue persists.
+  </p>
+  <div class="button-row">
+    <button
+      color="primary"
+      data-cy="redirect-button"
+      mat-raised-button
+      [routerLink]="redirectLink"
+    >
+      <mat-icon data-cy="redirect-icon">{{ redirectIcon }}</mat-icon>
+      {{ redirectText }}
+    </button>
+    <button
+      color="accent"
+      data-cy="reload-button"
+      mat-raised-button
+      (click)="onReload()"
+    >
+      <mat-icon data-cy="reload-icon">replay</mat-icon>
+      Reload
+    </button>
+  </div>
+</div>
