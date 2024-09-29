@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.9.0](https://github.com/jdwillmsen/jdw/compare/container-0.8.0...container-0.9.0) (2024-09-29)
 
-
 ### Features
 
-* **container:** add fallback for auth remote module ([3fe53cc](https://github.com/jdwillmsen/jdw/commit/3fe53cc42addc7e9d3c486c8e5ba58fd1561e688))
+- **container:** add fallback for auth remote module ([3fe53cc](https://github.com/jdwillmsen/jdw/commit/3fe53cc42addc7e9d3c486c8e5ba58fd1561e688))
 
 ## [0.8.0](https://github.com/jdwillmsen/jdw/compare/container-0.7.1...container-0.8.0) (2024-09-28)
 
