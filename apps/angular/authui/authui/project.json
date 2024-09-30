@@ -4,16 +4,24 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/angular/authui/authui/src",
-  "tags": ["type:app", "scope:authui", "framework:angular"],
+  "tags": [
+    "type:app",
+    "scope:authui",
+    "framework:angular"
+  ],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/angular/authui/authui",
         "index": "apps/angular/authui/authui/src/index.html",
         "main": "apps/angular/authui/authui/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/angular/authui/authui/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -127,7 +135,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/angular/authui/authui/jest.config.ts"
       }
@@ -154,7 +164,12 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "save-version", "build-image", "update-app"]
+        "postTargets": [
+          "format",
+          "save-version",
+          "build-image",
+          "update-app"
+        ]
       }
     },
     "save-version": {
@@ -172,11 +187,35 @@
         "parallel": false
       }
     },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest --load .",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
     "update-app": {
       "command": "bash tools/update-app.sh helm/authui/Chart.yaml {version} {projectName}"
     },
     "format": {
       "command": "bash tools/format.sh"
+    },
+    "serve-container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker run --rm -p 4201:4201 jdwillmsen/jdw-authui:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
     }
   }
 }
