@@ -3,7 +3,7 @@
 FROM golang:1.23 AS builder-go
 
 # Use a specific version of node base on SHA256 digest for reproducibility and security
-FROM node:lts AS builder
+FROM node:lts-alpine AS builder
 WORKDIR /app
 
 ARG GOLANG_VERSION=1.23
