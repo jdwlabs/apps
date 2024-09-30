@@ -1,0 +1,39 @@
+# Ignore node_modules (installed inside the container)
+node_modules
+
+# Ignore Nx cache and output directories
+dist
+tmp
+.angular
+.nx
+
+# Ignore lock files and package managers' residuals
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Ignore git metadata
+.git
+.gitignore
+
+# Ignore Dockerfile if not needed in the final image
+Dockerfile
+
+# Ignore CI/CD configuration
+.github
+
+# Ignore editor or IDE config
+.vscode
+.idea
+
+# Ignore test files (if not needed in the image)
+*.spec.ts
+*.cy.ts
+
+# Ignore system-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore docs
+README.md
+LICENSE
