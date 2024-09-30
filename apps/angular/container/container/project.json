@@ -158,11 +158,35 @@
         "parallel": false
       }
     },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-container:latest --load .",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
     "update-app": {
       "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
     },
     "format": {
       "command": "bash tools/format.sh"
+    },
+    "serve-container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker run --rm -p 4200:4200 jdwillmsen/jdw-container:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
     }
   }
 }
