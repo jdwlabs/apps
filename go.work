@@ -1,1 +1,6 @@
 go 1.23
+
+use (
+	./apps/go/servicediscovery
+	./libs/go/shared/util
+)
