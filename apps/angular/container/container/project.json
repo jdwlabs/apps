@@ -181,7 +181,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 4200:4200 jdwillmsen/jdw-container:latest",
+            "command": "docker run --rm -p 4200:80 jdwillmsen/jdw-container:latest",
             "forwardAllArgs": false
           }
         ],
