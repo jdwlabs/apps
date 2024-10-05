@@ -3,7 +3,7 @@ services:
   jdw-container:
     image: jdwillmsen/jdw-container:latest
     ports:
-      - "4200:80"
+      - '4200:80'
     restart: unless-stopped
     environment:
       - ENVIRONMENT=LOCAL
@@ -13,7 +13,7 @@ services:
   jdw-authui:
     image: jdwillmsen/jdw-authui:latest
     ports:
-      - "4201:80"
+      - '4201:80'
     restart: unless-stopped
     environment:
       - ENVIRONMENT=LOCAL
@@ -22,15 +22,15 @@ services:
   jdw-authdb:
     image: jdwillmsen/jdw-authdb:latest
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
-      - authdb-data:/var/lib/postgresql/data  # Persistent storage for PostgreSQL
+      - authdb-data:/var/lib/postgresql/data # Persistent storage for PostgreSQL
     restart: unless-stopped
 
   jdw-usersrole:
     image: jdwillmsen/jdw-usersrole:latest
     ports:
-      - "8080:8080"
+      - '8080:8080'
     restart: unless-stopped
     environment:
       - UR_JWT_SECRET_KEY=${UR_JWT_SECRET_KEY}
@@ -41,7 +41,7 @@ services:
   jdw-servicediscovery:
     image: jdwillmsen/jdw-servicediscovery:latest
     ports:
-      - "9000:9000"
+      - '9000:9000'
     restart: unless-stopped
     environment:
       - SD_PORT=9000

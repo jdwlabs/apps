@@ -4,24 +4,16 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/angular/authui/authui/src",
-  "tags": [
-    "type:app",
-    "scope:authui",
-    "framework:angular"
-  ],
+  "tags": ["type:app", "scope:authui", "framework:angular"],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/angular/authui/authui",
         "index": "apps/angular/authui/authui/src/index.html",
         "main": "apps/angular/authui/authui/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/angular/authui/authui/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -135,9 +127,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/angular/authui/authui/jest.config.ts"
       }
@@ -164,12 +154,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": [
-          "format",
-          "save-version",
-          "build-image",
-          "update-app"
-        ]
+        "postTargets": ["format", "save-version", "build-image", "update-app"]
       }
     },
     "save-version": {
