@@ -210,7 +210,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 4201:4201 jdwillmsen/jdw-authui:latest",
+            "command": "docker run --rm -p 4201:80 jdwillmsen/jdw-authui:latest",
             "forwardAllArgs": false
           }
         ],
