@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.10.0](https://github.com/jdwillmsen/jdw/compare/container-0.9.0...container-0.10.0) (2024-10-05)
 
-
 ### Features
 
-* **container:** add service discovery module federation config loading ([c439a4d](https://github.com/jdwillmsen/jdw/commit/c439a4dc62c77a5c55ff154988d3754757274034))
+- **container:** add service discovery module federation config loading ([c439a4d](https://github.com/jdwillmsen/jdw/commit/c439a4dc62c77a5c55ff154988d3754757274034))
 
 ## [0.9.0](https://github.com/jdwillmsen/jdw/compare/container-0.8.0...container-0.9.0) (2024-09-29)
 
