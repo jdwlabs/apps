@@ -55,7 +55,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 8080:8080 jdwillmsen/jdw-servicediscovery:latest",
+            "command": "docker run --rm -p 9000:9000 jdwillmsen/jdw-servicediscovery:latest",
             "forwardAllArgs": false
           }
         ],
@@ -75,6 +75,9 @@
     },
     "update-app": {
       "command": "bash tools/update-app.sh helm/servicediscovery/Chart.yaml {version} {projectName}"
+    },
+    "download": {
+      "command": "go mod download"
     }
   }
 }
