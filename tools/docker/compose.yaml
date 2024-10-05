@@ -1,0 +1,58 @@
+name: jdw
+services:
+  jdw-container:
+    image: jdwillmsen/jdw-container:latest
+    ports:
+      - "4200:80"
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=LOCAL
+      - SERVICE_DISCOVERY_BASE_URL=http://localhost:9000
+      - AUTH_BASE_URL=http://localhost:8080
+
+  jdw-authui:
+    image: jdwillmsen/jdw-authui:latest
+    ports:
+      - "4201:80"
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=LOCAL
+      - AUTH_BASE_URL=http://localhost:8080
+
+  jdw-authdb:
+    image: jdwillmsen/jdw-authdb:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - authdb-data:/var/lib/postgresql/data  # Persistent storage for PostgreSQL
+    restart: unless-stopped
+
+  jdw-usersrole:
+    image: jdwillmsen/jdw-usersrole:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      - UR_JWT_SECRET_KEY=${UR_JWT_SECRET_KEY}
+      - UR_PG_DATASOURCE_URL=jdbc:postgresql://jdw-authdb:5432/jdw
+      - UR_PG_USERNAME=default_user
+      - UR_PG_PASSWORD=default_password
+
+  jdw-servicediscovery:
+    image: jdwillmsen/jdw-servicediscovery:latest
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    environment:
+      - SD_PORT=9000
+    configs:
+      - source: service-discovery-config
+        target: /app/config.json
+
+configs:
+  service-discovery-config:
+    external: false
+    file: ./config.json
+
+volumes:
+  authdb-data:
