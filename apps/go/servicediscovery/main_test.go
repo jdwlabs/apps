@@ -20,6 +20,22 @@ func (m mockEnvGetter) getEnvOrDefault(key, fallback string) string {
 	return fallback
 }
 
+func TestRootHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	rootHandler(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("rootHandler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	expected := "Service Discovery is up and running"
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("rootHandler returned unexpected body: got %v want %v", w.Body.String(), expected)
+	}
+}
+
 func TestHealthHandler(t *testing.T) {
 	// Create a new request to the /health endpoint
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)

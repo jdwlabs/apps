@@ -26,6 +26,14 @@ func (e realEnv) getEnvOrDefault(key, fallback string) string {
 	return util.GetEnvOrDefault(key, fallback)
 }
 
+func rootHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, err := fmt.Fprintf(w, "Service Discovery is up and running")
+	if err != nil {
+		return
+	}
+}
+
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, err := fmt.Fprintf(w, "Service is healthy")
@@ -87,6 +95,7 @@ func loadConfig(envGetter envGetter) {
 }
 
 func registerRoutes(router *http.ServeMux, envGetter envGetter) {
+	router.HandleFunc("GET /", rootHandler)
 	router.HandleFunc("GET /health", healthHandler)
 	router.HandleFunc("GET /config", configHandler)
 	router.HandleFunc("GET /version", versionHandler(envGetter))
