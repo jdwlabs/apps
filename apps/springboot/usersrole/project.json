@@ -24,6 +24,18 @@
     },
     "format": {
       "command": "bash tools/format.sh"
+    },
+    "serve-container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker run --rm -p 8080:8080 jdwillmsen/jdw-usersrole:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
     }
   }
 }
