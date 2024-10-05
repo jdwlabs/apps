@@ -79,6 +79,15 @@
     },
     "@nxrocks/nx-spring-boot:test": {
       "cache": true
+    },
+    "@nx-go/nx-go:build": {
+      "cache": true
+    },
+    "@nx-go/nx-go:lint": {
+      "cache": true
+    },
+    "@nx-go/nx-go:test": {
+      "cache": true
     }
   },
   "generators": {
