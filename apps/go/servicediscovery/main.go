@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rs/cors"
 	"libs/go/shared/util"
 	"log"
 	"log/slog"
@@ -63,13 +64,13 @@ func versionHandler(envGetter envGetter) http.HandlerFunc {
 }
 
 func initServer(envGetter envGetter) *http.Server {
-	port := envGetter.getEnvOrDefault("SD_PORT", "8080")
+	port := envGetter.getEnvOrDefault("SD_PORT", "9000")
 	router := http.NewServeMux()
 	registerRoutes(router, envGetter)
 
 	return &http.Server{
 		Addr:    ":" + port,
-		Handler: util.Logging(router),
+		Handler: util.Logging(cors.Default().Handler(router)),
 	}
 }
 
