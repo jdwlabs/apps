@@ -1,6 +1,6 @@
 import { setRemoteDefinitions } from '@nx/angular/mf';
 
-import fallbackDefinitions from './assets/module-federation.manifest.json';
+import fallbackDefinitions from './module-federation.manifest.json';
 import config from './config.json';
 
 fetch(`${config.SERVICE_DISCOVERY_BASE_URL}/config`)
