@@ -17,9 +17,10 @@
         "tsConfig": "apps/angular/container/container/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
-          "apps/angular/container/container/src/favicon.ico",
-          "apps/angular/container/container/src/assets",
-          "apps/angular/container/container/src/VERSION"
+          {
+            "glob": "**/*",
+            "input": "apps/angular/container/container/public"
+          }
         ],
         "styles": [
           "apps/angular/container/container/src/styles.scss",
@@ -144,7 +145,7 @@
       }
     },
     "save-version": {
-      "command": "bash tools/create-version.sh {version} {projectRoot}/src {projectName}"
+      "command": "bash tools/create-version.sh {version} {projectRoot}/public {projectName}"
     },
     "build-image": {
       "executor": "nx:run-commands",
