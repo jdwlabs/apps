@@ -1,9 +1,7 @@
 @use '@angular/material' as mat;
 @use './components/button/variants' as button-variants;
-@use '../navigation-item/navigation-item-theme.component'
-  as navigation-item;
-@use '../snackbar/snackbar-theme.component'
-  as snackbar;
+@use '../navigation-item/navigation-item-theme.component' as navigation-item;
+@use '../snackbar/snackbar-theme.component' as snackbar;
 
 @mixin all-component-themes($theme) {
   @include button-variants.theme($theme);
