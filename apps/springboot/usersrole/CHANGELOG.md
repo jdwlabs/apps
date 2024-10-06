@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.9.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.8.2...usersrole-0.9.0) (2024-10-06)
+
+
+### Features
+
+* **usersrole:** add cors for https ([50b8c94](https://github.com/jdwillmsen/jdw/commit/50b8c94aed2fff0709deb3ddc1cf4b089e022c69))
+
 ## [0.8.2](https://github.com/jdwillmsen/jdw/compare/usersrole-0.8.1...usersrole-0.8.2) (2024-10-05)
 
 ## [0.8.1](https://github.com/jdwillmsen/jdw/compare/usersrole-0.8.0...usersrole-0.8.1) (2024-09-29)
