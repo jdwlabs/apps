@@ -1,5 +1,5 @@
 @use '@angular/material' as mat;
-@use './styles/themes/red-teal';
+@use '../../../../../libs/angular/shared/ui/src/lib/styles/themes/red-teal';
 
 @include mat.core();
 
