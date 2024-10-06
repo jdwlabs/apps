@@ -1,5 +1,5 @@
 @use '@angular/material' as mat;
-@use './styles/themes/black-white';
+@use '../../../../../libs/angular/shared/ui/src/lib/styles/themes/black-white';
 
 @include mat.core();
 

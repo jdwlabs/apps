@@ -26,42 +26,42 @@
           "apps/angular/authui/authui/src/styles.scss",
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/pink-bluegrey.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/pink-bluegrey.scss",
             "bundleName": "pink-bluegrey"
           },
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/deeppurple-amber.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/deeppurple-amber.scss",
             "bundleName": "deeppurple-amber"
           },
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/indigo-pink.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/indigo-pink.scss",
             "bundleName": "indigo-pink"
           },
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/purple-green.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/purple-green.scss",
             "bundleName": "purple-green"
           },
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/red-teal.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/red-teal.scss",
             "bundleName": "red-teal"
           },
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/black-white.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/black-white.scss",
             "bundleName": "black-white"
           },
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/user-custom-dark.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/user-custom-dark.scss",
             "bundleName": "custom-dark"
           },
           {
             "inject": false,
-            "input": "apps/angular/authui/authui/src/styles/themes/user-custom-light.scss",
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/user-custom-light.scss",
             "bundleName": "custom-light"
           }
         ],
