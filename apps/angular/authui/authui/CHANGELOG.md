@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.6.0](https://github.com/jdwillmsen/jdw/compare/authui-0.5.1...authui-0.6.0) (2024-10-06)
 
-
 ### Features
 
-* **authui:** add shared ui library styles ([3aeaacd](https://github.com/jdwillmsen/jdw/commit/3aeaacd73909b364c44e83bcf106f80e6d4f11d2))
+- **authui:** add shared ui library styles ([3aeaacd](https://github.com/jdwillmsen/jdw/commit/3aeaacd73909b364c44e83bcf106f80e6d4f11d2))
 
 ## [0.5.1](https://github.com/jdwillmsen/jdw/compare/authui-0.5.0...authui-0.5.1) (2024-10-06)
 
