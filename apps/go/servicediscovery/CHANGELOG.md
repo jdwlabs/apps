@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.1.1](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.1.0...servicediscovery-0.1.1) (2024-10-06)
+
 ## 0.1.0 (2024-10-05)
 
 ### Features
