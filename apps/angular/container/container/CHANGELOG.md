@@ -2,6 +2,14 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.11.0](https://github.com/jdwillmsen/jdw/compare/container-0.10.1...container-0.11.0) (2024-10-07)
+
+
+### Features
+
+* **angular-shared-ui:** add styles to shared ui library ([f3ace21](https://github.com/jdwillmsen/jdw/commit/f3ace21fe250079f39adb6503de5924a29fc3ae3))
+* **container:** add shared ui library styles ([92052d0](https://github.com/jdwillmsen/jdw/commit/92052d041fd6fe38f0287b027e91e00e83142b5d))
+
 ## [0.10.1](https://github.com/jdwillmsen/jdw/compare/container-0.10.0...container-0.10.1) (2024-10-06)
 
 ## [0.10.0](https://github.com/jdwillmsen/jdw/compare/container-0.9.0...container-0.10.0) (2024-10-05)
