@@ -41,6 +41,9 @@
       ],
       "authui/Routes": [
         "apps/angular/authui/authui/src/app/remote-entry/entry.routes.ts"
+      ],
+      "usersui/Routes": [
+        "apps/angular/usersui/usersui/src/app/remote-entry/entry.routes.ts"
       ]
     }
   },
