@@ -5,6 +5,13 @@ import { FallbackComponent } from '@jdw/angular-container-feature-core';
 
 export const appRoutes: Route[] = [
   {
+    path: 'users',
+    loadChildren: () =>
+      loadRemoteModule('usersui', './Routes')
+        .then((m) => m.remoteRoutes)
+        .catch(() => [{ path: '**', component: FallbackComponent }]),
+  },
+  {
     path: 'auth',
     loadChildren: () =>
       loadRemoteModule('authui', './Routes')

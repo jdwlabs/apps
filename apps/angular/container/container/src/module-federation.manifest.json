@@ -1,3 +1,4 @@
 {
-  "authui": "http://localhost:4201"
+  "authui": "http://localhost:4201",
+  "usersui": "http://localhost:4202"
 }
