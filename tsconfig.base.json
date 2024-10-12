@@ -39,6 +39,9 @@
       "@jdw/angular-shared-util": [
         "libs/angular/shared/util/src/index.ts"
       ],
+      "@jdw/angular-usersui-feature-core": [
+        "libs/angular/usersui/feature/core/src/index.ts"
+      ],
       "authui/Routes": [
         "apps/angular/authui/authui/src/app/remote-entry/entry.routes.ts"
       ],
