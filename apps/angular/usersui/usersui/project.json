@@ -1,0 +1,206 @@
+{
+  "name": "usersui",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/angular/usersui/usersui/src",
+  "tags": ["type:app", "scope:usersui", "framework:angular"],
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:webpack-browser",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/angular/usersui/usersui",
+        "index": "apps/angular/usersui/usersui/src/index.html",
+        "main": "apps/angular/usersui/usersui/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/angular/usersui/usersui/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/angular/usersui/usersui/public"
+          }
+        ],
+        "styles": [
+          "apps/angular/usersui/usersui/src/styles.scss",
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/pink-bluegrey.scss",
+            "bundleName": "pink-bluegrey"
+          },
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/deeppurple-amber.scss",
+            "bundleName": "deeppurple-amber"
+          },
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/indigo-pink.scss",
+            "bundleName": "indigo-pink"
+          },
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/purple-green.scss",
+            "bundleName": "purple-green"
+          },
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/red-teal.scss",
+            "bundleName": "red-teal"
+          },
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/black-white.scss",
+            "bundleName": "black-white"
+          },
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/user-custom-dark.scss",
+            "bundleName": "custom-dark"
+          },
+          {
+            "inject": false,
+            "input": "libs/angular/shared/ui/src/lib/styles/themes/user-custom-light.scss",
+            "bundleName": "custom-light"
+          }
+        ],
+        "scripts": [],
+        "customWebpackConfig": {
+          "path": "apps/angular/usersui/usersui/webpack.config.ts"
+        }
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "2kb",
+              "maximumError": "4kb"
+            }
+          ],
+          "outputHashing": "all",
+          "customWebpackConfig": {
+            "path": "apps/angular/usersui/usersui/webpack.prod.config.ts"
+          }
+        },
+        "development": {
+          "buildOptimizer": false,
+          "optimization": false,
+          "vendorChunk": true,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "namedChunks": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@nx/angular:dev-server",
+      "options": {
+        "port": 4202,
+        "publicHost": "http://localhost:4202"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "usersui:build:production"
+        },
+        "development": {
+          "buildTarget": "usersui:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular-devkit/build-angular:extract-i18n",
+      "options": {
+        "buildTarget": "usersui:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/angular/usersui/usersui/jest.config.ts"
+      }
+    },
+    "serve-static": {
+      "executor": "@nx/web:file-server",
+      "defaultConfiguration": "production",
+      "options": {
+        "buildTarget": "usersui:build",
+        "port": 4202,
+        "watch": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "usersui:build:development"
+        },
+        "production": {
+          "buildTarget": "usersui:build:production"
+        }
+      }
+    },
+    "version": {
+      "executor": "@jscutlery/semver:version",
+      "options": {
+        "push": true,
+        "preset": "conventionalcommits",
+        "postTargets": ["format", "save-version", "build-image", "update-app"]
+      }
+    },
+    "save-version": {
+      "command": "bash tools/create-version.sh {version} {projectRoot}/public {projectName}"
+    },
+    "build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-usersui:latest -t jdwillmsen/jdw-usersui:{version} --push .",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-usersui:latest --load .",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "update-app": {
+      "command": "bash tools/update-app.sh helm/usersui/Chart.yaml {version} {projectName}"
+    },
+    "format": {
+      "command": "bash tools/format.sh"
+    },
+    "serve-container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker run --rm -p 4202:80 jdwillmsen/jdw-usersui:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    }
+  }
+}
