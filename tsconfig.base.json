@@ -39,6 +39,9 @@
       "@jdw/angular-shared-util": [
         "libs/angular/shared/util/src/index.ts"
       ],
+      "@jdw/angular-usersui-data-access": [
+        "libs/angular/usersui/data-access/src/index.ts"
+      ],
       "@jdw/angular-usersui-feature-core": [
         "libs/angular/usersui/feature/core/src/index.ts"
       ],
