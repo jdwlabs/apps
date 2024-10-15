@@ -15,6 +15,16 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint"
+    },
+    "component-test": {
+      "cache": true,
+      "executor": "@nx/cypress:cypress",
+      "options": {
+        "cypressConfig": "libs/angular/usersui/feature/core/cypress.config.ts",
+        "testingType": "component",
+        "skipServe": true,
+        "devServerTarget": "usersui:build"
+      }
     }
   }
 }
