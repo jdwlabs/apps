@@ -1,0 +1,20 @@
+{
+  "name": "angular-usersui-util",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/angular/usersui/util/src",
+  "prefix": "lib",
+  "projectType": "library",
+  "tags": ["type:util", "scope:usersui", "framework:angular"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/angular/usersui/util/jest.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

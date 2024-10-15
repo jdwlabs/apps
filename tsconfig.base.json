@@ -45,6 +45,9 @@
       "@jdw/angular-usersui-feature-core": [
         "libs/angular/usersui/feature/core/src/index.ts"
       ],
+      "@jdw/angular-usersui-util": [
+        "libs/angular/usersui/util/src/index.ts"
+      ],
       "authui/Routes": [
         "apps/angular/authui/authui/src/app/remote-entry/entry.routes.ts"
       ],
