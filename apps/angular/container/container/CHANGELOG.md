@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.12.0](https://github.com/jdwillmsen/jdw/compare/container-0.11.0...container-0.12.0) (2024-10-16)
 
-
 ### Features
 
-* **container:** add usersui remote ([1bce8b3](https://github.com/jdwillmsen/jdw/commit/1bce8b346195362d3ee9889b33c5d0d90bc452ef))
+- **container:** add usersui remote ([1bce8b3](https://github.com/jdwillmsen/jdw/commit/1bce8b346195362d3ee9889b33c5d0d90bc452ef))
 
 ## [0.11.0](https://github.com/jdwillmsen/jdw/compare/container-0.10.1...container-0.11.0) (2024-10-07)
 
