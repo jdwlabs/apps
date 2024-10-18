@@ -132,6 +132,63 @@ describe('UsersService', () => {
     });
   });
 
+  describe('getUser', () => {
+    it('should send a GET request with the correct headers and return a user by ID', () => {
+      const mockUser: User = {
+        id: 1,
+        emailAddress: 'user1@jdwkube.com',
+        password: 'P@ssw0rd',
+        status: 'ACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '2024-08-09T01:02:34.567+00:00',
+        modifiedByUserId: 1,
+        modifiedTime: '2024-08-09T01:02:34.567+00:00',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.getUser('1').subscribe((user) => {
+        expect(user).toEqual(mockUser);
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users/1`,
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(mockUser);
+    });
+
+    it('should handle error when the request fails', () => {
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.getUser('1').subscribe({
+        next: () => fail('Expected an error, but got a success response'),
+        error: (error) => {
+          expect(error).toBe(EMPTY);
+        },
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users/1`,
+      );
+      req.flush({ message: 'Error' }, { status: 404, statusText: 'Not Found' });
+
+      expect(mockSnackbarService.error).toHaveBeenCalledWith(
+        'An unexpected error occurred on our server. Please try again later.',
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    });
+  });
+
   describe('handleError', () => {
     it('should show error message via snackbar on 500 error', () => {
       const mockError = new HttpErrorResponse({ status: 500 });
@@ -140,6 +197,55 @@ describe('UsersService', () => {
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    });
+
+    it('should show a custom message for 404 errors', () => {
+      const mockError = new HttpErrorResponse({ status: 404 });
+
+      service.handleError(mockError);
+
+      expect(mockSnackbarService.error).toHaveBeenCalledWith(
+        'The requested resource could not be found. Please verify the URL or resource and try again.',
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    });
+
+    it('should handle forbidden error (403)', () => {
+      const mockError = new HttpErrorResponse({ status: 403 });
+
+      service.handleError(mockError);
+
+      expect(mockSnackbarService.error).toHaveBeenCalledWith(
+        'You do not have the necessary permissions to perform this action.',
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    });
+
+    it('should handle network error', () => {
+      const mockError = new HttpErrorResponse({
+        error: new ErrorEvent('NetworkError', {
+          message: 'Unable to connect to the server',
+        }),
+      });
+
+      service.handleError(mockError);
+
+      expect(mockSnackbarService.error).toHaveBeenCalledWith(
+        'An error occurred. Please contact support if the issue persists.',
         {
           variant: 'filled',
           autoClose: false,

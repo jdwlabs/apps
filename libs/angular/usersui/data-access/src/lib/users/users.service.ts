@@ -33,6 +33,17 @@ export class UsersService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
+  getUser(userId: string): Observable<User> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .get<User>(`${this.environment.AUTH_BASE_URL}/api/users/${userId}`, {
+        headers: headers,
+      })
+      .pipe(catchError((error) => this.handleError(error)));
+  }
+
   handleError(error: HttpErrorResponse) {
     const errorMessage = getErrorMessage(error);
     this.snackbarService.error(
