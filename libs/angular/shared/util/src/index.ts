@@ -6,3 +6,4 @@ export * from './lib/snackbar.model';
 export * from './lib/message.constant';
 export * from './lib/http-error-message.util';
 export * from './lib/environment.token';
+export * from './lib/role.model';
