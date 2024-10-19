@@ -106,6 +106,7 @@ function testScreenSize(size: string, width: number, height: number) {
     cy.contains('2024-08-09T01:02:34.567+00:00');
     cy.contains('2024-08-09T11:02:34.567+00:00');
     cy.get('.ag-header-row > [col-id="modifiedByUserId"]')
+      .should('exist')
       .scrollIntoView()
       .should('be.visible')
       .and('contain.text', 'Modified By');
