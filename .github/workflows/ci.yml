@@ -51,7 +51,7 @@ jobs:
       - name: Run Format Check
         run: npx nx-cloud record -- nx format:check
       - name: Run Linting, Unit, Component, & E2E Tests
-        run: npx nx affected -t lint test component-test e2e --skip-nx-cache
+        run: npx nx affected -t lint test component-test e2e
       - name: Run Build
         run: npx nx affected -t build
       - if: ${{ github.event_name != 'pull_request' }}
