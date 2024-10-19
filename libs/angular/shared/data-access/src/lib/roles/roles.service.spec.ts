@@ -6,9 +6,10 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
 import { ENVIRONMENT, Role } from '@jdw/angular-shared-util';
 import { EMPTY } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
+import { SnackbarService } from '../snackbar/snackbar.service';
 
 const mockAuthService = {
   getToken: jest.fn(),

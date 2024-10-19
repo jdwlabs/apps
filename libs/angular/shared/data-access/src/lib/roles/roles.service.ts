@@ -6,13 +6,13 @@ import {
 } from '@angular/common/http';
 import { SnackbarService } from '../snackbar/snackbar.service';
 import { AuthService } from '../auth/auth.service';
+import { catchError, EMPTY, Observable } from 'rxjs';
 import {
-  ENVIRONMENT,
   Environment,
+  ENVIRONMENT,
   getErrorMessage,
   Role,
 } from '@jdw/angular-shared-util';
-import { catchError, EMPTY, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
