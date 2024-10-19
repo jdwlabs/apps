@@ -1,5 +1,3 @@
-import { UserRole } from '@jdw/angular-usersui-util';
-
 export type Role = {
   id: number;
   name: string;
@@ -10,4 +8,11 @@ export type Role = {
   createdTime: string;
   modifiedByUserId: number;
   modifiedTime: string;
+};
+
+export type UserRole = {
+  userId: number;
+  roleId: number;
+  createdByUserId: number;
+  createdTime: string;
 };
