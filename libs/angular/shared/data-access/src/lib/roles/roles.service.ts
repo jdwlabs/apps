@@ -4,41 +4,42 @@ import {
   HttpErrorResponse,
   HttpHeaders,
 } from '@angular/common/http';
-import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
-import {
-  ENVIRONMENT,
-  Environment,
-  getErrorMessage,
-} from '@jdw/angular-shared-util';
+import { SnackbarService } from '../snackbar/snackbar.service';
+import { AuthService } from '../auth/auth.service';
 import { catchError, EMPTY, Observable } from 'rxjs';
-import { User } from '@jdw/angular-usersui-util';
+import {
+  Environment,
+  ENVIRONMENT,
+  getErrorMessage,
+  Role,
+} from '@jdw/angular-shared-util';
 
 @Injectable({
   providedIn: 'root',
 })
-export class UsersService {
+export class RolesService {
   private http: HttpClient = inject(HttpClient);
   private snackbarService = inject(SnackbarService);
   private authService = inject(AuthService);
   private environment: Environment = inject(ENVIRONMENT);
 
-  getUsers(): Observable<User[]> {
+  getRoles(): Observable<Role[]> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     return this.http
-      .get<User[]>(`${this.environment.AUTH_BASE_URL}/api/users`, {
-        headers: headers,
-      })
+      .get<
+        Role[]
+      >(`${this.environment.AUTH_BASE_URL}/api/roles`, { headers: headers })
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  getUser(userId: string): Observable<User> {
+  getRole(roleId: string): Observable<Role> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     return this.http
-      .get<User>(`${this.environment.AUTH_BASE_URL}/api/users/${userId}`, {
+      .get<Role>(`${this.environment.AUTH_BASE_URL}/api/roles/${roleId}`, {
         headers: headers,
       })
       .pipe(catchError((error) => this.handleError(error)));

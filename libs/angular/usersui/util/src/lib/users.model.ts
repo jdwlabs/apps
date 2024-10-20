@@ -1,9 +1,4 @@
-export type UserRole = {
-  userId: number;
-  roleId: number;
-  createdByUserId: number;
-  createdTime: string;
-};
+import { UserRole } from '@jdw/angular-shared-util';
 
 export type Address = {
   id: number;
