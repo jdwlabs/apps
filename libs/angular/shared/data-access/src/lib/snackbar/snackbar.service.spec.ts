@@ -14,7 +14,7 @@ import { SnackbarComponent } from '@jdw/angular-shared-ui';
 describe('SnackbarService', () => {
   let service: SnackbarService;
 
-  const snackbarMock: jest.Mocked<any> = {
+  const snackbarMock = {
     openFromComponent: jest.fn(),
     dismiss: jest.fn(),
   };
