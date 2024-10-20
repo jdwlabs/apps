@@ -2,6 +2,19 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.2.0](https://github.com/jdwillmsen/jdw/compare/usersui-0.1.0...usersui-0.2.0) (2024-10-20)
+
+
+### Features
+
+* **usersui:** add angular usersui feature core library integration for routing ([d957615](https://github.com/jdwillmsen/jdw/commit/d9576152148c04ad2816274b2823c28eb90a0a45))
+* **usersui:** add default styles ([73a06a1](https://github.com/jdwillmsen/jdw/commit/73a06a17af825da0b357f50dd57f80251a40f23d))
+* **usersui:** add http and config setup ([7039a7a](https://github.com/jdwillmsen/jdw/commit/7039a7a9f58127598ee873e33211f7cf3200f115))
+* **usersui:** add material font and icon support ([7dfd43b](https://github.com/jdwillmsen/jdw/commit/7dfd43ba680b36d329c6d6f5f02d5f751023601f))
+* **usersui:** add start-nginx script for containerization ([311d198](https://github.com/jdwillmsen/jdw/commit/311d19851429a8e4d58e46ed3e69dd4164aa8938))
+* **usersui:** add usersui angular remote application ([a749891](https://github.com/jdwillmsen/jdw/commit/a74989198723e2ff05787a9823b44be8970a2d12))
+* **usersui:** update favicon ([736bebe](https://github.com/jdwillmsen/jdw/commit/736bebe0dcd4e6124fa7d159fd74ff4cfa8e9d1c))
+
 ## 0.1.0 (2024-10-16)
 
 ### Features
