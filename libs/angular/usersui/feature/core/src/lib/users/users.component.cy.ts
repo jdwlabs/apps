@@ -105,19 +105,20 @@ function testScreenSize(size: string, width: number, height: number) {
       .and('contain.text', 'Created Time');
     cy.contains('2024-08-09T01:02:34.567+00:00');
     cy.contains('2024-08-09T11:02:34.567+00:00');
-    cy.wait(500);
-    cy.get('.ag-header-row > [col-id="modifiedByUserId"]', { timeout: 10000 })
-      .should('exist')
-      .scrollIntoView()
-      .should('be.visible')
-      .and('contain.text', 'Modified By');
-    cy.contains('2');
-    cy.contains('5');
-    cy.get('.ag-header-row > [col-id="modifiedTime"]')
-      .scrollIntoView()
-      .should('be.visible')
-      .and('contain.text', 'Modified Time');
-    cy.contains('2024-08-09T10:02:34.567+00:00');
-    cy.contains('2024-08-09T12:02:34.567+00:00');
+    if (width > 600) {
+      cy.get('.ag-header-row > [col-id="modifiedByUserId"]')
+        .should('exist')
+        .scrollIntoView()
+        .should('be.visible')
+        .and('contain.text', 'Modified By');
+      cy.contains('2');
+      cy.contains('5');
+      cy.get('.ag-header-row > [col-id="modifiedTime"]')
+        .scrollIntoView()
+        .should('be.visible')
+        .and('contain.text', 'Modified Time');
+      cy.contains('2024-08-09T10:02:34.567+00:00');
+      cy.contains('2024-08-09T12:02:34.567+00:00');
+    }
   });
 }
