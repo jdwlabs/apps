@@ -3,11 +3,13 @@ import { DynamicRouteLoaderService } from './dynamic-route-loader.service';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
-import { MicroFrontendService } from '@jdw/angular-container-data-access';
+import { MicroFrontendService } from '../micro-frontend/micro-frontend.service';
 import { Router, Route } from '@angular/router';
 import { of } from 'rxjs';
-import { FallbackComponent } from '@jdw/angular-shared-ui';
 import { loadRemoteModule, setRemoteDefinitions } from '@nx/angular/mf';
+/* eslint-disable @nx/enforce-module-boundaries */
+import { FallbackComponent } from '@jdw/angular-shared-ui';
+/* eslint-enable @nx/enforce-module-boundaries */
 
 jest.mock('@nx/angular/mf', () => ({
   loadRemoteModule: jest.fn(),
