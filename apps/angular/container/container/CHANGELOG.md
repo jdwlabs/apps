@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.13.0](https://github.com/jdwillmsen/jdw/compare/container-0.12.1...container-0.13.0) (2024-10-28)
+
+
+### Features
+
+* **container:** add support for dynamic route loading ([5e799ee](https://github.com/jdwillmsen/jdw/commit/5e799eeb6f668f997de0faf08f3e3dce73602054))
+
 ## [0.12.1](https://github.com/jdwillmsen/jdw/compare/container-0.12.0...container-0.12.1) (2024-10-20)
 
 ## [0.12.0](https://github.com/jdwillmsen/jdw/compare/container-0.11.0...container-0.12.0) (2024-10-16)
