@@ -49,6 +49,15 @@ services:
       - source: service-discovery-config
         target: /app/config.json
 
+  jdw-usersui:
+    image: jdwillmsen/jdw-usersui:latest
+    ports:
+      - '4202:80'
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=LOCAL
+      - AUTH_BASE_URL=http://localhost:8080
+
 configs:
   service-discovery-config:
     external: false

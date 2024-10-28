@@ -15,7 +15,23 @@ import (
 	"time"
 )
 
-var config = map[string]string{}
+type MicroFrontend struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	RemoteName  string `json:"remoteName"`
+	ModuleName  string `json:"moduleName"`
+	URL         string `json:"url"`
+	Icon        string `json:"icon"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+type Config struct {
+	Remotes        map[string]string `json:"remotes"`
+	MicroFrontends []MicroFrontend   `json:"microFrontends"`
+}
+
+var config Config
 
 type envGetter interface {
 	getEnvOrDefault(key, fallback string) string
@@ -43,9 +59,9 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func configHandler(w http.ResponseWriter, _ *http.Request) {
+func remotesHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(config)
+	err := json.NewEncoder(w).Encode(config.Remotes)
 	if err != nil {
 		return
 	}
@@ -60,6 +76,14 @@ func versionHandler(envGetter envGetter) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = fmt.Fprintf(w, `{"error": "Unable to fetch version"}`)
 		}
+	}
+}
+
+func microFrontendsHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(config.MicroFrontends)
+	if err != nil {
+		http.Error(w, "Unable to fetch micro frontends", http.StatusInternalServerError)
 	}
 }
 
@@ -98,8 +122,9 @@ func loadConfig(envGetter envGetter) {
 func registerRoutes(router *http.ServeMux, envGetter envGetter) {
 	router.HandleFunc("GET /", rootHandler)
 	router.HandleFunc("GET /health", healthHandler)
-	router.HandleFunc("GET /config", configHandler)
 	router.HandleFunc("GET /version", versionHandler(envGetter))
+	router.HandleFunc("GET /api/remotes", remotesHandler)
+	router.HandleFunc("GET /api/micro-frontends", microFrontendsHandler)
 }
 
 func main() {
