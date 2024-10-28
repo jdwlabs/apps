@@ -2,7 +2,9 @@ import { inject, Injectable } from '@angular/core';
 import { Route, Router } from '@angular/router';
 import { MicroFrontendService } from '../micro-frontend/micro-frontend.service';
 import { loadRemoteModule, setRemoteDefinitions } from '@nx/angular/mf';
+/* eslint-disable @nx/enforce-module-boundaries */
 import { FallbackComponent } from '@jdw/angular-shared-ui';
+/* eslint-enable @nx/enforce-module-boundaries */
 
 @Injectable({
   providedIn: 'root',
