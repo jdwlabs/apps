@@ -56,32 +56,84 @@ func TestHealthHandler(t *testing.T) {
 	}
 }
 
-func TestConfigHandler(t *testing.T) {
+func TestRemotesHandler(t *testing.T) {
 	// Setup default config for the test
-	config = map[string]string{"key": "value"}
+	config.Remotes = map[string]string{"key": "value"}
 
-	// Create a new request to the /config endpoint
-	req := httptest.NewRequest(http.MethodGet, "/config", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/remotes", nil)
 	w := httptest.NewRecorder()
 
-	// Call the handler function
-	configHandler(w, req)
+	remotesHandler(w, req)
 
-	// Check the status code is 200 OK
 	if status := w.Code; status != http.StatusOK {
-		t.Errorf("configHandler returned wrong status code: got %v want %v", status, http.StatusOK)
+		t.Errorf("remotesHandler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	// Decode the response body to a map
 	var resp map[string]string
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Errorf("configHandler returned invalid JSON: %v", err)
+		t.Errorf("remotesHandler returned invalid JSON: %v", err)
 	}
 
-	// Verify the returned config
 	expected := map[string]string{"key": "value"}
 	if resp["key"] != expected["key"] {
-		t.Errorf("configHandler returned unexpected body: got %v want %v", resp, expected)
+		t.Errorf("remotesHandler returned unexpected body: got %v want %v", resp, expected)
+	}
+}
+
+func TestRemotesHandlerEmpty(t *testing.T) {
+	// Test with empty remotes
+	config.Remotes = map[string]string{}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/remotes", nil)
+	w := httptest.NewRecorder()
+
+	remotesHandler(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("remotesHandler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Errorf("remotesHandler returned invalid JSON: %v", err)
+	}
+
+	if len(resp) != 0 {
+		t.Errorf("remotesHandler returned unexpected body: got %v want empty", resp)
+	}
+}
+
+func TestMicroFrontendsHandler(t *testing.T) {
+	// Setup default config for the test
+	config.MicroFrontends = []MicroFrontend{
+		{
+			Name:        "example",
+			Path:        "/example",
+			RemoteName:  "exampleRemote",
+			ModuleName:  "ExampleModule",
+			URL:         "http://example.com",
+			Icon:        "icon.png",
+			Title:       "Example",
+			Description: "An example micro frontend",
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/micro-frontends", nil)
+	w := httptest.NewRecorder()
+
+	microFrontendsHandler(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("microFrontendsHandler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	var resp []MicroFrontend
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Errorf("microFrontendsHandler returned invalid JSON: %v", err)
+	}
+
+	if len(resp) != 1 || resp[0].Name != "example" {
+		t.Errorf("microFrontendsHandler returned unexpected body: got %v want %v", resp, []MicroFrontend{{Name: "example"}})
 	}
 }
 
@@ -103,6 +155,25 @@ func TestVersionHandler(t *testing.T) {
 
 	// Verify the response contains the expected version
 	expected := `{"version": "1.2.3"}`
+	if strings.TrimSpace(w.Body.String()) != expected {
+		t.Errorf("versionHandler returned unexpected body: got %v want %v", w.Body.String(), expected)
+	}
+}
+
+func TestVersionHandlerDefault(t *testing.T) {
+	// Set up a mock environment with no SD_VERSION variable
+	mockEnv := mockEnvGetter{envs: map[string]string{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/version", nil)
+	w := httptest.NewRecorder()
+
+	versionHandler(mockEnv)(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("versionHandler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	expected := `{"version": "local"}`
 	if strings.TrimSpace(w.Body.String()) != expected {
 		t.Errorf("versionHandler returned unexpected body: got %v want %v", w.Body.String(), expected)
 	}
