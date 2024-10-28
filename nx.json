@@ -1,10 +1,5 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "pluginsConfig": {
-    "@nx/js": {
-      "projectsAffectedByDependencyUpdates": "auto"
-    }
-  },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
