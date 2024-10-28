@@ -3,7 +3,7 @@ import { setRemoteDefinitions } from '@nx/angular/mf';
 import fallbackDefinitions from './module-federation.manifest.json';
 import config from './config.json';
 
-fetch(`${config.SERVICE_DISCOVERY_BASE_URL}/config`)
+fetch(`${config.SERVICE_DISCOVERY_BASE_URL}/api/remotes`)
   .then((res) => {
     if (!res.ok) {
       throw new Error(`Error fetching config: ${res.statusText}`);
