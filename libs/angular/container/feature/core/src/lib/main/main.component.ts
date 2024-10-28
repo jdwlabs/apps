@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemePalette } from '@angular/material/core';
 import { MatDrawerMode } from '@angular/material/sidenav';
@@ -19,7 +19,10 @@ import {
   MatChipOption,
 } from '@angular/material/chips';
 import { MatButton } from '@angular/material/button';
-import { VersionService } from '@jdw/angular-container-data-access';
+import {
+  MicroFrontendService,
+  VersionService,
+} from '@jdw/angular-container-data-access';
 
 @Component({
   selector: 'jdw-main',
@@ -37,7 +40,7 @@ import { VersionService } from '@jdw/angular-container-data-access';
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss',
 })
-export class MainComponent {
+export class MainComponent implements OnInit {
   appTitle = 'JDW';
   appRouterLink = '/';
   appTooltip = 'Home';
@@ -46,28 +49,33 @@ export class MainComponent {
   isSideNavOpened = false;
   sideNavMode: MatDrawerMode = 'side';
   isSideNavEnabled = true;
-  navigationItems: NavigationItem[] = [
-    {
-      path: '',
-      icon: 'home',
-      title: 'Home',
-    },
-  ];
-  currentEnv: string;
+  navigationItems: NavigationItem[] = [];
   currentVersion = '';
+  private environment: Environment = inject(ENVIRONMENT);
+  private breakpointObserver: BreakpointObserver = inject(BreakpointObserver);
+  private versionService: VersionService = inject(VersionService);
+  private microFrontendService: MicroFrontendService =
+    inject(MicroFrontendService);
 
-  constructor(
-    @Inject(ENVIRONMENT) private environment: Environment,
-    private breakpointObserver: BreakpointObserver,
-    private versionService: VersionService,
-  ) {
+  get currentEnv() {
+    return this.environment.ENVIRONMENT;
+  }
+
+  ngOnInit() {
     this.breakpointObserver.observe(Breakpoints.XSmall).subscribe((result) => {
       this.isXSmallScreen = result.matches;
       this.updateNavigationBasedOnScreenSize();
     });
-    this.currentEnv = environment.ENVIRONMENT;
-    versionService.getVersion().subscribe((version) => {
+    this.versionService.getVersion().subscribe((version) => {
       this.currentVersion = version;
+    });
+    this.microFrontendService.getRoutes().subscribe((routes) => {
+      const navigationItems: NavigationItem[] = routes.map((route) => ({
+        path: route.path,
+        icon: route.icon,
+        title: route.title,
+      }));
+      this.navigationItems = [...this.navigationItems, ...navigationItems];
     });
   }
 
