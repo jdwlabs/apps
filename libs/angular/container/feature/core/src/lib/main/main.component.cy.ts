@@ -2,13 +2,57 @@ import { TestBed } from '@angular/core/testing';
 import { MainComponent } from './main.component';
 import { ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
+import { provideHttpClient } from '@angular/common/http';
+import { MicroFrontendService } from '@jdw/angular-container-data-access';
+import { of } from 'rxjs';
 
 describe(MainComponent.name, () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, HttpClientTestingModule],
+      imports: [BrowserAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ENVIRONMENT,
+          useValue: {
+            ENVIRONMENT: 'test',
+            SERVICE_DISCOVERY_BASE_URL: 'http://localhost:9000',
+          },
+        },
+        {
+          provide: MicroFrontendService,
+          useValue: {
+            getRoutes: () =>
+              of([
+                {
+                  name: 'authui',
+                  path: 'auth',
+                  remoteName: 'authui',
+                  moduleName: './Routes',
+                  url: 'http://localhost:4201',
+                  icon: 'login',
+                  title: 'Auth',
+                  description:
+                    'This contains sign in and sign up functionality',
+                },
+                {
+                  name: 'usersui',
+                  path: 'users',
+                  remoteName: 'usersui',
+                  moduleName: './Routes',
+                  url: 'http://localhost:4202',
+                  icon: 'groups',
+                  title: 'Users',
+                  description:
+                    'This contains viewing users and managing profiles functionality',
+                },
+              ]),
+          },
+        },
+      ],
     }).overrideComponent(MainComponent, {
       add: {
         imports: [],
@@ -17,6 +61,7 @@ describe(MainComponent.name, () => {
             provide: ENVIRONMENT,
             useValue: {
               ENVIRONMENT: 'test',
+              SERVICE_DISCOVERY_BASE_URL: 'http://localhost:9000',
             },
           },
           {
