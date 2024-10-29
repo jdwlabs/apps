@@ -225,7 +225,7 @@ class ProfileServiceTests {
     @Test
     void addAddress_shouldAddAddress_whenProfileExists() {
         User user = mock(User.class);
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
+        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
         when(profileRepository.saveAddress(any(Address.class))).thenReturn(profile);
         when(userRepository.findByEmailAddress("user@jdw.com")).thenReturn(Optional.of(user));
         when(user.id()).thenReturn(1L);
@@ -238,7 +238,7 @@ class ProfileServiceTests {
 
     @Test
     void addAddress_shouldThrowResourceNotFoundException_whenProfileDoesNotExist() {
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(profileRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> profileService.addAddress(1L, addressRequestDTO, "user@jdw.com"));
     }
@@ -252,7 +252,7 @@ class ProfileServiceTests {
                 .build();
         User user = mock(User.class);
 
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
+        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
         when(profileRepository.saveAddress(any(Address.class))).thenReturn(profile);
         when(userRepository.findByEmailAddress("user@jdw.com")).thenReturn(Optional.of(user));
         when(user.id()).thenReturn(1L);
@@ -265,7 +265,7 @@ class ProfileServiceTests {
 
     @Test
     void updateAddress_shouldThrowResourceNotFoundException_whenProfileDoesNotExist() {
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(profileRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> profileService.updateAddress(1L, 1L, addressRequestDTO, "user@jdw.com"));
     }
@@ -278,7 +278,7 @@ class ProfileServiceTests {
                 .addresses(Set.of())
                 .build();
 
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
+        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
 
         assertThrows(ResourceNotFoundException.class, () -> profileService.updateAddress(1L, 1L, addressRequestDTO, "user@jdw.com"));
     }
@@ -369,7 +369,7 @@ class ProfileServiceTests {
                 .build();
         User user = mock(User.class);
 
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
+        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
         when(multipartFile.getBytes()).thenReturn(new byte[]{});
         when(profileRepository.saveIcon(any(ProfileIcon.class))).thenReturn(profile);
         when(userRepository.findByEmailAddress("user@jdw.com")).thenReturn(Optional.of(user));
@@ -383,7 +383,7 @@ class ProfileServiceTests {
 
     @Test
     void updateIcon_shouldThrowResourceNotFoundException_whenProfileDoesNotExist() {
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(profileRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> profileService.updateIcon(1L, multipartFile, "user@jdw.com"));
     }
@@ -395,7 +395,7 @@ class ProfileServiceTests {
                 .icon(profileIcon)
                 .build();
 
-        when(profileRepository.findByUserId(1L)).thenReturn(Optional.of(profile));
+        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
         when(multipartFile.getBytes()).thenThrow(IOException.class);
 
         assertThrows(IconUploadException.class, () -> profileService.updateIcon(1L, multipartFile, "user@jdw.com"));
