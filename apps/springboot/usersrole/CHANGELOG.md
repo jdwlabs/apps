@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.9.5](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.4...usersrole-0.9.5) (2024-10-29)
 
-
 ### Bug Fixes
 
-* **usersrole:** add profile id call for profile address and icon related service calls ([b22afcb](https://github.com/jdwillmsen/jdw/commit/b22afcb95fef26ab96b5f33dbc3b06af25858487))
+- **usersrole:** add profile id call for profile address and icon related service calls ([b22afcb](https://github.com/jdwillmsen/jdw/commit/b22afcb95fef26ab96b5f33dbc3b06af25858487))
 
 ## [0.9.4](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.3...usersrole-0.9.4) (2024-10-28)
 
