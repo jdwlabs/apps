@@ -119,12 +119,12 @@ public class ProfileService {
     }
 
     @ExecutionTimeLogger
-    public Profile addAddress(@NotNull Long id,
+    public Profile addAddress(@NotNull Long profileId,
                               @NotNull @Valid AddressRequestDTO addressDTO,
                               @NotNull String emailAddress) {
-        log.info("Adding address with: profileId={}, requester={}", id, emailAddress);
-        profileRepository.findByUserId(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + id));
+        log.info("Adding address with: profileId={}, requester={}", profileId, emailAddress);
+        profileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + profileId));
         Long userId = getUserIdByEmailAddress(emailAddress);
         Timestamp currentTime = Timestamp.from(Instant.now());
         Address newAddress = Address.builder()
@@ -135,7 +135,7 @@ public class ProfileService {
                 .stateProvince(addressDTO.stateProvince())
                 .postalCode(addressDTO.postalCode())
                 .country(addressDTO.country())
-                .profileId(id)
+                .profileId(profileId)
                 .createdByUserId(userId)
                 .createdTime(currentTime)
                 .modifiedByUserId(userId)
@@ -150,7 +150,7 @@ public class ProfileService {
                                  @NotNull @Valid AddressRequestDTO addressDTO,
                                  @NotNull String emailAddress) {
         log.info("Updating address with: profileId={}, addressId={}, requester={}", profileId, addressId, emailAddress);
-        Profile currentProfile = profileRepository.findByUserId(profileId)
+        Profile currentProfile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + profileId));
         Address currentAddress = currentProfile.addresses()
                 .stream()
@@ -194,13 +194,13 @@ public class ProfileService {
         return currentIcon.icon();
     }
 
-    public Profile addIcon(@NotNull Long id, @NotNull MultipartFile file, @NotNull String emailAddress) {
-        log.info("Adding icon with: id={}, requester={}", id, emailAddress);
-        Profile currentProfile = profileRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + id));
+    public Profile addIcon(@NotNull Long profileId, @NotNull MultipartFile file, @NotNull String emailAddress) {
+        log.info("Adding icon with: id={}, requester={}", profileId, emailAddress);
+        Profile currentProfile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + profileId));
         ProfileIcon currentIcon = currentProfile.icon();
         if (currentIcon != null) {
-            throw new ResourceExistsException("Icon already exists for profile with id: " + id);
+            throw new ResourceExistsException("Icon already exists for profile with id: " + profileId);
         }
         try {
             byte[] icon = file.getBytes();
@@ -208,7 +208,7 @@ public class ProfileService {
             Timestamp currentTime = Timestamp.from(Instant.now());
             ProfileIcon newProfileIcon = ProfileIcon.builder()
                     .id(null)
-                    .profileId(id)
+                    .profileId(profileId)
                     .icon(icon)
                     .createdByUserId(userId)
                     .createdTime(currentTime)
@@ -223,10 +223,10 @@ public class ProfileService {
     }
 
     @ExecutionTimeLogger
-    public Profile updateIcon(@NotNull Long id, @NotNull MultipartFile file, @NotNull String emailAddress) {
-        log.info("Updating icon with: id={}, requester={}", id, emailAddress);
-        Profile currentProfile = profileRepository.findByUserId(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + id));
+    public Profile updateIcon(@NotNull Long profileId, @NotNull MultipartFile file, @NotNull String emailAddress) {
+        log.info("Updating icon with: id={}, requester={}", profileId, emailAddress);
+        Profile currentProfile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + profileId));
         try {
             byte[] icon = file.getBytes();
             ProfileIcon currentIcon = currentProfile.icon();
@@ -249,9 +249,9 @@ public class ProfileService {
     }
 
     @ExecutionTimeLogger
-    public void deleteIcon(@NotNull Long id, @NotNull String emailAddress) {
-        log.info("Deleting icon with: id={}, requester={}", id, emailAddress);
-        profileRepository.deleteIconById(id);
+    public void deleteIcon(@NotNull Long profileId, @NotNull String emailAddress) {
+        log.info("Deleting icon with: id={}, requester={}", profileId, emailAddress);
+        profileRepository.deleteIconById(profileId);
     }
 
     @ExecutionTimeLogger
