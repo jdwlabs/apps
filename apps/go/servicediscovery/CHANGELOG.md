@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.2.0](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.1.3...servicediscovery-0.2.0) (2024-10-28)
 
-
 ### Features
 
-* **servicediscovery:** add remotes and micro-frontend routes and related config changes ([c427581](https://github.com/jdwillmsen/jdw/commit/c4275810934040d2c9e290d2807e49fd28b3c27a))
+- **servicediscovery:** add remotes and micro-frontend routes and related config changes ([c427581](https://github.com/jdwillmsen/jdw/commit/c4275810934040d2c9e290d2807e49fd28b3c27a))
 
 ## [0.1.3](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.1.2...servicediscovery-0.1.3) (2024-10-20)
 
