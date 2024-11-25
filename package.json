@@ -45,7 +45,6 @@
     "@typescript-eslint/eslint-plugin": "7.16.0",
     "@typescript-eslint/parser": "7.16.0",
     "@typescript-eslint/utils": "^7.16.0",
-    "ag-grid-angular": "^32.2.2",
     "autoprefixer": "^10.4.20",
     "cypress": "13.13.0",
     "eslint": "8.57.0",
@@ -80,6 +79,8 @@
     "@angular/platform-browser": "~18.2.2",
     "@angular/platform-browser-dynamic": "~18.2.2",
     "@angular/router": "~18.2.2",
+    "ag-grid-angular": "^32.3.3",
+    "ag-grid-community": "^32.3.3",
     "rxjs": "~7.8.0",
     "tslib": "^2.7.0",
     "zone.js": "~0.14.10"
