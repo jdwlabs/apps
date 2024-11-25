@@ -1,0 +1,25 @@
+# Ensure all text files use LF line endings in the repository
+* text=auto
+
+# Enforce LF for specific file types (common text-based file types)
+*.js   text eol=lf
+*.ts   text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Treat binary files as-is (no line ending conversions)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+
+# Handle Windows executables
+*.exe binary
+*.dll binary
