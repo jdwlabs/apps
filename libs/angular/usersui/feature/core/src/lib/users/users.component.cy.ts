@@ -119,6 +119,10 @@ function testScreenSize(size: string, width: number, height: number) {
         .and('contain.text', 'Modified Time');
       cy.contains('2024-08-09T10:02:34.567+00:00');
       cy.contains('2024-08-09T12:02:34.567+00:00');
+      cy.get('.ag-header-row > [col-id="actions"]')
+        .scrollIntoView()
+        .should('be.visible')
+        .and('contain.text', 'Actions');
     }
   });
 }
