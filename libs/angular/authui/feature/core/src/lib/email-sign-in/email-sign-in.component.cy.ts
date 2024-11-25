@@ -79,8 +79,8 @@ describe(EmailSignInComponent.name, () => {
     cy.getByCy('email-address-field').type('test-user-1@usersrole.com');
     cy.getByCy('password-field').type('testPassword');
     cy.getByCy('sign-in-button').click();
-    // cy.getByCy('snackbar-container')
-    //   .should('be.visible')
-    //   .and('contain.text', 'Sign in successful');
+    cy.getByCy('snackbar-container')
+      .should('be.visible')
+      .and('contain.text', 'Sign in successful');
   });
 });
