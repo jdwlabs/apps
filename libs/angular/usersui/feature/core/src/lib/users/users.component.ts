@@ -8,6 +8,7 @@ import {
   User,
 } from '@jdw/angular-usersui-util';
 import { UsersService } from '@jdw/angular-usersui-data-access';
+import { ActionsButtonCellRendererComponent } from '../actions-button-cell-renderer/actions-button-cell-renderer.component';
 
 @Component({
   selector: 'lib-users',
@@ -53,6 +54,16 @@ export class UsersComponent implements OnInit {
       },
       comparator: dateSortComparator,
       cellDataType: 'text',
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      cellRenderer: ActionsButtonCellRendererComponent,
+      maxWidth: 72,
+      minWidth: 72,
+      resizable: false,
+      filter: false,
+      sortable: false,
     },
   ];
 

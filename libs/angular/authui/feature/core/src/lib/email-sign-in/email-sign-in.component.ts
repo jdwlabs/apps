@@ -57,7 +57,7 @@ export class EmailSignInComponent {
       this.authService.signIn(this.form.value).subscribe({
         next: () => {
           this.form.reset();
-          this.router.navigate(['/home']);
+          this.router.navigate(['/']);
         },
       });
     }

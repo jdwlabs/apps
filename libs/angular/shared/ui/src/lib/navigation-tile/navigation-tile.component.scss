@@ -1,0 +1,21 @@
+.tile {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto;
+  cursor: pointer;
+  height: 100%;
+  width: 100%;
+
+  .header {
+    padding: 8px;
+    margin: 0;
+  }
+
+  .body {
+    padding: 8px;
+  }
+
+  .footer {
+    padding: 8px;
+  }
+}
