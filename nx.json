@@ -17,7 +17,6 @@
     ],
     "sharedGlobals": ["{workspaceRoot}/go.work"]
   },
-  "nxCloudAccessToken": "MmUyM2U4ZDEtN2FiYS00ZjVjLTgwZDQtN2MyNDZjYzc4NWNlfHJlYWQtd3JpdGU=",
   "targetDefaults": {
     "@angular-devkit/build-angular:browser": {
       "cache": true,
