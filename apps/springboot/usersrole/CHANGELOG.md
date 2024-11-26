@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.9.6](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.5...usersrole-0.9.6) (2024-11-26)
+
 ## [0.9.5](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.4...usersrole-0.9.5) (2024-10-29)
 
 ### Bug Fixes
