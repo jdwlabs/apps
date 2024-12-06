@@ -1,0 +1,13 @@
+.profiles-container {
+  height: calc(100vh - var(--header-height, 52px) - 78px);
+  padding: 16px;
+
+  h1 {
+    margin: 0;
+  }
+
+  ag-grid-angular {
+    margin-top: 8px;
+    height: 100%;
+  }
+}
