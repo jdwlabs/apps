@@ -4,20 +4,21 @@ import { MatIconButton } from '@angular/material/button';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererParams } from 'ag-grid-community';
 
 @Component({
   selector: 'lib-actions-button-cell-renderer',
   standalone: true,
   imports: [CommonModule, MatIconButton, MatTooltip, MatIcon],
-  templateUrl: './actions-button-cell-renderer.component.html',
-  styleUrl: './actions-button-cell-renderer.component.scss',
+  templateUrl: './users-actions-button-cell-renderer.component.html',
+  styleUrl: './users-actions-button-cell-renderer.component.scss',
 })
-export class ActionsButtonCellRendererComponent
+export class UsersActionsButtonCellRendererComponent
   implements ICellRendererAngularComp
 {
   private router: Router = inject(Router);
+  private route = inject(ActivatedRoute);
   private params!: ICellRendererParams;
 
   agInit(params: ICellRendererParams): void {
@@ -30,6 +31,6 @@ export class ActionsButtonCellRendererComponent
 
   viewUser(): void {
     const userId = this.params.data['id'];
-    this.router.navigate([`../user/${userId}`]);
+    this.router.navigate([`../user/${userId}`], { relativeTo: this.route });
   }
 }
