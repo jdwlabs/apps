@@ -5,6 +5,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { of } from 'rxjs';
 import { UsersService } from '@jdw/angular-usersui-data-access';
+import { ActivatedRoute } from '@angular/router';
 
 describe(UsersComponent.name, () => {
   beforeEach(() => {
@@ -15,6 +16,10 @@ describe(UsersComponent.name, () => {
         {
           provide: ENVIRONMENT,
           useValue: {},
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: ActivatedRoute,
         },
         {
           provide: UsersService,
