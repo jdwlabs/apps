@@ -10,7 +10,6 @@ import { NavigationItem } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'jdw-navigation-layout',
-  standalone: true,
   imports: [
     CommonModule,
     MatSidenavModule,

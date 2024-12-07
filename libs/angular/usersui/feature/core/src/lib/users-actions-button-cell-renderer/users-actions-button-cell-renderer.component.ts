@@ -9,7 +9,6 @@ import { ICellRendererParams } from 'ag-grid-community';
 
 @Component({
   selector: 'lib-actions-button-cell-renderer',
-  standalone: true,
   imports: [CommonModule, MatIconButton, MatTooltip, MatIcon],
   templateUrl: './users-actions-button-cell-renderer.component.html',
   styleUrl: './users-actions-button-cell-renderer.component.scss',
