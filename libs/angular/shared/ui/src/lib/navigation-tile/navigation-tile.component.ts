@@ -5,7 +5,6 @@ import { MatCard } from '@angular/material/card';
 
 @Component({
   selector: 'jdw-navigation-tile',
-  standalone: true,
   imports: [CommonModule, RouterLink, MatCard],
   templateUrl: './navigation-tile.component.html',
   styleUrl: './navigation-tile.component.scss',

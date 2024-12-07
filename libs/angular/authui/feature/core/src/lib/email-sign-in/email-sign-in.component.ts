@@ -20,7 +20,6 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'lib-email-sign-in',
-  standalone: true,
   imports: [
     CommonModule,
     MatButtonModule,

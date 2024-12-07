@@ -31,7 +31,6 @@ import { AuthService } from '@jdw/angular-shared-data-access';
 
 @Component({
   selector: 'lib-sign-up',
-  standalone: true,
   imports: [
     CommonModule,
     MatInputModule,

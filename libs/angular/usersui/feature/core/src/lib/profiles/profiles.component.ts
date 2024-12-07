@@ -12,7 +12,6 @@ import { ProfilesActionButtonCellRendererComponent } from '../profiles-action-bu
 
 @Component({
   selector: 'lib-profiles',
-  standalone: true,
   imports: [CommonModule, AgGridAngular],
   templateUrl: './profiles.component.html',
   styleUrl: './profiles.component.scss',

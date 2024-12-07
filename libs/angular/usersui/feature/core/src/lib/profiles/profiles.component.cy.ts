@@ -139,8 +139,12 @@ function testScreenSize(size: string, width: number, height: number) {
       .scrollIntoView()
       .should('be.visible')
       .and('contain.text', 'Middle Name');
-    mockProfiles[0].middleName && cy.contains(mockProfiles[0].middleName);
-    mockProfiles[1].middleName && cy.contains(mockProfiles[1].middleName);
+    if (mockProfiles[0].middleName) {
+      cy.contains(mockProfiles[0].middleName);
+    }
+    if (mockProfiles[1].middleName) {
+      cy.contains(mockProfiles[1].middleName);
+    }
     cy.get('.ag-header-row > [col-id="lastName"]')
       .scrollIntoView()
       .should('be.visible')

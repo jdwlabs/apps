@@ -9,7 +9,6 @@ import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'lib-profiles-action-button-cell-renderer',
-  standalone: true,
   imports: [CommonModule, MatIcon, MatIconButton, MatTooltip],
   templateUrl: './profiles-action-button-cell-renderer.component.html',
   styleUrl: './profiles-action-button-cell-renderer.component.scss',
@@ -25,7 +24,7 @@ export class ProfilesActionButtonCellRendererComponent
     this.params = params;
   }
 
-  refresh(params: ICellRendererParams): boolean {
+  refresh(_: ICellRendererParams): boolean {
     return false;
   }
 

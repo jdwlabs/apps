@@ -12,7 +12,6 @@ import { UsersActionsButtonCellRendererComponent } from '../users-actions-button
 
 @Component({
   selector: 'lib-users',
-  standalone: true,
   imports: [CommonModule, AgGridAngular, AgGridModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
@@ -97,7 +96,7 @@ export class UsersComponent implements OnInit {
     },
   };
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.usersService.getUsers().subscribe({
       next: (response) => {
         this.users = response;
