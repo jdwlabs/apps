@@ -8,7 +8,7 @@ import { Observable, of } from 'rxjs';
 import { MicroFrontendRoute } from '@jdw/angular-container-util';
 import { MicroFrontendService } from '@jdw/angular-container-data-access';
 
-let mockMicroFrontendService = {
+const mockMicroFrontendService = {
   getRoutes: (): Observable<MicroFrontendRoute[]> => {
     return of([
       {
