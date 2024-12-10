@@ -195,9 +195,13 @@ function testScreenSize(size: string, width: number, height: number) {
     cy.contains(mockProfiles[0].modifiedTime);
     cy.contains(mockProfiles[1].modifiedTime);
     cy.get('.ag-header-row > [col-id="actions"]')
-      .scrollIntoView()
+
       .should('be.visible')
       .and('contain.text', 'Actions');
-    cy.getByCy('view-button').should('be.visible').and('be.enabled');
+    cy.getByCy('view-button')
+      .first()
+      .scrollIntoView()
+      .should('be.visible')
+      .and('be.enabled');
   });
 }
