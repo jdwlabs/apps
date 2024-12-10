@@ -53,7 +53,7 @@ jobs:
       - name: Reset NX
         run: npx nx reset
       - name: Run Linting, Unit, Component, & E2E Tests
-        run: npx nx affected -t lint test component-test --verbose
+        run: npx nx affected -t lint test component-test
       - name: Run E2E Tests
         run: npx nx affected -t e2e --parallel=1
       - name: Run Build
