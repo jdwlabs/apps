@@ -10,8 +10,8 @@ import {
   Environment,
   getErrorMessage,
 } from '@jdw/angular-shared-util';
-import { catchError, EMPTY, Observable } from 'rxjs';
-import { Profile } from '@jdw/angular-usersui-util';
+import { catchError, EMPTY, Observable, tap } from 'rxjs';
+import { AddProfile, EditProfile, Profile } from '@jdw/angular-usersui-util';
 
 @Injectable({
   providedIn: 'root',
@@ -33,16 +33,96 @@ export class ProfilesService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
+  // TODO: add testing
+  getProfile(userId: string): Observable<Profile> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .get<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        {
+          headers: headers,
+        },
+      )
+      .pipe(catchError((error) => this.handleError(error)));
+  }
+
+  // TODO: add testing
+  addProfile(profile: AddProfile) {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .post<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles`,
+        {
+          firstName: profile.firstName,
+          middleName: profile.middleName,
+          lastName: profile.lastName,
+          birthdate: profile.birthdate,
+          userId: profile.userId,
+        },
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Profile created successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  // TODO: add testing
+  editProfile(userId: number, profile: EditProfile) {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .put<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        {
+          firstName: profile.firstName,
+          middleName: profile.middleName,
+          lastName: profile.lastName,
+          birthdate: profile.birthdate,
+        },
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Profile edited successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
   handleError(error: HttpErrorResponse) {
     const errorMessage = getErrorMessage(error);
-    this.snackbarService.error(
-      errorMessage,
-      {
-        variant: 'filled',
-        autoClose: false,
-      },
-      true,
-    );
+    if (error.status != 404) {
+      this.snackbarService.error(
+        errorMessage,
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    }
     return EMPTY;
   }
 }
