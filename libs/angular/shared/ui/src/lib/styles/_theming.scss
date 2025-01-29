@@ -80,10 +80,14 @@
   $extra-palette: (
     extra-light: map-get($base-palette, $extra-light),
     extra-dark: map-get($base-palette, $extra-dark),
-    extra-light-contrast:
-      mat.m2-get-contrast-color-from-palette($base-palette, $extra-light),
-    extra-dark-contrast:
-      mat.m2-get-contrast-color-from-palette($base-palette, $extra-dark),
+    extra-light-contrast: mat.m2-get-contrast-color-from-palette(
+        $base-palette,
+        $extra-light
+      ),
+    extra-dark-contrast: mat.m2-get-contrast-color-from-palette(
+        $base-palette,
+        $extra-dark
+      ),
   );
 
   @return map-merge($new-palette, $extra-palette);
