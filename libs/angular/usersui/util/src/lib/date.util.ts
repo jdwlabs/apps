@@ -17,3 +17,15 @@ export function dateSortComparator(stringDate1: string, stringDate2: string) {
   if (date2 === null) return 1;
   return date1.getTime() - date2.getTime();
 }
+
+export const dateFormats = {
+  parse: {
+    dateInput: ['YYYY-MM-DD'],
+  },
+  display: {
+    dateInput: 'YYYY-MM-DD',
+    monthYearLabel: 'MMM YYYY',
+    dateA11yLabel: 'LL',
+    monthYearA11yLabel: 'MMMM YYYY',
+  },
+};

@@ -15,7 +15,6 @@ import { EmailSignInComponent } from '../email-sign-in/email-sign-in.component';
 
 @Component({
   selector: 'lib-sign-in',
-  standalone: true,
   imports: [
     CommonModule,
     MatButtonModule,

@@ -8,11 +8,10 @@ import {
   User,
 } from '@jdw/angular-usersui-util';
 import { UsersService } from '@jdw/angular-usersui-data-access';
-import { ActionsButtonCellRendererComponent } from '../actions-button-cell-renderer/actions-button-cell-renderer.component';
+import { UsersActionsButtonCellRendererComponent } from '../users-actions-button-cell-renderer/users-actions-button-cell-renderer.component';
 
 @Component({
   selector: 'lib-users',
-  standalone: true,
   imports: [CommonModule, AgGridAngular, AgGridModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
@@ -58,7 +57,7 @@ export class UsersComponent implements OnInit {
     {
       field: 'actions',
       headerName: 'Actions',
-      cellRenderer: ActionsButtonCellRendererComponent,
+      cellRenderer: UsersActionsButtonCellRendererComponent,
       maxWidth: 72,
       minWidth: 72,
       resizable: false,
@@ -97,7 +96,7 @@ export class UsersComponent implements OnInit {
     },
   };
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.usersService.getUsers().subscribe({
       next: (response) => {
         this.users = response;

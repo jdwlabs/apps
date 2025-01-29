@@ -7,7 +7,6 @@ import { jwtDecode, JwtPayload } from 'jwt-decode';
 
 @Component({
   selector: 'lib-dashboard',
-  standalone: true,
   imports: [CommonModule, NavigationTileComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
