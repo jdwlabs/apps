@@ -6,7 +6,6 @@ import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'lib-forbidden',
-  standalone: true,
   imports: [CommonModule, MatIconModule, RouterLink, MatButtonModule],
   templateUrl: './forbidden.component.html',
   styleUrl: './forbidden.component.scss',

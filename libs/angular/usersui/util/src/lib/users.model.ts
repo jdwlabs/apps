@@ -40,6 +40,21 @@ export type Profile = {
   modifiedTime: string;
 };
 
+export type AddProfile = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  birthdate: string;
+  userId: number;
+};
+
+export type EditProfile = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  birthdate: string;
+};
+
 export type User = {
   id: number;
   emailAddress: string;

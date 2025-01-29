@@ -9,7 +9,7 @@ import {
   dateSortComparator,
   User,
 } from '@jdw/angular-usersui-util';
-import { ActionsButtonCellRendererComponent } from '../actions-button-cell-renderer/actions-button-cell-renderer.component';
+import { UsersActionsButtonCellRendererComponent } from '../users-actions-button-cell-renderer/users-actions-button-cell-renderer.component';
 
 describe('UsersComponent', () => {
   let component: UsersComponent;
@@ -112,7 +112,7 @@ describe('UsersComponent', () => {
       {
         field: 'actions',
         headerName: 'Actions',
-        cellRenderer: ActionsButtonCellRendererComponent,
+        cellRenderer: UsersActionsButtonCellRendererComponent,
         maxWidth: 72,
         minWidth: 72,
         resizable: false,

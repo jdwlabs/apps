@@ -7,7 +7,6 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'jdw-navigation-item',
-  standalone: true,
   imports: [
     CommonModule,
     MatIconModule,
@@ -25,5 +24,4 @@ export class NavigationItemComponent {
     title: '',
   };
   @Input() isExpanded = false;
-  // TODO: Add and figure out how the styles will work with a library _navigation-item-theme.scss
 }
