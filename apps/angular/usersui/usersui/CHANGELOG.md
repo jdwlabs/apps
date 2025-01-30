@@ -2,6 +2,17 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.0.0](https://github.com/jdwillmsen/jdw/compare/usersui-0.2.3...usersui-1.0.0) (2025-01-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* Angular v19 plus the latest version for all reliant npm packages
+
+### Miscellaneous Chores
+
+* update to nx v20.2.0 ([2417d51](https://github.com/jdwillmsen/jdw/commit/2417d51babf7809e49c778b740b6b2c8a815a226))
+
 ## [0.2.3](https://github.com/jdwillmsen/jdw/compare/usersui-0.2.2...usersui-0.2.3) (2024-11-26)
 
 ## [0.2.2](https://github.com/jdwillmsen/jdw/compare/usersui-0.2.1...usersui-0.2.2) (2024-10-29)
