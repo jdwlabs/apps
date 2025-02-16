@@ -2,6 +2,20 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.0.0](https://github.com/jdwillmsen/jdw/compare/container-0.13.2...container-1.0.0) (2025-01-30)
+
+### ⚠ BREAKING CHANGES
+
+- Angular v19 plus the latest version for all reliant npm packages
+
+### Features
+
+- **container:** add dashboard component routing ([856890c](https://github.com/jdwillmsen/jdw/commit/856890c4ecb32ff122ad4b881e6c3dd438bbb32b))
+
+### Miscellaneous Chores
+
+- update to nx v20.2.0 ([2417d51](https://github.com/jdwillmsen/jdw/commit/2417d51babf7809e49c778b740b6b2c8a815a226))
+
 ## [0.13.2](https://github.com/jdwillmsen/jdw/compare/container-0.13.1...container-0.13.2) (2024-11-26)
 
 ## [0.13.1](https://github.com/jdwillmsen/jdw/compare/container-0.13.0...container-0.13.1) (2024-10-29)
