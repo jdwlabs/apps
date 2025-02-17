@@ -16,6 +16,7 @@ const mockAuthService = {
 };
 
 const mockSnackbarService = {
+  success: jest.fn(),
   error: jest.fn(),
 };
 
@@ -177,6 +178,65 @@ describe('UsersService', () => {
         `${environmentMock.AUTH_BASE_URL}/api/users/1`,
       );
       req.flush({ message: 'Error' }, { status: 404, statusText: 'Not Found' });
+
+      expect(mockSnackbarService.error).toHaveBeenCalledWith(
+        'An unexpected error occurred on our server. Please try again later.',
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    });
+  });
+
+  describe('deleteUser', () => {
+    it('should send a DELETE request with the correct headers and show success message', () => {
+      const userId = 1;
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.deleteUser(userId).subscribe((response) => {
+        expect(response).toBeTruthy();
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users/${userId}`,
+      );
+      expect(req.request.method).toBe('DELETE');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush({});
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `User ${userId} Deleted Successfully`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should handle error when the request fails', () => {
+      const userId = 1;
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.deleteUser(userId).subscribe({
+        next: () => fail('Expected an error, but got a success response'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(HttpErrorResponse);
+        },
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users/${userId}`,
+      );
+      req.flush(
+        { message: 'Error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
