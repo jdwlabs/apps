@@ -44,7 +44,7 @@ export class UsersService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  deleteUser(userId: number): Observable<Object> {
+  deleteUser(userId: number): Observable<object> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
