@@ -10,7 +10,7 @@ import {
   Environment,
   getErrorMessage,
 } from '@jdw/angular-shared-util';
-import { catchError, EMPTY, Observable } from 'rxjs';
+import { catchError, EMPTY, Observable, tap } from 'rxjs';
 import { User } from '@jdw/angular-usersui-util';
 
 @Injectable({
@@ -42,6 +42,29 @@ export class UsersService {
         headers: headers,
       })
       .pipe(catchError((error) => this.handleError(error)));
+  }
+
+  deleteUser(userId: number): Observable<object> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .delete(`${this.environment.AUTH_BASE_URL}/api/users/${userId}`, {
+        headers: headers,
+      })
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            `User ${userId} Deleted Successfully`,
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
   }
 
   handleError(error: HttpErrorResponse) {

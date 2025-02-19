@@ -1,0 +1,600 @@
+<h1 mat-dialog-title data-cy="title">{{ data.title | titlecase }}</h1>
+<mat-dialog-content class="mat-typography">
+  <form [formGroup]="userForm" class="user-form">
+    <mat-form-field appearance="fill" data-cy="id-field">
+      <mat-label data-cy="id-label">ID</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="id-input"
+        formControlName="id"
+        matInput
+        placeholder="ID of the user"
+        type="text"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="email-field">
+      <mat-label data-cy="email-label">Email</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="email-input"
+        formControlName="emailAddress"
+        matInput
+        placeholder="Email address of the user"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="password-field">
+      <mat-label data-cy="password-label">Password</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="password-input"
+        formControlName="password"
+        matInput
+        placeholder="Password of the user"
+        type="password"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="status-field">
+      <mat-label data-cy="status-label">Status</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="status-input"
+        formControlName="status"
+        matInput
+        placeholder="Status of the user"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="user-created-time-field">
+      <mat-label data-cy="user-created-time-label">Created Time</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="user-created-time-input"
+        formControlName="createdTime"
+        matInput
+        placeholder="Created time of the user"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="user-created-by-user-id-field">
+      <mat-label data-cy="user-created-by-user-id-label">
+        Created By User ID
+      </mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="user-created-by-user-id-input"
+        formControlName="createdByUserId"
+        matInput
+        placeholder="ID of user who created the user"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="user-modified-time-field">
+      <mat-label data-cy="user-modified-time-label">Modified Time</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="user-modified-time-input"
+        formControlName="modifiedTime"
+        matInput
+        placeholder="Modified time of the user"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="user-modified-by-user-id-field">
+      <mat-label data-cy="user-modified-by-user-id-label">
+        Modified By User ID
+      </mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="user-modified-by-user-id-input"
+        formControlName="modifiedByUserId"
+        matInput
+        placeholder="ID of user who modified the user last"
+      />
+    </mat-form-field>
+
+    <h3 *ngIf="roles && roles.controls.length > 0" data-cy="roles-title">
+      Roles
+    </h3>
+    <div *ngIf="roles && roles.controls.length > 0" formArrayName="roles">
+      <div
+        *ngFor="let role of roles.controls; let i = index"
+        [formGroupName]="i"
+      >
+        <h4 [attr.data-cy]="'role-title-' + i">Role {{ i + 1 }}</h4>
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'role-user-id-label-' + i">
+            User ID
+          </mat-label>
+          <input
+            [attr.data-cy]="'role-user-id-input-' + i"
+            [readOnly]="data.type === 'readonly'"
+            formControlName="userId"
+            matInput
+            placeholder="User ID of the user role"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'role-role-id-label-' + i">
+            Role ID
+          </mat-label>
+          <input
+            [attr.data-cy]="'role-role-id-input-' + i"
+            [readOnly]="data.type === 'readonly'"
+            formControlName="roleId"
+            matInput
+            placeholder="Role ID of the user role"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'role-created-time-label-' + i">
+            Created Time
+          </mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            [attr.data-cy]="'role-created-time-input-' + i"
+            formControlName="createdTime"
+            matInput
+            placeholder="Created time of the user role"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'role-created-by-user-id-label-' + i">
+            Created By User ID
+          </mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            [attr.data-cy]="'role-created-by-user-id-input-' + i"
+            formControlName="createdByUserId"
+            matInput
+            placeholder="ID of user who created the user role"
+          />
+        </mat-form-field>
+      </div>
+    </div>
+
+    <h3 *ngIf="data?.profile" data-cy="profile-title">Profile</h3>
+    <div *ngIf="data?.profile" formGroupName="profile">
+      <mat-form-field appearance="fill" data-cy="profile-id-field">
+        <mat-label data-cy="profile-id-label">ID</mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="profile-id-input"
+          formControlName="id"
+          matInput
+          placeholder="ID of the profile"
+          type="text"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" data-cy="first-name-field">
+        <mat-label data-cy="first-name-label">First Name</mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="first-name-input"
+          formControlName="firstName"
+          matInput
+          placeholder="First name of the profile"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" data-cy="middle-name-field">
+        <mat-label data-cy="middle-name-label">Middle Name</mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="middle-name-input"
+          formControlName="middleName"
+          matInput
+          placeholder="Middle name of the profile"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" data-cy="last-name-field">
+        <mat-label data-cy="last-name-label">Last Name</mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="last-name-input"
+          formControlName="lastName"
+          matInput
+          placeholder="Last name of the profile"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" data-cy="birthdate-field">
+        <mat-label data-cy="birthdate-label">Birthdate</mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="birthdate-input"
+          formControlName="birthdate"
+          matInput
+          placeholder="Birthdate of the profile"
+          type="date"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" data-cy="profile-user-id-field">
+        <mat-label data-cy="profile-user-id-label">User ID</mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="profile-user-id-input"
+          formControlName="userId"
+          matInput
+          placeholder="User ID of the profile"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" data-cy="profile-created-time-field">
+        <mat-label data-cy="profile-created-time-label">Created Time</mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="profile-created-time-input"
+          formControlName="createdTime"
+          matInput
+          placeholder="Created time of the profile"
+        />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        data-cy="profile-created-by-user-id-field"
+      >
+        <mat-label data-cy="profile-created-by-user-id-label">
+          Created By User ID
+        </mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="profile-created-by-user-id-input"
+          formControlName="createdByUserId"
+          matInput
+          placeholder="ID of user who created the profile"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" data-cy="profile-modified-time-field">
+        <mat-label data-cy="profile-modified-time-label">
+          Modified Time
+        </mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="profile-modified-time-input"
+          formControlName="modifiedTime"
+          matInput
+          placeholder="Modified time of the profile"
+        />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        data-cy="profile-modified-by-user-id-field"
+      >
+        <mat-label data-cy="profile-modified-by-user-id-label">
+          Modified By User ID
+        </mat-label>
+        <input
+          [readOnly]="data.type === 'readonly'"
+          data-cy="profile-modified-by-user-id-input"
+          formControlName="modifiedByUserId"
+          matInput
+          placeholder="ID of user who modified the profile last"
+        />
+      </mat-form-field>
+
+      <div *ngIf="icon && icon.get('icon')?.value" formGroupName="icon">
+        <h3 data-cy="profile-icon-title">Profile Icon</h3>
+        <div>
+          <img
+            [src]="'data:image/png;base64,' + icon.get('icon')?.value"
+            alt="User Icon"
+            data-cy="profile-icon-image"
+            height="150"
+            width="150"
+          />
+        </div>
+
+        <mat-form-field appearance="fill" data-cy="icon-id-field">
+          <mat-label data-cy="icon-id-label">ID</mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            data-cy="icon-id-input"
+            formControlName="id"
+            matInput
+            placeholder="ID of the icon"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" data-cy="icon-profile-id-field">
+          <mat-label data-cy="icon-profile-id-label">Profile ID</mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            data-cy="icon-profile-id-input"
+            formControlName="profileId"
+            matInput
+            placeholder="Profile ID of the icon"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" data-cy="icon-created-time-field">
+          <mat-label data-cy="icon-created-time-label">Created Time</mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            data-cy="icon-created-time-input"
+            formControlName="createdTime"
+            matInput
+            placeholder="Created time of the icon"
+          />
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          data-cy="icon-created-by-user-id-field"
+        >
+          <mat-label data-cy="icon-created-by-user-id-label">
+            Created By User ID
+          </mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            data-cy="icon-created-by-user-id-input"
+            formControlName="createdByUserId"
+            matInput
+            placeholder="ID of user who created the icon"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" data-cy="icon-modified-time-field">
+          <mat-label data-cy="icon-modified-time-label">
+            Modified Time
+          </mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            data-cy="icon-modified-time-input"
+            formControlName="modifiedTime"
+            matInput
+            placeholder="Modified time of the icon"
+          />
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          data-cy="icon-modified-by-user-id-label"
+        >
+          <mat-label data-cy="icon-modified-by-user-id-label">
+            Modified By User ID
+          </mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            data-cy="icon-modified-by-user-id-input"
+            formControlName="modifiedByUserId"
+            matInput
+            placeholder="ID of user who modified the icon last"
+          />
+        </mat-form-field>
+      </div>
+
+      <h3
+        *ngIf="addresses && addresses.controls.length > 0"
+        data-cy="addresses-title"
+      >
+        Addresses
+      </h3>
+      <div
+        *ngIf="addresses && addresses.controls.length > 0"
+        formArrayName="addresses"
+      >
+        <div
+          *ngFor="let address of addresses.controls; let i = index"
+          [formGroupName]="i"
+        >
+          <h4 [attr.data-cy]="'address-title-' + i">Address {{ i + 1 }}</h4>
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-id-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'address-id-label-' + i"> ID </mat-label>
+            <input
+              [attr.data-cy]="'address-id-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="id"
+              matInput
+              placeholder="ID of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-line-1-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'address-line-1-label-' + i">
+              Address Line 1
+            </mat-label>
+            <input
+              [attr.data-cy]="'address-line-1-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="addressLine1"
+              matInput
+              placeholder="Address line 1 of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-line-2-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'address-line-2-label-' + i"
+              >Address Line 2
+            </mat-label>
+            <input
+              [attr.data-cy]="'address-line-2-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="addressLine2"
+              matInput
+              placeholder="Address line 2 of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" [attr.data-cy]="'city-field-' + i">
+            <mat-label [attr.data-cy]="'city-label-' + i">City</mat-label>
+            <input
+              [attr.data-cy]="'city-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="city"
+              matInput
+              placeholder="City of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'state-province-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'state-province-label-' + i">
+              State / Province
+            </mat-label>
+            <input
+              [attr.data-cy]="'state-province-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="stateProvince"
+              matInput
+              placeholder="State / province of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'postal-code-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'postal-code-label-' + i">
+              Postal Code
+            </mat-label>
+            <input
+              [attr.data-cy]="'postal-code-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="postalCode"
+              matInput
+              placeholder="Postal code of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'country-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'country-label-' + i">Country</mat-label>
+            <input
+              [attr.data-cy]="'country-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="country"
+              matInput
+              placeholder="Country of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-profile-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'address-profile-id-label-' + i"
+              >Profile ID</mat-label
+            >
+            <input
+              [readOnly]="data.type === 'readonly'"
+              [attr.data-cy]="'address-profile-id-input-' + i"
+              formControlName="profileId"
+              matInput
+              placeholder="Profile ID of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-created-time-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'address-created-time-label-' + i">
+              Created Time
+            </mat-label>
+            <input
+              [attr.data-cy]="'address-created-time-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="createdTime"
+              matInput
+              placeholder="Created time of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-created-by-user-id-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'address-created-by-user-id-label-' + i">
+              Created By User ID
+            </mat-label>
+            <input
+              [attr.data-cy]="'address-created-by-user-id-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="createdByUserId"
+              matInput
+              placeholder="ID of user who created the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-modified-time-field-' + i"
+          >
+            <mat-label [attr.data-cy]="'address-modified-time-label-' + i">
+              Modified Time
+            </mat-label>
+            <input
+              [attr.data-cy]="'address-modified-time-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="modifiedTime"
+              matInput
+              placeholder="Modified time of the address"
+            />
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            [attr.data-cy]="'address-modified-by-user-id-field-' + i"
+          >
+            <mat-label
+              [attr.data-cy]="'address-modified-by-user-id-label-' + i"
+            >
+              Modified By User ID
+            </mat-label>
+            <input
+              [attr.data-cy]="'address-modified-by-user-id-input-' + i"
+              [readOnly]="data.type === 'readonly'"
+              formControlName="modifiedByUserId"
+              matInput
+              placeholder="ID of user who modified the address last"
+            />
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button
+    (click)="close()"
+    data-cy="close-button"
+    mat-raised-button
+    type="button"
+  >
+    Cancel
+  </button>
+  <button
+    (click)="action()"
+    color="primary"
+    data-cy="action-button"
+    mat-raised-button
+    type="submit"
+  >
+    {{ data.action | titlecase }}
+  </button>
+</mat-dialog-actions>

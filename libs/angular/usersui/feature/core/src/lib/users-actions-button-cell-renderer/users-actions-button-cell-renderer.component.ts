@@ -6,6 +6,10 @@ import { MatIcon } from '@angular/material/icon';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererParams } from 'ag-grid-community';
+import { MatDialog } from '@angular/material/dialog';
+import { UserDialogComponent } from '../user-dialog/user-dialog.component';
+import { UsersService } from '@jdw/angular-usersui-data-access';
+import { User } from '@jdw/angular-usersui-util';
 
 @Component({
   selector: 'lib-actions-button-cell-renderer',
@@ -18,7 +22,9 @@ export class UsersActionsButtonCellRendererComponent
 {
   private router: Router = inject(Router);
   private route = inject(ActivatedRoute);
+  private dialog: MatDialog = inject(MatDialog);
   private params!: ICellRendererParams;
+  private usersService: UsersService = inject(UsersService);
 
   agInit(params: ICellRendererParams): void {
     this.params = params;
@@ -31,5 +37,22 @@ export class UsersActionsButtonCellRendererComponent
   viewUser(): void {
     const userId = this.params.data['id'];
     this.router.navigate([`../user/${userId}`], { relativeTo: this.route });
+  }
+
+  deleteUser(): void {
+    const dialogRef = this.dialog.open(UserDialogComponent, {
+      data: {
+        title: 'Delete User',
+        type: 'readonly',
+        action: 'delete',
+        ...this.params.data,
+      },
+      minWidth: '50%',
+    });
+    dialogRef.afterClosed().subscribe((result: User) => {
+      if (result) {
+        this.usersService.deleteUser(result.id).subscribe();
+      }
+    });
   }
 }
