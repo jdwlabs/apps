@@ -6,10 +6,12 @@ import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { of } from 'rxjs';
 import { UsersService } from '@jdw/angular-usersui-data-access';
 import { ActivatedRoute } from '@angular/router';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 describe(UsersComponent.name, () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -76,8 +78,11 @@ describe(UsersComponent.name, () => {
 });
 
 function testScreenSize(size: string, width: number, height: number) {
-  it(`should be setup properly on ${size} screen size`, () => {
+  beforeEach(() => {
     cy.viewport(width, height);
+  });
+
+  it(`should be setup properly on ${size} screen size`, () => {
     cy.mount(UsersComponent);
     cy.getByCy('title').should('be.visible').and('contain.text', 'Users');
     cy.getByCy('grid').should('be.visible');
@@ -128,6 +133,17 @@ function testScreenSize(size: string, width: number, height: number) {
         .scrollIntoView()
         .should('be.visible')
         .and('contain.text', 'Actions');
+    }
+  });
+
+  it(`should open the delete confirmation modal when clicking delete button on ${size} screen size`, () => {
+    cy.mount(UsersComponent);
+
+    if (width > 600) {
+      cy.getByCy('delete-button').first().scrollIntoView().click();
+
+      cy.getByCy('close-button').should('be.visible');
+      cy.getByCy('action-button').click();
     }
   });
 }
