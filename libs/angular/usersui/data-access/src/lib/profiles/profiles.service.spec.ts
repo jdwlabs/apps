@@ -9,7 +9,12 @@ import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { EMPTY } from 'rxjs';
-import { AddProfile, EditProfile, Profile } from '@jdw/angular-usersui-util';
+import {
+  AddProfile,
+  AddressRequest,
+  EditProfile,
+  Profile,
+} from '@jdw/angular-usersui-util';
 
 const authServiceMock = {
   getToken: jest.fn(),
@@ -216,6 +221,168 @@ describe('ProfilesService', () => {
       req.flush({ ...updatedProfile, id: 3 });
       expect(snackbarServiceMock.success).toHaveBeenCalledWith(
         'Profile edited successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+  });
+
+  describe('addAddress', () => {
+    it('should send a POST request to add an address', () => {
+      const profileId = 1;
+      const address: AddressRequest = {
+        addressLine1: '123 Main St',
+        addressLine2: 'Apt 4B',
+        city: 'Springfield',
+        stateProvince: 'IL',
+        postalCode: '62704',
+        country: 'USA',
+      };
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.addAddress(profileId, address).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}/address`,
+      );
+      expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      expect(req.request.body).toEqual(address);
+
+      req.flush({ id: profileId, ...address });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Address added successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+  });
+
+  describe('editAddress', () => {
+    it('should send a PUT request to update an address', () => {
+      const profileId = 1;
+      const addressId = 1;
+      const address: AddressRequest = {
+        addressLine1: '456 Elm St',
+        addressLine2: '',
+        city: 'Shelbyville',
+        stateProvince: 'IL',
+        postalCode: '62565',
+        country: 'USA',
+      };
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.editAddress(profileId, addressId, address).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}/address/${addressId}`,
+      );
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      expect(req.request.body).toEqual(address);
+
+      req.flush({ id: profileId, ...address });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Address updated successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+  });
+
+  describe('deleteAddress', () => {
+    it('should send a DELETE request to remove an address', () => {
+      const profileId = 1;
+      const addressId = 1;
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.deleteAddress(profileId, addressId).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}/address/${addressId}`,
+      );
+      expect(req.request.method).toBe('DELETE');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(null, { status: 204, statusText: 'No Content' });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Address deleted successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+  });
+
+  describe('addIcon', () => {
+    it('should send a POST request to upload an icon', () => {
+      const profileId = 1;
+      const iconFile = new File(['icon'], 'icon.png', { type: 'image/png' });
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.addIcon(profileId, iconFile).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}/icon`,
+      );
+      expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      expect(req.request.body).toBeInstanceOf(FormData);
+
+      req.flush(null);
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Icon added successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+  });
+
+  describe('editIcon', () => {
+    it('should send a PUT request to update an icon', () => {
+      const profileId = 1;
+      const iconFile = new File(['icon'], 'icon.png', { type: 'image/png' });
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.editIcon(profileId, iconFile).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}/icon`,
+      );
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      expect(req.request.body).toBeInstanceOf(FormData);
+
+      req.flush({ id: profileId, ...iconFile });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Icon updated successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+  });
+
+  describe('deleteIcon', () => {
+    it('should send a DELETE request to remove an icon', () => {
+      const profileId = 1;
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.deleteIcon(profileId).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}/icon`,
+      );
+      expect(req.request.method).toBe('DELETE');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(null, { status: 204, statusText: 'No Content' });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Icon deleted successfully',
         { variant: 'filled', autoClose: true },
         true,
       );
