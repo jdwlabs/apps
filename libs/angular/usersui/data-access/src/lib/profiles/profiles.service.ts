@@ -11,7 +11,12 @@ import {
   getErrorMessage,
 } from '@jdw/angular-shared-util';
 import { catchError, EMPTY, Observable, tap } from 'rxjs';
-import { AddProfile, EditProfile, Profile } from '@jdw/angular-usersui-util';
+import {
+  AddProfile,
+  AddressRequest,
+  EditProfile,
+  Profile,
+} from '@jdw/angular-usersui-util';
 
 @Injectable({
   providedIn: 'root',
@@ -47,7 +52,7 @@ export class ProfilesService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  addProfile(profile: AddProfile) {
+  addProfile(profile: AddProfile): Observable<Profile> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
@@ -78,7 +83,7 @@ export class ProfilesService {
       );
   }
 
-  editProfile(userId: number, profile: EditProfile) {
+  editProfile(userId: number, profile: EditProfile): Observable<Profile> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
@@ -97,6 +102,176 @@ export class ProfilesService {
         tap(() => {
           this.snackbarService.success(
             'Profile edited successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  addAddress(profileId: number, address: AddressRequest): Observable<Profile> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .post<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}/address`,
+        {
+          addressLine1: address.addressLine1,
+          addressLine2: address.addressLine2,
+          city: address.city,
+          stateProvince: address.stateProvince,
+          postalCode: address.postalCode,
+          country: address.country,
+        },
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Address added successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  editAddress(
+    profileId: number,
+    addressId: number,
+    address: AddressRequest,
+  ): Observable<Profile> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .put<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}/address/${addressId}`,
+        {
+          addressLine1: address.addressLine1,
+          addressLine2: address.addressLine2,
+          city: address.city,
+          stateProvince: address.stateProvince,
+          postalCode: address.postalCode,
+          country: address.country,
+        },
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Address updated successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  deleteAddress(profileId: number, addressId: number): Observable<void> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .delete<void>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}/address/${addressId}`,
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Address deleted successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  addIcon(profileId: number, icon: File): Observable<Profile> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const formData = new FormData();
+    formData.append('icon', icon);
+
+    return this.http
+      .post<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}/icon`,
+        formData,
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Icon added successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  editIcon(profileId: number, icon: File): Observable<Profile> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const formData = new FormData();
+    formData.append('icon', icon);
+
+    return this.http
+      .put<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}/icon`,
+        formData,
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Icon updated successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  deleteIcon(profileId: number): Observable<void> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .delete<void>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}/icon`,
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Icon deleted successfully',
             {
               variant: 'filled',
               autoClose: true,
