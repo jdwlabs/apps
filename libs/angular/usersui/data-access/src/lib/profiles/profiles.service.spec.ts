@@ -9,7 +9,7 @@ import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { EMPTY } from 'rxjs';
-import { Profile } from '@jdw/angular-usersui-util';
+import { AddProfile, EditProfile, Profile } from '@jdw/angular-usersui-util';
 
 const authServiceMock = {
   getToken: jest.fn(),
@@ -17,6 +17,7 @@ const authServiceMock = {
 
 const snackbarServiceMock = {
   error: jest.fn(),
+  success: jest.fn(),
 };
 
 const environmentMock = {
@@ -124,6 +125,98 @@ describe('ProfilesService', () => {
       expect(snackbarServiceMock.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
         { variant: 'filled', autoClose: false },
+        true,
+      );
+    });
+  });
+
+  describe('getProfile', () => {
+    it('should fetch a single profile by userId', () => {
+      const mockProfile: Profile = {
+        id: 1,
+        firstName: 'John',
+        middleName: null,
+        lastName: 'Doe',
+        birthdate: '1990-01-01',
+        userId: 1,
+        addresses: [],
+        icon: null,
+        createdByUserId: 1,
+        createdTime: '2024-12-01T00:00:00Z',
+        modifiedByUserId: 1,
+        modifiedTime: '2024-12-01T00:00:00Z',
+      };
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getProfile('1').subscribe((profile) => {
+        expect(profile).toEqual(mockProfile);
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/1`,
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(mockProfile);
+    });
+  });
+
+  describe('addProfile', () => {
+    it('should send a POST request to add a new profile', () => {
+      const newProfile: AddProfile = {
+        firstName: 'Alice',
+        middleName: 'B.',
+        lastName: 'Johnson',
+        birthdate: '1995-08-21',
+        userId: 3,
+      };
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.addProfile(newProfile).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles`,
+      );
+      expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      expect(req.request.body).toEqual(newProfile);
+
+      req.flush({ ...newProfile, id: 3 });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Profile created successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+  });
+
+  describe('editProfile', () => {
+    it('should send a PUT request to edit a profile', () => {
+      const updatedProfile: EditProfile = {
+        firstName: 'Alice',
+        middleName: 'C.',
+        lastName: 'Johnson',
+        birthdate: '1995-08-21',
+      };
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.editProfile(3, updatedProfile).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/3`,
+      );
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      expect(req.request.body).toEqual(updatedProfile);
+
+      req.flush({ ...updatedProfile, id: 3 });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Profile edited successfully',
+        { variant: 'filled', autoClose: true },
         true,
       );
     });
