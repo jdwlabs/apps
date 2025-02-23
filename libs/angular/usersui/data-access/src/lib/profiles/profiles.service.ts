@@ -33,7 +33,6 @@ export class ProfilesService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  // TODO: add testing
   getProfile(userId: string): Observable<Profile> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -48,7 +47,6 @@ export class ProfilesService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  // TODO: add testing
   addProfile(profile: AddProfile) {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -80,7 +78,6 @@ export class ProfilesService {
       );
   }
 
-  // TODO: add testing
   editProfile(userId: number, profile: EditProfile) {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
