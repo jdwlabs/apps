@@ -10,9 +10,10 @@ import {
   Environment,
   getErrorMessage,
 } from '@jdw/angular-shared-util';
-import { catchError, EMPTY, Observable, tap } from 'rxjs';
+import { catchError, EMPTY, map, Observable, tap } from 'rxjs';
 import {
   AddProfile,
+  Address,
   AddressRequest,
   EditProfile,
   Profile,
@@ -108,6 +109,37 @@ export class ProfilesService {
             },
             true,
           );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  getAddress(profileId: number, addressId: number): Observable<Address> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .get<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}`,
+        {
+          headers: headers,
+        },
+      )
+      .pipe(
+        map((profile) => {
+          const address = profile.addresses.find(
+            (addr) => addr.id === addressId,
+          );
+          if (!address) {
+            throw new HttpErrorResponse({
+              status: 404,
+              statusText: 'Address Not Found',
+              error: {
+                message: `Address with ID ${addressId} not found for profile ${profileId}`,
+              },
+            });
+          }
+          return address;
         }),
         catchError((error) => this.handleError(error)),
       );

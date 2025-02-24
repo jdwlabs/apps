@@ -227,6 +227,112 @@ describe('ProfilesService', () => {
     });
   });
 
+  describe('getAddress', () => {
+    it('should fetch an address for the given profile and address ID', () => {
+      const profileId = 1;
+      const addressId = 1;
+      const mockProfile: Profile = {
+        id: 1,
+        firstName: 'John',
+        middleName: '',
+        lastName: 'Doe',
+        birthdate: '1990-01-01',
+        userId: 1,
+        addresses: [
+          {
+            id: 1,
+            addressLine1: '123 Main St',
+            addressLine2: '',
+            city: 'Springfield',
+            stateProvince: 'IL',
+            postalCode: '62704',
+            country: 'USA',
+            profileId: 1,
+            createdByUserId: 1,
+            createdTime: '2024-12-01T00:00:00Z',
+            modifiedByUserId: 1,
+            modifiedTime: '2024-12-01T00:00:00Z',
+          },
+        ],
+        icon: null,
+        createdByUserId: 1,
+        createdTime: '2024-12-01T00:00:00Z',
+        modifiedByUserId: 1,
+        modifiedTime: '2024-12-01T00:00:00Z',
+      };
+
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getAddress(profileId, addressId).subscribe((address) => {
+        expect(address).toEqual(mockProfile.addresses[0]);
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(mockProfile);
+    });
+
+    it('should handle address not found (404) error', () => {
+      const profileId = 1;
+      const addressId = 999; // Address ID that doesn't exist
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getAddress(profileId, addressId).subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(HttpErrorResponse);
+          expect(error.status).toBe(404);
+          expect(error.error.message).toBe(
+            `Address with ID ${addressId} not found for profile ${profileId}`,
+          );
+        },
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(
+        { message: 'Address Not Found' },
+        { status: 404, statusText: 'Not Found' },
+      );
+    });
+
+    it('should handle unexpected HTTP errors', () => {
+      const profileId = 1;
+      const addressId = 1;
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getAddress(profileId, addressId).subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(HttpErrorResponse);
+          expect(error.status).toBe(500);
+        },
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(
+        { message: 'Internal Server Error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+    });
+  });
+
   describe('addAddress', () => {
     it('should send a POST request to add an address', () => {
       const profileId = 1;
