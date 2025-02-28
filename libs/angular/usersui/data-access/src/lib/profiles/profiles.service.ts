@@ -114,7 +114,10 @@ export class ProfilesService {
       );
   }
 
-  getAddress(profileId: number, addressId: number): Observable<Address> {
+  getAddress(
+    profileId: number,
+    addressId: number,
+  ): Observable<Address | undefined> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
@@ -126,21 +129,9 @@ export class ProfilesService {
         },
       )
       .pipe(
-        map((profile) => {
-          const address = profile.addresses.find(
-            (addr) => addr.id === addressId,
-          );
-          if (!address) {
-            throw new HttpErrorResponse({
-              status: 404,
-              statusText: 'Address Not Found',
-              error: {
-                message: `Address with ID ${addressId} not found for profile ${profileId}`,
-              },
-            });
-          }
-          return address;
-        }),
+        map((profile) =>
+          profile.addresses.find((addr) => addr.id === addressId),
+        ),
         catchError((error) => this.handleError(error)),
       );
   }
