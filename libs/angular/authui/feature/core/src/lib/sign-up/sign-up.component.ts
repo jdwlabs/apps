@@ -11,6 +11,7 @@ import {
 } from '@angular/forms';
 import {
   CONFIRM_PASSWORD_REQUIRED_VALIDATION_MESSAGE,
+  CreateUserRequest,
   EMAIL_PATTERN_VALIDATION_MESSAGE,
   EMAIL_REQUIRED_VALIDATION_MESSAGE,
   EMAIL_VALIDATOR_PATTERN,
@@ -19,14 +20,13 @@ import {
   PASSWORD_PATTERN_VALIDATION_MESSAGE,
   PASSWORD_REQUIRED_VALIDATION_MESSAGE,
   PASSWORD_VALIDATOR_PATTERN,
-} from '@jdw/angular-authui-util';
+} from '@jdw/angular-shared-util';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
-import { CreateUserRequest } from '@jdw/angular-shared-util';
 import { AuthService } from '@jdw/angular-shared-data-access';
 
 @Component({
