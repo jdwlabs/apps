@@ -8,15 +8,15 @@ import {
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { AuthService } from '@jdw/angular-shared-data-access';
+import { Router } from '@angular/router';
 import {
   EMAIL_PATTERN_VALIDATION_MESSAGE,
   EMAIL_REQUIRED_VALIDATION_MESSAGE,
   EMAIL_VALIDATOR_PATTERN,
   PASSWORD_REQUIRED_VALIDATION_MESSAGE,
-} from '@jdw/angular-authui-util';
-import { MatInputModule } from '@angular/material/input';
-import { AuthService } from '@jdw/angular-shared-data-access';
-import { Router } from '@angular/router';
+} from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-email-sign-in',
