@@ -8,7 +8,7 @@ import {
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
-import { User } from '@jdw/angular-usersui-util';
+import { AddUser, EditUser, User } from '@jdw/angular-usersui-util';
 import { EMPTY } from 'rxjs';
 
 const mockAuthService = {
@@ -227,6 +227,162 @@ describe('UsersService', () => {
         next: () => fail('Expected an error, but got a success response'),
         error: (error) => {
           expect(error).toBeInstanceOf(HttpErrorResponse);
+        },
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users/${userId}`,
+      );
+      req.flush(
+        { message: 'Error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+
+      expect(mockSnackbarService.error).toHaveBeenCalledWith(
+        'An unexpected error occurred on our server. Please try again later.',
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    });
+  });
+
+  describe('addUser', () => {
+    it('should send a POST request with the correct headers and show success message', () => {
+      const mockUser: AddUser = {
+        emailAddress: 'newuser@jdwkube.com',
+        password: 'P@ssw0rd',
+      };
+      const createdUser: User = {
+        id: 1,
+        emailAddress: 'user1@jdwkube.com',
+        password: 'P@ssw0rd',
+        status: 'ACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '2024-08-09T01:02:34.567+00:00',
+        modifiedByUserId: 1,
+        modifiedTime: '2024-08-09T01:02:34.567+00:00',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.addUser(mockUser).subscribe((user) => {
+        expect(user).toEqual(createdUser);
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users`,
+      );
+      expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(createdUser);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        'User added Successfully',
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should handle error when the request fails', () => {
+      const mockUser: AddUser = {
+        emailAddress: 'newuser@jdwkube.com',
+        password: 'P@ssw0rd',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.addUser(mockUser).subscribe({
+        next: () => fail('Expected an error, but got a success response'),
+        error: (error) => {
+          expect(error).toBe(EMPTY);
+        },
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users`,
+      );
+      req.flush(
+        { message: 'Error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+
+      expect(mockSnackbarService.error).toHaveBeenCalledWith(
+        'An unexpected error occurred on our server. Please try again later.',
+        {
+          variant: 'filled',
+          autoClose: false,
+        },
+        true,
+      );
+    });
+  });
+
+  describe('editUser', () => {
+    it('should send a PUT request with the correct headers and show success message', () => {
+      const userId = 1;
+      const mockUserUpdate: EditUser = {
+        emailAddress: 'user1@jdwkube.com',
+        password: 'P@ssw0rd',
+      };
+      const updatedUser: User = {
+        id: userId,
+        emailAddress: 'user1@jdwkube.com',
+        password: 'P@ssw0rd',
+        status: 'INACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '2024-08-09T01:02:34.567+00:00',
+        modifiedByUserId: 1,
+        modifiedTime: '2024-08-09T02:00:00.000+00:00',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.editUser(userId, mockUserUpdate).subscribe((user) => {
+        expect(user).toEqual(updatedUser);
+      });
+
+      const req = httpTesting.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/users/${userId}`,
+      );
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(updatedUser);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        'User edited Successfully',
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should handle error when the request fails', () => {
+      const userId = 1;
+      const mockUserUpdate: EditUser = {
+        emailAddress: 'user1@jdwkube.com',
+        password: 'P@ssw0rd',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.editUser(userId, mockUserUpdate).subscribe({
+        next: () => fail('Expected an error, but got a success response'),
+        error: (error) => {
+          expect(error).toBe(EMPTY);
         },
       });
 
