@@ -16,6 +16,7 @@ import {
   Address,
   AddressRequest,
   EditProfile,
+  Icon,
   Profile,
 } from '@jdw/angular-usersui-util';
 
@@ -103,6 +104,30 @@ export class ProfilesService {
         tap(() => {
           this.snackbarService.success(
             'Profile edited successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  deleteProfile(userId: number): Observable<void> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .delete<void>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        { headers: headers },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'Profile deleted successfully',
             {
               variant: 'filled',
               autoClose: true,
@@ -228,11 +253,28 @@ export class ProfilesService {
       );
   }
 
+  getIcon(profileId: number): Observable<Icon | null> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .get<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/${profileId}`,
+        {
+          headers: headers,
+        },
+      )
+      .pipe(
+        map((profile) => profile.icon),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
   addIcon(profileId: number, icon: File): Observable<Profile> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     const formData = new FormData();
-    formData.append('icon', icon);
+    formData.append('icon', icon, icon.name);
 
     return this.http
       .post<Profile>(
@@ -259,7 +301,7 @@ export class ProfilesService {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     const formData = new FormData();
-    formData.append('icon', icon);
+    formData.append('icon', icon, icon.name);
 
     return this.http
       .put<Profile>(
