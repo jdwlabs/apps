@@ -76,3 +76,13 @@ export type User = {
   modifiedByUserId: number;
   modifiedTime: string;
 };
+
+export type AddUser = {
+  emailAddress: string;
+  password: string;
+};
+
+export type EditUser = {
+  emailAddress: string;
+  password: string;
+};
