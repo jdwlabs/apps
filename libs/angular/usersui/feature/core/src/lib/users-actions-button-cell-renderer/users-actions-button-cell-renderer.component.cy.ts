@@ -42,6 +42,14 @@ describe(UsersActionsButtonCellRendererComponent.name, () => {
       .should('be.visible')
       .and('contain.text', 'View User');
     cy.getByCy('view-button').trigger('mouseleave');
+    cy.getByCy('edit-button')
+      .should('be.visible')
+      .and('be.enabled')
+      .trigger('mouseenter');
+    cy.get('.mdc-tooltip__surface')
+      .should('be.visible')
+      .and('contain.text', 'Edit User');
+    cy.getByCy('view-button').trigger('mouseleave');
     cy.getByCy('delete-button')
       .should('be.visible')
       .and('be.enabled')

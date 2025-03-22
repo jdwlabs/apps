@@ -9,6 +9,16 @@
   <mat-icon>info</mat-icon>
 </button>
 <button
+  (click)="editUser()"
+  color="warn"
+  data-cy="edit-button"
+  mat-icon-button
+  matTooltip="Edit User"
+  matTooltipShowDelay="1000"
+>
+  <mat-icon>edit</mat-icon>
+</button>
+<button
   (click)="deleteUser()"
   color="error"
   data-cy="delete-button"
