@@ -495,6 +495,116 @@ describe('ProfilesService', () => {
     });
   });
 
+  describe('deleteProfile', () => {
+    it('should send a DELETE request to remove a profile and show success message', () => {
+      const userId = 1;
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.deleteProfile(userId).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+      );
+      expect(req.request.method).toBe('DELETE');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(null, { status: 204, statusText: 'No Content' });
+      expect(snackbarServiceMock.success).toHaveBeenCalledWith(
+        'Profile deleted successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+
+    it('should handle errors and call handleError on failure', () => {
+      const userId = 1;
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.deleteProfile(userId).subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(HttpErrorResponse);
+          expect(error.status).toBe(500);
+          expect(error.error.message).toBe('Internal Server Error');
+        },
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+      );
+      req.flush(
+        { message: 'Internal Server Error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+    });
+  });
+
+  describe('getIcon', () => {
+    it('should fetch the icon for a given profile ID', () => {
+      const profileId = 1;
+      const mockIcon = { url: 'http://example.com/icon.png' };
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getIcon(profileId).subscribe((icon) => {
+        expect(icon).toEqual(mockIcon);
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush({ id: profileId, icon: mockIcon });
+    });
+
+    it('should handle errors and return null if profile not found', () => {
+      const profileId = 1;
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getIcon(profileId).subscribe((icon) => {
+        expect(icon).toBeNull();
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
+      );
+      req.flush(
+        { message: 'Profile Not Found' },
+        { status: 404, statusText: 'Not Found' },
+      );
+    });
+
+    it('should handle unexpected HTTP errors and call handleError', () => {
+      const profileId = 1;
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getIcon(profileId).subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(HttpErrorResponse);
+          expect(error.status).toBe(500);
+        },
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      req.flush(
+        { message: 'Internal Server Error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+    });
+  });
+
   describe('handleError', () => {
     it('should display a snackbar error for 500 errors', () => {
       const mockError = new HttpErrorResponse({
