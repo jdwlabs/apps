@@ -11,7 +11,7 @@ import {
   getErrorMessage,
 } from '@jdw/angular-shared-util';
 import { catchError, EMPTY, Observable, tap } from 'rxjs';
-import { User } from '@jdw/angular-usersui-util';
+import { AddUser, EditUser, User } from '@jdw/angular-usersui-util';
 
 @Injectable({
   providedIn: 'root',
@@ -56,6 +56,56 @@ export class UsersService {
         tap(() => {
           this.snackbarService.success(
             `User ${userId} Deleted Successfully`,
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  addUser(user: AddUser): Observable<User> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .post<User>(`${this.environment.AUTH_BASE_URL}/api/users`, user, {
+        headers: headers,
+      })
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'User added Successfully',
+            {
+              variant: 'filled',
+              autoClose: true,
+            },
+            true,
+          );
+        }),
+        catchError((error) => this.handleError(error)),
+      );
+  }
+
+  editUser(userId: number, user: EditUser): Observable<User> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .put<User>(
+        `${this.environment.AUTH_BASE_URL}/api/users/${userId}`,
+        user,
+        {
+          headers: headers,
+        },
+      )
+      .pipe(
+        tap(() => {
+          this.snackbarService.success(
+            'User edited Successfully',
             {
               variant: 'filled',
               autoClose: true,
