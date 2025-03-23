@@ -8,3 +8,23 @@
 >
   <mat-icon>info</mat-icon>
 </button>
+<button
+  (click)="editProfile()"
+  color="warn"
+  data-cy="edit-button"
+  mat-icon-button
+  matTooltip="Edit Profile"
+  matTooltipShowDelay="1000"
+>
+  <mat-icon>edit</mat-icon>
+</button>
+<button
+  (click)="deleteProfile()"
+  color="error"
+  data-cy="delete-button"
+  mat-icon-button
+  matTooltip="Delete Profile"
+  matTooltipShowDelay="1000"
+>
+  <mat-icon>delete</mat-icon>
+</button>
