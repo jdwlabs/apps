@@ -58,6 +58,10 @@ function testScreenSize(size: string, width: number, height: number) {
           'contain.text',
           'This is a page for viewing the current logged in user',
         );
+      cy.getByCy('"add user-tile"')
+        .should('be.visible')
+        .and('contain.text', 'Add User')
+        .and('contain.text', 'This is a page for adding a new user account');
     });
   });
 }
