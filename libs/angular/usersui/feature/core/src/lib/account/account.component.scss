@@ -1,0 +1,36 @@
+.account-container {
+  padding: 16px;
+
+  h1 {
+    margin: 0 0 8px;
+  }
+
+  .account-form {
+    display: grid;
+    grid-template-columns: 1fr;
+
+    .button-container {
+      display: flex;
+      gap: 8px;
+    }
+
+    mat-error {
+      display: flex;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .match-password {
+      padding: 0 16px;
+    }
+  }
+}
+
+:host ::ng-deep .email-field .mat-mdc-form-field-subscript-wrapper,
+:host ::ng-deep .password-field .mat-mdc-form-field-subscript-wrapper {
+  min-height: 22px !important;
+}
+
+:host ::ng-deep .confirm-password-field .mat-mdc-form-field-subscript-wrapper {
+  min-height: 4px !important;
+}
