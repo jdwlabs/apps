@@ -15,6 +15,15 @@ export type Address = {
   modifiedTime: string;
 };
 
+export type AddressRequest = {
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  stateProvince: string;
+  postalCode: string;
+  country: string;
+};
+
 export type Icon = {
   id: number;
   profileId: number;
@@ -66,4 +75,14 @@ export type User = {
   createdTime: string;
   modifiedByUserId: number;
   modifiedTime: string;
+};
+
+export type AddUser = {
+  emailAddress: string;
+  password: string;
+};
+
+export type EditUser = {
+  emailAddress: string;
+  password: string;
 };

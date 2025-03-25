@@ -275,6 +275,14 @@ function testScreenSize(size: string, width: number, height: number) {
 
       cy.getByCy('user-container').should('be.visible');
       cy.getByCy('title').should('be.visible').and('contain.text', 'Account');
+      cy.getByCy('edit-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Edit Account')
+        .and('be.enabled');
+      cy.getByCy('delete-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Account')
+        .and('be.enabled');
       cy.getByCy('email-label')
         .should('be.visible')
         .and('contain.text', 'Email');
@@ -293,15 +301,25 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('status-input')
         .should('be.visible')
         .and('contain.value', mockUserWithProfileAndAddress.status);
+
       cy.getByCy('roles-title')
         .should('be.visible')
         .and('contain.text', 'Roles');
       cy.getByCy('role')
         .should('be.visible')
         .and('contain.text', mockRoleAdmin.name);
+
       cy.getByCy('profile-title')
         .should('be.visible')
         .and('contain.text', 'Profile');
+      cy.getByCy('edit-profile-button')
+        .should('be.visible')
+        .and('contain.text', 'Edit Profile')
+        .and('be.enabled');
+      cy.getByCy('delete-profile-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Profile')
+        .and('be.enabled');
       cy.getByCy('first-name-label')
         .should('be.visible')
         .and('contain.text', 'First Name');
@@ -329,16 +347,36 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('birthdate-input')
         .should('be.visible')
         .and('contain.value', mockUserWithProfileAndAddress.profile?.birthdate);
-      cy.getByCy('profile-icon-title')
+
+      cy.getByCy('icon-title').should('be.visible').and('contain.text', 'Icon');
+      cy.getByCy('edit-icon-button')
         .should('be.visible')
-        .and('contain.text', 'Profile Icon');
-      cy.getByCy('profile-icon-image').should('be.visible');
+        .and('contain.text', 'Edit Icon')
+        .and('be.enabled');
+      cy.getByCy('delete-icon-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Icon')
+        .and('be.enabled');
+      cy.getByCy('icon-image').should('be.visible');
+
       cy.getByCy('addresses-title')
         .should('be.visible')
         .and('contain.text', 'Addresses');
+      cy.getByCy('add-address-button')
+        .should('be.visible')
+        .and('contain.text', 'Add Address')
+        .and('be.enabled');
       cy.getByCy('address-title-0')
         .should('be.visible')
         .and('contain.text', 'Address 1');
+      cy.getByCy('edit-address-button-0')
+        .should('be.visible')
+        .and('contain.text', 'Edit Address')
+        .and('be.enabled');
+      cy.getByCy('delete-address-button-0')
+        .should('be.visible')
+        .and('contain.text', 'Delete Address')
+        .and('be.enabled');
       cy.getByCy('address-line-1-label-0')
         .should('be.visible')
         .and('contain.text', 'Address Line 1');
@@ -410,6 +448,14 @@ function testScreenSize(size: string, width: number, height: number) {
 
       cy.getByCy('user-container').should('be.visible');
       cy.getByCy('title').should('be.visible').and('contain.text', 'Account');
+      cy.getByCy('edit-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Edit Account')
+        .and('be.enabled');
+      cy.getByCy('delete-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Account')
+        .and('be.enabled');
       cy.getByCy('email-label')
         .should('be.visible')
         .and('contain.text', 'Email');
@@ -428,9 +474,25 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('status-input')
         .should('be.visible')
         .and('contain.value', mockUserWithMultipleAddresses.status);
+
+      cy.getByCy('roles-title')
+        .should('be.visible')
+        .and('contain.text', 'Roles');
+      cy.getByCy('role-content')
+        .should('be.visible')
+        .and('contain.text', 'No Roles');
+
       cy.getByCy('profile-title')
         .should('be.visible')
         .and('contain.text', 'Profile');
+      cy.getByCy('edit-profile-button')
+        .should('be.visible')
+        .and('contain.text', 'Edit Profile')
+        .and('be.enabled');
+      cy.getByCy('delete-profile-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Profile')
+        .and('be.enabled');
       cy.getByCy('first-name-label')
         .should('be.visible')
         .and('contain.text', 'First Name');
@@ -458,12 +520,34 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('birthdate-input')
         .should('be.visible')
         .and('contain.value', mockUserWithMultipleAddresses.profile?.birthdate);
+
+      cy.getByCy('icon-title').should('be.visible').and('contain.text', 'Icon');
+      cy.getByCy('add-icon-button')
+        .should('be.visible')
+        .and('contain.text', 'Add Icon')
+        .and('be.enabled');
+      cy.getByCy('icon-content')
+        .should('be.visible')
+        .and('contain.text', 'No Icon');
+
       cy.getByCy('addresses-title')
         .should('be.visible')
         .and('contain.text', 'Addresses');
+      cy.getByCy('add-address-button')
+        .should('be.visible')
+        .and('contain.text', 'Add Address')
+        .and('be.enabled');
       cy.getByCy('address-title-0')
         .should('be.visible')
         .and('contain.text', 'Address 1');
+      cy.getByCy('edit-address-button-0')
+        .should('be.visible')
+        .and('contain.text', 'Edit Address')
+        .and('be.enabled');
+      cy.getByCy('delete-address-button-0')
+        .should('be.visible')
+        .and('contain.text', 'Delete Address')
+        .and('be.enabled');
       cy.getByCy('address-line-1-label-0')
         .should('be.visible')
         .and('contain.text', 'Address Line 1');
@@ -521,6 +605,14 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('address-title-1')
         .should('be.visible')
         .and('contain.text', 'Address 2');
+      cy.getByCy('edit-address-button-1')
+        .should('be.visible')
+        .and('contain.text', 'Edit Address')
+        .and('be.enabled');
+      cy.getByCy('delete-address-button-1')
+        .should('be.visible')
+        .and('contain.text', 'Delete Address')
+        .and('be.enabled');
       cy.getByCy('address-line-1-label-1')
         .should('be.visible')
         .and('contain.text', 'Address Line 1');
@@ -598,6 +690,14 @@ function testScreenSize(size: string, width: number, height: number) {
 
       cy.getByCy('user-container').should('be.visible');
       cy.getByCy('title').should('be.visible').and('contain.text', 'Account');
+      cy.getByCy('edit-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Edit Account')
+        .and('be.enabled');
+      cy.getByCy('delete-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Account')
+        .and('be.enabled');
       cy.getByCy('email-label')
         .should('be.visible')
         .and('contain.text', 'Email');
@@ -616,12 +716,33 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('status-input')
         .should('be.visible')
         .and('contain.value', mockUserNoProfile.status);
+
       cy.getByCy('roles-title')
         .should('be.visible')
         .and('contain.text', 'Roles');
       cy.getByCy('role')
         .should('be.visible')
         .and('contain.text', mockRoleAdmin.name);
+
+      cy.getByCy('profile-title')
+        .should('be.visible')
+        .and('contain.text', 'Profile');
+      cy.getByCy('add-profile-button')
+        .should('be.visible')
+        .and('contain.text', 'Add Profile')
+        .and('be.enabled');
+
+      cy.getByCy('icon-title').should('be.visible').and('contain.text', 'Icon');
+      cy.getByCy('icon-content')
+        .should('be.visible')
+        .and('contain.text', 'No Icon');
+
+      cy.getByCy('addresses-title')
+        .should('be.visible')
+        .and('contain.text', 'Addresses');
+      cy.getByCy('address-content')
+        .should('be.visible')
+        .and('contain.text', 'No Addresses');
     });
 
     it(`should render the user form with no profile and no roles on ${size} screen size`, () => {
@@ -639,6 +760,14 @@ function testScreenSize(size: string, width: number, height: number) {
 
       cy.getByCy('user-container').should('be.visible');
       cy.getByCy('title').should('be.visible').and('contain.text', 'Account');
+      cy.getByCy('edit-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Edit Account')
+        .and('be.enabled');
+      cy.getByCy('delete-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Account')
+        .and('be.enabled');
       cy.getByCy('email-label')
         .should('be.visible')
         .and('contain.text', 'Email');
@@ -657,6 +786,33 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('status-input')
         .should('be.visible')
         .and('contain.value', mockUserNoProfileAndNoRoles.status);
+
+      cy.getByCy('roles-title')
+        .should('be.visible')
+        .and('contain.text', 'Roles');
+      cy.getByCy('role-content')
+        .should('be.visible')
+        .and('contain.text', 'No Roles');
+
+      cy.getByCy('profile-title')
+        .should('be.visible')
+        .and('contain.text', 'Profile');
+      cy.getByCy('add-profile-button')
+        .should('be.visible')
+        .and('contain.text', 'Add Profile')
+        .and('be.enabled');
+
+      cy.getByCy('icon-title').should('be.visible').and('contain.text', 'Icon');
+      cy.getByCy('icon-content')
+        .should('be.visible')
+        .and('contain.text', 'No Icon');
+
+      cy.getByCy('addresses-title')
+        .should('be.visible')
+        .and('contain.text', 'Addresses');
+      cy.getByCy('address-content')
+        .should('be.visible')
+        .and('contain.text', 'No Addresses');
     });
 
     it(`should render the user form with multiple roles on ${size} screen size`, () => {
@@ -683,6 +839,14 @@ function testScreenSize(size: string, width: number, height: number) {
 
       cy.getByCy('user-container').should('be.visible');
       cy.getByCy('title').should('be.visible').and('contain.text', 'Account');
+      cy.getByCy('edit-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Edit Account')
+        .and('be.enabled');
+      cy.getByCy('delete-account-button')
+        .should('be.visible')
+        .and('contain.text', 'Delete Account')
+        .and('be.enabled');
       cy.getByCy('email-label')
         .should('be.visible')
         .and('contain.text', 'Email');
@@ -701,6 +865,7 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('status-input')
         .should('be.visible')
         .and('contain.value', mockUserMultipleRoles.status);
+
       cy.getByCy('roles-title')
         .should('be.visible')
         .and('contain.text', 'Roles');
@@ -710,6 +875,26 @@ function testScreenSize(size: string, width: number, height: number) {
       cy.getByCy('role')
         .should('be.visible')
         .and('contain.text', mockRoleManager.name);
+
+      cy.getByCy('profile-title')
+        .should('be.visible')
+        .and('contain.text', 'Profile');
+      cy.getByCy('add-profile-button')
+        .should('be.visible')
+        .and('contain.text', 'Add Profile')
+        .and('be.enabled');
+
+      cy.getByCy('icon-title').should('be.visible').and('contain.text', 'Icon');
+      cy.getByCy('icon-content')
+        .should('be.visible')
+        .and('contain.text', 'No Icon');
+
+      cy.getByCy('addresses-title')
+        .should('be.visible')
+        .and('contain.text', 'Addresses');
+      cy.getByCy('address-content')
+        .should('be.visible')
+        .and('contain.text', 'No Addresses');
     });
   });
 }

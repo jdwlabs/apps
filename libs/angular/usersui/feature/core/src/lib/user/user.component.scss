@@ -5,7 +5,10 @@
     margin-right: 16px;
   }
 
-  .title {
-    margin-top: 8px;
+  .row-container {
+    display: flex;
+    align-content: center;
+    align-items: center;
+    gap: 16px;
   }
 }

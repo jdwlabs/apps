@@ -18,6 +18,7 @@ import { ProfilesActionButtonCellRendererComponent } from '../profiles-action-bu
 })
 export class ProfilesComponent implements OnInit {
   private profilesService: ProfilesService = inject(ProfilesService);
+  loading = true;
   profiles: Profile[] = [];
 
   colDefs: ColDef[] = [
@@ -81,8 +82,8 @@ export class ProfilesComponent implements OnInit {
       field: 'actions',
       headerName: 'Actions',
       cellRenderer: ProfilesActionButtonCellRendererComponent,
-      maxWidth: 72,
-      minWidth: 72,
+      maxWidth: 172,
+      minWidth: 172,
       resizable: false,
       filter: false,
       sortable: false,
@@ -103,6 +104,7 @@ export class ProfilesComponent implements OnInit {
   };
 
   gridOptions: GridOptions = {
+    loading: this.loading,
     columnDefs: this.colDefs,
     defaultColDef: this.defaultColDef,
     pagination: true,
@@ -123,6 +125,7 @@ export class ProfilesComponent implements OnInit {
     this.profilesService.getProfiles().subscribe({
       next: (response) => {
         this.profiles = response;
+        this.loading = false;
       },
     });
   }

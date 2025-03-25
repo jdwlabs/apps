@@ -30,13 +30,18 @@ export class UsersActionsButtonCellRendererComponent
     this.params = params;
   }
 
-  refresh(params: ICellRendererParams): boolean {
+  refresh(_: ICellRendererParams): boolean {
     return false;
   }
 
   viewUser(): void {
     const userId = this.params.data['id'];
     this.router.navigate([`../user/${userId}`], { relativeTo: this.route });
+  }
+
+  editUser(): void {
+    const userId = this.params.data['id'];
+    this.router.navigate([`../account/${userId}`], { relativeTo: this.route });
   }
 
   deleteUser(): void {
