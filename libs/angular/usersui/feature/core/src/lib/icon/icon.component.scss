@@ -1,0 +1,61 @@
+.upload-container {
+  padding: 16px;
+
+  h1 {
+    margin: 0 0 8px;
+  }
+}
+
+.drop-zone {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.drop-zone.drag-over {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.upload-icon {
+  width: 64px;
+  height: 64px;
+  font-size: 64px;
+}
+
+.preview-image {
+  max-width: 150px;
+  max-height: 150px;
+  margin-top: 10px;
+  border-radius: 8px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.button-container {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+}
