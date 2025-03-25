@@ -18,7 +18,7 @@ import { ProfilesActionButtonCellRendererComponent } from '../profiles-action-bu
 })
 export class ProfilesComponent implements OnInit {
   private profilesService: ProfilesService = inject(ProfilesService);
-  loading: boolean = true;
+  loading = true;
   profiles: Profile[] = [];
 
   colDefs: ColDef[] = [
