@@ -18,7 +18,7 @@ import { UsersActionsButtonCellRendererComponent } from '../users-actions-button
 })
 export class UsersComponent implements OnInit {
   private usersService: UsersService = inject(UsersService);
-  loading: boolean = true;
+  loading = true;
   users: User[] = [];
 
   colDefs: ColDef[] = [
