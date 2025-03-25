@@ -10,7 +10,10 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
@@ -18,7 +21,9 @@
       "@jdw/angular-authui-feature-core": [
         "libs/angular/authui/feature/core/src/index.ts"
       ],
-      "@jdw/angular-authui-util": ["libs/angular/authui/util/src/index.ts"],
+      "@jdw/angular-authui-util": [
+        "libs/angular/authui/util/src/index.ts"
+      ],
       "@jdw/angular-container-data-access": [
         "libs/angular/container/data-access/src/index.ts"
       ],
@@ -31,15 +36,21 @@
       "@jdw/angular-shared-data-access": [
         "libs/angular/shared/data-access/src/index.ts"
       ],
-      "@jdw/angular-shared-ui": ["libs/angular/shared/ui/src/index.ts"],
-      "@jdw/angular-shared-util": ["libs/angular/shared/util/src/index.ts"],
+      "@jdw/angular-shared-ui": [
+        "libs/angular/shared/ui/src/index.ts"
+      ],
+      "@jdw/angular-shared-util": [
+        "libs/angular/shared/util/src/index.ts"
+      ],
       "@jdw/angular-usersui-data-access": [
         "libs/angular/usersui/data-access/src/index.ts"
       ],
       "@jdw/angular-usersui-feature-core": [
         "libs/angular/usersui/feature/core/src/index.ts"
       ],
-      "@jdw/angular-usersui-util": ["libs/angular/usersui/util/src/index.ts"],
+      "@jdw/angular-usersui-util": [
+        "libs/angular/usersui/util/src/index.ts"
+      ],
       "authui/Routes": [
         "apps/angular/authui/authui/src/app/remote-entry/entry.routes.ts"
       ],
@@ -48,5 +59,8 @@
       ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }
