@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.9.9](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.8...usersrole-0.9.9) (2025-03-25)
+
+
+### Bug Fixes
+
+* **usersrole:** add address fix for saving data ([360c91e](https://github.com/jdwillmsen/jdw/commit/360c91e44d37ab03fe0cf95e683cffdbb89b72dd))
+
 ## [0.9.8](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.7...usersrole-0.9.8) (2025-02-19)
 
 ## [0.9.7](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.6...usersrole-0.9.7) (2025-01-30)
