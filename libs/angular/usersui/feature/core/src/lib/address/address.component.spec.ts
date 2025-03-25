@@ -1,34 +1,40 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ProfilesActionButtonCellRendererComponent } from './profiles-action-button-cell-renderer.component';
+import { AddressComponent } from './address.component';
 import { ActivatedRoute } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
-describe('ProfilesActionButtonCellRendererComponent', () => {
-  let component: ProfilesActionButtonCellRendererComponent;
-  let fixture: ComponentFixture<ProfilesActionButtonCellRendererComponent>;
+describe('AddressComponent', () => {
+  let component: AddressComponent;
+  let fixture: ComponentFixture<AddressComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProfilesActionButtonCellRendererComponent],
+      imports: [AddressComponent, NoopAnimationsModule],
       providers: [
         {
           provide: ActivatedRoute,
-          useValue: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              params: {
+                profileId: 1,
+                addressId: 1,
+              },
+            },
+          },
         },
         provideHttpClient(),
         provideHttpClientTesting(),
         {
           provide: ENVIRONMENT,
-          useValue: {},
+          useValue: ENVIRONMENT,
         },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(
-      ProfilesActionButtonCellRendererComponent,
-    );
+    fixture = TestBed.createComponent(AddressComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

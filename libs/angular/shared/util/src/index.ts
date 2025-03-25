@@ -7,3 +7,4 @@ export * from './lib/message.constant';
 export * from './lib/http-error-message.util';
 export * from './lib/environment.token';
 export * from './lib/role.model';
+export * from './lib/validator.constant';

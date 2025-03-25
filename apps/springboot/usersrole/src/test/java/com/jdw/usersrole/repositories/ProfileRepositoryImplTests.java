@@ -202,17 +202,45 @@ class ProfileRepositoryImplTests {
     }
 
     @Test
-    void saveAddress_shouldSaveAddressAndReturnUpdatedProfile() {
+    void saveAddress_new_shouldSaveAddressAndReturnUpdatedProfile() {
         Address mockAddress = buildMockAddress();
         Profile mockProfile = buildMockProfile();
 
         when(addressDao.create(any(Address.class))).thenReturn(mockAddress);
         when(profileDao.findById(1L)).thenReturn(Optional.of(mockProfile));
 
-        Profile updatedProfile = profileRepository.saveAddress(mockAddress);
+        Profile updatedProfile = profileRepository.saveAddress(
+                Address.builder()
+                        .profileId(1L)
+                        .addressLine1("123 Main St")
+                        .city("Cityville")
+                        .stateProvince("State")
+                        .country("Country")
+                        .createdByUserId(1L)
+                        .createdTime(Timestamp.from(Instant.now()))
+                        .modifiedByUserId(1L)
+                        .modifiedTime(Timestamp.from(Instant.now()))
+                        .build()
+        );
 
         assertEquals(mockProfile, updatedProfile);
         verify(addressDao, times(1)).create(any(Address.class));
+        verify(profileDao, times(1)).findById(1L);
+    }
+
+    @Test
+    void saveAddress_update_shouldSaveAddressAndReturnUpdatedProfile() {
+        Address mockAddress = buildMockAddress();
+        Profile mockProfile = buildMockProfile();
+
+        when(addressDao.update(any(Address.class))).thenReturn(mockAddress);
+        when(profileDao.findById(1L)).thenReturn(Optional.of(mockProfile));
+
+        Profile updatedProfile = profileRepository.saveAddress(mockAddress
+        );
+
+        assertEquals(mockProfile, updatedProfile);
+        verify(addressDao, times(1)).update(any(Address.class));
         verify(profileDao, times(1)).findById(1L);
     }
 

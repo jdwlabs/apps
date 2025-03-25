@@ -30,6 +30,11 @@ export class DashboardComponent {
       link: './user/' + this.getCurrentUserId(),
       description: 'This is a page for viewing the current logged in user',
     },
+    {
+      title: 'Add User',
+      link: './account',
+      description: 'This is a page for adding a new user account',
+    },
   ];
 
   getCurrentUser(): JwtPayload & { user_id?: string; roles?: string[] } {

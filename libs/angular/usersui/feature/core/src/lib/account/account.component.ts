@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -11,7 +11,6 @@ import {
 } from '@angular/forms';
 import {
   CONFIRM_PASSWORD_REQUIRED_VALIDATION_MESSAGE,
-  CreateUserRequest,
   EMAIL_PATTERN_VALIDATION_MESSAGE,
   EMAIL_REQUIRED_VALIDATION_MESSAGE,
   EMAIL_VALIDATOR_PATTERN,
@@ -21,39 +20,32 @@ import {
   PASSWORD_REQUIRED_VALIDATION_MESSAGE,
   PASSWORD_VALIDATOR_PATTERN,
 } from '@jdw/angular-shared-util';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute, Router } from '@angular/router';
+import { UsersService } from '@jdw/angular-usersui-data-access';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { AddUser, EditUser, User } from '@jdw/angular-usersui-util';
 import { MatCardModule } from '@angular/material/card';
-import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
-import { AuthService } from '@jdw/angular-shared-data-access';
+import { finalize } from 'rxjs';
 
 @Component({
-  selector: 'lib-sign-up',
+  selector: 'lib-account',
   imports: [
     CommonModule,
     MatInputModule,
     MatCardModule,
-    RouterLink,
     MatButtonModule,
     MatIconModule,
     ReactiveFormsModule,
   ],
-  providers: [
-    {
-      provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
-      useValue: {
-        subscriptSizing: 'dynamic',
-      },
-    },
-  ],
-  templateUrl: './sign-up.component.html',
-  styleUrl: './sign-up.component.scss',
+  templateUrl: './account.component.html',
+  styleUrl: './account.component.scss',
 })
-export class SignUpComponent {
+export class AccountComponent implements OnInit {
   hide = true;
-  signUpForm = new FormGroup({
+  type = 'Add';
+  form = new FormGroup({
     email: new FormControl('', {
       nonNullable: true,
       validators: [
@@ -111,31 +103,43 @@ export class SignUpComponent {
       { type: 'passwordMatch', message: PASSWORD_MATCH_VALIDATION_MESSAGE },
     ],
   };
+  userId: string | null = null;
+  user: User | null = null;
   private router = inject(Router);
-  private authService = inject(AuthService);
+  private usersService = inject(UsersService);
   private route = inject(ActivatedRoute);
 
-  signUp() {
-    const emailControl = this.signUpForm.get('email');
-    const matchingPasswordControl = this.signUpForm.get('matchingPassword');
-    if (
-      emailControl &&
-      matchingPasswordControl &&
-      emailControl.valid &&
-      matchingPasswordControl.valid
-    ) {
-      const emailAddress = emailControl.value;
-      const passwordControl = matchingPasswordControl.get('password');
-      if (passwordControl) {
-        const password = passwordControl.value;
-        const user: CreateUserRequest = { emailAddress, password };
-        this.authService.signUp(user).subscribe({
-          next: () => {
-            this.signUpForm.reset();
-            this.router.navigate(['../sign-in'], { relativeTo: this.route });
+  ngOnInit() {
+    this.userId = this.route.snapshot.paramMap.get('userId');
+
+    if (this.userId) {
+      this.usersService
+        .getUser(this.userId)
+        .pipe(
+          finalize(() => {
+            if (!this.user) {
+              this.type = 'Add';
+              this.router.navigate(['../'], {
+                relativeTo: this.route,
+              });
+            }
+          }),
+        )
+        .subscribe({
+          next: (response) => {
+            if (response) {
+              this.user = response;
+              this.type = 'Edit';
+              this.form.patchValue({
+                email: response.emailAddress,
+                matchingPassword: {
+                  password: '',
+                  confirmPassword: '',
+                },
+              });
+            }
           },
         });
-      }
     }
   }
 
@@ -150,7 +154,7 @@ export class SignUpComponent {
 
   getErrorMessage(formControlName: 'email' | 'matchingPassword') {
     for (const validation of this.validationMessages[formControlName]) {
-      if (this.signUpForm.get(formControlName)?.hasError(validation.type)) {
+      if (this.form.get(formControlName)?.hasError(validation.type)) {
         return validation.message;
       }
     }
@@ -160,7 +164,7 @@ export class SignUpComponent {
   getPasswordErrorMessage(formControlName: 'password' | 'confirmPassword') {
     for (const validation of this.validationMessages[formControlName]) {
       if (
-        this.signUpForm
+        this.form
           .get('matchingPassword')
           ?.get(formControlName)
           ?.hasError(validation.type)
@@ -169,5 +173,48 @@ export class SignUpComponent {
       }
     }
     return '';
+  }
+
+  onSubmit(): void {
+    if (this.form.valid) {
+      const userId = Number(this.userId) || 0;
+      if (this.type == 'Add') {
+        const account: AddUser = {
+          emailAddress: this.form.get('email')?.value || '',
+          password:
+            this.form.get('matchingPassword')?.get('password')?.value || '',
+        };
+        this.usersService.addUser(account).subscribe({
+          next: (response) => {
+            this.router.navigate([`../user/${response.id}`], {
+              relativeTo: this.route,
+            });
+          },
+        });
+      } else {
+        const account: EditUser = {
+          emailAddress: this.form.get('email')?.value || '',
+          password:
+            this.form.get('matchingPassword')?.get('password')?.value || '',
+        };
+        this.usersService.editUser(userId, account).subscribe({
+          next: (response) => {
+            this.router.navigate([`../../user/${response.id}`], {
+              relativeTo: this.route,
+            });
+          },
+        });
+      }
+    }
+  }
+
+  onReset(): void {
+    this.form.reset({
+      email: this.user?.emailAddress,
+      matchingPassword: {
+        password: '',
+        confirmPassword: '',
+      },
+    });
   }
 }

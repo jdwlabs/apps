@@ -18,6 +18,7 @@ import { UsersActionsButtonCellRendererComponent } from '../users-actions-button
 })
 export class UsersComponent implements OnInit {
   private usersService: UsersService = inject(UsersService);
+  loading = true;
   users: User[] = [];
 
   colDefs: ColDef[] = [
@@ -58,8 +59,8 @@ export class UsersComponent implements OnInit {
       field: 'actions',
       headerName: 'Actions',
       cellRenderer: UsersActionsButtonCellRendererComponent,
-      maxWidth: 120,
-      minWidth: 120,
+      maxWidth: 172,
+      minWidth: 172,
       resizable: false,
       filter: false,
       sortable: false,
@@ -80,6 +81,7 @@ export class UsersComponent implements OnInit {
   };
 
   gridOptions: GridOptions = {
+    loading: this.loading,
     columnDefs: this.colDefs,
     defaultColDef: this.defaultColDef,
     pagination: true,
@@ -100,6 +102,7 @@ export class UsersComponent implements OnInit {
     this.usersService.getUsers().subscribe({
       next: (response) => {
         this.users = response;
+        this.loading = false;
       },
     });
   }
