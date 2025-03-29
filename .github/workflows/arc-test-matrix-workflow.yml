@@ -8,13 +8,13 @@ on:
         description: 'Target ARC name used for `runs-on` in job'
         required: true
       delay:
-        description: "How long to sleep in seconds"
+        description: 'How long to sleep in seconds'
         required: true
-        default: "120"
+        default: '120'
       docker_image:
-        description: "Docker image to run (e.g., alpine:latest)"
+        description: 'Docker image to run (e.g., alpine:latest)'
         required: false
-        default: "alpine:latest"
+        default: 'alpine:latest'
 
 jobs:
   arc-runner-job:
