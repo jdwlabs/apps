@@ -96,6 +96,7 @@ export class UsersComponent implements OnInit {
     autoSizeStrategy: {
       type: 'fitCellContents',
     },
+    suppressColumnVirtualisation: true,
   };
 
   ngOnInit(): void {
