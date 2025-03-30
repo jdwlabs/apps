@@ -195,7 +195,6 @@ function testScreenSize(size: string, width: number, height: number) {
     cy.contains(mockProfiles[0].modifiedTime);
     cy.contains(mockProfiles[1].modifiedTime);
     cy.get('.ag-header-row > [col-id="actions"]')
-
       .should('be.visible')
       .and('contain.text', 'Actions');
     cy.getByCy('view-button')
