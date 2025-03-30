@@ -37,7 +37,7 @@
     "@nx/web": "20.6.4",
     "@nx/webpack": "20.6.4",
     "@nx/workspace": "20.6.4",
-    "@nxrocks/nx-spring-boot": "^10.2.6",
+    "@nxrocks/nx-spring-boot": "11.0.1",
     "@schematics/angular": "19.2.5",
     "@swc-node/register": "1.9.2",
     "@swc/core": "1.10.0",
