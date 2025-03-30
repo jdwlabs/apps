@@ -1,45 +1,23 @@
-name: ARC Long Running Jobs Matrix
-run-name: Run short sleepy matrix on ${{ inputs.arc_name }}
-
+name: ARC Test kubernetes Workflow
+run-name: Run test workflow on ${{ inputs.arc_name }}
 on:
   workflow_dispatch:
     inputs:
       arc_name:
+        default: 'ubuntu'
         description: 'Target ARC name used for `runs-on` in job'
         required: true
-        default: 'ubuntu'
-      delay:
-        description: 'How long to sleep in seconds'
-        required: true
-        default: '120'
-      docker_image:
-        description: 'Docker image to run (e.g., alpine:latest)'
-        required: false
-        default: 'alpine:latest'
-
 jobs:
   arc-runner-job:
     strategy:
       fail-fast: false
       matrix:
-        job: [1, 2, 3]
+        job: [1, 2, 3, 4, 5, 6, 7, 8, 9]
     runs-on: ${{ inputs.arc_name }}
+    container: bitnami/git:latest
+    services:
+      redis:
+        image: redis:alpine
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Sleep and Print Message
-        run: |
-          echo "Hello from job: ${{ matrix.job }}"
-          echo "Sleeping for ${{ inputs.delay }} seconds..."
-          sleep ${{ inputs.delay }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: 'kubernetes'
-
-      - name: Run Docker Container
-        run: |
-          echo "Running Docker container for job: ${{ matrix.job }}"
-          docker run --rm ${{ inputs.docker_image }} sh -c "echo 'Docker container for job ${{ matrix.job }} is running'"
+      - uses: actions/checkout@v3
+      - run: echo "Hello World!" >> $GITHUB_STEP_SUMMARY
