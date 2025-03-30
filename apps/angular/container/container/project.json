@@ -172,7 +172,7 @@
       }
     },
     "update-app": {
-      "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
+      "command": "bash tools/update-app.sh charts/container/Chart.yaml {version} {projectName}"
     },
     "format": {
       "command": "bash tools/format.sh"
