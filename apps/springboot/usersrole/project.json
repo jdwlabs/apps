@@ -20,7 +20,7 @@
       "command": "bash tools/update-version.sh {projectRoot}/build.gradle.kts {version} {projectName}"
     },
     "update-app": {
-      "command": "bash tools/update-app.sh helm/usersrole/Chart.yaml {version} {projectName}"
+      "command": "bash tools/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
     },
     "format": {
       "command": "bash tools/format.sh"
@@ -31,6 +31,31 @@
         "commands": [
           {
             "command": "docker run --rm -p 8080:8080 jdwillmsen/jdw-usersrole:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "{projectRoot}/gradlew jib",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          {
+            "command": "gradlew jibDockerBuild",
             "forwardAllArgs": false
           }
         ],
