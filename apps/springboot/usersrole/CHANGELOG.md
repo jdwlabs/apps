@@ -4,10 +4,9 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.10.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.9...usersrole-0.10.0) (2025-03-30)
 
-
 ### Features
 
-* update build-image tasks ([4a7632f](https://github.com/jdwillmsen/jdw/commit/4a7632ffa68ac61493c6f5679cc9826e2e0ac7fa))
+- update build-image tasks ([4a7632f](https://github.com/jdwillmsen/jdw/commit/4a7632ffa68ac61493c6f5679cc9826e2e0ac7fa))
 
 ## [0.9.9](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.8...usersrole-0.9.9) (2025-03-30)
 
