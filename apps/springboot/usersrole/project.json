@@ -43,7 +43,7 @@
         "cwd": "{projectRoot}",
         "commands": [
           {
-            "command": "gradlew jib",
+            "command": "pwd && gradlew jib",
             "forwardAllArgs": false
           }
         ],
