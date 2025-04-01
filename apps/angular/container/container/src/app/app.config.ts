@@ -10,6 +10,7 @@ import config from '../config.json';
 import { appRoutes } from './app.routes';
 import { provideRouter } from '@angular/router';
 import { DynamicRouteLoaderService } from '@jdw/angular-container-data-access';
+import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,6 +21,7 @@ export const appConfig: ApplicationConfig = {
       provide: ENVIRONMENT,
       useValue: config,
     },
+    { provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: { hasBackdrop: true } },
     provideAppInitializer(() => {
       const initializerFn = ((
         dynamicRouteLoaderService: DynamicRouteLoaderService,
