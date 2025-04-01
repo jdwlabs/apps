@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.10.3](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.2...usersrole-0.10.3) (2025-04-01)
+
+
+### Bug Fixes
+
+* **usersrole:** add build-image and local-build-image target fix ([4254cd8](https://github.com/jdwillmsen/jdw/commit/4254cd85538485bec3fdd96ca90a3a7ca2584c71))
+
 ## [0.10.2](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.1...usersrole-0.10.2) (2025-04-01)
 
 
