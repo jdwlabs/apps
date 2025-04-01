@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.1.2](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.1...usersui-1.1.2) (2025-04-01)
+
+
+### Bug Fixes
+
+* **usersui:** add dialog open fix ([6ba06df](https://github.com/jdwillmsen/jdw/commit/6ba06df67f6996ef71ae5b6e15053a12f9b313ef))
+
 ## [1.1.1](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.0...usersui-1.1.1) (2025-03-30)
 
 ## [1.1.0](https://github.com/jdwillmsen/jdw/compare/usersui-1.0.2...usersui-1.1.0) (2025-03-30)
