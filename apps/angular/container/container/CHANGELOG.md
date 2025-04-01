@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.1.3](https://github.com/jdwillmsen/jdw/compare/container-1.1.2...container-1.1.3) (2025-04-01)
+
+
+### Bug Fixes
+
+* **container:** add dialog open fix ([19bb154](https://github.com/jdwillmsen/jdw/commit/19bb1544adf4f35905a66c6a491b52221c70edd4))
+
 ## [1.1.2](https://github.com/jdwillmsen/jdw/compare/container-1.1.1...container-1.1.2) (2025-03-30)
 
 ## [1.1.1](https://github.com/jdwillmsen/jdw/compare/container-1.1.0...container-1.1.1) (2025-03-30)
