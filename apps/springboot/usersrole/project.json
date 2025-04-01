@@ -43,7 +43,7 @@
         "cwd": "{projectRoot}",
         "commands": [
           {
-            "command": "pwd && gradlew jib",
+            "command": "bash gradlew jib",
             "forwardAllArgs": false
           }
         ],
@@ -56,7 +56,7 @@
         "cwd": "{projectRoot}",
         "commands": [
           {
-            "command": "gradlew jibDockerBuild",
+            "command": "bash gradlew jibDockerBuild",
             "forwardAllArgs": false
           }
         ],

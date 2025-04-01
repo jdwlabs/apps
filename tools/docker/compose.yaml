@@ -58,6 +58,15 @@ services:
       - ENVIRONMENT=LOCAL
       - AUTH_BASE_URL=http://localhost:8080
 
+  jdw-rolesui:
+    image: jdwillmsen/jdw-rolesui:latest
+    ports:
+      - '4203:80'
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=LOCAL
+      - AUTH_BASE_URL=http://localhost:8080
+
 configs:
   service-discovery-config:
     external: false
