@@ -32,3 +32,6 @@ RUN npm install -g cypress
 # Set environment variables
 ENV JAVA_HOME=/usr/local/zulu-21 \
     PATH="/usr/local/zulu-21/bin:/usr/local/go/bin:${PATH}"
+
+WORKDIR /home/runner
+USER runner
