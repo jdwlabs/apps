@@ -1,6 +1,6 @@
 # 🐳 jdwillmsen/jdw-agents
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.1-blue)
 
 A custom Docker image based on [`ghcr.io/actions/actions-runner`](https://github.com/actions/runner) with additional tools preinstalled:
 
