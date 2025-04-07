@@ -4,16 +4,24 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/angular/authui/authui/src",
-  "tags": ["type:app", "scope:authui", "framework:angular"],
+  "tags": [
+    "type:app",
+    "scope:authui",
+    "framework:angular"
+  ],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/angular/authui/authui",
         "index": "apps/angular/authui/authui/src/index.html",
         "main": "apps/angular/authui/authui/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/angular/authui/authui/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -127,7 +135,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/angular/authui/authui/jest.config.ts"
       }
@@ -154,7 +164,12 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "save-version", "build-image", "update-app"]
+        "postTargets": [
+          "format",
+          "save-version",
+          "build-image",
+          "update-app"
+        ]
       }
     },
     "save-version": {
@@ -162,9 +177,21 @@
     },
     "build-image": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build", "prepare-config", "build"],
+      "dependsOn": [
+        "^build",
+        "prepare-config",
+        "build"
+      ],
       "options": {
         "commands": [
+          {
+            "command": "nx run authui:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run authui:build",
+            "forwardAllArgs": false
+          },
           {
             "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version} --push .",
             "forwardAllArgs": false
@@ -179,7 +206,11 @@
     },
     "local-build-image": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build", "prepare-config", "build"],
+      "dependsOn": [
+        "^build",
+        "prepare-config",
+        "build"
+      ],
       "options": {
         "commands": [
           {
