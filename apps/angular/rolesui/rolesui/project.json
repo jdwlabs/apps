@@ -4,16 +4,24 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/angular/rolesui/rolesui/src",
-  "tags": ["type:app", "scope:rolesui", "framework:angular"],
+  "tags": [
+    "type:app",
+    "scope:rolesui",
+    "framework:angular"
+  ],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/angular/rolesui/rolesui",
         "index": "apps/angular/rolesui/rolesui/src/index.html",
         "main": "apps/angular/rolesui/rolesui/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/angular/rolesui/rolesui/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -127,7 +135,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/angular/rolesui/rolesui/jest.config.ts"
       }
@@ -154,7 +164,12 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "save-version", "build-image", "update-app"]
+        "postTargets": [
+          "format",
+          "save-version",
+          "build-image",
+          "update-app"
+        ]
       }
     },
     "save-version": {
@@ -162,9 +177,21 @@
     },
     "build-image": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build", "prepare-config", "build"],
+      "dependsOn": [
+        "^build",
+        "prepare-config",
+        "build"
+      ],
       "options": {
         "commands": [
+          {
+            "command": "nx run rolesui:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run rolesui:build",
+            "forwardAllArgs": false
+          },
           {
             "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-rolesui:latest -t jdwillmsen/jdw-rolesui:{version} --push .",
             "forwardAllArgs": false
@@ -179,17 +206,13 @@
     },
     "local-build-image": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build", "prepare-config", "build"],
+      "dependsOn": [
+        "^build",
+        "prepare-config",
+        "build"
+      ],
       "options": {
         "commands": [
-          {
-            "command": "nx run rolesui:prepare-config",
-            "forwardAllArgs": false
-          },
-          {
-            "command": "nx run rolesui:build",
-            "forwardAllArgs": false
-          },
           {
             "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-rolesui:latest --load .",
             "forwardAllArgs": false
