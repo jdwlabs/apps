@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.1.4](https://github.com/jdwillmsen/jdw/compare/authui-1.1.3...authui-1.1.4) (2025-04-07)
+
+
+### Bug Fixes
+
+* **authui:** update Dockerfile setup for build-image targets ([b2f937b](https://github.com/jdwillmsen/jdw/commit/b2f937b9b8ab90c5c3b0709ea8c5c944c24cefe5))
+
 ## [1.1.3](https://github.com/jdwillmsen/jdw/compare/authui-1.1.2...authui-1.1.3) (2025-04-07)
 
 
