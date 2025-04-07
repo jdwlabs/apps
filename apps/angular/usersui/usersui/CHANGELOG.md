@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.1.3](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.2...usersui-1.1.3) (2025-04-07)
+
+
+### Performance Improvements
+
+* **usersui:** update Dockerfile setup for build-image targets ([721c8bc](https://github.com/jdwillmsen/jdw/commit/721c8bc2ba5d7d643fef9e7b7f1ddc6a2a0090d4))
+
 ## [1.1.2](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.1...usersui-1.1.2) (2025-04-01)
 
 
