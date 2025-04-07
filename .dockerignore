@@ -2,7 +2,6 @@
 node_modules
 
 # Ignore Nx cache and output directories
-dist
 tmp
 .angular
 .nx
