@@ -183,6 +183,14 @@
       "options": {
         "commands": [
           {
+            "command": "nx run rolesui:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run rolesui:build",
+            "forwardAllArgs": false
+          },
+          {
             "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-rolesui:latest --load .",
             "forwardAllArgs": false
           },
