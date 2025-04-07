@@ -88,6 +88,12 @@
     },
     "@nx-go/nx-go:test": {
       "cache": true
+    },
+    "build-image": {
+      "dependsOn": ["build", "^build"]
+    },
+    "local-build-image": {
+      "dependsOn": ["build", "^build"]
     }
   },
   "generators": {
