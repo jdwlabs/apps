@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.2.5](https://github.com/jdwillmsen/jdw/compare/rolesui-0.2.4...rolesui-0.2.5) (2025-04-07)
+
+
+### Bug Fixes
+
+* **rolesui:** update Dockerfile setup for build-image targets ([1948576](https://github.com/jdwillmsen/jdw/commit/1948576da0bb711a72a4dc247d0359b0d18edd9a))
+
 ## [0.2.4](https://github.com/jdwillmsen/jdw/compare/rolesui-0.2.3...rolesui-0.2.4) (2025-04-07)
 
 
