@@ -8,7 +8,8 @@
     "build": {
       "executor": "@nx-go/nx-go:build",
       "options": {
-        "main": "{projectRoot}/main.go"
+        "main": "{projectRoot}/main.go",
+        "outputPath": "dist/apps/go/servicediscovery/servicediscovery"
       }
     },
     "serve": {
@@ -43,7 +44,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-servicediscovery:latest --load .",
+            "command": "docker buildx build -f {projectRoot}/Dockerfile.local -t jdwillmsen/jdw-servicediscovery:latest --load .",
             "forwardAllArgs": false
           }
         ],
