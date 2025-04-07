@@ -153,6 +153,14 @@
       "options": {
         "commands": [
           {
+            "command": "nx run container:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run container:build",
+            "forwardAllArgs": false
+          },
+          {
             "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version} --push .",
             "forwardAllArgs": false
           },
