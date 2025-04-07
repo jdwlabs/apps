@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.1.5](https://github.com/jdwillmsen/jdw/compare/container-1.1.4...container-1.1.5) (2025-04-07)
+
+
+### Bug Fixes
+
+* **container:** update Dockerfile setup for build-image targets ([5db5185](https://github.com/jdwillmsen/jdw/commit/5db518577f5b734de25f6b83ed8ffd24503dba5a))
+
 ## [1.1.4](https://github.com/jdwillmsen/jdw/compare/container-1.1.3...container-1.1.4) (2025-04-07)
 
 
