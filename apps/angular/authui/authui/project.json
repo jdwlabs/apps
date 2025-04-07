@@ -166,6 +166,14 @@
       "options": {
         "commands": [
           {
+            "command": "nx run authui:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run authui:build",
+            "forwardAllArgs": false
+          },
+          {
             "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version} --push .",
             "forwardAllArgs": false
           },
