@@ -162,10 +162,15 @@
     },
     "build-image": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build", "prepare-config", "build"],
       "options": {
         "commands": [
           {
             "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version} --push .",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run authui:restore-config",
             "forwardAllArgs": false
           }
         ],
@@ -174,10 +179,15 @@
     },
     "local-build-image": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build", "prepare-config", "build"],
       "options": {
         "commands": [
           {
             "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest --load .",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run authui:restore-config",
             "forwardAllArgs": false
           }
         ],
@@ -200,6 +210,26 @@
           }
         ],
         "parallel": false
+      }
+    },
+    "prepare-config": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "bash tools/prepare-config.sh apps/angular/authui/authui/src/config.json"
+          }
+        ]
+      }
+    },
+    "restore-config": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "bash tools/restore-config.sh apps/angular/authui/authui/src/config.json"
+          }
+        ]
       }
     }
   }
