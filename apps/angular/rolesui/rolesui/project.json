@@ -166,6 +166,14 @@
       "options": {
         "commands": [
           {
+            "command": "nx run rolesui:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run rolesui:build",
+            "forwardAllArgs": false
+          },
+          {
             "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-rolesui:latest -t jdwillmsen/jdw-rolesui:{version} --push .",
             "forwardAllArgs": false
           },
@@ -182,14 +190,6 @@
       "dependsOn": ["^build", "prepare-config", "build"],
       "options": {
         "commands": [
-          {
-            "command": "nx run rolesui:prepare-config",
-            "forwardAllArgs": false
-          },
-          {
-            "command": "nx run rolesui:build",
-            "forwardAllArgs": false
-          },
           {
             "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-rolesui:latest --load .",
             "forwardAllArgs": false
