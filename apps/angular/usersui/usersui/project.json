@@ -166,6 +166,14 @@
       "options": {
         "commands": [
           {
+            "command": "nx run usersui:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run usersui:build",
+            "forwardAllArgs": false
+          },
+          {
             "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-usersui:latest -t jdwillmsen/jdw-usersui:{version} --push .",
             "forwardAllArgs": false
           },
