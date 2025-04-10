@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.0](https://github.com/jdwillmsen/jdw/compare/authui-1.2.0...authui-1.3.0) (2025-04-10)
+
+
+### Features
+
+* **authui:** update build-image task ([776fe96](https://github.com/jdwillmsen/jdw/commit/776fe968482c90bf20227cb4a1be353527dc0010))
+
 ## [1.2.0](https://github.com/jdwillmsen/jdw/compare/authui-1.1.6...authui-1.2.0) (2025-04-10)
 
 
