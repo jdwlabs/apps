@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.2.0](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.6...usersui-1.2.0) (2025-04-10)
+
+
+### Features
+
+* **usersui:** update start nginx script ([9b48cc3](https://github.com/jdwillmsen/jdw/commit/9b48cc3ade3c697d07caeb7706fe1e2cfa0e2cdf))
+
 ## [1.1.6](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.5...usersui-1.1.6) (2025-04-10)
 
 ## [1.1.5](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.4...usersui-1.1.5) (2025-04-07)
