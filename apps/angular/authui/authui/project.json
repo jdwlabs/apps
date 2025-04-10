@@ -170,7 +170,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "nx run authui:build",
+            "command": "nx run authui:build --skip-nx-cache",
             "forwardAllArgs": false
           },
           {

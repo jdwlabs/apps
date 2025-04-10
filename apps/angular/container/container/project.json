@@ -157,7 +157,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "nx run container:build",
+            "command": "nx run container:build --skip-nx-cache",
             "forwardAllArgs": false
           },
           {
