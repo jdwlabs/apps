@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.0](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.3.1...servicediscovery-0.4.0) (2025-04-10)
+
+
+### Features
+
+* **servicediscovery:** add rolesui to config ([ef520a7](https://github.com/jdwillmsen/jdw/commit/ef520a796964f0aa0613e0df0964b1f83ce80e33))
+
 ## [0.3.1](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.3.0...servicediscovery-0.3.1) (2025-04-07)
 
 
