@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.3.0](https://github.com/jdwillmsen/jdw/compare/rolesui-0.2.6...rolesui-0.3.0) (2025-04-10)
+
+
+### Features
+
+* **rolesui:** update start nginx script ([bb33f3e](https://github.com/jdwillmsen/jdw/commit/bb33f3ed88b55ee27630aad6ff8cce31ca2c0cbd))
+
 ## [0.2.6](https://github.com/jdwillmsen/jdw/compare/rolesui-0.2.5...rolesui-0.2.6) (2025-04-10)
 
 ## [0.2.5](https://github.com/jdwillmsen/jdw/compare/rolesui-0.2.4...rolesui-0.2.5) (2025-04-07)
