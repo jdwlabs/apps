@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.0](https://github.com/jdwillmsen/jdw/compare/usersui-1.2.0...usersui-1.3.0) (2025-04-10)
+
+
+### Features
+
+* **usersui:** update build-image task ([402ec00](https://github.com/jdwillmsen/jdw/commit/402ec00a78c57482e9ebbcada3fd13de8b9f3d47))
+
 ## [1.2.0](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.6...usersui-1.2.0) (2025-04-10)
 
 
