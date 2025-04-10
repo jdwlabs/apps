@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.0](https://github.com/jdwillmsen/jdw/compare/rolesui-0.3.0...rolesui-0.4.0) (2025-04-10)
+
+
+### Features
+
+* **rolesui:** update build-image task ([f0ec6e5](https://github.com/jdwillmsen/jdw/commit/f0ec6e5add52c3502ca2065ce79dc622cd52ebb2))
+
 ## [0.3.0](https://github.com/jdwillmsen/jdw/compare/rolesui-0.2.6...rolesui-0.3.0) (2025-04-10)
 
 
