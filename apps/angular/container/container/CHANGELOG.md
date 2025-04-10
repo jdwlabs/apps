@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.2.0](https://github.com/jdwillmsen/jdw/compare/container-1.1.7...container-1.2.0) (2025-04-10)
+
+
+### Features
+
+* **container:** update start nginx script ([0efddfe](https://github.com/jdwillmsen/jdw/commit/0efddfe496dace200cc56621b099d3fb7215caa7))
+
 ## [1.1.7](https://github.com/jdwillmsen/jdw/compare/container-1.1.6...container-1.1.7) (2025-04-10)
 
 ## [1.1.6](https://github.com/jdwillmsen/jdw/compare/container-1.1.5...container-1.1.6) (2025-04-07)
