@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.2.0](https://github.com/jdwillmsen/jdw/compare/authui-1.1.6...authui-1.2.0) (2025-04-10)
+
+
+### Features
+
+* **authui:** update start nginx script ([0696775](https://github.com/jdwillmsen/jdw/commit/0696775fe130306b116b006b5776c18db18203c6))
+
 ## [1.1.6](https://github.com/jdwillmsen/jdw/compare/authui-1.1.5...authui-1.1.6) (2025-04-10)
 
 ## [1.1.5](https://github.com/jdwillmsen/jdw/compare/authui-1.1.4...authui-1.1.5) (2025-04-07)
