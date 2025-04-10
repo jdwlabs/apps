@@ -170,7 +170,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "nx run usersui:build",
+            "command": "nx run usersui:build --skip-nx-cache",
             "forwardAllArgs": false
           },
           {
