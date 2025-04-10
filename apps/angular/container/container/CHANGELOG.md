@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.0](https://github.com/jdwillmsen/jdw/compare/container-1.2.0...container-1.3.0) (2025-04-10)
+
+
+### Features
+
+* **container:** update build-image task ([014871c](https://github.com/jdwillmsen/jdw/commit/014871c99fb705650a38ea24f4e329fc0a504bd9))
+
 ## [1.2.0](https://github.com/jdwillmsen/jdw/compare/container-1.1.7...container-1.2.0) (2025-04-10)
 
 
