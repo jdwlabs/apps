@@ -19,7 +19,7 @@ import { RolesService } from '@jdw/angular-shared-data-access';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '@jdw/angular-shared-ui';
 
 @Component({
   selector: 'lib-user',
