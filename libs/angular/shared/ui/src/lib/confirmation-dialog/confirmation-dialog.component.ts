@@ -16,12 +16,12 @@ export interface ConfirmationDialogData {
 }
 
 @Component({
-  selector: 'lib-confirmation-dialog',
+  selector: 'jdw-confirmation-dialog',
   imports: [
     CommonModule,
-    MatDialogTitle,
-    MatDialogContent,
     MatDialogActions,
+    MatDialogContent,
+    MatDialogTitle,
     MatButton,
   ],
   templateUrl: './confirmation-dialog.component.html',
