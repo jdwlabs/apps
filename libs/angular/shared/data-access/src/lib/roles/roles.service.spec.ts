@@ -17,6 +17,7 @@ const mockAuthService = {
 
 const mockSnackbarService = {
   error: jest.fn(),
+  success: jest.fn(),
 };
 
 const mockEnvironment = {
@@ -174,6 +175,179 @@ describe('RolesService', () => {
         { variant: 'filled', autoClose: false },
         true,
       );
+    });
+  });
+
+  describe('deleteRole', () => {
+    it('should send DELETE request and show success snackbar', () => {
+      const roleId = 123;
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.deleteRole(roleId).subscribe((res) => {
+        expect(res).toEqual({});
+      });
+
+      const req = httpTesting.expectOne(
+        `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}`,
+      );
+      expect(req.request.method).toBe('DELETE');
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      req.flush({});
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Role ${roleId} Deleted Successfully`,
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+
+    it('should handle error on DELETE failure', () => {
+      const roleId = 123;
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.deleteRole(roleId).subscribe({
+        next: () => fail('Expected error'),
+        error: (e) => {
+          expect(e).toBe(EMPTY);
+        },
+      });
+
+      const req = httpTesting.expectOne(
+        `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}`,
+      );
+      req.flush({}, { status: 500, statusText: 'Internal Server Error' });
+
+      expect(mockSnackbarService.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('addRole', () => {
+    it('should send POST request and show success snackbar', () => {
+      const newRole = {
+        name: 'NewRole',
+        description: 'desc',
+        status: 'ACTIVE',
+      };
+      const responseRole: Role = {
+        ...newRole,
+        id: 5,
+        users: [],
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.addRole(newRole).subscribe((res) => {
+        expect(res).toEqual(responseRole);
+      });
+
+      const req = httpTesting.expectOne(
+        `${mockEnvironment.AUTH_BASE_URL}/api/roles`,
+      );
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(newRole);
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      req.flush(responseRole);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        'Role added Successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+
+    it('should handle error on POST failure', () => {
+      const newRole = {
+        name: 'NewRole',
+        description: 'desc',
+        status: 'ACTIVE',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.addRole(newRole).subscribe({
+        next: () => fail('Expected error'),
+        error: (e) => {
+          expect(e).toBe(EMPTY);
+        },
+      });
+
+      const req = httpTesting.expectOne(
+        `${mockEnvironment.AUTH_BASE_URL}/api/roles`,
+      );
+      req.flush({}, { status: 400, statusText: 'Bad Request' });
+
+      expect(mockSnackbarService.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('editRole', () => {
+    it('should send PUT request and show success snackbar', () => {
+      const roleId = 10;
+      const editData = {
+        name: 'Edited Role',
+        description: 'updated',
+        status: 'INACTIVE',
+      };
+      const responseRole: Role = {
+        ...editData,
+        id: roleId,
+        users: [],
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.editRole(roleId, editData).subscribe((res) => {
+        expect(res).toEqual(responseRole);
+      });
+
+      const req = httpTesting.expectOne(
+        `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}`,
+      );
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(editData);
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+      req.flush(responseRole);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        'Role edited Successfully',
+        { variant: 'filled', autoClose: true },
+        true,
+      );
+    });
+
+    it('should handle error on PUT failure', () => {
+      const roleId = 10;
+      const editData = {
+        name: 'Edited Role',
+        description: 'updated',
+        status: 'INACTIVE',
+      };
+      const token = 'mockJwtToken';
+      mockAuthService.getToken.mockReturnValue(token);
+
+      service.editRole(roleId, editData).subscribe({
+        next: () => fail('Expected error'),
+        error: (e) => {
+          expect(e).toBe(EMPTY);
+        },
+      });
+
+      const req = httpTesting.expectOne(
+        `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}`,
+      );
+      req.flush({}, { status: 404, statusText: 'Not Found' });
+
+      expect(mockSnackbarService.error).toHaveBeenCalled();
     });
   });
 
