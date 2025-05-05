@@ -80,7 +80,7 @@ export class RolesDialogComponent implements OnInit {
       modifiedTime: role.createdTime,
     });
 
-    this.setUsers(role.users);
+    this.setUsers(role.users || []);
   }
 
   setUsers(users: UserRole[]): void {
