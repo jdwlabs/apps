@@ -1,0 +1,15 @@
+.role-container {
+  padding: 16px;
+
+  .row-container {
+    display: flex;
+    align-content: center;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .role-form {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
