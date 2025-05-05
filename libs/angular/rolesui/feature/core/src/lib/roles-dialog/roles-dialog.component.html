@@ -1,0 +1,179 @@
+<h1 mat-dialog-title data-cy="title">{{ data.title | titlecase }}</h1>
+<mat-dialog-content class="mat-typography">
+  <form [formGroup]="form" class="role-form">
+    <mat-form-field appearance="fill" data-cy="id-field">
+      <mat-label data-cy="id-label">ID</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="id-input"
+        formControlName="id"
+        matInput
+        placeholder="ID of the role"
+        type="text"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="name-field">
+      <mat-label data-cy="name-label">Name</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="name-input"
+        formControlName="name"
+        matInput
+        placeholder="Name of the role"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="description-field">
+      <mat-label data-cy="description-label">Description</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="description-input"
+        formControlName="description"
+        matInput
+        placeholder="Description of the role"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="status-field">
+      <mat-label data-cy="status-label">Status</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="status-input"
+        formControlName="status"
+        matInput
+        placeholder="Status of the role"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="role-created-time-field">
+      <mat-label data-cy="role-created-time-label">Created Time</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="role-created-time-input"
+        formControlName="createdTime"
+        matInput
+        placeholder="Created time of the role"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="role-created-by-user-id-field">
+      <mat-label data-cy="role-created-by-user-id-label">
+        Created By User ID
+      </mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="role-created-by-user-id-input"
+        formControlName="createdByUserId"
+        matInput
+        placeholder="ID of user who created the role"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="role-modified-time-field">
+      <mat-label data-cy="role-modified-time-label">Modified Time</mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="role-modified-time-input"
+        formControlName="modifiedTime"
+        matInput
+        placeholder="Modified time of the role"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" data-cy="role-modified-by-user-id-field">
+      <mat-label data-cy="role-modified-by-user-id-label">
+        Modified By User ID
+      </mat-label>
+      <input
+        [readOnly]="data.type === 'readonly'"
+        data-cy="role-modified-by-user-id-input"
+        formControlName="modifiedByUserId"
+        matInput
+        placeholder="ID of user who modified the role last"
+      />
+    </mat-form-field>
+
+    <h3 *ngIf="users && users.controls.length > 0" data-cy="users-title">
+      Users
+    </h3>
+    <div *ngIf="users && users.controls.length > 0" formArrayName="users">
+      <div
+        *ngFor="let user of users.controls; let i = index"
+        [formGroupName]="i"
+      >
+        <h4 [attr.data-cy]="'user-title-' + i">User {{ i + 1 }}</h4>
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'user-user-id-label-' + i">
+            User ID
+          </mat-label>
+          <input
+            [attr.data-cy]="'user-user-id-input-' + i"
+            [readOnly]="data.type === 'readonly'"
+            formControlName="userId"
+            matInput
+            placeholder="User ID of the user role"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'user-role-id-label-' + i">
+            Role ID
+          </mat-label>
+          <input
+            [attr.data-cy]="'user-role-id-input-' + i"
+            [readOnly]="data.type === 'readonly'"
+            formControlName="roleId"
+            matInput
+            placeholder="Role ID of the user role"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'user-created-time-label-' + i">
+            Created Time
+          </mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            [attr.data-cy]="'user-created-time-input-' + i"
+            formControlName="createdTime"
+            matInput
+            placeholder="Created time of the user role"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label [attr.data-cy]="'user-created-by-user-id-label-' + i">
+            Created By User ID
+          </mat-label>
+          <input
+            [readOnly]="data.type === 'readonly'"
+            [attr.data-cy]="'user-created-by-user-id-input-' + i"
+            formControlName="createdByUserId"
+            matInput
+            placeholder="ID of user who created the user role"
+          />
+        </mat-form-field>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button
+    (click)="action()"
+    color="primary"
+    data-cy="action-button"
+    mat-raised-button
+    type="submit"
+  >
+    {{ data.action | titlecase }}
+  </button>
+  <button
+    (click)="close()"
+    data-cy="close-button"
+    mat-raised-button
+    type="button"
+  >
+    Cancel
+  </button>
+</mat-dialog-actions>
