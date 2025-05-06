@@ -5,10 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT, Role } from '@jdw/angular-shared-util';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { AccountComponent } from '../../../../../../usersui/feature/core/src/lib/account/account.component';
-import { ProfilesService } from '@jdw/angular-usersui-data-access';
 import { of } from 'rxjs';
-import { ProfileComponent } from '../../../../../../usersui/feature/core/src/lib/profile/profile.component';
 import { RolesService } from '@jdw/angular-shared-data-access';
 
 const testRole: Partial<Role> = {
