@@ -9,6 +9,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
 import { MatTooltip } from '@angular/material/tooltip';
 import { RolesDialogComponent } from '../roles-dialog/roles-dialog.component';
+import { Role } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-roles-action-button-cell-renderer',
@@ -55,9 +56,9 @@ export class RolesActionButtonCellRendererComponent
       },
       minWidth: '50%',
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe((result: Role) => {
       if (result) {
-        this.rolesService.deleteRole(result.roleId).subscribe();
+        this.rolesService.deleteRole(result.id).subscribe();
       }
     });
   }
