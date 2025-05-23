@@ -16,12 +16,9 @@ libs/angular/usersui/data-access/
 ├── src
 │   ├── index.ts                       # Public API export for the library
 │   ├── lib
-│   │   ├── profiles
-│   │   │   ├── profiles.service.ts    # Service for managing profile data
-│   │   │   └── profiles.service.spec.ts
-│   │   └── users
-│   │       ├── users.service.ts       # Service for managing user data
-│   │       └── users.service.spec.ts
+│   │   └── profiles
+│   │       ├── profiles.service.ts    # Service for managing profile data
+│   │       └── profiles.service.spec.ts
 │   └── test-setup.ts                  # Test setup configuration
 ├── jest.config.ts                     # Jest configuration for unit testing
 ├── tsconfig.json                      # Base TypeScript configuration
@@ -35,26 +32,7 @@ libs/angular/usersui/data-access/
 
 ### Importing a Service
 
-You can import the services provided by this library directly into your Angular modules or components. For example, to
-use the UsersService:
-
-```ts
-import { UsersService } from '@jdw/angular-usersui-data-access';
-
-@Component({
-  selector: 'app-my-component',
-  template: `<p>My Component Content</p>`
-})
-export class MyComponent {
-  private usersService = inject(UsersService);
-
-  ngOnInit(): void {
-    this.usersService.getUsers().subscribe(users => {
-      console.log(users);
-    });
-  }
-}
-```
+You can import the services provided by this library directly into your Angular modules or components.
 
 ### Using the ProfilesService
 
