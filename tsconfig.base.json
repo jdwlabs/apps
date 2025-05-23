@@ -36,6 +36,9 @@
       "@jdw/angular-rolesui-feature-core": [
         "libs/angular/rolesui/feature/core/src/index.ts"
       ],
+      "@jdw/angular-rolesui-util": [
+        "libs/angular/rolesui/util/src/index.ts"
+      ],
       "@jdw/angular-shared-data-access": [
         "libs/angular/shared/data-access/src/index.ts"
       ],
@@ -53,9 +56,6 @@
       ],
       "@jdw/angular-usersui-util": [
         "libs/angular/usersui/util/src/index.ts"
-      ],
-      "@jdw/util": [
-        "libs/angular/rolesui/util/src/index.ts"
       ],
       "authui/Routes": [
         "apps/angular/authui/authui/src/app/remote-entry/entry.routes.ts"
