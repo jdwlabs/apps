@@ -4,11 +4,11 @@ import { ProfilesService } from '@jdw/angular-usersui-data-access';
 import {
   dateFilterComparator,
   dateSortComparator,
-  Profile,
 } from '@jdw/angular-usersui-util';
 import { ColDef, GridOptions } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ProfilesActionButtonCellRendererComponent } from '../profiles-action-button-cell-renderer/profiles-action-button-cell-renderer.component';
+import { Profile } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-profiles',

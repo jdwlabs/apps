@@ -4,7 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { of } from 'rxjs';
-import { UsersService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
 import { ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 

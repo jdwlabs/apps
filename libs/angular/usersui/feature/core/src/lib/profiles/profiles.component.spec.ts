@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ProfilesComponent } from './profiles.component';
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
-import { Profile } from '@jdw/angular-usersui-util';
+import { Profile } from '@jdw/angular-shared-util';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';

@@ -5,9 +5,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT, Role } from '@jdw/angular-shared-util';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { User } from '@jdw/angular-usersui-util';
+import { User } from '@jdw/angular-shared-util';
 import { ReactiveFormsModule } from '@angular/forms';
-import { UsersService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
 import { of } from 'rxjs';
 import { RolesService } from '@jdw/angular-shared-data-access';
 

@@ -3,7 +3,7 @@ import { DialogData, UserDialogComponent } from './user-dialog.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { FormBuilder } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { User } from '@jdw/angular-usersui-util';
+import { User } from '@jdw/angular-shared-util';
 
 const mockData: DialogData & User = {
   title: 'Delete User',

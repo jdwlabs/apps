@@ -1,0 +1,30 @@
+.role-container {
+  padding: 16px;
+
+  h1 {
+    margin: 0 0 8px;
+  }
+
+  .form {
+    display: grid;
+    grid-template-columns: 1fr;
+
+    .button-container {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+    }
+
+    mat-error {
+      display: flex;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+  }
+
+  ag-grid-angular {
+    height: 400px;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}

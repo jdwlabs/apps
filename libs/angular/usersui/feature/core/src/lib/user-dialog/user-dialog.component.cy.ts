@@ -4,7 +4,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { User } from '@jdw/angular-usersui-util';
+import { User } from '@jdw/angular-shared-util';
 
 const mockUserWithProfileAndAddress: User = {
   id: 1,
