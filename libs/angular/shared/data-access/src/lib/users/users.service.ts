@@ -4,14 +4,15 @@ import {
   HttpErrorResponse,
   HttpHeaders,
 } from '@angular/common/http';
-import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
 import {
   ENVIRONMENT,
   Environment,
   getErrorMessage,
 } from '@jdw/angular-shared-util';
 import { catchError, EMPTY, forkJoin, map, Observable, tap } from 'rxjs';
-import { AddUser, EditUser, User } from '@jdw/angular-usersui-util';
+import { AddUser, EditUser, User } from '@jdw/angular-shared-util';
+import { AuthService } from '../auth/auth.service';
+import { SnackbarService } from '../snackbar/snackbar.service';
 
 @Injectable({
   providedIn: 'root',
@@ -33,7 +34,7 @@ export class UsersService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  getUser(userId: string): Observable<User> {
+  getUser(userId: string | number): Observable<User> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
