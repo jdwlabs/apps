@@ -4,12 +4,7 @@
   "sourceRoot": "libs/angular/rolesui/util/src",
   "prefix": "lib",
   "projectType": "library",
-  "tags": [
-    "type:feature",
-    "scope:rolesui",
-    "framework:angular",
-    "library:util"
-  ],
+  "tags": ["type:util", "scope:rolesui", "framework:angular", "library:util"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",
