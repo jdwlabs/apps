@@ -1,11 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { User } from '@jdw/angular-usersui-util';
+import { User } from '@jdw/angular-shared-util';
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-  ProfilesService,
-  UsersService,
-} from '@jdw/angular-usersui-data-access';
+import { ProfilesService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
 import {
   FormArray,
   FormBuilder,

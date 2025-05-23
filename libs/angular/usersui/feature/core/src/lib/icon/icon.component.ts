@@ -4,7 +4,7 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
-import { Icon } from '@jdw/angular-usersui-util';
+import { Icon } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-icon',

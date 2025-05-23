@@ -5,7 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { DialogData } from '../user-dialog/user-dialog.component';
-import { Profile } from '@jdw/angular-usersui-util';
+import { Profile } from '@jdw/angular-shared-util';
 
 const mockProfileAndAddress: Profile = {
   id: 1,

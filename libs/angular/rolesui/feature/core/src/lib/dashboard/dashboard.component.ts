@@ -21,5 +21,15 @@ export class DashboardComponent {
       link: './role',
       description: 'This is a page for adding a new role',
     },
+    {
+      title: 'Assign Roles',
+      link: './assign/roles',
+      description: 'This is a page for assigning roles to a user',
+    },
+    {
+      title: 'Assign Users',
+      link: './assign/users',
+      description: 'This is a page for assigning users to a role',
+    },
   ];
 }

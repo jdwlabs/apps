@@ -7,7 +7,7 @@ import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
 import { of } from 'rxjs';
-import { Profile } from '@jdw/angular-usersui-util';
+import { Profile } from '@jdw/angular-shared-util';
 
 const testProfile: Partial<Profile> = {
   firstName: 'test-first-name',

@@ -7,7 +7,7 @@ import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
-import { Address } from '@jdw/angular-usersui-util';
+import { Address } from '@jdw/angular-shared-util';
 
 const testAddress: Partial<Address> = {
   id: 1,
