@@ -18,7 +18,7 @@ import {
   EditProfile,
   Icon,
   Profile,
-} from '@jdw/angular-usersui-util';
+} from '@jdw/angular-shared-util';
 
 @Injectable({
   providedIn: 'root',
