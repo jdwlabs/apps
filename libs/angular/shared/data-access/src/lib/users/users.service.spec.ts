@@ -1,16 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-
-import { UsersService } from './users.service';
-import { ENVIRONMENT } from '@jdw/angular-shared-util';
+import { AddUser, EditUser, ENVIRONMENT, User } from '@jdw/angular-shared-util';
 import {
   HttpTestingController,
   provideHttpClientTesting,
   TestRequest,
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
-import { AddUser, EditUser, User } from '@jdw/angular-usersui-util';
 import { EMPTY } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
+import { UsersService } from './users.service';
+import { SnackbarService } from '../snackbar/snackbar.service';
 
 const mockAuthService = {
   getToken: jest.fn(),
@@ -449,7 +448,10 @@ describe('UsersService', () => {
 
       expect(mockSnackbarService.success).toHaveBeenCalledWith(
         `Granted ${newRoles.length} role(s)`,
-        { variant: 'filled', autoClose: true },
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
         true,
       );
     });
@@ -483,7 +485,10 @@ describe('UsersService', () => {
 
       expect(mockSnackbarService.success).toHaveBeenCalledWith(
         `Revoked ${removedRoles.length} role(s)`,
-        { variant: 'filled', autoClose: true },
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
         true,
       );
     });
@@ -542,12 +547,18 @@ describe('UsersService', () => {
 
       expect(mockSnackbarService.success).toHaveBeenCalledWith(
         `Granted ${toAdd.length} role(s)`,
-        { variant: 'filled', autoClose: true },
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
         true,
       );
       expect(mockSnackbarService.success).toHaveBeenCalledWith(
         `Revoked ${toRemove.length} role(s)`,
-        { variant: 'filled', autoClose: true },
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
         true,
       );
     });
@@ -556,7 +567,6 @@ describe('UsersService', () => {
       let called = false;
       service.assignRolesToUser(userId, [], []).subscribe({
         next: () => (called = true),
-        complete: () => {},
       });
 
       // No HTTP calls should be made
