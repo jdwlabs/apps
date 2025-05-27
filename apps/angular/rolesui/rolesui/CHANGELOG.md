@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.5.0](https://github.com/jdwillmsen/jdw/compare/rolesui-0.4.0...rolesui-0.5.0) (2025-05-27)
+
+
+### Features
+
+* **rolesui:** add new routing for components ([f76f9cc](https://github.com/jdwillmsen/jdw/commit/f76f9cc1cadffda14f3a46446e4eede14642a9ef))
+
 ## [0.4.0](https://github.com/jdwillmsen/jdw/compare/rolesui-0.3.0...rolesui-0.4.0) (2025-04-10)
 
 
