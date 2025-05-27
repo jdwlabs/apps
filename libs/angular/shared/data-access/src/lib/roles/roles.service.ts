@@ -14,7 +14,6 @@ import {
   ENVIRONMENT,
   getErrorMessage,
   Role,
-  User,
 } from '@jdw/angular-shared-util';
 
 @Injectable({
@@ -125,17 +124,17 @@ export class RolesService {
     roleId: number,
     usersToAdd: number[],
     usersToRemove: number[],
-  ): Observable<User> {
+  ): Observable<Role> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     const base = `${this.environment.AUTH_BASE_URL}/api/roles/${roleId}/users`;
 
-    const calls: Observable<User>[] = [];
+    const calls: Observable<Role>[] = [];
 
     if (usersToAdd?.length) {
       calls.push(
         this.http
-          .put<User>(`${base}/grant`, usersToAdd, { headers })
+          .put<Role>(`${base}/grant`, usersToAdd, { headers })
           .pipe(
             tap(() =>
               this.snackbarService.success(
@@ -151,7 +150,7 @@ export class RolesService {
     if (usersToRemove?.length) {
       calls.push(
         this.http
-          .put<User>(`${base}/revoke`, usersToRemove, { headers })
+          .put<Role>(`${base}/revoke`, usersToRemove, { headers })
           .pipe(
             tap(() =>
               this.snackbarService.success(
