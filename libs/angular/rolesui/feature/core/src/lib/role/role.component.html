@@ -1,0 +1,59 @@
+<div class="role-container" data-cy="role-container">
+  <form [formGroup]="form" class="role-form">
+    <div class="row-container" data-cy="row-container">
+      <h1 data-cy="title">Role</h1>
+      <button
+        (click)="editRole()"
+        color="warn"
+        data-cy="edit-role-button"
+        mat-raised-button
+      >
+        <mat-icon data-cy="edit-role-icon">edit</mat-icon>
+        Edit Role
+      </button>
+      <button
+        (click)="deleteRole()"
+        color="error"
+        data-cy="delete-role-button"
+        mat-raised-button
+      >
+        <mat-icon data-cy="delete-role-icon">delete</mat-icon>
+        Delete Role
+      </button>
+    </div>
+    <mat-form-field appearance="fill">
+      <mat-label data-cy="name-label">Name</mat-label>
+      <input data-cy="name-input" formControlName="name" matInput readonly />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label data-cy="description-label">Description</mat-label>
+      <input
+        data-cy="description-input"
+        formControlName="description"
+        matInput
+        readonly
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label data-cy="status-label">Status</mat-label>
+      <input
+        data-cy="status-input"
+        formControlName="status"
+        matInput
+        readonly
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label data-cy="users-count-label">Users Count</mat-label>
+      <input
+        data-cy="users-count-input"
+        formControlName="usersCount"
+        matInput
+        readonly
+      />
+    </mat-form-field>
+  </form>
+</div>

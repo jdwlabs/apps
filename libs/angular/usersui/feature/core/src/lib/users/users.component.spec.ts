@@ -2,14 +2,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { UsersComponent } from './users.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { UsersService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
 import { of } from 'rxjs';
 import {
   dateFilterComparator,
   dateSortComparator,
-  User,
 } from '@jdw/angular-usersui-util';
 import { UsersActionsButtonCellRendererComponent } from '../users-actions-button-cell-renderer/users-actions-button-cell-renderer.component';
+import { User } from '@jdw/angular-shared-util';
 
 describe('UsersComponent', () => {
   let component: UsersComponent;

@@ -5,10 +5,10 @@ import { ColDef, GridOptions } from 'ag-grid-community';
 import {
   dateFilterComparator,
   dateSortComparator,
-  User,
 } from '@jdw/angular-usersui-util';
-import { UsersService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
 import { UsersActionsButtonCellRendererComponent } from '../users-actions-button-cell-renderer/users-actions-button-cell-renderer.component';
+import { User } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-users',

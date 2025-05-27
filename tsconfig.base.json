@@ -33,6 +33,12 @@
       "@jdw/angular-container-util": [
         "libs/angular/container/util/src/index.ts"
       ],
+      "@jdw/angular-rolesui-feature-core": [
+        "libs/angular/rolesui/feature/core/src/index.ts"
+      ],
+      "@jdw/angular-rolesui-util": [
+        "libs/angular/rolesui/util/src/index.ts"
+      ],
       "@jdw/angular-shared-data-access": [
         "libs/angular/shared/data-access/src/index.ts"
       ],

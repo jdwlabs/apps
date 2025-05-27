@@ -16,14 +16,10 @@ import {
 } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-  AddProfile,
-  dateFormats,
-  EditProfile,
-  Profile,
-} from '@jdw/angular-usersui-util';
+import { AddProfile, EditProfile, Profile } from '@jdw/angular-shared-util';
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
 import { MomentDateAdapter } from '@angular/material-moment-adapter';
+import { dateFormats } from '@jdw/angular-usersui-util';
 
 @Component({
   selector: 'lib-profile',

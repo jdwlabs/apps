@@ -6,7 +6,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Address, AddressRequest } from '@jdw/angular-usersui-util';
+import { Address, AddressRequest } from '@jdw/angular-shared-util';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
 import { MatButton } from '@angular/material/button';
