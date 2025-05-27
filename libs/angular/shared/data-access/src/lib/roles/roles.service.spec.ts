@@ -6,7 +6,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { ENVIRONMENT, Role } from '@jdw/angular-shared-util';
+import { ENVIRONMENT, Role, User } from '@jdw/angular-shared-util';
 import { EMPTY } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { SnackbarService } from '../snackbar/snackbar.service';
@@ -348,6 +348,175 @@ describe('RolesService', () => {
       req.flush({}, { status: 404, statusText: 'Not Found' });
 
       expect(mockSnackbarService.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('assignUsersToRole', () => {
+    const roleId = 101;
+    const grantUrl = `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}/users/grant`;
+    const revokeUrl = `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}/users/revoke`;
+    const token = 'mockJwtToken';
+
+    beforeEach(() => {
+      mockAuthService.getToken.mockReturnValue(token);
+    });
+
+    it('should call only the grant endpoint when usersToAdd is non-empty', () => {
+      const usersToAdd = [1, 2, 3];
+      const returnedUser: User = {
+        id: 999,
+        emailAddress: 'user@example.com',
+        password: '',
+        status: 'ACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+
+      service.assignUsersToRole(roleId, usersToAdd, []).subscribe((user) => {
+        expect(user).toEqual(returnedUser);
+      });
+
+      const req = httpTesting.expectOne(grantUrl);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(usersToAdd);
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      httpTesting.expectNone(revokeUrl);
+
+      req.flush(returnedUser);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Granted ${usersToAdd.length} user(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should call only the revoke endpoint when usersToRemove is non-empty', () => {
+      const usersToRemove = [4, 5];
+      const returnedUser: User = {
+        id: 1000,
+        emailAddress: 'revoked@example.com',
+        password: '',
+        status: 'INACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+
+      service.assignUsersToRole(roleId, [], usersToRemove).subscribe((user) => {
+        expect(user).toEqual(returnedUser);
+      });
+
+      const req = httpTesting.expectOne(revokeUrl);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(usersToRemove);
+
+      httpTesting.expectNone(grantUrl);
+
+      req.flush(returnedUser);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Revoked ${usersToRemove.length} user(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should call both endpoints and return the revoke result', () => {
+      const usersToAdd = [11];
+      const usersToRemove = [22];
+      const userAfterGrant: User = {
+        id: 1,
+        emailAddress: 'grant@example.com',
+        password: '',
+        status: 'ACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+      const userAfterRevoke: User = {
+        id: 2,
+        emailAddress: 'revoke@example.com',
+        password: '',
+        status: 'INACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+
+      service
+        .assignUsersToRole(roleId, usersToAdd, usersToRemove)
+        .subscribe((user) => {
+          expect(user).toEqual(userAfterRevoke);
+        });
+
+      const requests = httpTesting.match(
+        (req) => req.url === grantUrl || req.url === revokeUrl,
+      );
+      expect(requests.length).toBe(2);
+
+      const grantReq = requests.find((r) => r.request.url === grantUrl)!;
+      const revokeReq = requests.find((r) => r.request.url === revokeUrl)!;
+
+      expect(grantReq.request.method).toBe('PUT');
+      expect(grantReq.request.body).toEqual(usersToAdd);
+
+      expect(revokeReq.request.method).toBe('PUT');
+      expect(revokeReq.request.body).toEqual(usersToRemove);
+
+      grantReq.flush(userAfterGrant);
+      revokeReq.flush(userAfterRevoke);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Granted ${usersToAdd.length} user(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Revoked ${usersToRemove.length} user(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should return EMPTY when no users are added or removed', () => {
+      let called = false;
+
+      service.assignUsersToRole(roleId, [], []).subscribe({
+        next: () => (called = true),
+        complete: () => (called = false), // Will complete immediately since EMPTY emits nothing
+      });
+
+      httpTesting.expectNone(grantUrl);
+      httpTesting.expectNone(revokeUrl);
+
+      expect(called).toBe(false);
     });
   });
 
