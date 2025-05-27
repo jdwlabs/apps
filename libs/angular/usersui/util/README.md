@@ -17,8 +17,7 @@ libs/angular/usersui/util/
 │   ├── index.ts                    # Public API export for the library
 │   ├── lib
 │   │   ├── date.util.ts            # Utility functions for date manipulation
-│   │   ├── date.util.spec.ts       # Unit tests for date utilities
-│   │   └── users.model.ts          # Shared user-related TypeScript models
+│   │   └── date.util.spec.ts       # Unit tests for date utilities
 │   └── test-setup.ts               # Test setup configuration
 ├── jest.config.ts                  # Jest configuration for unit testing
 ├── tsconfig.json                   # Base TypeScript configuration
@@ -43,7 +42,7 @@ import { dateSortComparator } from '@jdw/angular-usersui-util';
 ### Using a Shared Model
 
 ```ts
-import { User } from '@jdw/angular-usersui-util';
+import { User } from '@jdw/angular-shared-util';
 ```
 
 ---

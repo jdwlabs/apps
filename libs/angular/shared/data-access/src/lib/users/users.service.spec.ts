@@ -1,15 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-
-import { UsersService } from './users.service';
-import { ENVIRONMENT } from '@jdw/angular-shared-util';
+import { AddUser, EditUser, ENVIRONMENT, User } from '@jdw/angular-shared-util';
 import {
   HttpTestingController,
   provideHttpClientTesting,
+  TestRequest,
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
-import { AddUser, EditUser, User } from '@jdw/angular-usersui-util';
 import { EMPTY } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
+import { UsersService } from './users.service';
+import { SnackbarService } from '../snackbar/snackbar.service';
 
 const mockAuthService = {
   getToken: jest.fn(),
@@ -402,6 +402,178 @@ describe('UsersService', () => {
         },
         true,
       );
+    });
+  });
+
+  describe('assignRolesToUser', () => {
+    const userId = 42;
+    const grantUrl = `${environmentMock.AUTH_BASE_URL}/api/users/${userId}/roles/grant`;
+    const revokeUrl = `${environmentMock.AUTH_BASE_URL}/api/users/${userId}/roles/revoke`;
+    const token = 'mockJwtToken';
+
+    beforeEach(() => {
+      mockAuthService.getToken.mockReturnValue(token);
+    });
+
+    it('should call only the grant endpoint when rolesToAdd is non-empty', () => {
+      const newRoles = [1, 2, 3];
+      const returnedUser: User = {
+        id: userId,
+        emailAddress: 'u',
+        password: '',
+        status: 'ACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+
+      service.assignRolesToUser(userId, newRoles, []).subscribe((user) => {
+        expect(user).toEqual(returnedUser);
+      });
+
+      // Expect a single PUT to grant URL
+      const req = httpTesting.expectOne(grantUrl);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(newRoles);
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
+
+      // No revoke call should be made
+      httpTesting.expectNone(revokeUrl);
+
+      // Flush simulated backend response
+      req.flush(returnedUser);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Granted ${newRoles.length} role(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should call only the revoke endpoint when rolesToRemove is non-empty', () => {
+      const removedRoles = [9, 8];
+      const returnedUser: User = {
+        id: userId,
+        emailAddress: 'u',
+        password: '',
+        status: 'ACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+
+      service.assignRolesToUser(userId, [], removedRoles).subscribe((user) => {
+        expect(user).toEqual(returnedUser);
+      });
+
+      const req = httpTesting.expectOne(revokeUrl);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(removedRoles);
+
+      httpTesting.expectNone(grantUrl);
+
+      req.flush(returnedUser);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Revoked ${removedRoles.length} role(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should call both endpoints in parallel and return the revoke result', () => {
+      const toAdd = [10];
+      const toRemove = [20];
+      const userAfterGrant: User = {
+        id: userId,
+        emailAddress: 'u',
+        password: '',
+        status: 'ACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+      const userAfterRevoke: User = {
+        id: userId,
+        emailAddress: 'u2',
+        password: '',
+        status: 'INACTIVE',
+        roles: [],
+        profile: null,
+        createdByUserId: 1,
+        createdTime: '',
+        modifiedByUserId: 1,
+        modifiedTime: '',
+      };
+
+      service.assignRolesToUser(userId, toAdd, toRemove).subscribe((user) => {
+        expect(user).toEqual(userAfterRevoke);
+      });
+
+      // match() predicate sees HttpRequest, so use req.url
+      const requests: TestRequest[] = httpTesting.match(
+        (req) => req.url === grantUrl || req.url === revokeUrl,
+      );
+      expect(requests.length).toBe(2);
+
+      // Now each TestRequest has a `.request` containing the HttpRequest
+      const grantReq = requests.find((r) => r.request.url === grantUrl)!;
+      const revokeReq = requests.find((r) => r.request.url === revokeUrl)!;
+
+      expect(grantReq.request.method).toBe('PUT');
+      expect(grantReq.request.body).toEqual(toAdd);
+
+      expect(revokeReq.request.method).toBe('PUT');
+      expect(revokeReq.request.body).toEqual(toRemove);
+
+      // Flush in sequence
+      grantReq.flush(userAfterGrant);
+      revokeReq.flush(userAfterRevoke);
+
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Granted ${toAdd.length} role(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+      expect(mockSnackbarService.success).toHaveBeenCalledWith(
+        `Revoked ${toRemove.length} role(s)`,
+        {
+          variant: 'filled',
+          autoClose: true,
+        },
+        true,
+      );
+    });
+
+    it('should return EMPTY when there are no role changes', () => {
+      let called = false;
+      service.assignRolesToUser(userId, [], []).subscribe({
+        next: () => (called = true),
+      });
+
+      // No HTTP calls should be made
+      httpTesting.expectNone(grantUrl);
+      httpTesting.expectNone(revokeUrl);
+
+      expect(called).toBe(false);
     });
   });
 

@@ -1,0 +1,13 @@
+<div class="dashboard-container">
+  <h1 data-cy="title">Roles Dashboard</h1>
+  <div class="tiles" data-cy="tiles">
+    <jdw-navigation-tile
+      *ngFor="let tile of navigationTiles"
+      [attr.data-cy]="tile.title.toLowerCase() + '-tile'"
+      [title]="tile.title"
+      [description]="tile.description"
+      [link]="tile.link"
+      class="tile"
+    />
+  </div>
+</div>

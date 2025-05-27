@@ -8,8 +8,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererParams } from 'ag-grid-community';
 import { MatDialog } from '@angular/material/dialog';
 import { UserDialogComponent } from '../user-dialog/user-dialog.component';
-import { UsersService } from '@jdw/angular-usersui-data-access';
-import { User } from '@jdw/angular-usersui-util';
+import { UsersService } from '@jdw/angular-shared-data-access';
+import { User } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-actions-button-cell-renderer',

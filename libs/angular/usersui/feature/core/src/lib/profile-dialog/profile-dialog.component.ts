@@ -5,7 +5,7 @@ import {
   FormGroup,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { Profile } from '@jdw/angular-usersui-util';
+import { Profile } from '@jdw/angular-shared-util';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,

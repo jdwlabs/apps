@@ -21,11 +21,11 @@ import {
   PASSWORD_VALIDATOR_PATTERN,
 } from '@jdw/angular-shared-util';
 import { ActivatedRoute, Router } from '@angular/router';
-import { UsersService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { AddUser, EditUser, User } from '@jdw/angular-usersui-util';
+import { AddUser, EditUser, User } from '@jdw/angular-shared-util';
 import { MatCardModule } from '@angular/material/card';
 import { finalize } from 'rxjs';
 

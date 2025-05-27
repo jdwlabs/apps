@@ -1,0 +1,60 @@
+<div class="role-container">
+  <h1 data-cy="title">{{ type }} Role</h1>
+  <form [formGroup]="form" class="role-form" (ngSubmit)="onSubmit()">
+    <mat-form-field
+      appearance="outline"
+      class="name-field"
+      data-cy="name-field"
+    >
+      <mat-label>Enter the name</mat-label>
+      <input
+        formControlName="name"
+        matInput
+        placeholder="Name"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('name')?.invalid">
+        {{ getErrorMessage('name') }}
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="outline"
+      class="description-field"
+      data-cy="description-field"
+    >
+      <mat-label>Enter the description</mat-label>
+      <input
+        formControlName="description"
+        matInput
+        placeholder="Description"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('description')?.invalid">
+        {{ getErrorMessage('description') }}
+      </mat-error>
+    </mat-form-field>
+    <div class="button-container">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid"
+        data-cy="submit-button"
+      >
+        Submit
+      </button>
+      <button
+        mat-raised-button
+        color="accent"
+        type="button"
+        (click)="onReset()"
+        data-cy="reset-button"
+      >
+        Reset
+      </button>
+    </div>
+  </form>
+</div>

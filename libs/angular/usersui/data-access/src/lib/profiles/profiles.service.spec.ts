@@ -7,14 +7,14 @@ import {
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { AuthService, SnackbarService } from '@jdw/angular-shared-data-access';
-import { ENVIRONMENT } from '@jdw/angular-shared-util';
-import { EMPTY } from 'rxjs';
 import {
   AddProfile,
   AddressRequest,
   EditProfile,
+  ENVIRONMENT,
   Profile,
-} from '@jdw/angular-usersui-util';
+} from '@jdw/angular-shared-util';
+import { EMPTY } from 'rxjs';
 
 const authServiceMock = {
   getToken: jest.fn(),
