@@ -114,7 +114,7 @@ export class UserRoleAssignmentComponent implements OnInit {
     form: [
       {
         type: 'noRoleChange',
-        message: 'You must add or remove at least one role.',
+        message: 'You must add or remove at least one role',
       },
     ],
   };
@@ -216,9 +216,13 @@ export class UserRoleAssignmentComponent implements OnInit {
   private updateGridSelection(): void {
     if (!this.grid.api || !this.currentUserRoles.length) return;
 
+    const currentUserIds = new Set(this.currentUserRoles.map((r) => r.id));
+
     this.grid.api.forEachNode((node) => {
-      const selected = this.currentUserRoles.some((r) => r.id === node.data.id);
-      node.setSelected(selected);
+      const shouldBeSelected = currentUserIds.has(node.data.id);
+      if (node.isSelected() !== shouldBeSelected) {
+        node.setSelected(shouldBeSelected);
+      }
     });
 
     this.onRoleSelectionChanged();
@@ -269,13 +273,11 @@ export class UserRoleAssignmentComponent implements OnInit {
     selected: Role[],
     current: Role[],
   ): { rolesToAdd: number[]; rolesToRemove: number[] } {
-    const rolesToAdd = selected
-      .filter((r) => !current.some((c) => c.id === r.id))
-      .map((r) => r.id);
+    const selectedIds = new Set(selected.map((r) => r.id));
+    const currentIds = new Set(current.map((r) => r.id));
 
-    const rolesToRemove = current
-      .filter((r) => !selected.some((s) => s.id === r.id))
-      .map((r) => r.id);
+    const rolesToAdd = [...selectedIds].filter((id) => !currentIds.has(id));
+    const rolesToRemove = [...currentIds].filter((id) => !selectedIds.has(id));
 
     return { rolesToAdd, rolesToRemove };
   }
