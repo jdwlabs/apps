@@ -6,7 +6,7 @@ import {
 } from '@angular/common/http';
 import { SnackbarService } from '../snackbar/snackbar.service';
 import { AuthService } from '../auth/auth.service';
-import { catchError, EMPTY, Observable, tap } from 'rxjs';
+import { catchError, EMPTY, forkJoin, map, Observable, tap } from 'rxjs';
 import {
   AddRole,
   EditRole,
@@ -14,6 +14,7 @@ import {
   ENVIRONMENT,
   getErrorMessage,
   Role,
+  User,
 } from '@jdw/angular-shared-util';
 
 @Injectable({
@@ -36,7 +37,7 @@ export class RolesService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  getRole(roleId: string): Observable<Role> {
+  getRole(roleId: number | string): Observable<Role> {
     const token = this.authService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
@@ -118,6 +119,65 @@ export class RolesService {
         }),
         catchError((error) => this.handleError(error)),
       );
+  }
+
+  assignUsersToRole(
+    roleId: number,
+    usersToAdd: number[],
+    usersToRemove: number[],
+  ): Observable<User> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const base = `${this.environment.AUTH_BASE_URL}/api/roles/${roleId}/users`;
+
+    const calls: Observable<User>[] = [];
+
+    if (usersToAdd?.length) {
+      calls.push(
+        this.http
+          .put<User>(`${base}/grant`, usersToAdd, { headers })
+          .pipe(
+            tap(() =>
+              this.snackbarService.success(
+                `Granted ${usersToAdd.length} user(s)`,
+                { variant: 'filled', autoClose: true },
+                true,
+              ),
+            ),
+          ),
+      );
+    }
+
+    if (usersToRemove?.length) {
+      calls.push(
+        this.http
+          .put<User>(`${base}/revoke`, usersToRemove, { headers })
+          .pipe(
+            tap(() =>
+              this.snackbarService.success(
+                `Revoked ${usersToRemove.length} user(s)`,
+                { variant: 'filled', autoClose: true },
+                true,
+              ),
+            ),
+          ),
+      );
+    }
+
+    if (calls.length === 0) {
+      return EMPTY;
+    }
+
+    // if only one call, just return it
+    if (calls.length === 1) {
+      return calls[0].pipe(catchError((e) => this.handleError(e)));
+    }
+
+    // if two calls, run both in parallel and return the **second** result
+    return forkJoin(calls).pipe(
+      map(([_, secondResult]) => secondResult),
+      catchError((e) => this.handleError(e)),
+    );
   }
 
   handleError(error: HttpErrorResponse) {
