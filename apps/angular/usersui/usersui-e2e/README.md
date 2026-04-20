@@ -1,6 +1,6 @@
 # UsersUI E2E
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **UsersUI E2E** is an end-to-end testing project for the UsersUI application, part of the JDW Platform’s micro frontend architecture. This project uses Cypress to perform automated tests against the UsersUI app to verify its functionality and integration with the rest of the platform.

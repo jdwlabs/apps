@@ -30,7 +30,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 8080:8080 jdwillmsen/jdw-usersrole:latest",
+            "command": "docker run --rm -p 8080:8080 jdwlabs/usersrole:latest",
             "forwardAllArgs": false
           }
         ],

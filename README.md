@@ -1,6 +1,6 @@
-# JDW Monorepo
+# Apps
 
-[![CI](https://github.com/jdwillmsen/jdw/actions/workflows/ci.yml/badge.svg)](https://github.com/jdwillmsen/jdw/actions/workflows/ci.yml)
+[![CI](https://github.com/jdwlabs/apps/actions/workflows/ci.yml/badge.svg)](https://github.com/jdwlabs/apps/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java-21-blue)
 ![Go](https://img.shields.io/badge/Go-1.24-blue)
 ![Node](https://img.shields.io/badge/Node-22-blue)
@@ -9,8 +9,8 @@
 ![Angular](https://img.shields.io/badge/Angular-19-blue)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-JDW Monorepo is a multi-language, multi-project repository that houses all code, configuration, and tooling for the JDW
-Platform. This repository is organized into three main directories:
+This is a multi-language, multi-project repository that houses all code, configuration, and tooling. This repository is 
+organized into three main directories:
 
 - **apps**: Contains full application code for both frontends and backends.
 - **libs**: Contains reusable libraries, grouped by type:
@@ -19,16 +19,6 @@ Platform. This repository is organized into three main directories:
     - **util**: Common utilities, helper functions, and shared models.
     - **ui**: Reusable UI components, theming, and styling.
 - **tools**: Contains scripts and configuration for versioning, formatting, Docker orchestration, and CI/CD.
-
-## 🔗 Environment Links
-
-Here are the links to the various environments for the JDW Platform:
-
-| Environment | URL                                    | Description                                  |
-| ----------- | -------------------------------------- | -------------------------------------------- |
-| Development | [container.dev.jdwkube.com](https://container.dev.jdwkube.com/) | For development and testing of new features. |
-| UAT         | [container.uat.jdwkube.com](https://container.uat.jdwkube.com/) | For user acceptance testing before release. |
-| Production  | [container.prd.jdwkube.com](https://container.prd.jdwkube.com/) | The live, production environment.          |
 
 ## Directory Structure
 
@@ -127,17 +117,16 @@ at [NX Explore Graph](https://nx.dev/core-features/explore-graph).
 
 ### App Deployment
 
-The deployment configuration for the JDW platform applications is maintained in a separate repository:
+Helm charts and Argo CD configurations for the applications live in:
 
-- **JDW Apps**: [https://github.com/jdwillmsen/jdw-apps](https://github.com/jdwillmsen/jdw-apps)
-    - Uses Helm charts and pipelines for automated deployments via Argo CD.
+- **Deployments**: [https://github.com/jdwlabs/deployments](https://github.com/jdwlabs/deployments)
 
-### Kubernetes Infrastructure
+### Platform & Infrastructure
 
-The infrastructure code, including Kubernetes manifests, Helm charts, and Argo CD configurations, is housed in:
+Cluster configuration, Terraform, and tenant definitions live in:
 
-- **JDW Kube**: [https://github.com/jdwillmsen/jdw-kube](https://github.com/jdwillmsen/jdw-kube)
-    - Manages cluster configurations and automated deployments using ArgoCD.
+- **Infrastructure**: [https://github.com/jdwlabs/infrastructure](https://github.com/jdwlabs/infrastructure)
+- **Platform**: [https://github.com/jdwlabs/platform](https://github.com/jdwlabs/platform)
 
 ## 📚 Library Overview
 
@@ -152,9 +141,10 @@ The monorepo organizes libraries by type to encourage reuse and maintainability:
 ## ✨ Additional Resources
 
 - **NX Documentation**: [https://nx.dev/](https://nx.dev/)
-- **JDW Apps Deployment Repository**: [https://github.com/jdwillmsen/jdw-apps](https://github.com/jdwillmsen/jdw-apps)
-- **JDW Kubernetes Infrastructure**: [https://github.com/jdwillmsen/jdw-kube](https://github.com/jdwillmsen/jdw-kube)
-- **Docker Hub Images**: [https://hub.docker.com/u/jdwillmsen](https://hub.docker.com/u/jdwillmsen)
+- **Deployments**: [https://github.com/jdwlabs/deployments](https://github.com/jdwlabs/deployments)
+- **Infrastructure**: [https://github.com/jdwlabs/infrastructure](https://github.com/jdwlabs/infrastructure)
+- **Platform**: [https://github.com/jdwlabs/platform](https://github.com/jdwlabs/platform)
+- **Docker Hub Images**: [https://hub.docker.com/u/jdwlabs](https://hub.docker.com/u/jdwlabs)
 
 ## 📌 About This Workspace
 

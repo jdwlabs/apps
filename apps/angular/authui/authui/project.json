@@ -174,7 +174,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest -t jdwillmsen/jdw-authui:{version} --push .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/authui:latest -t jdwlabs/authui:{version} --push .",
             "forwardAllArgs": false
           },
           {
@@ -191,7 +191,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authui:latest --load .",
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwlabs/authui:latest --load .",
             "forwardAllArgs": false
           },
           {
@@ -213,7 +213,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 4201:80 jdwillmsen/jdw-authui:latest",
+            "command": "docker run --rm -p 4201:80 jdwlabs/authui:latest",
             "forwardAllArgs": false
           }
         ],
