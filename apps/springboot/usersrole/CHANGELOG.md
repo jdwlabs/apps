@@ -2,6 +2,60 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.10.10](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.9...usersrole-0.10.10) (2025-05-27)
+
+## [0.10.9](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.8...usersrole-0.10.9) (2025-04-10)
+
+## [0.10.8](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.7...usersrole-0.10.8) (2025-04-10)
+
+## [0.10.7](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.6...usersrole-0.10.7) (2025-04-10)
+
+## [0.10.6](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.5...usersrole-0.10.6) (2025-04-07)
+
+## [0.10.5](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.4...usersrole-0.10.5) (2025-04-07)
+
+## [0.10.4](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.3...usersrole-0.10.4) (2025-04-07)
+
+## [0.10.3](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.2...usersrole-0.10.3) (2025-04-01)
+
+
+### Bug Fixes
+
+* **usersrole:** add build-image and local-build-image target fix ([4254cd8](https://github.com/jdwillmsen/jdw/commit/4254cd85538485bec3fdd96ca90a3a7ca2584c71))
+
+## [0.10.2](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.1...usersrole-0.10.2) (2025-04-01)
+
+
+### Bug Fixes
+
+* **usersrole:** update build-image target ([2d0296a](https://github.com/jdwillmsen/jdw/commit/2d0296a86d74224d17e8f4987dcb3a4edf2eac7e))
+
+## [0.10.1](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.0...usersrole-0.10.1) (2025-03-30)
+
+## [0.10.0](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.9...usersrole-0.10.0) (2025-03-30)
+
+### Features
+
+- update build-image tasks ([4a7632f](https://github.com/jdwillmsen/jdw/commit/4a7632ffa68ac61493c6f5679cc9826e2e0ac7fa))
+
+## [0.9.9](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.8...usersrole-0.9.9) (2025-03-30)
+
+### Bug Fixes
+
+- **usersrole:** add address fix for saving data ([360c91e](https://github.com/jdwillmsen/jdw/commit/360c91e44d37ab03fe0cf95e683cffdbb89b72dd))
+
+## [0.9.9](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.8...usersrole-0.9.9) (2025-03-25)
+
+### Bug Fixes
+
+- **usersrole:** add address fix for saving data ([360c91e](https://github.com/jdwillmsen/jdw/commit/360c91e44d37ab03fe0cf95e683cffdbb89b72dd))
+
+## [0.9.8](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.7...usersrole-0.9.8) (2025-02-19)
+
+## [0.9.7](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.6...usersrole-0.9.7) (2025-01-30)
+
+## [0.9.6](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.5...usersrole-0.9.6) (2024-11-26)
+
 ## [0.9.5](https://github.com/jdwillmsen/jdw/compare/usersrole-0.9.4...usersrole-0.9.5) (2024-10-29)
 
 ### Bug Fixes

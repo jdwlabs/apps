@@ -149,10 +149,23 @@
     },
     "build-image": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build", "prepare-config", "build"],
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-container:latest -t jdwillmsen/jdw-container:{version} --push .",
+            "command": "nx run container:prepare-config",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run container:build --skip-nx-cache",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/container:latest -t jdwlabs/container:{version} --push .",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run container:restore-config",
             "forwardAllArgs": false
           }
         ],
@@ -161,10 +174,15 @@
     },
     "local-build-image": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build", "prepare-config", "build"],
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-container:latest --load .",
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwlabs/container:latest --load .",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "nx run container:restore-config",
             "forwardAllArgs": false
           }
         ],
@@ -172,7 +190,7 @@
       }
     },
     "update-app": {
-      "command": "bash tools/update-app.sh helm/container/Chart.yaml {version} {projectName}"
+      "command": "bash tools/update-app.sh charts/container/Chart.yaml {version} {projectName}"
     },
     "format": {
       "command": "bash tools/format.sh"
@@ -182,11 +200,31 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 4200:80 jdwillmsen/jdw-container:latest",
+            "command": "docker run --rm -p 4200:80 jdwlabs/container:latest",
             "forwardAllArgs": false
           }
         ],
         "parallel": false
+      }
+    },
+    "prepare-config": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "bash tools/prepare-config.sh apps/angular/container/container/src/config.json"
+          }
+        ]
+      }
+    },
+    "restore-config": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "bash tools/restore-config.sh apps/angular/container/container/src/config.json"
+          }
+        ]
       }
     }
   }

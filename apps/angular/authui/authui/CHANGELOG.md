@@ -2,6 +2,68 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.1](https://github.com/jdwillmsen/jdw/compare/authui-1.3.0...authui-1.3.1) (2025-05-27)
+
+## [1.3.0](https://github.com/jdwillmsen/jdw/compare/authui-1.2.0...authui-1.3.0) (2025-04-10)
+
+
+### Features
+
+* **authui:** update build-image task ([776fe96](https://github.com/jdwillmsen/jdw/commit/776fe968482c90bf20227cb4a1be353527dc0010))
+
+## [1.2.0](https://github.com/jdwillmsen/jdw/compare/authui-1.1.6...authui-1.2.0) (2025-04-10)
+
+
+### Features
+
+* **authui:** update start nginx script ([0696775](https://github.com/jdwillmsen/jdw/commit/0696775fe130306b116b006b5776c18db18203c6))
+
+## [1.1.6](https://github.com/jdwillmsen/jdw/compare/authui-1.1.5...authui-1.1.6) (2025-04-10)
+
+## [1.1.5](https://github.com/jdwillmsen/jdw/compare/authui-1.1.4...authui-1.1.5) (2025-04-07)
+
+## [1.1.4](https://github.com/jdwillmsen/jdw/compare/authui-1.1.3...authui-1.1.4) (2025-04-07)
+
+
+### Bug Fixes
+
+* **authui:** update Dockerfile setup for build-image targets ([b2f937b](https://github.com/jdwillmsen/jdw/commit/b2f937b9b8ab90c5c3b0709ea8c5c944c24cefe5))
+
+## [1.1.3](https://github.com/jdwillmsen/jdw/compare/authui-1.1.2...authui-1.1.3) (2025-04-07)
+
+
+### Performance Improvements
+
+* **authui:** update Dockerfile setup for build-image targets ([11aeb3b](https://github.com/jdwillmsen/jdw/commit/11aeb3bde252f347617c9192d8d0b8b6e545316e))
+
+## [1.1.2](https://github.com/jdwillmsen/jdw/compare/authui-1.1.1...authui-1.1.2) (2025-03-30)
+
+## [1.1.1](https://github.com/jdwillmsen/jdw/compare/authui-1.1.0...authui-1.1.1) (2025-03-30)
+
+## [1.1.0](https://github.com/jdwillmsen/jdw/compare/authui-1.0.2...authui-1.1.0) (2025-03-30)
+
+### Features
+
+- update build-image tasks ([4a7632f](https://github.com/jdwillmsen/jdw/commit/4a7632ffa68ac61493c6f5679cc9826e2e0ac7fa))
+
+## [1.0.2](https://github.com/jdwillmsen/jdw/compare/authui-1.0.1...authui-1.0.2) (2025-03-30)
+
+## [1.0.2](https://github.com/jdwillmsen/jdw/compare/authui-1.0.1...authui-1.0.2) (2025-03-25)
+
+## [1.0.1](https://github.com/jdwillmsen/jdw/compare/authui-1.0.0...authui-1.0.1) (2025-02-19)
+
+## [1.0.0](https://github.com/jdwillmsen/jdw/compare/authui-0.6.5...authui-1.0.0) (2025-01-30)
+
+### ⚠ BREAKING CHANGES
+
+- Angular v19 plus the latest version for all reliant npm packages
+
+### Miscellaneous Chores
+
+- update to nx v20.2.0 ([2417d51](https://github.com/jdwillmsen/jdw/commit/2417d51babf7809e49c778b740b6b2c8a815a226))
+
+## [0.6.5](https://github.com/jdwillmsen/jdw/compare/authui-0.6.4...authui-0.6.5) (2024-11-26)
+
 ## [0.6.4](https://github.com/jdwillmsen/jdw/compare/authui-0.6.3...authui-0.6.4) (2024-10-29)
 
 ## [0.6.3](https://github.com/jdwillmsen/jdw/compare/authui-0.6.2...authui-0.6.3) (2024-10-28)

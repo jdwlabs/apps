@@ -1,0 +1,74 @@
+<div class="container">
+  <h1 data-cy="title">Assign Users</h1>
+  <form [formGroup]="form" class="form" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" data-cy="select-role-field">
+      <mat-label>Select Role</mat-label>
+      <input
+        [matAutocomplete]="auto"
+        formControlName="role"
+        matInput
+        placeholder="Select role by name"
+        required
+        type="text"
+      />
+      <mat-autocomplete
+        #auto="matAutocomplete"
+        [displayWith]="displayRoleFn"
+        (optionSelected)="onRoleSelected($event.option.value)"
+        autoActiveFirstOption
+      >
+        @for (option of filteredOptions | async; track option) {
+          <mat-option
+            [attr.data-cy]="option.name + '-role-option'"
+            [value]="option"
+          >
+            {{ displayRoleFn(option) }}
+          </mat-option>
+        }
+      </mat-autocomplete>
+      @if (this.form.get('role')?.invalid) {
+        <mat-error data-cy="select-role-error">
+          {{ getErrorMessage('role') }}
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <ag-grid-angular
+      data-cy="grid"
+      class="ag-theme-jdw"
+      [loading]="loading"
+      [rowSelection]="rowSelection"
+      [gridOptions]="gridOptions"
+      [rowData]="allUsers"
+      (selectionChanged)="onUserSelectionChanged()"
+      (gridReady)="onGridReady($event)"
+    />
+
+    @if (form.hasError('noUserChange') && (form.dirty || form.touched)) {
+      <mat-error>
+        {{ formErrorMessage }}
+      </mat-error>
+    }
+
+    <div class="button-container">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="loading || form.invalid"
+        data-cy="submit-button"
+      >
+        Submit
+      </button>
+      <button
+        mat-raised-button
+        color="accent"
+        type="button"
+        (click)="onReset()"
+        data-cy="reset-button"
+      >
+        Reset
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,3 +1,4 @@
+import com.google.cloud.tools.jib.api.buildplan.ImageFormat
 import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 plugins {
@@ -5,10 +6,11 @@ plugins {
 	id("org.springframework.boot") version "3.3.2"
 	id("io.spring.dependency-management") version "1.1.5"
 	id("maven-publish")
+	id("com.google.cloud.tools.jib") version "3.4.5"
 }
 
 group = "com.jdw"
-version = "0.9.5"
+version = "0.10.10"
 
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
@@ -63,13 +65,35 @@ publishing {
 }
 
 tasks.named<BootBuildImage>("bootBuildImage") {
-	imageName.set("docker.io/jdwillmsen/jdw-${project.name}:${version}")
+	imageName.set("docker.io/jdwlabs/${project.name}:${version}")
 	publish.set(true)
-	tags.set(listOf("docker.io/jdwillmsen/jdw-${project.name}:latest"))
+	tags.set(listOf("docker.io/jdwlabs/${project.name}:latest"))
 	docker {
 		publishRegistry {
 			username.set(System.getenv("DOCKERHUB_USERNAME"))
 			password.set(System.getenv("DOCKERHUB_PASSWORD"))
 		}
+	}
+}
+
+jib {
+	to {
+		image = "docker.io/jdwlabs/${project.name}:${version}"
+		tags = setOf("latest")
+		auth {
+			username = System.getenv("DOCKERHUB_USERNAME")
+			password = System.getenv("DOCKERHUB_PASSWORD")
+		}
+	}
+	from {
+		image = "eclipse-temurin:21@sha256:6634936b2e8d90ee16eeb94420d71cd5e36ca677a4cf795a9ee1ee6e94379988"
+		auth {
+			username = System.getenv("DOCKERHUB_USERNAME")
+			password = System.getenv("DOCKERHUB_PASSWORD")
+		}
+	}
+	container {
+		format = ImageFormat.OCI
+		ports = listOf("8080")
 	}
 }

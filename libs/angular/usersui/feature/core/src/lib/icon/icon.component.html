@@ -1,0 +1,77 @@
+<div
+  (dragleave)="onDragLeave($event)"
+  (dragover)="onDragOver($event)"
+  (drop)="onDrop($event)"
+  class="upload-container"
+  data-cy="upload-container"
+>
+  <h1 data-cy="title">{{ type }} Icon</h1>
+
+  <input
+    #fileInput
+    (change)="onSelectedFile($event)"
+    accept="image/*"
+    data-cy="file-input"
+    hidden
+    type="file"
+  />
+
+  <div
+    (click)="fileInput.click()"
+    [class.drag-over]="isDragOver"
+    class="drop-zone"
+    data-cy="drop-zone"
+  >
+    <ng-container *ngIf="!selectedFile">
+      <mat-icon class="upload-icon" data-cy="upload-icon"
+        >cloud_upload</mat-icon
+      >
+      <p data-cy="upload-message">Click or drag an image to upload.</p>
+      <p *ngIf="errorMessage" class="error-message" data-cy="error-message">
+        {{ errorMessage }}
+      </p>
+    </ng-container>
+    <ng-container *ngIf="selectedFile">
+      <img
+        [alt]="selectedFile.name"
+        [src]="selectedFile.objectURL"
+        class="preview-image"
+        data-cy="image-preview"
+      />
+      <div class="file-info" data-cy="file-info">
+        <span data-cy="file-name">
+          {{ selectedFile.name }} ({{ formatSize(selectedFile.size) }})
+        </span>
+        <button
+          (click)="removeFile($event)"
+          class="delete-button"
+          color="error"
+          mat-icon-button
+          data-cy="delete-button"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="button-container">
+    <button
+      (click)="onSubmit()"
+      [disabled]="!selectedFile"
+      color="primary"
+      mat-raised-button
+      data-cy="submit-button"
+    >
+      Submit
+    </button>
+    <button
+      (click)="onReset()"
+      color="accent"
+      mat-raised-button
+      data-cy="reset-button"
+    >
+      Reset
+    </button>
+  </div>
+</div>

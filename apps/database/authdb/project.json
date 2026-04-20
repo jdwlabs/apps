@@ -27,7 +27,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authdb:latest -t jdwillmsen/jdw-authdb:{version} .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/authdb:latest -t jdwlabs/authdb:{version} .",
             "forwardAllArgs": false
           }
         ],
@@ -39,7 +39,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-authdb:latest .",
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwlabs/authdb:latest .",
             "forwardAllArgs": false
           }
         ],
@@ -50,10 +50,10 @@
       "command": "bash tools/format.sh"
     },
     "serve": {
-      "command": "docker run --rm -p 5432:5432 jdwillmsen/jdw-authdb:latest"
+      "command": "docker run --rm -p 5432:5432 jdwlabs/authdb:latest"
     },
     "serve-cache": {
-      "command": "docker run --rm -v authdb-data:/var/lib/postgresql/data -p 5432:5432 jdwillmsen/jdw-authdb:latest"
+      "command": "docker run --rm -v authdb-data:/var/lib/postgresql/data -p 5432:5432 jdwlabs/authdb:latest"
     },
     "clear-cache": {
       "command": "docker volume rm authdb-data || true"

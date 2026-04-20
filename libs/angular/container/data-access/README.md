@@ -1,7 +1,104 @@
-# angular-container-data-access
+# Angular Container Data Access
 
-This library was generated with [Nx](https://nx.dev).
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
+![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
-## Running unit tests
+**Angular Container Data Access** is a library providing core data access services for the container module in the JDW Platform. This library includes services related to dynamic route loading, micro frontend management, and versioning.
 
-Run `nx test angular-container-data-access` to execute the unit tests.
+This library is part of the **angular-container** module and follows a feature-driven architecture.
+
+---
+
+## 📁 Project Structure
+
+```
+libs/angular/container/data-access/
+├── src
+│   ├── lib
+│   │   ├── dynamic-route-loader       # Service for dynamic route loading
+│   │   ├── micro-frontend             # Service for managing micro frontends
+│   │   └── version                    # Service for version management
+├── jest.config.ts                     # Jest configuration for unit testing
+├── tsconfig.json                      # TypeScript configuration
+└── README.md                          # Project documentation
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (LTS version recommended)
+- Nx CLI (for managing the workspace and building projects)
+- Angular (for building the services)
+- Jest (for unit testing)
+
+### Installation
+
+To install dependencies:
+
+```bash
+npm install
+```
+
+---
+
+## 🔧 Development
+
+To contribute to this library, you can use the following commands:
+
+- Run unit tests:
+
+  ```bash
+  nx test angular-container-data-access
+  ```
+
+- Lint the project:
+
+  ```bash
+  nx lint angular-container-data-access
+  ```
+
+---
+
+## 🧪 Testing
+
+This library uses **Jest** for unit testing. You can run the tests using the following command:
+
+```bash
+nx test angular-container-data-access
+```
+
+---
+
+## 📝 Usage
+
+To use any of the services from this library, import the service into your Angular module or component and inject it as a dependency.
+
+Example of using `DynamicRouteLoaderService`:
+
+```typescript
+import { DynamicRouteLoaderService } from '@jdw/angular/container/data-access';
+import { inject } from '@angular/core';
+
+// constructor(private routeLoader: DynamicRouteLoaderService) {}
+const routeLoader = inject(DynamicRouteLoaderService);
+
+ngOnInit()
+{
+  this.routeLoader.loadRoutes();
+}
+```
+
+---
+
+## 📦 Build
+
+To build this library, run:
+
+```bash
+nx build angular-container-data-access
+```
+
+This will build the library and output it to the `dist/` folder.
