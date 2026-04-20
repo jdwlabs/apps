@@ -65,9 +65,9 @@ publishing {
 }
 
 tasks.named<BootBuildImage>("bootBuildImage") {
-	imageName.set("docker.io/jdwillmsen/jdw-${project.name}:${version}")
+	imageName.set("docker.io/jdwlabs/${project.name}:${version}")
 	publish.set(true)
-	tags.set(listOf("docker.io/jdwillmsen/jdw-${project.name}:latest"))
+	tags.set(listOf("docker.io/jdwlabs/${project.name}:latest"))
 	docker {
 		publishRegistry {
 			username.set(System.getenv("DOCKERHUB_USERNAME"))
@@ -78,7 +78,7 @@ tasks.named<BootBuildImage>("bootBuildImage") {
 
 jib {
 	to {
-		image = "docker.io/jdwillmsen/jdw-${project.name}:${version}"
+		image = "docker.io/jdwlabs/${project.name}:${version}"
 		tags = setOf("latest")
 		auth {
 			username = System.getenv("DOCKERHUB_USERNAME")

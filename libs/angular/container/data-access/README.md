@@ -1,6 +1,6 @@
 # Angular Container Data Access
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **Angular Container Data Access** is a library providing core data access services for the container module in the JDW Platform. This library includes services related to dynamic route loading, micro frontend management, and versioning.

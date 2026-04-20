@@ -1,6 +1,6 @@
 # Angular Shared UI
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 The **Angular Shared UI** library provides a suite of reusable UI components and styling foundations for the JDW

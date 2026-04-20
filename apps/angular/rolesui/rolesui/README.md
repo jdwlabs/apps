@@ -1,9 +1,9 @@
 # RolesUI
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
-![Docker Image Version](https://img.shields.io/docker/v/jdwillmsen/jdw-rolesui)
-![Docker Image Size](https://img.shields.io/docker/image-size/jdwillmsen/jdw-rolesui)
-![Docker Downloads](https://img.shields.io/docker/pulls/jdwillmsen/jdw-rolesui?label=downloads)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
+![Docker Image Version](https://img.shields.io/docker/v/jdwlabs/rolesui)
+![Docker Image Size](https://img.shields.io/docker/image-size/jdwlabs/rolesui)
+![Docker Downloads](https://img.shields.io/docker/pulls/jdwlabs/rolesui?label=downloads)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **RolesUI** is an Angular-based micro frontend application that provides role management features, including viewing, assigning, and editing user roles. It is designed to operate within a module federation setup as part of the JDW Platform’s micro frontend architecture.

@@ -1,6 +1,6 @@
 # Container E2E
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **Container E2E** is an end-to-end testing project for the Container application, which serves as the host in the JDW

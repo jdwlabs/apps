@@ -1,4 +1,4 @@
-# 🐳 jdwillmsen/jdw-agents
+# 🐳 jdwlabs/agents
 
 ![Version](https://img.shields.io/badge/version-1.0.1-blue)
 
@@ -39,8 +39,8 @@ You can provide versioning arguments to `publish.sh` to automatically bump the v
 
 ### 📤 Pushes to:
 
-- Docker Hub: `docker.io/jdwillmsen/jdw-agents`
-- GitHub Container Registry: `ghcr.io/jdwillmsen/jdw-agents`
+- Docker Hub: `docker.io/jdwlabs/agents`
+- GitHub Container Registry: `ghcr.io/jdwlabs/agents`
 
 ---
 

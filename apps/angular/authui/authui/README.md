@@ -1,9 +1,9 @@
 # AuthUI
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
-![Docker Image Version](https://img.shields.io/docker/v/jdwillmsen/jdw-authui)
-![Docker Image Size](https://img.shields.io/docker/image-size/jdwillmsen/jdw-authui)
-![Docker Downloads](https://img.shields.io/docker/pulls/jdwillmsen/jdw-authui?label=downloads)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
+![Docker Image Version](https://img.shields.io/docker/v/jdwlabs/authui)
+![Docker Image Size](https://img.shields.io/docker/image-size/jdwlabs/authui)
+![Docker Downloads](https://img.shields.io/docker/pulls/jdwlabs/authui?label=downloads)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **AuthUI** is an Angular-based micro frontend application responsible for handling authentication-related UIs such as

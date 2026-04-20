@@ -1,6 +1,6 @@
 # Angular Container Util
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **Angular Container Util** is a utility library for the container module in the JDW Platform. It provides shared

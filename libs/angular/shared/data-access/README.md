@@ -1,6 +1,6 @@
 # Angular Shared Data Access
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **Angular Shared Data Access** is a centralized library for shared Angular services related to authentication, roles, and UI messaging (snackbars). It promotes reuse and consistency across multiple modules within the JDW platform.

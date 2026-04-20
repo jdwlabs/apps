@@ -1,9 +1,9 @@
 # Container
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
-![Docker Image Version](https://img.shields.io/docker/v/jdwillmsen/jdw-container)
-![Docker Image Size](https://img.shields.io/docker/image-size/jdwillmsen/jdw-container)
-![Docker Downloads](https://img.shields.io/docker/pulls/jdwillmsen/jdw-container?label=downloads)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
+![Docker Image Version](https://img.shields.io/docker/v/jdwlabs/container)
+![Docker Image Size](https://img.shields.io/docker/image-size/jdwlabs/container)
+![Docker Downloads](https://img.shields.io/docker/pulls/jdwlabs/container?label=downloads)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **Container** is the shell application of the JDW Platform’s micro frontend architecture. Built with Angular and Nx, it serves as the host that dynamically loads remote micro frontends (e.g., AuthUI, UsersUI, RolesUI) using module federation. It also provides common layout elements, navigation, and runtime configuration for all sub-applications.

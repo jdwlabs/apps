@@ -1,6 +1,6 @@
 # Angular Shared Util
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 The **Angular Shared Util** library provides common TypeScript models, constants, utility functions, and environment

@@ -1,7 +1,7 @@
 name: jdw
 services:
   jdw-container:
-    image: jdwillmsen/jdw-container:latest
+    image: jdwlabs/container:latest
     ports:
       - '4200:80'
     restart: unless-stopped
@@ -11,7 +11,7 @@ services:
       - AUTH_BASE_URL=http://localhost:8080
 
   jdw-authui:
-    image: jdwillmsen/jdw-authui:latest
+    image: jdwlabs/authui:latest
     ports:
       - '4201:80'
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
       - AUTH_BASE_URL=http://localhost:8080
 
   jdw-authdb:
-    image: jdwillmsen/jdw-authdb:latest
+    image: jdwlabs/authdb:latest
     ports:
       - '5432:5432'
     volumes:
@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   jdw-usersrole:
-    image: jdwillmsen/jdw-usersrole:latest
+    image: jdwlabs/usersrole:latest
     ports:
       - '8080:8080'
     restart: unless-stopped
@@ -39,7 +39,7 @@ services:
       - UR_PG_PASSWORD=default_password
 
   jdw-servicediscovery:
-    image: jdwillmsen/jdw-servicediscovery:latest
+    image: jdwlabs/servicediscovery:latest
     ports:
       - '9000:9000'
     restart: unless-stopped
@@ -50,7 +50,7 @@ services:
         target: /app/config.json
 
   jdw-usersui:
-    image: jdwillmsen/jdw-usersui:latest
+    image: jdwlabs/usersui:latest
     ports:
       - '4202:80'
     restart: unless-stopped
@@ -59,7 +59,7 @@ services:
       - AUTH_BASE_URL=http://localhost:8080
 
   jdw-rolesui:
-    image: jdwillmsen/jdw-rolesui:latest
+    image: jdwlabs/rolesui:latest
     ports:
       - '4203:80'
     restart: unless-stopped

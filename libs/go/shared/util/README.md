@@ -1,6 +1,6 @@
 # Go Shared Util
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 The **Go Shared Util** library provides reusable utility functions and middleware for Go services in the JDW platform.
