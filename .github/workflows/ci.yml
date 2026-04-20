@@ -81,3 +81,6 @@ jobs:
           git checkout develop
           git pull origin main --rebase
           git push --force-with-lease origin develop
+
+      - run: npx nx fix-ci
+        if: always()
