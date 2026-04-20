@@ -9,7 +9,6 @@ import { ThemePalette } from '@angular/material/core';
 
 @Component({
   selector: 'jdw-header',
-  standalone: true,
   imports: [
     CommonModule,
     MatToolbarModule,

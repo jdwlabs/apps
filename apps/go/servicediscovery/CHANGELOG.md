@@ -2,6 +2,27 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.0](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.3.1...servicediscovery-0.4.0) (2025-04-10)
+
+
+### Features
+
+* **servicediscovery:** add rolesui to config ([ef520a7](https://github.com/jdwillmsen/jdw/commit/ef520a796964f0aa0613e0df0964b1f83ce80e33))
+
+## [0.3.1](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.3.0...servicediscovery-0.3.1) (2025-04-07)
+
+
+### Performance Improvements
+
+* **servicediscovery:** update Dockerfile setup for build-image targets ([926855e](https://github.com/jdwillmsen/jdw/commit/926855e166213754a1ad44eeec6191204ec5a6d9))
+
+## [0.3.0](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.2.1...servicediscovery-0.3.0) (2025-03-30)
+
+
+### Features
+
+* update build-image tasks ([4a7632f](https://github.com/jdwillmsen/jdw/commit/4a7632ffa68ac61493c6f5679cc9826e2e0ac7fa))
+
 ## [0.2.1](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.2.0...servicediscovery-0.2.1) (2024-10-29)
 
 ## [0.2.0](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.1.3...servicediscovery-0.2.0) (2024-10-28)

@@ -1,0 +1,133 @@
+<div class="account-container">
+  <h1 data-cy="title">{{ type }} Account</h1>
+  <form [formGroup]="form" class="account-form" (ngSubmit)="onSubmit()">
+    <mat-form-field
+      appearance="outline"
+      class="email-field"
+      data-cy="email-address-field"
+    >
+      <mat-label>Enter your email</mat-label>
+      <input
+        formControlName="email"
+        matInput
+        placeholder="Email Address"
+        required
+        type="email"
+      />
+      <mat-error *ngIf="this.form.get('email')?.invalid">
+        {{ getErrorMessage('email') }}
+      </mat-error>
+    </mat-form-field>
+    <ng-container formGroupName="matchingPassword">
+      <mat-form-field
+        [subscriptSizing]="
+          this.form.get('matchingPassword')?.invalid &&
+          (this.form.get('matchingPassword')?.get('password')?.dirty ||
+            this.form.get('matchingPassword')?.get('password')?.touched)
+            ? 'dynamic'
+            : 'fixed'
+        "
+        appearance="outline"
+        class="password-field"
+        data-cy="password-field"
+      >
+        <mat-label>Enter your password</mat-label>
+        <input
+          [type]="hide ? 'password' : 'text'"
+          formControlName="password"
+          matInput
+          placeholder="Password"
+          required
+        />
+        <button
+          (click)="hide = !hide"
+          [attr.aria-label]="'Hide password'"
+          [attr.aria-pressed]="hide"
+          data-cy="password-visibility-button"
+          mat-icon-button
+          matSuffix
+          type="button"
+        >
+          <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error
+          *ngIf="this.form.get('matchingPassword')?.get('password')?.invalid"
+        >
+          {{ getPasswordErrorMessage('password') }}
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field
+        [subscriptSizing]="
+          this.form.get('matchingPassword')?.invalid &&
+          (this.form.get('matchingPassword')?.get('confirmPassword')?.dirty ||
+            this.form.get('matchingPassword')?.get('confirmPassword')?.touched)
+            ? 'dynamic'
+            : 'fixed'
+        "
+        appearance="outline"
+        class="confirm-password-field"
+        data-cy="confirm-password-field"
+      >
+        <mat-label>Enter your confirm password</mat-label>
+        <input
+          [type]="hide ? 'password' : 'text'"
+          formControlName="confirmPassword"
+          matInput
+          placeholder="Confirm Password"
+          required
+        />
+        <button
+          (click)="hide = !hide"
+          [attr.aria-label]="'Hide password'"
+          [attr.aria-pressed]="hide"
+          data-cy="confirm-password-visibility-button"
+          mat-icon-button
+          matSuffix
+          type="button"
+        >
+          <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error
+          *ngIf="
+            this.form.get('matchingPassword')?.get('confirmPassword')?.invalid
+          "
+        >
+          {{ getPasswordErrorMessage('confirmPassword') }}
+        </mat-error>
+      </mat-form-field>
+      <mat-error
+        *ngIf="
+          this.form.get('matchingPassword')?.invalid &&
+          (this.form.get('matchingPassword')?.get('confirmPassword')?.dirty ||
+            this.form.get('matchingPassword')?.get('confirmPassword')
+              ?.touched) &&
+          getErrorMessage('matchingPassword') !== ''
+        "
+        class="match-password"
+        data-cy="matching-password-error"
+      >
+        {{ getErrorMessage('matchingPassword') }}
+      </mat-error>
+    </ng-container>
+    <div class="button-container">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid"
+        data-cy="submit-button"
+      >
+        Submit
+      </button>
+      <button
+        mat-raised-button
+        color="accent"
+        type="button"
+        (click)="onReset()"
+        data-cy="reset-button"
+      >
+        Reset
+      </button>
+    </div>
+  </form>
+</div>

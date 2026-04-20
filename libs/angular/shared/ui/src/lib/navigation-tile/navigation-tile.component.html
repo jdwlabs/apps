@@ -1,0 +1,7 @@
+<mat-card [routerLink]="link" class="tile" data-cy="tile">
+  <h3 class="header" data-cy="title">{{ title }}</h3>
+  <div class="body" data-cy="message">{{ description }}</div>
+  <div class="footer" data-cy="extra">
+    <ng-content></ng-content>
+  </div>
+</mat-card>

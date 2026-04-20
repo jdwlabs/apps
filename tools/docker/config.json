@@ -23,6 +23,16 @@
       "icon": "groups",
       "title": "Users",
       "description": "This contains viewing users and managing profiles functionality"
+    },
+    {
+      "name": "rolesui",
+      "path": "roles",
+      "remoteName": "rolesui",
+      "moduleName": "./Routes",
+      "url": "http://localhost:4203",
+      "icon": "lock",
+      "title": "Roles",
+      "description": "This contains viewing and managing roles functionality"
     }
   ]
 }

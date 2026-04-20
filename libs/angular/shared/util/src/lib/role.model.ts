@@ -16,3 +16,13 @@ export type UserRole = {
   createdByUserId: number;
   createdTime: string;
 };
+
+export type AddRole = {
+  name: string;
+  description: string;
+};
+
+export type EditRole = {
+  name: string;
+  description: string;
+};

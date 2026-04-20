@@ -1,0 +1,102 @@
+<div class="address-container">
+  <h1 data-cy="title">{{ type }} Address</h1>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="address-form">
+    <mat-form-field appearance="outline" data-cy="address-line-1-field">
+      <mat-label data-cy="address-line-1-label">Address Line 1</mat-label>
+      <input
+        formControlName="addressLine1"
+        matInput
+        placeholder="Enter your address line 1"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('addressLine1')?.invalid">
+        {{ getErrorMessage('addressLine1') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="address-line-2-field">
+      <mat-label data-cy="address-line-2-label">Address Line 2</mat-label>
+      <input
+        formControlName="addressLine2"
+        matInput
+        placeholder="Enter your address line 2"
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('addressLine2')?.invalid">
+        {{ getErrorMessage('addressLine2') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="city-field">
+      <mat-label data-cy="city-label">City</mat-label>
+      <input
+        formControlName="city"
+        matInput
+        placeholder="Enter your city"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('city')?.invalid">
+        {{ getErrorMessage('city') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="state-province-field">
+      <mat-label data-cy="state-province-label">State / Province</mat-label>
+      <input
+        formControlName="stateProvince"
+        matInput
+        placeholder="Enter your state / province"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('stateProvince')?.invalid">
+        {{ getErrorMessage('stateProvince') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="postal-code-field">
+      <mat-label data-cy="postal-code-label">Postal Code</mat-label>
+      <input
+        formControlName="postalCode"
+        matInput
+        placeholder="Enter your postal code"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('postalCode')?.invalid">
+        {{ getErrorMessage('postalCode') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="country-field">
+      <mat-label data-cy="country-label">Country</mat-label>
+      <input
+        formControlName="country"
+        matInput
+        placeholder="Enter your country"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('country')?.invalid">
+        {{ getErrorMessage('country') }}
+      </mat-error>
+    </mat-form-field>
+    <div class="button-container">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid"
+        data-cy="submit-button"
+      >
+        Submit
+      </button>
+      <button
+        mat-raised-button
+        color="accent"
+        type="button"
+        (click)="onReset()"
+        data-cy="reset-button"
+      >
+        Reset
+      </button>
+    </div>
+  </form>
+</div>

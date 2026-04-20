@@ -13,11 +13,6 @@ import {
   ENVIRONMENT,
   NavigationItem,
 } from '@jdw/angular-shared-util';
-import {
-  MatChip,
-  MatChipListbox,
-  MatChipOption,
-} from '@angular/material/chips';
 import { MatButton } from '@angular/material/button';
 import {
   MicroFrontendService,
@@ -26,16 +21,12 @@ import {
 
 @Component({
   selector: 'jdw-main',
-  standalone: true,
   imports: [
     CommonModule,
     HeaderComponent,
     NavigationLayoutComponent,
     RouterOutlet,
-    MatChip,
     MatButton,
-    MatChipListbox,
-    MatChipOption,
   ],
   templateUrl: './main.component.html',
   styleUrl: './main.component.scss',

@@ -5,7 +5,7 @@ export type Variant = {
   display: string;
   value: AlertVariants;
 };
-export type Icon = {
+export type AlertIcon = {
   display: string;
   value: string;
 };
