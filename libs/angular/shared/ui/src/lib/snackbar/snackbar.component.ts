@@ -9,7 +9,6 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'jdw-snackbar',
-  standalone: true,
   imports: [CommonModule, MatIconModule, MatButtonModule],
   templateUrl: './snackbar.component.html',
   styleUrl: './snackbar.component.scss',

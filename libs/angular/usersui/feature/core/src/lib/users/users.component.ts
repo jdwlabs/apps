@@ -5,19 +5,20 @@ import { ColDef, GridOptions } from 'ag-grid-community';
 import {
   dateFilterComparator,
   dateSortComparator,
-  User,
 } from '@jdw/angular-usersui-util';
-import { UsersService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
+import { UsersActionsButtonCellRendererComponent } from '../users-actions-button-cell-renderer/users-actions-button-cell-renderer.component';
+import { User } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-users',
-  standalone: true,
   imports: [CommonModule, AgGridAngular, AgGridModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
 })
 export class UsersComponent implements OnInit {
   private usersService: UsersService = inject(UsersService);
+  loading = true;
   users: User[] = [];
 
   colDefs: ColDef[] = [
@@ -54,6 +55,16 @@ export class UsersComponent implements OnInit {
       comparator: dateSortComparator,
       cellDataType: 'text',
     },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      cellRenderer: UsersActionsButtonCellRendererComponent,
+      maxWidth: 172,
+      minWidth: 172,
+      resizable: false,
+      filter: false,
+      sortable: false,
+    },
   ];
 
   defaultColDef: ColDef = {
@@ -70,6 +81,7 @@ export class UsersComponent implements OnInit {
   };
 
   gridOptions: GridOptions = {
+    loading: this.loading,
     columnDefs: this.colDefs,
     defaultColDef: this.defaultColDef,
     pagination: true,
@@ -84,12 +96,14 @@ export class UsersComponent implements OnInit {
     autoSizeStrategy: {
       type: 'fitCellContents',
     },
+    suppressColumnVirtualisation: true,
   };
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.usersService.getUsers().subscribe({
       next: (response) => {
         this.users = response;
+        this.loading = false;
       },
     });
   }

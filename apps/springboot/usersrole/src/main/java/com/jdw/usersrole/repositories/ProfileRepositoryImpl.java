@@ -91,9 +91,13 @@ public class ProfileRepositoryImpl implements ProfileRepository {
     public Profile saveAddress(Address address) {
         if (address == null) {
             return null;
+        } else if (address.id() == null) {
+            log.debug("Saving new address: {}", address);
+            addressDao.create(address);
+        } else {
+            log.debug("Updating address: {}", address);
+            addressDao.update(address);
         }
-        log.debug("Saving address with id: {}", address.profileId());
-        addressDao.create(address);
         return getProfile(profileDao.findById(address.profileId())).orElse(null);
     }
 

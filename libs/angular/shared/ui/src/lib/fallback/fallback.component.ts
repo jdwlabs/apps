@@ -6,7 +6,6 @@ import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'jdw-fallback',
-  standalone: true,
   imports: [CommonModule, MatButton, MatIcon, RouterLink],
   templateUrl: './fallback.component.html',
   styleUrl: './fallback.component.scss',

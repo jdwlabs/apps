@@ -2,6 +2,79 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.1](https://github.com/jdwillmsen/jdw/compare/container-1.3.0...container-1.3.1) (2025-05-27)
+
+## [1.3.0](https://github.com/jdwillmsen/jdw/compare/container-1.2.0...container-1.3.0) (2025-04-10)
+
+
+### Features
+
+* **container:** update build-image task ([014871c](https://github.com/jdwillmsen/jdw/commit/014871c99fb705650a38ea24f4e329fc0a504bd9))
+
+## [1.2.0](https://github.com/jdwillmsen/jdw/compare/container-1.1.7...container-1.2.0) (2025-04-10)
+
+
+### Features
+
+* **container:** update start nginx script ([0efddfe](https://github.com/jdwillmsen/jdw/commit/0efddfe496dace200cc56621b099d3fb7215caa7))
+
+## [1.1.7](https://github.com/jdwillmsen/jdw/compare/container-1.1.6...container-1.1.7) (2025-04-10)
+
+## [1.1.6](https://github.com/jdwillmsen/jdw/compare/container-1.1.5...container-1.1.6) (2025-04-07)
+
+## [1.1.5](https://github.com/jdwillmsen/jdw/compare/container-1.1.4...container-1.1.5) (2025-04-07)
+
+
+### Bug Fixes
+
+* **container:** update Dockerfile setup for build-image targets ([5db5185](https://github.com/jdwillmsen/jdw/commit/5db518577f5b734de25f6b83ed8ffd24503dba5a))
+
+## [1.1.4](https://github.com/jdwillmsen/jdw/compare/container-1.1.3...container-1.1.4) (2025-04-07)
+
+
+### Performance Improvements
+
+* **container:** update Dockerfile setup for build-image targets ([4476d8c](https://github.com/jdwillmsen/jdw/commit/4476d8ca0e4f0a10ddca8bed937d9b6fe310f9ff))
+
+## [1.1.3](https://github.com/jdwillmsen/jdw/compare/container-1.1.2...container-1.1.3) (2025-04-01)
+
+
+### Bug Fixes
+
+* **container:** add dialog open fix ([19bb154](https://github.com/jdwillmsen/jdw/commit/19bb1544adf4f35905a66c6a491b52221c70edd4))
+
+## [1.1.2](https://github.com/jdwillmsen/jdw/compare/container-1.1.1...container-1.1.2) (2025-03-30)
+
+## [1.1.1](https://github.com/jdwillmsen/jdw/compare/container-1.1.0...container-1.1.1) (2025-03-30)
+
+## [1.1.0](https://github.com/jdwillmsen/jdw/compare/container-1.0.2...container-1.1.0) (2025-03-30)
+
+### Features
+
+- update build-image tasks ([4a7632f](https://github.com/jdwillmsen/jdw/commit/4a7632ffa68ac61493c6f5679cc9826e2e0ac7fa))
+
+## [1.0.2](https://github.com/jdwillmsen/jdw/compare/container-1.0.1...container-1.0.2) (2025-03-30)
+
+## [1.0.2](https://github.com/jdwillmsen/jdw/compare/container-1.0.1...container-1.0.2) (2025-03-25)
+
+## [1.0.1](https://github.com/jdwillmsen/jdw/compare/container-1.0.0...container-1.0.1) (2025-02-19)
+
+## [1.0.0](https://github.com/jdwillmsen/jdw/compare/container-0.13.2...container-1.0.0) (2025-01-30)
+
+### ⚠ BREAKING CHANGES
+
+- Angular v19 plus the latest version for all reliant npm packages
+
+### Features
+
+- **container:** add dashboard component routing ([856890c](https://github.com/jdwillmsen/jdw/commit/856890c4ecb32ff122ad4b881e6c3dd438bbb32b))
+
+### Miscellaneous Chores
+
+- update to nx v20.2.0 ([2417d51](https://github.com/jdwillmsen/jdw/commit/2417d51babf7809e49c778b740b6b2c8a815a226))
+
+## [0.13.2](https://github.com/jdwillmsen/jdw/compare/container-0.13.1...container-0.13.2) (2024-11-26)
+
 ## [0.13.1](https://github.com/jdwillmsen/jdw/compare/container-0.13.0...container-0.13.1) (2024-10-29)
 
 ## [0.13.0](https://github.com/jdwillmsen/jdw/compare/container-0.12.1...container-0.13.0) (2024-10-28)

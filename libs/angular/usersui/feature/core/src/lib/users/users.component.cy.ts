@@ -4,17 +4,24 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/angular-shared-util';
 import { of } from 'rxjs';
-import { UsersService } from '@jdw/angular-usersui-data-access';
+import { UsersService } from '@jdw/angular-shared-data-access';
+import { ActivatedRoute } from '@angular/router';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 describe(UsersComponent.name, () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         {
           provide: ENVIRONMENT,
           useValue: {},
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: ActivatedRoute,
         },
         {
           provide: UsersService,
@@ -71,8 +78,11 @@ describe(UsersComponent.name, () => {
 });
 
 function testScreenSize(size: string, width: number, height: number) {
-  it(`should be setup properly on ${size} screen size`, () => {
+  beforeEach(() => {
     cy.viewport(width, height);
+  });
+
+  it(`should be setup properly on ${size} screen size`, () => {
     cy.mount(UsersComponent);
     cy.getByCy('title').should('be.visible').and('contain.text', 'Users');
     cy.getByCy('grid').should('be.visible');
@@ -119,6 +129,21 @@ function testScreenSize(size: string, width: number, height: number) {
         .and('contain.text', 'Modified Time');
       cy.contains('2024-08-09T10:02:34.567+00:00');
       cy.contains('2024-08-09T12:02:34.567+00:00');
+      cy.get('.ag-header-row > [col-id="actions"]')
+        .scrollIntoView()
+        .should('be.visible')
+        .and('contain.text', 'Actions');
+    }
+  });
+
+  it(`should open the delete confirmation modal when clicking delete button on ${size} screen size`, () => {
+    cy.mount(UsersComponent);
+
+    if (width > 600) {
+      cy.getByCy('delete-button').first().scrollIntoView().click();
+
+      cy.getByCy('close-button').should('be.visible');
+      cy.getByCy('action-button').click();
     }
   });
 }

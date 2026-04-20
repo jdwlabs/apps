@@ -1,0 +1,89 @@
+<div class="profile-container">
+  <h1 data-cy="title">{{ type }} Profile</h1>
+  <form [formGroup]="form" class="profile-form" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" data-cy="first-name-field">
+      <mat-label data-cy="first-name-label">First Name</mat-label>
+      <input
+        formControlName="firstName"
+        matInput
+        placeholder="Enter your first name"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('firstName')?.invalid">
+        {{ getErrorMessage('firstName') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="middle-name-field">
+      <mat-label data-cy="middle-name-label">Middle Name</mat-label>
+      <input
+        formControlName="middleName"
+        matInput
+        placeholder="Enter your middle name"
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('middleName')?.invalid">
+        {{ getErrorMessage('middleName') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="last-name-field">
+      <mat-label data-cy="last-name-label">Last Name</mat-label>
+      <input
+        formControlName="lastName"
+        matInput
+        placeholder="Enter your last name"
+        required
+        type="text"
+      />
+      <mat-error *ngIf="this.form.get('lastName')?.invalid">
+        {{ getErrorMessage('lastName') }}
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" data-cy="birthdate-field">
+      <mat-label data-cy="birthdate-label">Birthdate</mat-label>
+      <input
+        formControlName="birthdate"
+        matInput
+        placeholder="Enter your birthdate"
+        required
+        [max]="maxDate"
+        [matDatepicker]="picker"
+      />
+      <mat-hint data-cy="birthdate-hint">YYYY/MM/DD</mat-hint>
+      <mat-datepicker-toggle
+        data-cy="birthdate-toggle"
+        matIconSuffix
+        [for]="picker"
+      ></mat-datepicker-toggle>
+      <mat-datepicker
+        [startAt]="startDate"
+        [startView]="'multi-year'"
+        data-cy="birthdate-datepicker"
+        #picker
+      ></mat-datepicker>
+      <mat-error *ngIf="this.form.get('birthdate')?.invalid">
+        {{ getErrorMessage('birthdate') }}
+      </mat-error>
+    </mat-form-field>
+    <div class="button-container">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid"
+        data-cy="submit-button"
+      >
+        Submit
+      </button>
+      <button
+        mat-raised-button
+        color="accent"
+        type="button"
+        (click)="onReset()"
+        data-cy="reset-button"
+      >
+        Reset
+      </button>
+    </div>
+  </form>
+</div>
