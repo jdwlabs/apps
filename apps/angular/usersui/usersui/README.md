@@ -1,9 +1,9 @@
 # UsersUI
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
-![Docker Image Version](https://img.shields.io/docker/v/jdwillmsen/jdw-usersui)
-![Docker Image Size](https://img.shields.io/docker/image-size/jdwillmsen/jdw-usersui)
-![Docker Downloads](https://img.shields.io/docker/pulls/jdwillmsen/jdw-usersui?label=downloads)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
+![Docker Image Version](https://img.shields.io/docker/v/jdwlabs/usersui)
+![Docker Image Size](https://img.shields.io/docker/image-size/jdwlabs/usersui)
+![Docker Downloads](https://img.shields.io/docker/pulls/jdwlabs/usersui?label=downloads)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **UsersUI** is an Angular-based micro frontend application for managing users within the JDW Platform. It supports

@@ -1,9 +1,9 @@
 # AuthDB
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
-![Docker Image Version](https://img.shields.io/docker/v/jdwillmsen/jdw-authdb)
-![Docker Image Size](https://img.shields.io/docker/image-size/jdwillmsen/jdw-authdb)
-![Docker Downloads](https://img.shields.io/docker/pulls/jdwillmsen/jdw-authdb?label=downloads)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
+![Docker Image Version](https://img.shields.io/docker/v/jdwlabs/authdb)
+![Docker Image Size](https://img.shields.io/docker/image-size/jdwlabs/authdb)
+![Docker Downloads](https://img.shields.io/docker/pulls/jdwlabs/authdb?label=downloads)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **AuthDB** is the PostgreSQL database service for authentication and authorization in the JDW Platform. It provides the

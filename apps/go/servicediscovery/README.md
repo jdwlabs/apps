@@ -1,9 +1,9 @@
 # ServiceDiscovery
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
-![Docker Image Version](https://img.shields.io/docker/v/jdwillmsen/jdw-servicediscovery)
-![Docker Image Size](https://img.shields.io/docker/image-size/jdwillmsen/jdw-servicediscovery)
-![Docker Downloads](https://img.shields.io/docker/pulls/jdwillmsen/jdw-servicediscovery?label=downloads)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
+![Docker Image Version](https://img.shields.io/docker/v/jdwlabs/servicediscovery)
+![Docker Image Size](https://img.shields.io/docker/image-size/jdwlabs/servicediscovery)
+![Docker Downloads](https://img.shields.io/docker/pulls/jdwlabs/servicediscovery?label=downloads)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **ServiceDiscovery** is a Go-based microservice that manages and serves metadata for dynamically loaded micro frontends

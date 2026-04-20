@@ -174,7 +174,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-usersui:latest -t jdwillmsen/jdw-usersui:{version} --push .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/usersui:latest -t jdwlabs/usersui:{version} --push .",
             "forwardAllArgs": false
           },
           {
@@ -191,7 +191,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwillmsen/jdw-usersui:latest --load .",
+            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwlabs/usersui:latest --load .",
             "forwardAllArgs": false
           },
           {
@@ -213,7 +213,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 4202:80 jdwillmsen/jdw-usersui:latest",
+            "command": "docker run --rm -p 4202:80 jdwlabs/usersui:latest",
             "forwardAllArgs": false
           }
         ],

@@ -1,6 +1,6 @@
 # Angular AuthUI Feature Core
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **Angular AuthUI Feature Core** is a library containing shared features for the AuthUI component set in the JDW Platform. This library includes common UI components such as `SignIn`, `SignUp`, `Forbidden`, and `EmailSignIn`, designed for the authentication flows of the platform.

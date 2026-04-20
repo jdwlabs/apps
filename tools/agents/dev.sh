@@ -5,8 +5,8 @@ set -euo pipefail
 # Get the directory where this script is located
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
-IMAGE_NAME="jdwillmsen/jdw-agents"
-CONTAINER_NAME="jdw-agents-dev"
+IMAGE_NAME="jdwlabs/agents"
+CONTAINER_NAME="jdwlabs-agents-dev"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
 
 VERSION=$(cat "$VERSION_FILE" 2>/dev/null || echo "dev")
@@ -18,7 +18,7 @@ case "${1:-}" in
     echo "🔨 Building local image with buildx: $IMAGE_NAME:$VERSION"
     docker buildx build "$SCRIPT_DIR" \
       --platform linux/amd64 \
-      --label org.opencontainers.image.source="https://github.com/jdwillmsen/jdw" \
+      --label org.opencontainers.image.source="https://github.com/jdwlabs/apps" \
       --label org.opencontainers.image.version="$VERSION" \
       --label org.opencontainers.image.revision="$GIT_COMMIT" \
       --label org.opencontainers.image.created="$BUILD_DATE" \

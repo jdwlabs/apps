@@ -1,6 +1,6 @@
 # Angular Container Feature Core
 
-![Build](https://img.shields.io/github/actions/workflow/status/jdwillmsen/jdw/ci.yml?branch=main)
+![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 **Angular Container Feature Core** is a component library providing shared UI elements for the container module in the JDW Platform. This library includes key components like `Dashboard` and `Main`, and supports both unit and Cypress component testing.

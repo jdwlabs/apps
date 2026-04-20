@@ -4,8 +4,8 @@ set -euo pipefail
 
 # === CONFIG ===
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # Get the script's directory
-DOCKERHUB_IMAGE="jdwillmsen/jdw-agents"
-GHCR_IMAGE="ghcr.io/jdwillmsen/jdw-agents"
+DOCKERHUB_IMAGE="jdwlabs/agents"
+GHCR_IMAGE="ghcr.io/jdwlabs/agents"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
 README_FILE="$SCRIPT_DIR/README.md"
 
@@ -66,7 +66,7 @@ echo "  - $GHCR_IMAGE:$VERSION"
 docker buildx build . \
   -f "$SCRIPT_DIR/Dockerfile" \
   --platform linux/amd64 \
-  --label org.opencontainers.image.source="https://github.com/jdwillmsen/jdw" \
+  --label org.opencontainers.image.source="https://github.com/jdwlabs/apps" \
   --label org.opencontainers.image.version="$VERSION" \
   --label org.opencontainers.image.revision="$GIT_COMMIT" \
   --label org.opencontainers.image.created="$BUILD_DATE" \
