@@ -16,7 +16,7 @@ env:
 
 jobs:
   main:
-    runs-on: ubuntu
+    runs-on: ubuntu-jdwlabs
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
