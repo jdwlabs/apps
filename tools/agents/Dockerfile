@@ -1,4 +1,4 @@
-FROM ghcr.io/actions/actions-runner:2.323.0@sha256:831a2607a2618e4b79d9323b4c72330f3861768a061c2b92a845e9d214d80e5b
+FROM ghcr.io/actions/actions-runner:2.334.0@sha256:df9d5f8cee1bfa8879058a7fae811b1e54df81ddb9b66fc8f979d9be98b8e82c
 
 # Update package list and install required dependencies
 USER root
@@ -13,7 +13,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* && \
 RUN curl -fsSL https://cdn.azul.com/zulu/bin/zulu21.36.17-ca-jdk21.0.4-linux_x64.tar.gz -o zulu-jdk.tar.gz \
     && sha256sum zulu-jdk.tar.gz \
     && mkdir -p /usr/local/zulu-21 \
-    && tar -xzvf zulu-jdk.tar.gz --strip-components=1 -C /usr/local/zulu-21 \
+    && tar -xzf zulu-jdk.tar.gz --strip-components=1 -C /usr/local/zulu-21 \
     && rm zulu-jdk.tar.gz
 
 # Install Node.js 22 and npm
