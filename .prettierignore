@@ -4,3 +4,4 @@
 .angular
 tsconfig.base.json
 /.nx/workspace-data
+.nx/self-healing
