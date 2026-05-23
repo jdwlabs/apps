@@ -3,8 +3,8 @@
   "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/angular/container/feature/core/src",
   "prefix": "jdw",
-  "tags": ["type:feature", "scope:container", "framework:angular"],
   "projectType": "library",
+  "tags": ["type:feature", "scope:container", "framework:angular"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",
