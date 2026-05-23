@@ -10,8 +10,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "libs/angular/authui/feature/core/jest.config.ts",
-        "tsConfig": "libs/angular/authui/feature/core/tsconfig.spec.json"
+        "jestConfig": "libs/angular/authui/feature/core/jest.config.ts"
       }
     },
     "lint": {
