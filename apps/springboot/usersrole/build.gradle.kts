@@ -7,7 +7,7 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.5"
 	id("maven-publish")
 	id("com.google.cloud.tools.jib") version "3.4.5"
-	`project-report`
+	id("dev.nx.gradle.project-graph") version "0.1.8"
 }
 
 group = "com.jdw"
