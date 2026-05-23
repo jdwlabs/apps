@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -15,13 +18,20 @@
       "!{projectRoot}/**/*.cy.[jt]s?(x)",
       "!{projectRoot}/cypress.config.[jt]s"
     ],
-    "sharedGlobals": ["{workspaceRoot}/go.work"]
+    "sharedGlobals": [
+      "{workspaceRoot}/go.work"
+    ]
   },
   "targetDefaults": {
     "@angular-devkit/build-angular:browser": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     },
     "@nx/eslint:lint": {
       "cache": true,
@@ -34,7 +44,11 @@
     },
     "@nx/jest:jest": {
       "cache": true,
-      "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js"],
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/jest.preset.js"
+      ],
       "options": {
         "passWithNoTests": true
       },
@@ -47,7 +61,10 @@
     },
     "e2e": {
       "cache": true,
-      "inputs": ["default", "^production"]
+      "inputs": [
+        "default",
+        "^production"
+      ]
     },
     "@nx/angular:webpack-browser": {
       "inputs": [
@@ -58,24 +75,38 @@
           "env": "NX_MF_DEV_REMOTES"
         }
       ],
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": true
     },
     "@nx/angular:package": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     },
     "@nx/js:tsc": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     },
     "install": {
       "cache": true
     },
     "e2e-ci--**/*": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "@nx-go/nx-go:build": {
       "cache": true
@@ -87,10 +118,16 @@
       "cache": true
     },
     "build-image": {
-      "dependsOn": ["build", "^build"]
+      "dependsOn": [
+        "build",
+        "^build"
+      ]
     },
     "local-build-image": {
-      "dependsOn": ["build", "^build"]
+      "dependsOn": [
+        "build",
+        "^build"
+      ]
     }
   },
   "generators": {
@@ -175,8 +212,10 @@
       }
     },
     {
-      "plugin": "@nx/gradle",
-      "include": ["apps/springboot/**/*"],
+      "plugin": "@nx/gradle/plugin-v1",
+      "include": [
+        "apps/springboot/**/*"
+      ],
       "options": {
         "testTargetName": "test",
         "buildTargetName": "build"
