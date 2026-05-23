@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import {
   FormControl,
@@ -24,14 +24,13 @@ import { dateFormats } from '@jdw/angular-usersui-util';
 @Component({
   selector: 'lib-profile',
   imports: [
-    CommonModule,
     MatFormField,
     MatLabel,
     ReactiveFormsModule,
     MatInputModule,
     MatDatepickerModule,
-    MatButtonModule,
-  ],
+    MatButtonModule
+],
   providers: [
     {
       provide: DateAdapter,
