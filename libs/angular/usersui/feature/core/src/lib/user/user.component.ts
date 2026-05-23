@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { User } from '@jdw/angular-shared-util';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
@@ -22,7 +22,6 @@ import { ConfirmationDialogComponent } from '@jdw/angular-shared-ui';
 @Component({
   selector: 'lib-user',
   imports: [
-    CommonModule,
     MatFormField,
     ReactiveFormsModule,
     MatInput,
@@ -30,8 +29,8 @@ import { ConfirmationDialogComponent } from '@jdw/angular-shared-ui';
     MatChip,
     MatChipSet,
     MatButton,
-    MatIcon,
-  ],
+    MatIcon
+],
   templateUrl: './user.component.html',
   styleUrl: './user.component.scss',
   standalone: true,

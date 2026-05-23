@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { RolesService } from '@jdw/angular-shared-data-access';
@@ -13,15 +13,14 @@ import { MatLabel } from '@angular/material/form-field';
 
 @Component({
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButton,
     MatLabel,
     MatIcon,
     MatFormField,
     MatInput,
-    MatFormField,
-  ],
+    MatFormField
+],
   selector: 'lib-role',
   styleUrl: './role.component.scss',
   templateUrl: './role.component.html',

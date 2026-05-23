@@ -5,7 +5,7 @@
       appearance="outline"
       class="name-field"
       data-cy="name-field"
-    >
+      >
       <mat-label>Enter the name</mat-label>
       <input
         formControlName="name"
@@ -13,17 +13,19 @@
         placeholder="Name"
         required
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('name')?.invalid">
-        {{ getErrorMessage('name') }}
-      </mat-error>
+        />
+      @if (this.form.get('name')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('name') }}
+        </mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field
       appearance="outline"
       class="description-field"
       data-cy="description-field"
-    >
+      >
       <mat-label>Enter the description</mat-label>
       <input
         formControlName="description"
@@ -31,10 +33,12 @@
         placeholder="Description"
         required
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('description')?.invalid">
-        {{ getErrorMessage('description') }}
-      </mat-error>
+        />
+      @if (this.form.get('description')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('description') }}
+        </mat-error>
+      }
     </mat-form-field>
     <div class="button-container">
       <button
@@ -43,7 +47,7 @@
         type="submit"
         [disabled]="form.invalid"
         data-cy="submit-button"
-      >
+        >
         Submit
       </button>
       <button
@@ -52,7 +56,7 @@
         type="button"
         (click)="onReset()"
         data-cy="reset-button"
-      >
+        >
         Reset
       </button>
     </div>

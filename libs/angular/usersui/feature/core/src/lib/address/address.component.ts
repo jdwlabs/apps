@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormControl,
   FormGroup,
@@ -16,14 +16,13 @@ import { MatInput } from '@angular/material/input';
 @Component({
   selector: 'lib-address',
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButton,
     MatError,
     MatFormField,
     MatLabel,
-    MatInput,
-  ],
+    MatInput
+],
   templateUrl: './address.component.html',
   styleUrl: './address.component.scss',
 })
