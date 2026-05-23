@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatIconButton } from '@angular/material/button';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
@@ -13,7 +13,7 @@ import { User } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-actions-button-cell-renderer',
-  imports: [CommonModule, MatIconButton, MatTooltip, MatIcon],
+  imports: [MatIconButton, MatTooltip, MatIcon],
   templateUrl: './users-actions-button-cell-renderer.component.html',
   styleUrl: './users-actions-button-cell-renderer.component.scss',
 })

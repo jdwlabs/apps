@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormControl,
   FormGroup,
@@ -21,12 +21,11 @@ import {
 @Component({
   selector: 'lib-email-sign-in',
   imports: [
-    CommonModule,
     MatButtonModule,
     MatInputModule,
     MatIconModule,
-    ReactiveFormsModule,
-  ],
+    ReactiveFormsModule
+],
   templateUrl: './email-sign-in.component.html',
   styleUrl: './email-sign-in.component.scss',
 })

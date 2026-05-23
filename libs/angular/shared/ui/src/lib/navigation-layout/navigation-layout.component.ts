@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -11,14 +11,13 @@ import { NavigationItem } from '@jdw/angular-shared-util';
 @Component({
   selector: 'jdw-navigation-layout',
   imports: [
-    CommonModule,
     MatSidenavModule,
     MatListModule,
     MatTooltipModule,
     MatButtonModule,
     MatIconModule,
-    NavigationItemComponent,
-  ],
+    NavigationItemComponent
+],
   templateUrl: './navigation-layout.component.html',
   styleUrl: './navigation-layout.component.scss',
 })

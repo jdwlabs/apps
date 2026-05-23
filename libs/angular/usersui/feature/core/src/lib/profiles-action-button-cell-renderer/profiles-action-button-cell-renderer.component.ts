@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ICellRendererParams } from 'ag-grid-community';
@@ -12,7 +12,7 @@ import { ProfileDialogComponent } from '../profile-dialog/profile-dialog.compone
 
 @Component({
   selector: 'lib-profiles-action-button-cell-renderer',
-  imports: [CommonModule, MatIcon, MatIconButton, MatTooltip],
+  imports: [MatIcon, MatIconButton, MatTooltip],
   templateUrl: './profiles-action-button-cell-renderer.component.html',
   styleUrl: './profiles-action-button-cell-renderer.component.scss',
 })

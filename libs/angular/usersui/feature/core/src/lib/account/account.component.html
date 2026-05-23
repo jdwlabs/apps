@@ -5,7 +5,7 @@
       appearance="outline"
       class="email-field"
       data-cy="email-address-field"
-    >
+      >
       <mat-label>Enter your email</mat-label>
       <input
         formControlName="email"
@@ -13,10 +13,12 @@
         placeholder="Email Address"
         required
         type="email"
-      />
-      <mat-error *ngIf="this.form.get('email')?.invalid">
-        {{ getErrorMessage('email') }}
-      </mat-error>
+        />
+      @if (this.form.get('email')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('email') }}
+        </mat-error>
+      }
     </mat-form-field>
     <ng-container formGroupName="matchingPassword">
       <mat-form-field
@@ -30,7 +32,7 @@
         appearance="outline"
         class="password-field"
         data-cy="password-field"
-      >
+        >
         <mat-label>Enter your password</mat-label>
         <input
           [type]="hide ? 'password' : 'text'"
@@ -38,7 +40,7 @@
           matInput
           placeholder="Password"
           required
-        />
+          />
         <button
           (click)="hide = !hide"
           [attr.aria-label]="'Hide password'"
@@ -47,14 +49,15 @@
           mat-icon-button
           matSuffix
           type="button"
-        >
+          >
           <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
-        <mat-error
-          *ngIf="this.form.get('matchingPassword')?.get('password')?.invalid"
-        >
-          {{ getPasswordErrorMessage('password') }}
-        </mat-error>
+        @if (this.form.get('matchingPassword')?.get('password')?.invalid) {
+          <mat-error
+            >
+            {{ getPasswordErrorMessage('password') }}
+          </mat-error>
+        }
       </mat-form-field>
       <mat-form-field
         [subscriptSizing]="
@@ -67,7 +70,7 @@
         appearance="outline"
         class="confirm-password-field"
         data-cy="confirm-password-field"
-      >
+        >
         <mat-label>Enter your confirm password</mat-label>
         <input
           [type]="hide ? 'password' : 'text'"
@@ -75,7 +78,7 @@
           matInput
           placeholder="Confirm Password"
           required
-        />
+          />
         <button
           (click)="hide = !hide"
           [attr.aria-label]="'Hide password'"
@@ -84,30 +87,32 @@
           mat-icon-button
           matSuffix
           type="button"
-        >
+          >
           <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
-        <mat-error
-          *ngIf="
-            this.form.get('matchingPassword')?.get('confirmPassword')?.invalid
-          "
-        >
-          {{ getPasswordErrorMessage('confirmPassword') }}
-        </mat-error>
+        @if (
+          this.form.get('matchingPassword')?.get('confirmPassword')?.invalid
+          ) {
+          <mat-error
+            >
+            {{ getPasswordErrorMessage('confirmPassword') }}
+          </mat-error>
+        }
       </mat-form-field>
-      <mat-error
-        *ngIf="
-          this.form.get('matchingPassword')?.invalid &&
-          (this.form.get('matchingPassword')?.get('confirmPassword')?.dirty ||
-            this.form.get('matchingPassword')?.get('confirmPassword')
-              ?.touched) &&
-          getErrorMessage('matchingPassword') !== ''
-        "
-        class="match-password"
-        data-cy="matching-password-error"
-      >
-        {{ getErrorMessage('matchingPassword') }}
-      </mat-error>
+      @if (
+        this.form.get('matchingPassword')?.invalid &&
+        (this.form.get('matchingPassword')?.get('confirmPassword')?.dirty ||
+        this.form.get('matchingPassword')?.get('confirmPassword')
+        ?.touched) &&
+        getErrorMessage('matchingPassword') !== ''
+        ) {
+        <mat-error
+          class="match-password"
+          data-cy="matching-password-error"
+          >
+          {{ getErrorMessage('matchingPassword') }}
+        </mat-error>
+      }
     </ng-container>
     <div class="button-container">
       <button
@@ -116,7 +121,7 @@
         type="submit"
         [disabled]="form.invalid"
         data-cy="submit-button"
-      >
+        >
         Submit
       </button>
       <button
@@ -125,7 +130,7 @@
         type="button"
         (click)="onReset()"
         data-cy="reset-button"
-      >
+        >
         Reset
       </button>
     </div>

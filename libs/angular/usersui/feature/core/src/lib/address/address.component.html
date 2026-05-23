@@ -9,10 +9,12 @@
         placeholder="Enter your address line 1"
         required
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('addressLine1')?.invalid">
-        {{ getErrorMessage('addressLine1') }}
-      </mat-error>
+        />
+      @if (this.form.get('addressLine1')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('addressLine1') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="address-line-2-field">
       <mat-label data-cy="address-line-2-label">Address Line 2</mat-label>
@@ -21,10 +23,12 @@
         matInput
         placeholder="Enter your address line 2"
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('addressLine2')?.invalid">
-        {{ getErrorMessage('addressLine2') }}
-      </mat-error>
+        />
+      @if (this.form.get('addressLine2')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('addressLine2') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="city-field">
       <mat-label data-cy="city-label">City</mat-label>
@@ -34,10 +38,12 @@
         placeholder="Enter your city"
         required
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('city')?.invalid">
-        {{ getErrorMessage('city') }}
-      </mat-error>
+        />
+      @if (this.form.get('city')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('city') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="state-province-field">
       <mat-label data-cy="state-province-label">State / Province</mat-label>
@@ -47,10 +53,12 @@
         placeholder="Enter your state / province"
         required
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('stateProvince')?.invalid">
-        {{ getErrorMessage('stateProvince') }}
-      </mat-error>
+        />
+      @if (this.form.get('stateProvince')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('stateProvince') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="postal-code-field">
       <mat-label data-cy="postal-code-label">Postal Code</mat-label>
@@ -60,10 +68,12 @@
         placeholder="Enter your postal code"
         required
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('postalCode')?.invalid">
-        {{ getErrorMessage('postalCode') }}
-      </mat-error>
+        />
+      @if (this.form.get('postalCode')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('postalCode') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="country-field">
       <mat-label data-cy="country-label">Country</mat-label>
@@ -73,10 +83,12 @@
         placeholder="Enter your country"
         required
         type="text"
-      />
-      <mat-error *ngIf="this.form.get('country')?.invalid">
-        {{ getErrorMessage('country') }}
-      </mat-error>
+        />
+      @if (this.form.get('country')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('country') }}
+        </mat-error>
+      }
     </mat-form-field>
     <div class="button-container">
       <button
@@ -85,7 +97,7 @@
         type="submit"
         [disabled]="form.invalid"
         data-cy="submit-button"
-      >
+        >
         Submit
       </button>
       <button
@@ -94,7 +106,7 @@
         type="button"
         (click)="onReset()"
         data-cy="reset-button"
-      >
+        >
         Reset
       </button>
     </div>

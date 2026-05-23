@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { NavigationTile } from '@jdw/angular-shared-util';
 import { NavigationTileComponent } from '@jdw/angular-shared-ui';
 import { CookieService } from 'ngx-cookie-service';
@@ -7,7 +7,7 @@ import { jwtDecode, JwtPayload } from 'jwt-decode';
 
 @Component({
   selector: 'lib-dashboard',
-  imports: [CommonModule, NavigationTileComponent],
+  imports: [NavigationTileComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

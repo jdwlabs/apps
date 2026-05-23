@@ -7,7 +7,7 @@
         color="warn"
         data-cy="edit-account-button"
         mat-raised-button
-      >
+        >
         <mat-icon data-cy="edit-account-icon">edit</mat-icon>
         Edit Account
       </button>
@@ -16,7 +16,7 @@
         color="error"
         data-cy="delete-account-button"
         mat-raised-button
-      >
+        >
         <mat-icon data-cy="delete-account-icon">delete</mat-icon>
         Delete Account
       </button>
@@ -28,7 +28,7 @@
         formControlName="emailAddress"
         matInput
         readonly
-      />
+        />
     </mat-form-field>
 
     <mat-form-field appearance="fill">
@@ -39,7 +39,7 @@
         matInput
         readonly
         type="password"
-      />
+        />
     </mat-form-field>
 
     <mat-form-field appearance="fill">
@@ -49,16 +49,20 @@
         formControlName="status"
         matInput
         readonly
-      />
+        />
     </mat-form-field>
 
     <h1 data-cy="roles-title">Roles</h1>
     @if (roles && roles.controls.length > 0) {
-      <mat-chip-set *ngIf="roles && roles.controls.length > 0">
-        <mat-chip *ngFor="let role of roles.controls" data-cy="role">
-          {{ role.value }}
-        </mat-chip>
-      </mat-chip-set>
+      @if (roles && roles.controls.length > 0) {
+        <mat-chip-set>
+          @for (role of roles.controls; track role) {
+            <mat-chip data-cy="role">
+              {{ role.value }}
+            </mat-chip>
+          }
+        </mat-chip-set>
+      }
     } @else {
       <div data-cy="role-content">No Roles</div>
     }
@@ -70,7 +74,7 @@
           color="warn"
           data-cy="edit-profile-button"
           mat-raised-button
-        >
+          >
           <mat-icon data-cy="edit-profile-icon">edit</mat-icon>
           Edit Profile
         </button>
@@ -79,7 +83,7 @@
           color="error"
           data-cy="delete-profile-button"
           mat-raised-button
-        >
+          >
           <mat-icon data-cy="delete-profile-icon">delete</mat-icon>
           Delete Profile
         </button>
@@ -89,7 +93,7 @@
           color="success"
           data-cy="add-profile-button"
           mat-raised-button
-        >
+          >
           <mat-icon data-cy="add-profile-icon">add_circle</mat-icon>
           Add Profile
         </button>
@@ -104,7 +108,7 @@
             formControlName="firstName"
             matInput
             readonly
-          />
+            />
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -114,7 +118,7 @@
             formControlName="middleName"
             matInput
             readonly
-          />
+            />
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -124,7 +128,7 @@
             formControlName="lastName"
             matInput
             readonly
-          />
+            />
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -135,7 +139,7 @@
             matInput
             readonly
             type="date"
-          />
+            />
         </mat-form-field>
       } @else {
         <div data-cy="profile-content">No Profile</div>
@@ -148,7 +152,7 @@
             color="warn"
             data-cy="edit-icon-button"
             mat-raised-button
-          >
+            >
             <mat-icon data-cy="edit-icon-icon">edit</mat-icon>
             Edit Icon
           </button>
@@ -157,7 +161,7 @@
             color="error"
             data-cy="delete-icon-button"
             mat-raised-button
-          >
+            >
             <mat-icon data-cy="delete-icon-icon">delete</mat-icon>
             Delete Icon
           </button>
@@ -167,7 +171,7 @@
             color="success"
             data-cy="add-icon-button"
             mat-raised-button
-          >
+            >
             <mat-icon data-cy="edit-icon-icon">add_circle</mat-icon>
             Add Icon
           </button>
@@ -183,7 +187,7 @@
           data-cy="icon-image"
           height="150"
           width="150"
-        />
+          />
       } @else {
         <div data-cy="icon-content">No Icon</div>
       }
@@ -195,7 +199,7 @@
             color="success"
             data-cy="add-address-button"
             mat-raised-button
-          >
+            >
             <mat-icon data-cy="add-address-icon">add_circle</mat-icon>
             Add Address
           </button>
@@ -203,109 +207,105 @@
       </div>
       @if (addresses && addresses.controls.length > 0) {
         <div formArrayName="addresses">
-          <div
-            *ngFor="let address of addresses.controls; let i = index"
-            [formGroupName]="i"
-          >
-            <div class="row-container" data-cy="row-container">
-              <h3 [attr.data-cy]="'address-title-' + i">Address {{ i + 1 }}</h3>
-              <button
-                (click)="editAddress(i)"
-                [attr.data-cy]="'edit-address-button-' + i"
-                color="warn"
-                mat-raised-button
+          @for (address of addresses.controls; track address; let i = $index) {
+            <div
+              [formGroupName]="i"
               >
-                <mat-icon [attr.data-cy]="'edit-address-icon-' + i"
-                  >edit</mat-icon
-                >
-                Edit Address
-              </button>
-              <button
-                (click)="deleteAddress(i)"
-                [attr.data-cy]="'delete-address-button-' + i"
-                color="error"
-                mat-raised-button
-              >
-                <mat-icon [attr.data-cy]="'delete-address-icon-' + i"
-                  >delete</mat-icon
-                >
-                Delete Address
-              </button>
-            </div>
-            <mat-form-field appearance="fill">
-              <mat-label [attr.data-cy]="'address-line-1-label-' + i">
-                Address Line 1
-              </mat-label>
-              <input
-                [attr.data-cy]="'address-line-1-input-' + i"
-                formControlName="addressLine1"
-                matInput
-                readonly
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="fill">
-              <mat-label [attr.data-cy]="'address-line-2-label-' + i">
-                Address Line 2
-              </mat-label>
-              <input
-                [attr.data-cy]="'address-line-2-input-' + i"
-                formControlName="addressLine2"
-                matInput
-                readonly
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="fill">
-              <mat-label [attr.data-cy]="'city-label-' + i">City</mat-label>
-              <input
-                [attr.data-cy]="'city-input-' + i"
-                formControlName="city"
-                matInput
-                readonly
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="fill">
-              <mat-label [attr.data-cy]="'state-province-label-' + i">
-                State / Province
-              </mat-label>
-              <input
-                [attr.data-cy]="'state-province-input-' + i"
-                formControlName="stateProvince"
-                matInput
-                readonly
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="fill">
-              <mat-label [attr.data-cy]="'postal-code-label-' + i">
-                Postal Code
-              </mat-label>
-              <input
-                [attr.data-cy]="'postal-code-input-' + i"
-                formControlName="postalCode"
-                matInput
-                readonly
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="fill">
-              <mat-label [attr.data-cy]="'country-label-' + i"
-                >Country</mat-label
-              >
-              <input
-                [attr.data-cy]="'country-input-' + i"
-                formControlName="country"
-                matInput
-                readonly
-              />
-            </mat-form-field>
+              <div class="row-container" data-cy="row-container">
+                <h3 [attr.data-cy]="'address-title-' + i">Address {{ i + 1 }}</h3>
+                <button
+                  (click)="editAddress(i)"
+                  [attr.data-cy]="'edit-address-button-' + i"
+                  color="warn"
+                  mat-raised-button
+                  >
+                  <mat-icon [attr.data-cy]="'edit-address-icon-' + i"
+                    >edit</mat-icon
+                    >
+                    Edit Address
+                  </button>
+                  <button
+                    (click)="deleteAddress(i)"
+                    [attr.data-cy]="'delete-address-button-' + i"
+                    color="error"
+                    mat-raised-button
+                    >
+                    <mat-icon [attr.data-cy]="'delete-address-icon-' + i"
+                      >delete</mat-icon
+                      >
+                      Delete Address
+                    </button>
+                  </div>
+                  <mat-form-field appearance="fill">
+                    <mat-label [attr.data-cy]="'address-line-1-label-' + i">
+                      Address Line 1
+                    </mat-label>
+                    <input
+                      [attr.data-cy]="'address-line-1-input-' + i"
+                      formControlName="addressLine1"
+                      matInput
+                      readonly
+                      />
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label [attr.data-cy]="'address-line-2-label-' + i">
+                      Address Line 2
+                    </mat-label>
+                    <input
+                      [attr.data-cy]="'address-line-2-input-' + i"
+                      formControlName="addressLine2"
+                      matInput
+                      readonly
+                      />
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label [attr.data-cy]="'city-label-' + i">City</mat-label>
+                    <input
+                      [attr.data-cy]="'city-input-' + i"
+                      formControlName="city"
+                      matInput
+                      readonly
+                      />
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label [attr.data-cy]="'state-province-label-' + i">
+                      State / Province
+                    </mat-label>
+                    <input
+                      [attr.data-cy]="'state-province-input-' + i"
+                      formControlName="stateProvince"
+                      matInput
+                      readonly
+                      />
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label [attr.data-cy]="'postal-code-label-' + i">
+                      Postal Code
+                    </mat-label>
+                    <input
+                      [attr.data-cy]="'postal-code-input-' + i"
+                      formControlName="postalCode"
+                      matInput
+                      readonly
+                      />
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label [attr.data-cy]="'country-label-' + i"
+                      >Country</mat-label
+                      >
+                      <input
+                        [attr.data-cy]="'country-input-' + i"
+                        formControlName="country"
+                        matInput
+                        readonly
+                        />
+                    </mat-form-field>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div data-cy="address-content">No Addresses</div>
+            }
           </div>
-        </div>
-      } @else {
-        <div data-cy="address-content">No Addresses</div>
-      }
-    </div>
-  </form>
-</div>
+        </form>
+      </div>
