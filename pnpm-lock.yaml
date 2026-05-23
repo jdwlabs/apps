@@ -100,8 +100,8 @@ importers:
         specifier: 0.18.0
         version: 0.18.0(@rspack/core@1.7.11(@swc/helpers@0.5.15))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3)(webpack@5.107.1(@swc/core@1.10.0(@swc/helpers@0.5.15))(postcss@8.5.15))
       '@nx-go/nx-go':
-        specifier: ^3.3.0
-        version: 3.3.2(nx@21.6.9(@swc-node/register@1.9.2(@swc/core@1.10.0(@swc/helpers@0.5.15))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.10.0(@swc/helpers@0.5.15)))
+        specifier: ^4.0.0
+        version: 4.0.0(nx@21.6.9(@swc-node/register@1.9.2(@swc/core@1.10.0(@swc/helpers@0.5.15))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.10.0(@swc/helpers@0.5.15)))
       '@nx-tools/container-metadata':
         specifier: ^6.1.1
         version: 6.9.1(@nx/devkit@21.6.9(nx@21.6.9(@swc-node/register@1.9.2(@swc/core@1.10.0(@swc/helpers@0.5.15))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.10.0(@swc/helpers@0.5.15))))(tslib@2.8.1)
@@ -214,8 +214,8 @@ importers:
         specifier: 20.3.2
         version: 20.3.2(@angular/compiler-cli@20.3.9(@angular/compiler@20.3.9)(typescript@5.9.3))(tslib@2.8.1)(typescript@5.9.3)
       ngx-cookie-service:
-        specifier: 19.0.0
-        version: 19.0.0(@angular/common@20.3.9(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0))(rxjs@7.8.2))(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0))
+        specifier: ^20.0.0
+        version: 20.1.1(@angular/common@20.3.9(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0))(rxjs@7.8.2))(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0))
       nx:
         specifier: 21.6.9
         version: 21.6.9(@swc-node/register@1.9.2(@swc/core@1.10.0(@swc/helpers@0.5.15))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.10.0(@swc/helpers@0.5.15))
@@ -2945,9 +2945,8 @@ packages:
     resolution: {integrity: sha512-mGUWr1uMnf0le2TwfOZY4SFxZGXGfm4Jtay/nwAa2FLNAKXUoUwaGwBMNH36UHPtinWfTSJ3nqFQr0091CxVGg==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  '@nx-go/nx-go@3.3.2':
-    resolution: {integrity: sha512-NFq63IhsvejBweqnJkbgZV4rvjBMuKCf1ovjFqLgXcf95Y+dnWFXPsHEUdd6UAKkSqrcqOGmL3FdYUPy1+KbxA==}
-    deprecated: Published by mistake. Please use 4.0.0.
+  '@nx-go/nx-go@4.0.0':
+    resolution: {integrity: sha512-7/wbQ/DMhZenZoZGVKXJgOZbrr3cH0sfrbGFLnzjt2Kr+X5X6ng5mBMWmFHzTMIOHXM0qjXMhA24svQZZCisLw==}
 
   '@nx-tools/ci-context@6.9.1':
     resolution: {integrity: sha512-dsdrkzKJAVSk5g8f823M93J6sGEKOh4ThRsKtAoLsrDoI92W07OaDBzo9jMYEutrucQ3Lnj92+DCVHfgs4ZYLw==}
@@ -7675,11 +7674,11 @@ packages:
       tailwindcss:
         optional: true
 
-  ngx-cookie-service@19.0.0:
-    resolution: {integrity: sha512-itxGY1BlIRoEjEtDsSsRKnJuiQteTMLKPNHrykiH06tjUQ1bi3orE7YKU1D210VBqVy1jNrB7hKuGOOIQtQJDA==}
+  ngx-cookie-service@20.1.1:
+    resolution: {integrity: sha512-jGjjIqu+Kt8De6YjDqTQOaUHKB7gYs0eaDuLyXfNhfKnA78lA7D7oWcaIzjkmXhRqTnh2/ex1UHmZHN9MX0yoQ==}
     peerDependencies:
-      '@angular/common': ^19.0.0
-      '@angular/core': ^19.0.0
+      '@angular/common': ^20.0.0
+      '@angular/core': ^20.0.0
 
   no-case@3.0.4:
     resolution: {integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==}
@@ -13791,7 +13790,7 @@ snapshots:
       node-gyp: 12.3.0
       proc-log: 6.1.0
 
-  '@nx-go/nx-go@3.3.2(nx@21.6.9(@swc-node/register@1.9.2(@swc/core@1.10.0(@swc/helpers@0.5.15))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.10.0(@swc/helpers@0.5.15)))':
+  '@nx-go/nx-go@4.0.0(nx@21.6.9(@swc-node/register@1.9.2(@swc/core@1.10.0(@swc/helpers@0.5.15))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.10.0(@swc/helpers@0.5.15)))':
     dependencies:
       '@nx/devkit': 21.6.9(nx@21.6.9(@swc-node/register@1.9.2(@swc/core@1.10.0(@swc/helpers@0.5.15))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.10.0(@swc/helpers@0.5.15)))
       tslib: 2.8.1
@@ -19728,7 +19727,7 @@ snapshots:
     optionalDependencies:
       rollup: 4.60.4
 
-  ngx-cookie-service@19.0.0(@angular/common@20.3.9(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0))(rxjs@7.8.2))(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0)):
+  ngx-cookie-service@20.1.1(@angular/common@20.3.9(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0))(rxjs@7.8.2))(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0)):
     dependencies:
       '@angular/common': 20.3.9(@angular/core@20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0))(rxjs@7.8.2)
       '@angular/core': 20.3.9(@angular/compiler@20.3.9)(rxjs@7.8.2)(zone.js@0.15.0)
