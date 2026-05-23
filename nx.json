@@ -122,14 +122,6 @@
         "componentTestingTargetName": "component-test"
       }
     },
-    {
-      "plugin": "@nx/gradle",
-      "include": ["apps/springboot/**/*"],
-      "options": {
-        "testTargetName": "test",
-        "buildTargetName": "build"
-      }
-    },
     "@nx-go/nx-go"
   ],
   "defaultBase": "main",
