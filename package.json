@@ -72,6 +72,9 @@
     "jest-util": "30.0.0"
   },
   "pnpm": {
+    "overrides": {
+      "memfs": "4.56.11"
+    },
     "onlyBuiltDependencies": [
       "@swc/core",
       "cypress",
