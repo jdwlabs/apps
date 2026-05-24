@@ -9,7 +9,7 @@
         placeholder="Enter your first name"
         required
         type="text"
-        />
+      />
       @if (this.form.get('firstName')?.invalid) {
         <mat-error>
           {{ getErrorMessage('firstName') }}
@@ -23,7 +23,7 @@
         matInput
         placeholder="Enter your middle name"
         type="text"
-        />
+      />
       @if (this.form.get('middleName')?.invalid) {
         <mat-error>
           {{ getErrorMessage('middleName') }}
@@ -38,7 +38,7 @@
         placeholder="Enter your last name"
         required
         type="text"
-        />
+      />
       @if (this.form.get('lastName')?.invalid) {
         <mat-error>
           {{ getErrorMessage('lastName') }}
@@ -54,7 +54,7 @@
         required
         [max]="maxDate"
         [matDatepicker]="picker"
-        />
+      />
       <mat-hint data-cy="birthdate-hint">YYYY/MM/DD</mat-hint>
       <mat-datepicker-toggle
         data-cy="birthdate-toggle"
@@ -80,7 +80,7 @@
         type="submit"
         [disabled]="form.invalid"
         data-cy="submit-button"
-        >
+      >
         Submit
       </button>
       <button
@@ -89,7 +89,7 @@
         type="button"
         (click)="onReset()"
         data-cy="reset-button"
-        >
+      >
         Reset
       </button>
     </div>

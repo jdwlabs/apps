@@ -16,9 +16,7 @@ import { ProfileDialogComponent } from '../profile-dialog/profile-dialog.compone
   templateUrl: './profiles-action-button-cell-renderer.component.html',
   styleUrl: './profiles-action-button-cell-renderer.component.scss',
 })
-export class ProfilesActionButtonCellRendererComponent
-  implements ICellRendererAngularComp
-{
+export class ProfilesActionButtonCellRendererComponent implements ICellRendererAngularComp {
   private router: Router = inject(Router);
   private route = inject(ActivatedRoute);
   private dialog: MatDialog = inject(MatDialog);

@@ -27,8 +27,8 @@ import { finalize } from 'rxjs';
     MatLabel,
     MatError,
     MatFormField,
-    MatButton
-],
+    MatButton,
+  ],
   templateUrl: './role-upsert.component.html',
   styleUrl: './role-upsert.component.scss',
 })

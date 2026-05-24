@@ -5,16 +5,12 @@
   role="navigation"
   class="nav"
   data-cy="navigation-link"
-  >
+>
   <mat-icon matListItemIcon class="icon" data-cy="navigation-icon">
     {{ navigationItem.icon }}
   </mat-icon>
   @if (isExpanded) {
-    <span
-      matListItemTitle
-      class="title"
-      data-cy="navigation-title"
-      >
+    <span matListItemTitle class="title" data-cy="navigation-title">
       {{ navigationItem.title }}
     </span>
   }

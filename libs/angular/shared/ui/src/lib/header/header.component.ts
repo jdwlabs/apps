@@ -14,8 +14,8 @@ import { ThemePalette } from '@angular/material/core';
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
-    RouterLink
-],
+    RouterLink,
+  ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })

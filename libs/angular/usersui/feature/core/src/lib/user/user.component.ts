@@ -29,8 +29,8 @@ import { ConfirmationDialogComponent } from '@jdw/angular-shared-ui';
     MatChip,
     MatChipSet,
     MatButton,
-    MatIcon
-],
+    MatIcon,
+  ],
   templateUrl: './user.component.html',
   styleUrl: './user.component.scss',
   standalone: true,

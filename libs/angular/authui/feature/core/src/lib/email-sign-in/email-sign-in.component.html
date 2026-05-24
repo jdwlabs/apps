@@ -7,7 +7,7 @@
         matInput
         placeholder="Email Address"
         type="email"
-        />
+      />
       @if (this.form.get('emailAddress')?.invalid) {
         <mat-error>
           {{ getErrorMessage('emailAddress') }}
@@ -21,7 +21,7 @@
         formControlName="password"
         matInput
         placeholder="Password"
-        />
+      />
       <button
         (click)="hide = !hide"
         [attr.aria-label]="'Hide password'"
@@ -30,7 +30,7 @@
         mat-icon-button
         matSuffix
         type="button"
-        >
+      >
         <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
       </button>
       @if (this.form.get('password')?.invalid) {
@@ -45,7 +45,7 @@
       data-cy="sign-in-button"
       mat-raised-button
       type="submit"
-      >
+    >
       Sign In
     </button>
   </form>

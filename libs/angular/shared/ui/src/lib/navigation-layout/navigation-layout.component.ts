@@ -16,8 +16,8 @@ import { NavigationItem } from '@jdw/angular-shared-util';
     MatTooltipModule,
     MatButtonModule,
     MatIconModule,
-    NavigationItemComponent
-],
+    NavigationItemComponent,
+  ],
   templateUrl: './navigation-layout.component.html',
   styleUrl: './navigation-layout.component.scss',
 })

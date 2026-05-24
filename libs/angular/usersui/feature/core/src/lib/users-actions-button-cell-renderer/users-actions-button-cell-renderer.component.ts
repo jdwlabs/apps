@@ -17,9 +17,7 @@ import { User } from '@jdw/angular-shared-util';
   templateUrl: './users-actions-button-cell-renderer.component.html',
   styleUrl: './users-actions-button-cell-renderer.component.scss',
 })
-export class UsersActionsButtonCellRendererComponent
-  implements ICellRendererAngularComp
-{
+export class UsersActionsButtonCellRendererComponent implements ICellRendererAngularComp {
   private router: Router = inject(Router);
   private route = inject(ActivatedRoute);
   private dialog: MatDialog = inject(MatDialog);

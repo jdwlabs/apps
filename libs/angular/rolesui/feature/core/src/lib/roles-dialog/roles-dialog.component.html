@@ -10,7 +10,7 @@
         matInput
         placeholder="ID of the role"
         type="text"
-        />
+      />
     </mat-form-field>
 
     <mat-form-field appearance="fill" data-cy="name-field">
@@ -21,7 +21,7 @@
         formControlName="name"
         matInput
         placeholder="Name of the role"
-        />
+      />
     </mat-form-field>
 
     <mat-form-field appearance="fill" data-cy="description-field">
@@ -32,7 +32,7 @@
         formControlName="description"
         matInput
         placeholder="Description of the role"
-        />
+      />
     </mat-form-field>
 
     <mat-form-field appearance="fill" data-cy="status-field">
@@ -43,7 +43,7 @@
         formControlName="status"
         matInput
         placeholder="Status of the role"
-        />
+      />
     </mat-form-field>
 
     <mat-form-field appearance="fill" data-cy="role-created-time-field">
@@ -54,7 +54,7 @@
         formControlName="createdTime"
         matInput
         placeholder="Created time of the role"
-        />
+      />
     </mat-form-field>
 
     <mat-form-field appearance="fill" data-cy="role-created-by-user-id-field">
@@ -67,7 +67,7 @@
         formControlName="createdByUserId"
         matInput
         placeholder="ID of user who created the role"
-        />
+      />
     </mat-form-field>
 
     <mat-form-field appearance="fill" data-cy="role-modified-time-field">
@@ -78,7 +78,7 @@
         formControlName="modifiedTime"
         matInput
         placeholder="Modified time of the role"
-        />
+      />
     </mat-form-field>
 
     <mat-form-field appearance="fill" data-cy="role-modified-by-user-id-field">
@@ -91,20 +91,16 @@
         formControlName="modifiedByUserId"
         matInput
         placeholder="ID of user who modified the role last"
-        />
+      />
     </mat-form-field>
 
     @if (users && users.controls.length > 0) {
-      <h3 data-cy="users-title">
-        Users
-      </h3>
+      <h3 data-cy="users-title">Users</h3>
     }
     @if (users && users.controls.length > 0) {
       <div formArrayName="users">
         @for (user of users.controls; track user; let i = $index) {
-          <div
-            [formGroupName]="i"
-            >
+          <div [formGroupName]="i">
             <h4 [attr.data-cy]="'user-title-' + i">User {{ i + 1 }}</h4>
             <mat-form-field appearance="fill">
               <mat-label [attr.data-cy]="'user-user-id-label-' + i">
@@ -116,7 +112,7 @@
                 formControlName="userId"
                 matInput
                 placeholder="User ID of the user role"
-                />
+              />
             </mat-form-field>
             <mat-form-field appearance="fill">
               <mat-label [attr.data-cy]="'user-role-id-label-' + i">
@@ -128,7 +124,7 @@
                 formControlName="roleId"
                 matInput
                 placeholder="Role ID of the user role"
-                />
+              />
             </mat-form-field>
             <mat-form-field appearance="fill">
               <mat-label [attr.data-cy]="'user-created-time-label-' + i">
@@ -140,7 +136,7 @@
                 formControlName="createdTime"
                 matInput
                 placeholder="Created time of the user role"
-                />
+              />
             </mat-form-field>
             <mat-form-field appearance="fill">
               <mat-label [attr.data-cy]="'user-created-by-user-id-label-' + i">
@@ -152,7 +148,7 @@
                 formControlName="createdByUserId"
                 matInput
                 placeholder="ID of user who created the user role"
-                />
+              />
             </mat-form-field>
           </div>
         }
@@ -167,7 +163,7 @@
     data-cy="action-button"
     mat-raised-button
     type="submit"
-    >
+  >
     {{ data.action | titlecase }}
   </button>
   <button
@@ -175,7 +171,7 @@
     data-cy="close-button"
     mat-raised-button
     type="button"
-    >
+  >
     Cancel
   </button>
 </mat-dialog-actions>

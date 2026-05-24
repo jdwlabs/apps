@@ -19,8 +19,8 @@ import { MatLabel } from '@angular/material/form-field';
     MatIcon,
     MatFormField,
     MatInput,
-    MatFormField
-],
+    MatFormField,
+  ],
   selector: 'lib-role',
   styleUrl: './role.component.scss',
   templateUrl: './role.component.html',

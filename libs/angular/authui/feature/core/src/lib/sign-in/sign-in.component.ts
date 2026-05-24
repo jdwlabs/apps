@@ -25,8 +25,8 @@ import { EmailSignInComponent } from '../email-sign-in/email-sign-in.component';
     EmailSignInComponent,
     MatCardTitle,
     MatCardContent,
-    MatCard
-],
+    MatCard,
+  ],
   templateUrl: './sign-in.component.html',
   styleUrl: './sign-in.component.scss',
 })

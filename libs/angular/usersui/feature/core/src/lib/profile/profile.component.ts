@@ -29,8 +29,8 @@ import { dateFormats } from '@jdw/angular-usersui-util';
     ReactiveFormsModule,
     MatInputModule,
     MatDatepickerModule,
-    MatButtonModule
-],
+    MatButtonModule,
+  ],
   providers: [
     {
       provide: DateAdapter,

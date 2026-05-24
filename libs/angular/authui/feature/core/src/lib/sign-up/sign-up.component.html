@@ -9,7 +9,7 @@
           appearance="outline"
           class="email-field"
           data-cy="email-address-field"
-          >
+        >
           <mat-label>Enter your email</mat-label>
           <input
             formControlName="email"
@@ -17,7 +17,7 @@
             placeholder="Email Address"
             required
             type="email"
-            />
+          />
           @if (this.signUpForm.get('email')?.invalid) {
             <mat-error>
               {{ getErrorMessage('email') }}
@@ -29,7 +29,7 @@
             appearance="outline"
             class="password-field"
             data-cy="password-field"
-            >
+          >
             <mat-label>Enter your password</mat-label>
             <input
               [type]="hide ? 'password' : 'text'"
@@ -37,7 +37,7 @@
               matInput
               placeholder="Password"
               required
-              />
+            />
             <button
               (click)="hide = !hide"
               [attr.aria-label]="'Hide password'"
@@ -46,15 +46,13 @@
               mat-icon-button
               matSuffix
               type="button"
-              >
+            >
               <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
             @if (
-              this.signUpForm.get('matchingPassword')?.get('password')
-              ?.invalid
-              ) {
-              <mat-error
-                >
+              this.signUpForm.get('matchingPassword')?.get('password')?.invalid
+            ) {
+              <mat-error>
                 {{ getPasswordErrorMessage('password') }}
               </mat-error>
             }
@@ -72,7 +70,7 @@
             appearance="outline"
             class="confirm-password-field"
             data-cy="confirm-password-field"
-            >
+          >
             <mat-label>Enter your confirm password</mat-label>
             <input
               [type]="hide ? 'password' : 'text'"
@@ -80,7 +78,7 @@
               matInput
               placeholder="Confirm Password"
               required
-              />
+            />
             <button
               (click)="hide = !hide"
               [attr.aria-label]="'Hide password'"
@@ -89,15 +87,14 @@
               mat-icon-button
               matSuffix
               type="button"
-              >
+            >
               <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
             @if (
               this.signUpForm.get('matchingPassword')?.get('confirmPassword')
-              ?.invalid
-              ) {
-              <mat-error
-                >
+                ?.invalid
+            ) {
+              <mat-error>
                 {{ getPasswordErrorMessage('confirmPassword') }}
               </mat-error>
             }
@@ -105,15 +102,12 @@
           @if (
             this.signUpForm.get('matchingPassword')?.invalid &&
             (this.signUpForm.get('matchingPassword')?.get('confirmPassword')
-            ?.dirty ||
-            this.signUpForm.get('matchingPassword')?.get('confirmPassword')
-            ?.touched) &&
+              ?.dirty ||
+              this.signUpForm.get('matchingPassword')?.get('confirmPassword')
+                ?.touched) &&
             getErrorMessage('matchingPassword') !== ''
-            ) {
-            <mat-error
-              class="match-password"
-              data-cy="matching-password-error"
-              >
+          ) {
+            <mat-error class="match-password" data-cy="matching-password-error">
               {{ getErrorMessage('matchingPassword') }}
             </mat-error>
           }
@@ -124,7 +118,7 @@
           data-cy="sign-up-button"
           mat-raised-button
           type="submit"
-          >
+        >
           Sign Up
         </button>
       </form>
