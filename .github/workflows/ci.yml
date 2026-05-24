@@ -29,24 +29,28 @@ jobs:
       # This line enables distribution
       # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "e2e-ci" targets have been requested
       # - name: Enable NX Cloud Distribution
-      #   run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
+      #   run: pnpm exec nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - name: Install Dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Setup Base and SHAs for 'nx affected'
         uses: nrwl/nx-set-shas@v4
       - if: ${{ github.event_name == 'pull_request' }}
         name: Setup Main Branch Tracking
         run: git branch --track main origin/main
       - name: Run Format Check
-        run: npx nx-cloud record -- nx format:check
+        run: pnpm exec nx-cloud record -- nx format:check
       - name: Reset NX
-        run: npx nx reset
+        run: pnpm exec nx reset
       - name: Run Linting, Unit, Component, & E2E Tests
-        run: npx nx affected -t lint test component-test
+        run: pnpm exec nx affected -t lint test component-test
       - name: Run E2E Tests
-        run: npx nx affected -t e2e --parallel=1
+        run: pnpm exec nx affected -t e2e --parallel=1
       - name: Run Build
-        run: npx nx affected -t build
+        run: pnpm exec nx affected -t build
       - if: ${{ github.event_name != 'pull_request' }}
         name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -70,7 +74,7 @@ jobs:
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          npx nx affected -t version --parallel=1
+          pnpm exec nx affected -t version --parallel=1
           git fetch origin develop
           git checkout develop
           git pull origin main --rebase
