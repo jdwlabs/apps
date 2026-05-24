@@ -36,8 +36,8 @@ import { finalize } from 'rxjs';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    ReactiveFormsModule
-],
+    ReactiveFormsModule,
+  ],
   templateUrl: './account.component.html',
   styleUrl: './account.component.scss',
 })

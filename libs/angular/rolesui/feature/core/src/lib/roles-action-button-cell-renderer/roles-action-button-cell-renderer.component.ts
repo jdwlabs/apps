@@ -17,9 +17,7 @@ import { Role } from '@jdw/angular-shared-util';
   templateUrl: './roles-action-button-cell-renderer.component.html',
   styleUrl: './roles-action-button-cell-renderer.component.scss',
 })
-export class RolesActionButtonCellRendererComponent
-  implements ICellRendererAngularComp
-{
+export class RolesActionButtonCellRendererComponent implements ICellRendererAngularComp {
   private router: Router = inject(Router);
   private route: ActivatedRoute = inject(ActivatedRoute);
   private dialog: MatDialog = inject(MatDialog);

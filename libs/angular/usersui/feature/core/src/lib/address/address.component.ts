@@ -21,8 +21,8 @@ import { MatInput } from '@angular/material/input';
     MatError,
     MatFormField,
     MatLabel,
-    MatInput
-],
+    MatInput,
+  ],
   templateUrl: './address.component.html',
   styleUrl: './address.component.scss',
 })

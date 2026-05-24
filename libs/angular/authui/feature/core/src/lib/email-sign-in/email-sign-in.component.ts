@@ -24,8 +24,8 @@ import {
     MatButtonModule,
     MatInputModule,
     MatIconModule,
-    ReactiveFormsModule
-],
+    ReactiveFormsModule,
+  ],
   templateUrl: './email-sign-in.component.html',
   styleUrl: './email-sign-in.component.scss',
 })

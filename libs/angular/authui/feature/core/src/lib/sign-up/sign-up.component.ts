@@ -37,8 +37,8 @@ import { AuthService } from '@jdw/angular-shared-data-access';
     RouterLink,
     MatButtonModule,
     MatIconModule,
-    ReactiveFormsModule
-],
+    ReactiveFormsModule,
+  ],
   providers: [
     {
       provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
