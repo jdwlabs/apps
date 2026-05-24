@@ -7,12 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'jdw-navigation-item',
-  imports: [
-    MatIconModule,
-    MatListModule,
-    RouterLinkActive,
-    RouterLink
-],
+  imports: [MatIconModule, MatListModule, RouterLinkActive, RouterLink],
   templateUrl: './navigation-item.component.html',
   styleUrl: './navigation-item.component.scss',
 })
