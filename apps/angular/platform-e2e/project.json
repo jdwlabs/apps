@@ -1,0 +1,20 @@
+{
+  "name": "platform-e2e",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/angular/platform-e2e/src",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {
+        "config": "apps/angular/platform-e2e/playwright.config.ts"
+      },
+      "dependsOn": [{ "target": "build", "projects": "dependencies" }]
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  },
+  "tags": ["type:e2e", "scope:platform", "framework:playwright"],
+  "implicitDependencies": ["container", "authui", "usersui", "rolesui"]
+}

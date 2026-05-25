@@ -27,16 +27,6 @@
       "options": {
         "jestConfig": "libs/angular/shared/ui/jest.config.ts"
       }
-    },
-    "component-test": {
-      "cache": true,
-      "executor": "@nx/cypress:cypress",
-      "options": {
-        "cypressConfig": "libs/angular/shared/ui/cypress.config.ts",
-        "testingType": "component",
-        "skipServe": true,
-        "devServerTarget": "container:build"
-      }
     }
   }
 }

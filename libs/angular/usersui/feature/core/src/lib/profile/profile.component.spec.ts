@@ -39,4 +39,32 @@ describe('ProfileComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  describe('form validation', () => {
+    it('requires firstName', () => {
+      component.form.get('firstName')!.setValue('');
+      expect(component.form.get('firstName')!.hasError('required')).toBe(true);
+    });
+
+    it('requires lastName', () => {
+      component.form.get('lastName')!.setValue('');
+      expect(component.form.get('lastName')!.hasError('required')).toBe(true);
+    });
+
+    it('requires birthdate', () => {
+      component.form.get('birthdate')!.setValue('');
+      expect(component.form.get('birthdate')!.hasError('required')).toBe(true);
+    });
+
+    it('middleName is optional', () => {
+      component.form.get('middleName')!.setValue('');
+      expect(component.form.get('middleName')!.hasError('required')).toBe(
+        false,
+      );
+    });
+
+    it('is invalid when required fields are empty', () => {
+      expect(component.form.valid).toBe(false);
+    });
+  });
 });
