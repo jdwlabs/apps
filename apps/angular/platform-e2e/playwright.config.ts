@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { nxE2EPreset } from '@nx/playwright/preset/playwright';
+import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
 
 const baseURL = process.env['BASE_URL'] ?? 'http://localhost:4200';
