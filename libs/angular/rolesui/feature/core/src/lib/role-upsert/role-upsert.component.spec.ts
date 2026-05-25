@@ -38,4 +38,28 @@ describe('RoleUpsertComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  describe('form validation', () => {
+    it('requires name', () => {
+      component.form.get('name')!.setValue('');
+      expect(component.form.get('name')!.hasError('required')).toBe(true);
+    });
+
+    it('requires description', () => {
+      component.form.get('description')!.setValue('');
+      expect(component.form.get('description')!.hasError('required')).toBe(
+        true,
+      );
+    });
+
+    it('is invalid when empty', () => {
+      expect(component.form.valid).toBe(false);
+    });
+
+    it('is valid when all fields are filled', () => {
+      component.form.get('name')!.setValue('ADMIN');
+      component.form.get('description')!.setValue('Admin role');
+      expect(component.form.valid).toBe(true);
+    });
+  });
 });
