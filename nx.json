@@ -11,9 +11,8 @@
       "!{projectRoot}/jest.config.[jt]s",
       "!{projectRoot}/src/test-setup.[jt]s",
       "!{projectRoot}/test-setup.[jt]s",
-      "!{projectRoot}/cypress/**/*",
-      "!{projectRoot}/**/*.cy.[jt]s?(x)",
-      "!{projectRoot}/cypress.config.[jt]s"
+      "!{projectRoot}/**/*.spec.[jt]s?(x)",
+      "!{projectRoot}/playwright.config.[jt]s"
     ],
     "sharedGlobals": ["{workspaceRoot}/go.work"]
   },
@@ -97,7 +96,7 @@
   },
   "generators": {
     "@nx/angular:application": {
-      "e2eTestRunner": "cypress",
+      "e2eTestRunner": "playwright",
       "linter": "eslint",
       "style": "scss",
       "unitTestRunner": "jest"
@@ -167,13 +166,6 @@
       "plugin": "@nx/eslint/plugin",
       "options": {
         "targetName": "lint"
-      }
-    },
-    {
-      "plugin": "@nx/cypress/plugin",
-      "options": {
-        "targetName": "e2e",
-        "componentTestingTargetName": "component-test"
       }
     },
     {
