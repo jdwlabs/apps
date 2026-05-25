@@ -75,13 +75,13 @@ function testScreenSize(size: string, width: number, height: number) {
     it(`should show error messages on ${size} screen size`, () => {
       cy.mount(AccountComponent);
 
-      cy.getByCy('email-address-field').find('input').focus().blur();
+      cy.getByCy('email-address-field').find('input').click({ force: true }).blur();
       cy.getByCy('email-address-field').contains('Email is required');
 
-      cy.getByCy('password-field').find('input').focus().blur();
+      cy.getByCy('password-field').find('input').click({ force: true }).blur();
       cy.getByCy('password-field').contains('Password is required');
 
-      cy.getByCy('confirm-password-field').find('input').focus().blur();
+      cy.getByCy('confirm-password-field').find('input').click({ force: true }).blur();
       cy.getByCy('confirm-password-field').contains(
         'Confirm password is required',
       );

@@ -81,10 +81,10 @@ function testScreenSize(size: string, width: number, height: number) {
     it(`should show error messages on ${size} screen size`, () => {
       cy.mount(RoleUpsertComponent);
 
-      cy.getByCy('name-field').find('input').focus().blur();
+      cy.getByCy('name-field').find('input').click({ force: true }).blur();
       cy.getByCy('name-field').contains('Name is required');
 
-      cy.getByCy('description-field').find('input').focus().blur();
+      cy.getByCy('description-field').find('input').click({ force: true }).blur();
       cy.getByCy('description-field').contains('Description is required');
     });
 

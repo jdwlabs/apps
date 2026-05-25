@@ -184,23 +184,23 @@ function testScreenSize(size: string, width: number, height: number) {
     it(`should show error messages on ${size} screen size`, () => {
       cy.mount(AddressComponent);
 
-      cy.getByCy('address-line-1-field').find('input').focus().blur();
+      cy.getByCy('address-line-1-field').find('input').click({ force: true }).blur();
       cy.getByCy('address-line-1-field').contains('Address line 1 is required');
 
-      cy.getByCy('address-line-2-field').find('input').focus().blur();
+      cy.getByCy('address-line-2-field').find('input').click({ force: true }).blur();
 
-      cy.getByCy('city-field').find('input').focus().blur();
+      cy.getByCy('city-field').find('input').click({ force: true }).blur();
       cy.getByCy('city-field').contains('City is required');
 
-      cy.getByCy('state-province-field').find('input').focus().blur();
+      cy.getByCy('state-province-field').find('input').click({ force: true }).blur();
       cy.getByCy('state-province-field').contains(
         'State / province is required',
       );
 
-      cy.getByCy('postal-code-field').find('input').focus().blur();
+      cy.getByCy('postal-code-field').find('input').click({ force: true }).blur();
       cy.getByCy('postal-code-field').contains('Postal code is required');
 
-      cy.getByCy('country-field').find('input').focus().blur();
+      cy.getByCy('country-field').find('input').click({ force: true }).blur();
       cy.getByCy('country-field').contains('Country is required');
     });
 
