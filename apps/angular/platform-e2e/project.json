@@ -7,7 +7,8 @@
     "e2e": {
       "executor": "@nx/playwright:playwright",
       "options": {
-        "config": "apps/angular/platform-e2e/playwright.config.ts"
+        "config": "apps/angular/platform-e2e/playwright.config.ts",
+        "skipInstall": true
       },
       "dependsOn": [{ "target": "build", "projects": "dependencies" }]
     },
