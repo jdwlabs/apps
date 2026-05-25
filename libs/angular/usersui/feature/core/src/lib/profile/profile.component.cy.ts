@@ -145,15 +145,25 @@ function testScreenSize(size: string, width: number, height: number) {
 
     it(`should show error messages on ${size} screen size`, () => {
       cy.mount(ProfileComponent);
-      cy.getByCy('first-name-field').find('input').click({ force: true }).blur();
+      cy.getByCy('first-name-field')
+        .find('input')
+        .click({ force: true })
+        .blur();
       cy.getByCy('first-name-field').contains('First name is required');
-      cy.getByCy('middle-name-field').find('input').click({ force: true }).blur();
+      cy.getByCy('middle-name-field')
+        .find('input')
+        .click({ force: true })
+        .blur();
       cy.getByCy('middle-name-field').should('contain.text', '');
       cy.getByCy('last-name-field').find('input').click({ force: true }).blur();
       cy.getByCy('last-name-field').contains('Last name is required');
       cy.getByCy('birthdate-field').find('input').click({ force: true }).blur();
       cy.getByCy('birthdate-field').contains('Birthdate is required');
-      cy.getByCy('birthdate-field').find('input').type('a').click({ force: true }).blur();
+      cy.getByCy('birthdate-field')
+        .find('input')
+        .type('a')
+        .click({ force: true })
+        .blur();
       cy.getByCy('birthdate-field').contains('Birthdate must be a valid date');
       cy.getByCy('birthdate-field')
         .find('input')
