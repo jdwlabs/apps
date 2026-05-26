@@ -3,6 +3,7 @@
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/angular/shared/util/src",
   "projectType": "library",
+  "tags": ["type:util", "scope:shared", "framework:angular"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
@@ -21,6 +22,5 @@
         "jestConfig": "libs/angular/shared/util/jest.config.ts"
       }
     }
-  },
-  "tags": ["type:util", "scope:shared", "framework:angular"]
+  }
 }

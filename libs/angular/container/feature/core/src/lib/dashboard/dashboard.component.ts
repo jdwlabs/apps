@@ -1,12 +1,12 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { NavigationTileComponent } from '@jdw/angular-shared-ui';
 import { NavigationTile } from '@jdw/angular-shared-util';
 import { MicroFrontendService } from '@jdw/angular-container-data-access';
 
 @Component({
   selector: 'jdw-dashboard',
-  imports: [CommonModule, NavigationTileComponent],
+  imports: [NavigationTileComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

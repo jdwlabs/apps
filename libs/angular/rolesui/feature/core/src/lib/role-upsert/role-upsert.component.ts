@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormControl,
   FormGroup,
@@ -21,7 +21,6 @@ import { finalize } from 'rxjs';
 @Component({
   selector: 'lib-role-upsert',
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatFormField,
     MatInput,
