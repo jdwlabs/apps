@@ -159,7 +159,7 @@
       }
     },
     "save-version": {
-      "command": "bash tools/create-version.sh {version} {projectRoot}/public {projectName}"
+      "command": "bash scripts/create-version.sh {version} {projectRoot}/public {projectName}"
     },
     "build-image": {
       "executor": "nx:run-commands",
@@ -204,10 +204,10 @@
       }
     },
     "update-app": {
-      "command": "bash tools/update-app.sh charts/usersui/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/usersui/Chart.yaml {version} {projectName}"
     },
     "format": {
-      "command": "bash tools/format.sh"
+      "command": "bash scripts/format.sh"
     },
     "serve-container": {
       "executor": "nx:run-commands",
@@ -226,7 +226,7 @@
       "options": {
         "commands": [
           {
-            "command": "bash tools/prepare-config.sh apps/angular/usersui/usersui/src/config.json"
+            "command": "bash scripts/prepare-config.sh apps/angular/usersui/usersui/src/config.json"
           }
         ]
       }
@@ -236,7 +236,7 @@
       "options": {
         "commands": [
           {
-            "command": "bash tools/restore-config.sh apps/angular/usersui/usersui/src/config.json"
+            "command": "bash scripts/restore-config.sh apps/angular/usersui/usersui/src/config.json"
           }
         ]
       }
