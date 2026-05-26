@@ -40,6 +40,9 @@ jobs:
       - if: ${{ github.event_name == 'pull_request' }}
         name: Setup Main Branch Tracking
         run: git branch --track main origin/main
+      - if: ${{ github.event_name == 'pull_request' }}
+        name: Validate Commit Messages
+        run: pnpm exec commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }}
       - name: Run Format Check
         run: pnpm exec nx-cloud record -- nx format:check
       - name: Reset NX
