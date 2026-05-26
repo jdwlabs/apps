@@ -65,7 +65,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver: 'kubernetes'
-          platforms: 'linux/amd64,linux/arm64'
+          driver-opts: |
+            qemu.install=true
       - if: ${{ github.event_name != 'pull_request' }}
         name: Run Version Upgrades
         run: |
@@ -76,3 +77,6 @@ jobs:
           git checkout develop
           git pull origin main --rebase
           git push --force-with-lease origin develop
+
+      - run: npx nx fix-ci
+        if: always()
