@@ -2,6 +2,7 @@ import nx from '@nx/eslint-plugin';
 import globals from 'globals';
 
 export default [
+  { ignores: ['**/eslint.config.ts', '**/eslint.config.js', '**/eslint.config.mjs'] },
   ...nx.configs['flat/base'],
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
