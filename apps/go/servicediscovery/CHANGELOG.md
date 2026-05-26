@@ -2,6 +2,13 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.1](https://github.com/jdwlabs/apps/compare/servicediscovery-0.4.0...servicediscovery-0.4.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* **go:** fix [@nx-go](https://github.com/nx-go) v4 executor paths for servicediscovery build ([b49dd94](https://github.com/jdwlabs/apps/commit/b49dd945277ff24c0ed7e3aa793791895784f911))
+
 ## [0.4.0](https://github.com/jdwillmsen/jdw/compare/servicediscovery-0.3.1...servicediscovery-0.4.0) (2025-04-10)
 
 
