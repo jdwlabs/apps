@@ -7,7 +7,7 @@
 ![Nx](https://img.shields.io/badge/Nx-20-blue)
 ![Cypress](https://img.shields.io/badge/Cypress-13-blue)
 ![Angular](https://img.shields.io/badge/Angular-19-blue)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-PolyForm%20NonCommercial%201.0-blue)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 
 This is a multi-language, multi-project repository that houses all code, configuration, and tooling. This repository is 
 organized into three main directories:
