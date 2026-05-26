@@ -67,7 +67,6 @@ jobs:
           driver: 'kubernetes'
           driver-opts: |
             qemu.install=true
-          platforms: 'linux/amd64,linux/arm64'
       - if: ${{ github.event_name != 'pull_request' }}
         name: Run Version Upgrades
         run: |
