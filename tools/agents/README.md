@@ -5,8 +5,9 @@
 A custom Docker image based on [`ghcr.io/actions/actions-runner`](https://github.com/actions/runner) with additional tools preinstalled:
 
 - ✅ Zulu JDK 21
-- ✅ Node.js 22
-- ✅ Go 1.24
+- ✅ Node.js 24
+- ✅ Go 1.26.2
+- ✅ Playwright (Chromium, Firefox, WebKit)
 - ✅ Cypress
 - ✅ Linux GUI deps for headless testing
 
@@ -104,8 +105,9 @@ Example:
 ## 🧰 Tools Available in Image
 
 - Java: `java -version`
-- Node.js: `node -v`, `npm -v`
+- Node.js: `node -v`, `npm -v`, `pnpm -v`
 - Go: `go version`
+- Playwright: `playwright --version`
 - Cypress: `cypress version`
 
 ---

@@ -97,29 +97,40 @@ frontend definitions.
 ```json
 {
   "remotes": {
-    "frontend1": "http://localhost:3000",
-    "frontend2": "http://localhost:3001"
+    "authui": "http://localhost:4201",
+    "usersui": "http://localhost:4202",
+    "rolesui": "http://localhost:4203"
   },
   "microFrontends": [
     {
-      "name": "frontend1",
-      "path": "/path1",
-      "remoteName": "remote1",
-      "moduleName": "module1",
-      "url": "http://localhost:3000",
-      "icon": "icon1",
-      "title": "Frontend 1",
-      "description": "This is frontend 1"
+      "name": "authui",
+      "path": "auth",
+      "remoteName": "authui",
+      "moduleName": "./Routes",
+      "url": "http://localhost:4201",
+      "icon": "login",
+      "title": "Auth",
+      "description": "Sign in and sign up functionality"
     },
     {
-      "name": "frontend2",
-      "path": "/path2",
-      "remoteName": "remote2",
-      "moduleName": "module2",
-      "url": "http://localhost:3001",
-      "icon": "icon2",
-      "title": "Frontend 2",
-      "description": "This is frontend 2"
+      "name": "usersui",
+      "path": "users",
+      "remoteName": "usersui",
+      "moduleName": "./Routes",
+      "url": "http://localhost:4202",
+      "icon": "groups",
+      "title": "Users",
+      "description": "Viewing users and managing profiles"
+    },
+    {
+      "name": "rolesui",
+      "path": "roles",
+      "remoteName": "rolesui",
+      "moduleName": "./Routes",
+      "url": "http://localhost:4203",
+      "icon": "lock",
+      "title": "Roles",
+      "description": "Viewing and managing roles"
     }
   ]
 }
