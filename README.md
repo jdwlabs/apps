@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/jdwlabs/apps/actions/workflows/ci.yml/badge.svg)](https://github.com/jdwlabs/apps/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java-21-blue)
-![Go](https://img.shields.io/badge/Go-1.24-blue)
-![Node](https://img.shields.io/badge/Node-22-blue)
-![Nx](https://img.shields.io/badge/Nx-20-blue)
-![Cypress](https://img.shields.io/badge/Cypress-13-blue)
-![Angular](https://img.shields.io/badge/Angular-19-blue)
+![Go](https://img.shields.io/badge/Go-1.23-blue)
+![Node](https://img.shields.io/badge/Node-24-blue)
+![Nx](https://img.shields.io/badge/Nx-22-blue)
+![Playwright](https://img.shields.io/badge/Playwright-1.60-blue)
+![Angular](https://img.shields.io/badge/Angular-21-blue)
 [![License](https://img.shields.io/badge/License-PolyForm%20NonCommercial%201.0-blue)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 
 This is a multi-language, multi-project repository that houses all code, configuration, and tooling. This repository is 
@@ -27,11 +27,12 @@ organized into three main directories:
 ├── apps/                    # Complete applications
 │   ├── angular/             # Grouped by framework / language
 │   │   ├── container/       # Specific application
+│   │   ├── authui/
 │   │   ├── usersui/
-│   │   └── authui/
+│   │   ├── rolesui/
+│   │   └── platform-e2e/
 │   ├── go/
-│   │   ├── servicediscovery/
-│   │   └── emailsender/
+│   │   └── servicediscovery/
 │   └── springboot/
 │       └── usersrole/
 │
