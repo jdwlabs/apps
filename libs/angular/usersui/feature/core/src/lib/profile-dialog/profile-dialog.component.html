@@ -125,290 +125,287 @@
       />
     </mat-form-field>
 
-    <div *ngIf="icon && icon.get('icon')?.value" formGroupName="icon">
-      <h3 data-cy="profile-icon-title">Profile Icon</h3>
-      <div>
-        <img
-          [src]="'data:image/png;base64,' + icon.get('icon')?.value"
-          alt="User Icon"
-          data-cy="profile-icon-image"
-          height="150"
-          width="150"
-        />
-      </div>
-
-      <mat-form-field appearance="fill" data-cy="icon-id-field">
-        <mat-label data-cy="icon-id-label">ID</mat-label>
-        <input
-          [readOnly]="data.type === 'readonly'"
-          data-cy="icon-id-input"
-          formControlName="id"
-          matInput
-          placeholder="ID of the icon"
-        />
-      </mat-form-field>
-
-      <mat-form-field appearance="fill" data-cy="icon-profile-id-field">
-        <mat-label data-cy="icon-profile-id-label">Profile ID</mat-label>
-        <input
-          [readOnly]="data.type === 'readonly'"
-          data-cy="icon-profile-id-input"
-          formControlName="profileId"
-          matInput
-          placeholder="Profile ID of the icon"
-        />
-      </mat-form-field>
-
-      <mat-form-field appearance="fill" data-cy="icon-created-time-field">
-        <mat-label data-cy="icon-created-time-label">Created Time</mat-label>
-        <input
-          [readOnly]="data.type === 'readonly'"
-          data-cy="icon-created-time-input"
-          formControlName="createdTime"
-          matInput
-          placeholder="Created time of the icon"
-        />
-      </mat-form-field>
-
-      <mat-form-field appearance="fill" data-cy="icon-created-by-user-id-field">
-        <mat-label data-cy="icon-created-by-user-id-label">
-          Created By User ID
-        </mat-label>
-        <input
-          [readOnly]="data.type === 'readonly'"
-          data-cy="icon-created-by-user-id-input"
-          formControlName="createdByUserId"
-          matInput
-          placeholder="ID of user who created the icon"
-        />
-      </mat-form-field>
-
-      <mat-form-field appearance="fill" data-cy="icon-modified-time-field">
-        <mat-label data-cy="icon-modified-time-label">
-          Modified Time
-        </mat-label>
-        <input
-          [readOnly]="data.type === 'readonly'"
-          data-cy="icon-modified-time-input"
-          formControlName="modifiedTime"
-          matInput
-          placeholder="Modified time of the icon"
-        />
-      </mat-form-field>
-
-      <mat-form-field
-        appearance="fill"
-        data-cy="icon-modified-by-user-id-label"
-      >
-        <mat-label data-cy="icon-modified-by-user-id-label">
-          Modified By User ID
-        </mat-label>
-        <input
-          [readOnly]="data.type === 'readonly'"
-          data-cy="icon-modified-by-user-id-input"
-          formControlName="modifiedByUserId"
-          matInput
-          placeholder="ID of user who modified the icon last"
-        />
-      </mat-form-field>
-    </div>
-
-    <h3
-      *ngIf="addresses && addresses.controls.length > 0"
-      data-cy="addresses-title"
-    >
-      Addresses
-    </h3>
-    <div
-      *ngIf="addresses && addresses.controls.length > 0"
-      formArrayName="addresses"
-    >
-      <div
-        *ngFor="let address of addresses.controls; let i = index"
-        [formGroupName]="i"
-      >
-        <h4 [attr.data-cy]="'address-title-' + i">Address {{ i + 1 }}</h4>
-        <mat-form-field
-          [attr.data-cy]="'address-id-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'address-id-label-' + i"> ID</mat-label>
+    @if (icon && icon.get('icon')?.value) {
+      <div formGroupName="icon">
+        <h3 data-cy="profile-icon-title">Profile Icon</h3>
+        <div>
+          <img
+            [src]="'data:image/png;base64,' + icon.get('icon')?.value"
+            alt="User Icon"
+            data-cy="profile-icon-image"
+            height="150"
+            width="150"
+          />
+        </div>
+        <mat-form-field appearance="fill" data-cy="icon-id-field">
+          <mat-label data-cy="icon-id-label">ID</mat-label>
           <input
-            [attr.data-cy]="'address-id-input-' + i"
             [readOnly]="data.type === 'readonly'"
+            data-cy="icon-id-input"
             formControlName="id"
             matInput
-            placeholder="ID of the address"
+            placeholder="ID of the icon"
           />
         </mat-form-field>
-
-        <mat-form-field
-          [attr.data-cy]="'address-line-1-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'address-line-1-label-' + i">
-            Address Line 1
-          </mat-label>
+        <mat-form-field appearance="fill" data-cy="icon-profile-id-field">
+          <mat-label data-cy="icon-profile-id-label">Profile ID</mat-label>
           <input
-            [attr.data-cy]="'address-line-1-input-' + i"
             [readOnly]="data.type === 'readonly'"
-            formControlName="addressLine1"
-            matInput
-            placeholder="Address line 1 of the address"
-          />
-        </mat-form-field>
-
-        <mat-form-field
-          [attr.data-cy]="'address-line-2-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'address-line-2-label-' + i"
-            >Address Line 2
-          </mat-label>
-          <input
-            [attr.data-cy]="'address-line-2-input-' + i"
-            [readOnly]="data.type === 'readonly'"
-            formControlName="addressLine2"
-            matInput
-            placeholder="Address line 2 of the address"
-          />
-        </mat-form-field>
-
-        <mat-form-field [attr.data-cy]="'city-field-' + i" appearance="fill">
-          <mat-label [attr.data-cy]="'city-label-' + i">City</mat-label>
-          <input
-            [attr.data-cy]="'city-input-' + i"
-            [readOnly]="data.type === 'readonly'"
-            formControlName="city"
-            matInput
-            placeholder="City of the address"
-          />
-        </mat-form-field>
-
-        <mat-form-field
-          [attr.data-cy]="'state-province-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'state-province-label-' + i">
-            State / Province
-          </mat-label>
-          <input
-            [attr.data-cy]="'state-province-input-' + i"
-            [readOnly]="data.type === 'readonly'"
-            formControlName="stateProvince"
-            matInput
-            placeholder="State / province of the address"
-          />
-        </mat-form-field>
-
-        <mat-form-field
-          [attr.data-cy]="'postal-code-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'postal-code-label-' + i">
-            Postal Code
-          </mat-label>
-          <input
-            [attr.data-cy]="'postal-code-input-' + i"
-            [readOnly]="data.type === 'readonly'"
-            formControlName="postalCode"
-            matInput
-            placeholder="Postal code of the address"
-          />
-        </mat-form-field>
-
-        <mat-form-field [attr.data-cy]="'country-field-' + i" appearance="fill">
-          <mat-label [attr.data-cy]="'country-label-' + i">Country</mat-label>
-          <input
-            [attr.data-cy]="'country-input-' + i"
-            [readOnly]="data.type === 'readonly'"
-            formControlName="country"
-            matInput
-            placeholder="Country of the address"
-          />
-        </mat-form-field>
-
-        <mat-form-field
-          [attr.data-cy]="'address-profile-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'address-profile-id-label-' + i"
-            >Profile ID
-          </mat-label>
-          <input
-            [attr.data-cy]="'address-profile-id-input-' + i"
-            [readOnly]="data.type === 'readonly'"
+            data-cy="icon-profile-id-input"
             formControlName="profileId"
             matInput
-            placeholder="Profile ID of the address"
+            placeholder="Profile ID of the icon"
           />
         </mat-form-field>
-
-        <mat-form-field
-          [attr.data-cy]="'address-created-time-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'address-created-time-label-' + i">
-            Created Time
-          </mat-label>
+        <mat-form-field appearance="fill" data-cy="icon-created-time-field">
+          <mat-label data-cy="icon-created-time-label">Created Time</mat-label>
           <input
-            [attr.data-cy]="'address-created-time-input-' + i"
             [readOnly]="data.type === 'readonly'"
+            data-cy="icon-created-time-input"
             formControlName="createdTime"
             matInput
-            placeholder="Created time of the address"
+            placeholder="Created time of the icon"
           />
         </mat-form-field>
-
         <mat-form-field
-          [attr.data-cy]="'address-created-by-user-id-field-' + i"
           appearance="fill"
+          data-cy="icon-created-by-user-id-field"
         >
-          <mat-label [attr.data-cy]="'address-created-by-user-id-label-' + i">
+          <mat-label data-cy="icon-created-by-user-id-label">
             Created By User ID
           </mat-label>
           <input
-            [attr.data-cy]="'address-created-by-user-id-input-' + i"
             [readOnly]="data.type === 'readonly'"
+            data-cy="icon-created-by-user-id-input"
             formControlName="createdByUserId"
             matInput
-            placeholder="ID of user who created the address"
+            placeholder="ID of user who created the icon"
           />
         </mat-form-field>
-
-        <mat-form-field
-          [attr.data-cy]="'address-modified-time-field-' + i"
-          appearance="fill"
-        >
-          <mat-label [attr.data-cy]="'address-modified-time-label-' + i">
+        <mat-form-field appearance="fill" data-cy="icon-modified-time-field">
+          <mat-label data-cy="icon-modified-time-label">
             Modified Time
           </mat-label>
           <input
-            [attr.data-cy]="'address-modified-time-input-' + i"
             [readOnly]="data.type === 'readonly'"
+            data-cy="icon-modified-time-input"
             formControlName="modifiedTime"
             matInput
-            placeholder="Modified time of the address"
+            placeholder="Modified time of the icon"
           />
         </mat-form-field>
-
         <mat-form-field
-          [attr.data-cy]="'address-modified-by-user-id-field-' + i"
           appearance="fill"
+          data-cy="icon-modified-by-user-id-label"
         >
-          <mat-label [attr.data-cy]="'address-modified-by-user-id-label-' + i">
+          <mat-label data-cy="icon-modified-by-user-id-label">
             Modified By User ID
           </mat-label>
           <input
-            [attr.data-cy]="'address-modified-by-user-id-input-' + i"
             [readOnly]="data.type === 'readonly'"
+            data-cy="icon-modified-by-user-id-input"
             formControlName="modifiedByUserId"
             matInput
-            placeholder="ID of user who modified the address last"
+            placeholder="ID of user who modified the icon last"
           />
         </mat-form-field>
       </div>
-    </div>
+    }
+
+    @if (addresses && addresses.controls.length > 0) {
+      <h3 data-cy="addresses-title">Addresses</h3>
+    }
+    @if (addresses && addresses.controls.length > 0) {
+      <div formArrayName="addresses">
+        @for (address of addresses.controls; track address; let i = $index) {
+          <div [formGroupName]="i">
+            <h4 [attr.data-cy]="'address-title-' + i">Address {{ i + 1 }}</h4>
+            <mat-form-field
+              [attr.data-cy]="'address-id-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'address-id-label-' + i">
+                ID</mat-label
+              >
+              <input
+                [attr.data-cy]="'address-id-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="id"
+                matInput
+                placeholder="ID of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'address-line-1-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'address-line-1-label-' + i">
+                Address Line 1
+              </mat-label>
+              <input
+                [attr.data-cy]="'address-line-1-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="addressLine1"
+                matInput
+                placeholder="Address line 1 of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'address-line-2-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'address-line-2-label-' + i"
+                >Address Line 2
+              </mat-label>
+              <input
+                [attr.data-cy]="'address-line-2-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="addressLine2"
+                matInput
+                placeholder="Address line 2 of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'city-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'city-label-' + i">City</mat-label>
+              <input
+                [attr.data-cy]="'city-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="city"
+                matInput
+                placeholder="City of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'state-province-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'state-province-label-' + i">
+                State / Province
+              </mat-label>
+              <input
+                [attr.data-cy]="'state-province-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="stateProvince"
+                matInput
+                placeholder="State / province of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'postal-code-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'postal-code-label-' + i">
+                Postal Code
+              </mat-label>
+              <input
+                [attr.data-cy]="'postal-code-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="postalCode"
+                matInput
+                placeholder="Postal code of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'country-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'country-label-' + i"
+                >Country</mat-label
+              >
+              <input
+                [attr.data-cy]="'country-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="country"
+                matInput
+                placeholder="Country of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'address-profile-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'address-profile-id-label-' + i"
+                >Profile ID
+              </mat-label>
+              <input
+                [attr.data-cy]="'address-profile-id-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="profileId"
+                matInput
+                placeholder="Profile ID of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'address-created-time-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'address-created-time-label-' + i">
+                Created Time
+              </mat-label>
+              <input
+                [attr.data-cy]="'address-created-time-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="createdTime"
+                matInput
+                placeholder="Created time of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'address-created-by-user-id-field-' + i"
+              appearance="fill"
+            >
+              <mat-label
+                [attr.data-cy]="'address-created-by-user-id-label-' + i"
+              >
+                Created By User ID
+              </mat-label>
+              <input
+                [attr.data-cy]="'address-created-by-user-id-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="createdByUserId"
+                matInput
+                placeholder="ID of user who created the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'address-modified-time-field-' + i"
+              appearance="fill"
+            >
+              <mat-label [attr.data-cy]="'address-modified-time-label-' + i">
+                Modified Time
+              </mat-label>
+              <input
+                [attr.data-cy]="'address-modified-time-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="modifiedTime"
+                matInput
+                placeholder="Modified time of the address"
+              />
+            </mat-form-field>
+            <mat-form-field
+              [attr.data-cy]="'address-modified-by-user-id-field-' + i"
+              appearance="fill"
+            >
+              <mat-label
+                [attr.data-cy]="'address-modified-by-user-id-label-' + i"
+              >
+                Modified By User ID
+              </mat-label>
+              <input
+                [attr.data-cy]="'address-modified-by-user-id-input-' + i"
+                [readOnly]="data.type === 'readonly'"
+                formControlName="modifiedByUserId"
+                matInput
+                placeholder="ID of user who modified the address last"
+              />
+            </mat-form-field>
+          </div>
+        }
+      </div>
+    }
   </form>
 </mat-dialog-content>
 <mat-dialog-actions>

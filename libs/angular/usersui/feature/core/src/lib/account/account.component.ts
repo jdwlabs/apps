@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   AbstractControl,
   FormControl,
@@ -32,7 +32,6 @@ import { finalize } from 'rxjs';
 @Component({
   selector: 'lib-account',
   imports: [
-    CommonModule,
     MatInputModule,
     MatCardModule,
     MatButtonModule,

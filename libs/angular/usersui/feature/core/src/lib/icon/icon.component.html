@@ -22,16 +22,18 @@
     class="drop-zone"
     data-cy="drop-zone"
   >
-    <ng-container *ngIf="!selectedFile">
+    @if (!selectedFile) {
       <mat-icon class="upload-icon" data-cy="upload-icon"
         >cloud_upload</mat-icon
       >
       <p data-cy="upload-message">Click or drag an image to upload.</p>
-      <p *ngIf="errorMessage" class="error-message" data-cy="error-message">
-        {{ errorMessage }}
-      </p>
-    </ng-container>
-    <ng-container *ngIf="selectedFile">
+      @if (errorMessage) {
+        <p class="error-message" data-cy="error-message">
+          {{ errorMessage }}
+        </p>
+      }
+    }
+    @if (selectedFile) {
       <img
         [alt]="selectedFile.name"
         [src]="selectedFile.objectURL"
@@ -52,7 +54,7 @@
           <mat-icon>delete</mat-icon>
         </button>
       </div>
-    </ng-container>
+    }
   </div>
 
   <div class="button-container">

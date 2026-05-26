@@ -8,9 +8,11 @@
         placeholder="Email Address"
         type="email"
       />
-      <mat-error *ngIf="this.form.get('emailAddress')?.invalid">
-        {{ getErrorMessage('emailAddress') }}
-      </mat-error>
+      @if (this.form.get('emailAddress')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('emailAddress') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="password-field">
       <mat-label>Enter your password</mat-label>
@@ -31,9 +33,11 @@
       >
         <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
       </button>
-      <mat-error *ngIf="this.form.get('password')?.invalid">
-        {{ getErrorMessage('password') }}
-      </mat-error>
+      @if (this.form.get('password')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('password') }}
+        </mat-error>
+      }
     </mat-form-field>
     <button
       (click)="signIn()"

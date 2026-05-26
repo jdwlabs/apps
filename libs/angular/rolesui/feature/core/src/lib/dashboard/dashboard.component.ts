@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { NavigationTileComponent } from '@jdw/angular-shared-ui';
 import { NavigationTile } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-dashboard',
-  imports: [CommonModule, NavigationTileComponent],
+  imports: [NavigationTileComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
