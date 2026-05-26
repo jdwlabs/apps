@@ -3,7 +3,13 @@ import globals from 'globals';
 
 export default [
   { ignores: ['node_modules'] },
-  { ignores: ['**/eslint.config.ts', '**/eslint.config.js', '**/eslint.config.mjs'] },
+  {
+    ignores: [
+      '**/eslint.config.ts',
+      '**/eslint.config.js',
+      '**/eslint.config.mjs',
+    ],
+  },
   ...nx.configs['flat/base'],
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
