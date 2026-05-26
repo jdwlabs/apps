@@ -18,9 +18,11 @@
 
   <div
     (click)="fileInput.click()"
+    (keydown.enter)="fileInput.click()"
     [class.drag-over]="isDragOver"
     class="drop-zone"
     data-cy="drop-zone"
+    tabindex="0"
   >
     @if (!selectedFile) {
       <mat-icon class="upload-icon" data-cy="upload-icon"

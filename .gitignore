@@ -46,3 +46,6 @@ Thumbs.db
 .claude/worktrees
 .nx/polygraph
 .nx/self-healing
+
+# Local planning docs (specs, design docs — not for version control)
+docs/superpowers/
