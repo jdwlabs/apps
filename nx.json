@@ -11,9 +11,8 @@
       "!{projectRoot}/jest.config.[jt]s",
       "!{projectRoot}/src/test-setup.[jt]s",
       "!{projectRoot}/test-setup.[jt]s",
-      "!{projectRoot}/cypress/**/*",
-      "!{projectRoot}/**/*.cy.[jt]s?(x)",
-      "!{projectRoot}/cypress.config.[jt]s"
+      "!{projectRoot}/**/*.spec.[jt]s?(x)",
+      "!{projectRoot}/playwright.config.[jt]s"
     ],
     "sharedGlobals": ["{workspaceRoot}/go.work"]
   },
@@ -27,9 +26,11 @@
       "cache": true,
       "inputs": [
         "default",
+        "^default",
         "{workspaceRoot}/.eslintrc.json",
         "{workspaceRoot}/.eslintignore",
-        "{workspaceRoot}/eslint.config.js"
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/eslint-rules/**/*"
       ]
     },
     "@nx/jest:jest": {
@@ -77,9 +78,6 @@
     "e2e-ci--**/*": {
       "dependsOn": ["^build"]
     },
-    "@nxrocks/nx-spring-boot:test": {
-      "cache": true
-    },
     "@nx-go/nx-go:build": {
       "cache": true
     },
@@ -98,7 +96,7 @@
   },
   "generators": {
     "@nx/angular:application": {
-      "e2eTestRunner": "cypress",
+      "e2eTestRunner": "playwright",
       "linter": "eslint",
       "style": "scss",
       "unitTestRunner": "jest"
@@ -108,7 +106,59 @@
       "unitTestRunner": "jest"
     },
     "@nx/angular:component": {
-      "style": "scss"
+      "style": "scss",
+      "type": "component"
+    },
+    "@schematics/angular:component": {
+      "type": "component"
+    },
+    "@nx/angular:directive": {
+      "type": "directive"
+    },
+    "@schematics/angular:directive": {
+      "type": "directive"
+    },
+    "@nx/angular:service": {
+      "type": "service"
+    },
+    "@schematics/angular:service": {
+      "type": "service"
+    },
+    "@nx/angular:scam": {
+      "type": "component"
+    },
+    "@nx/angular:scam-directive": {
+      "type": "directive"
+    },
+    "@nx/angular:guard": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:guard": {
+      "typeSeparator": "."
+    },
+    "@nx/angular:interceptor": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:interceptor": {
+      "typeSeparator": "."
+    },
+    "@nx/angular:module": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:module": {
+      "typeSeparator": "."
+    },
+    "@nx/angular:pipe": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:pipe": {
+      "typeSeparator": "."
+    },
+    "@nx/angular:resolver": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:resolver": {
+      "typeSeparator": "."
     }
   },
   "plugins": [
@@ -119,26 +169,11 @@
       }
     },
     {
-      "plugin": "@nx/cypress/plugin",
+      "plugin": "@nx/gradle",
+      "include": ["apps/springboot/**/*"],
       "options": {
-        "targetName": "e2e",
-        "componentTestingTargetName": "component-test"
-      }
-    },
-    {
-      "plugin": "@nxrocks/nx-spring-boot",
-      "options": {
-        "buildTargetName": "build",
-        "installTargetName": "install",
         "testTargetName": "test",
-        "cleanTargetName": "clean",
-        "formatTargetName": "format",
-        "applyFormatTargetName": "apply-format",
-        "checkFormatTargetName": "check-format",
-        "runTargetName": "run",
-        "serveTargetName": "serve",
-        "buildImageTargetName": "build-image",
-        "buildInfoTargetName": "build-info"
+        "buildTargetName": "build"
       }
     },
     "@nx-go/nx-go"

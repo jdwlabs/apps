@@ -1,13 +1,14 @@
 <mat-toolbar [color]="color" data-cy="navbar-header">
-  <button
-    (click)="toggle()"
-    *ngIf="isXSmallScreen"
-    class="menu"
-    data-cy="navbar-button"
-    mat-icon-button
-  >
-    <mat-icon>menu</mat-icon>
-  </button>
+  @if (isXSmallScreen) {
+    <button
+      (click)="toggle()"
+      class="menu"
+      data-cy="navbar-button"
+      mat-icon-button
+    >
+      <mat-icon>menu</mat-icon>
+    </button>
+  }
   <a
     data-cy="navbar-home-button"
     class="no-underline"

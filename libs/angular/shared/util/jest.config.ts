@@ -1,5 +1,5 @@
 /* eslint-disable */
-export default {
+module.exports = {
   displayName: 'angular-shared-util',
   preset: '../../../../jest.preset.js',
   testEnvironment: 'node',

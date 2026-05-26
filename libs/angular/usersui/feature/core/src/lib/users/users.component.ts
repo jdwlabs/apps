@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { ColDef, GridOptions } from 'ag-grid-community';
 import {
@@ -12,7 +12,7 @@ import { User } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-users',
-  imports: [CommonModule, AgGridAngular, AgGridModule],
+  imports: [AgGridAngular, AgGridModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
 })

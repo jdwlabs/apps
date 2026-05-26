@@ -20,15 +20,6 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint"
-    },
-    "component-test": {
-      "executor": "@nx/cypress:cypress",
-      "options": {
-        "cypressConfig": "libs/angular/rolesui/feature/core/cypress.config.ts",
-        "testingType": "component",
-        "skipServe": true,
-        "devServerTarget": "rolesui:build"
-      }
     }
   }
 }

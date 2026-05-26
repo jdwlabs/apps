@@ -10,9 +10,11 @@
         required
         type="text"
       />
-      <mat-error *ngIf="this.form.get('firstName')?.invalid">
-        {{ getErrorMessage('firstName') }}
-      </mat-error>
+      @if (this.form.get('firstName')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('firstName') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="middle-name-field">
       <mat-label data-cy="middle-name-label">Middle Name</mat-label>
@@ -22,9 +24,11 @@
         placeholder="Enter your middle name"
         type="text"
       />
-      <mat-error *ngIf="this.form.get('middleName')?.invalid">
-        {{ getErrorMessage('middleName') }}
-      </mat-error>
+      @if (this.form.get('middleName')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('middleName') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="last-name-field">
       <mat-label data-cy="last-name-label">Last Name</mat-label>
@@ -35,9 +39,11 @@
         required
         type="text"
       />
-      <mat-error *ngIf="this.form.get('lastName')?.invalid">
-        {{ getErrorMessage('lastName') }}
-      </mat-error>
+      @if (this.form.get('lastName')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('lastName') }}
+        </mat-error>
+      }
     </mat-form-field>
     <mat-form-field appearance="outline" data-cy="birthdate-field">
       <mat-label data-cy="birthdate-label">Birthdate</mat-label>
@@ -61,9 +67,11 @@
         data-cy="birthdate-datepicker"
         #picker
       ></mat-datepicker>
-      <mat-error *ngIf="this.form.get('birthdate')?.invalid">
-        {{ getErrorMessage('birthdate') }}
-      </mat-error>
+      @if (this.form.get('birthdate')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('birthdate') }}
+        </mat-error>
+      }
     </mat-form-field>
     <div class="button-container">
       <button

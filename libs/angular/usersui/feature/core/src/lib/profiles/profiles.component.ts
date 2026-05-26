@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ProfilesService } from '@jdw/angular-usersui-data-access';
 import {
   dateFilterComparator,
@@ -12,7 +12,7 @@ import { Profile } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-profiles',
-  imports: [CommonModule, AgGridAngular],
+  imports: [AgGridAngular],
   templateUrl: './profiles.component.html',
   styleUrl: './profiles.component.scss',
 })

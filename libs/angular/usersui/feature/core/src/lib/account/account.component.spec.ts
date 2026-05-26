@@ -39,4 +39,36 @@ describe('AccountComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  describe('form validation', () => {
+    it('requires email', () => {
+      component.form.get('email')!.setValue('');
+      expect(component.form.get('email')!.hasError('required')).toBe(true);
+    });
+
+    it('rejects invalid email format', () => {
+      component.form.get('email')!.setValue('not-an-email');
+      expect(component.form.get('email')!.hasError('pattern')).toBe(true);
+    });
+
+    it('requires password', () => {
+      component.form.get('matchingPassword.password')!.setValue('');
+      expect(
+        component.form.get('matchingPassword.password')!.hasError('required'),
+      ).toBe(true);
+    });
+
+    it('requires confirmPassword', () => {
+      component.form.get('matchingPassword.confirmPassword')!.setValue('');
+      expect(
+        component.form
+          .get('matchingPassword.confirmPassword')!
+          .hasError('required'),
+      ).toBe(true);
+    });
+
+    it('is invalid when empty', () => {
+      expect(component.form.valid).toBe(false);
+    });
+  });
 });

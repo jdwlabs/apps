@@ -14,9 +14,11 @@
         required
         type="text"
       />
-      <mat-error *ngIf="this.form.get('name')?.invalid">
-        {{ getErrorMessage('name') }}
-      </mat-error>
+      @if (this.form.get('name')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('name') }}
+        </mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field
@@ -32,9 +34,11 @@
         required
         type="text"
       />
-      <mat-error *ngIf="this.form.get('description')?.invalid">
-        {{ getErrorMessage('description') }}
-      </mat-error>
+      @if (this.form.get('description')?.invalid) {
+        <mat-error>
+          {{ getErrorMessage('description') }}
+        </mat-error>
+      }
     </mat-form-field>
     <div class="button-container">
       <button

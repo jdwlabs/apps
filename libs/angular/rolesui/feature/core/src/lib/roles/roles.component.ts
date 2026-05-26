@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AgGridAngular } from 'ag-grid-angular';
 import { RolesService } from '@jdw/angular-shared-data-access';
 import { Role } from '@jdw/angular-shared-util';
@@ -12,7 +12,7 @@ import { RolesActionButtonCellRendererComponent } from '../roles-action-button-c
 
 @Component({
   selector: 'lib-roles',
-  imports: [CommonModule, AgGridAngular],
+  imports: [AgGridAngular],
   templateUrl: './roles.component.html',
   styleUrl: './roles.component.scss',
 })

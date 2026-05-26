@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   AbstractControl,
   FormControl,
@@ -32,7 +32,6 @@ import { AuthService } from '@jdw/angular-shared-data-access';
 @Component({
   selector: 'lib-sign-up',
   imports: [
-    CommonModule,
     MatInputModule,
     MatCardModule,
     RouterLink,

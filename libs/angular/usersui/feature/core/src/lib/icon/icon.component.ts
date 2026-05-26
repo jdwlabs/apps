@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,7 +8,7 @@ import { Icon } from '@jdw/angular-shared-util';
 
 @Component({
   selector: 'lib-icon',
-  imports: [CommonModule, MatButton, MatIcon, MatIconButton],
+  imports: [MatButton, MatIcon, MatIconButton],
   templateUrl: './icon.component.html',
   styleUrl: './icon.component.scss',
 })
