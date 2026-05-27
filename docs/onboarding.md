@@ -1,4 +1,4 @@
-# New Developer / AI Session Onboarding
+# Developer Onboarding
 
 ## Prerequisites
 
@@ -28,20 +28,20 @@ docker compose -f scripts/docker/compose.yaml up -d
 pnpm exec nx run-many -t lint test
 ```
 
-## For AI Agents Starting a New Session
+## Starting a New Session
 
-1. **Read `CLAUDE.md`** (or `AGENT.md`) — covers all commands, conventions, and do-not-dos
-2. **Read `docs/ai/architecture.md`** — understand the service map and project graph
-3. **Read `docs/ai/conventions.md`** — coding standards before writing any code
+1. **Read `CLAUDE.md`** — commands, conventions, and do-not-dos
+2. **Read `docs/architecture.md`** — service map and project graph
+3. **Read `docs/conventions.md`** — coding standards before writing any code
 4. **Check branch status:** `git status && git log --oneline -5`
 5. **Run affected targets** before starting work: `pnpm exec nx affected -t lint test`
 
-## Key Files to Know
+## Key Files
 
 | File                          | Purpose                                                    |
 | ----------------------------- | ---------------------------------------------------------- |
 | `nx.json`                     | Nx workspace config (plugins, target defaults, generators) |
-| `.eslintrc.json`              | Root ESLint config including module boundary rules         |
+| `eslint.config.ts`            | Root ESLint flat config — module boundary rules live here  |
 | `.commitlintrc.json`          | Conventional commit rules                                  |
 | `package.json`                | Deps, scripts, commitizen + lint-staged config             |
 | `.husky/commit-msg`           | Runs commitlint on every commit                            |
@@ -49,11 +49,11 @@ pnpm exec nx run-many -t lint test
 | `.github/workflows/ci.yml`    | CI pipeline definition                                     |
 | `scripts/docker/compose.yaml` | Local development stack                                    |
 
-## Project Name Conventions
+## Project Names
 
-Nx project names follow the directory path pattern:
+Nx project names follow the directory path:
 
-- Apps: short name (e.g., `container`, `authui`)
-- Libs: hyphenated path (e.g., `angular-container-feature-core`, `angular-shared-ui`)
+- Apps: short name (e.g. `container`, `authui`)
+- Libs: hyphenated path (e.g. `angular-container-feature-core`, `angular-shared-ui`)
 
-Run `pnpm exec nx show projects` to see all project names.
+Run `pnpm exec nx show projects` for the current list.

@@ -22,7 +22,7 @@ tools/
 scripts/        # Non-Nx shell scripts and Docker Compose helpers
   docker/       # docker/compose.yaml — local dev stack
 docs/
-  ai/           # AI reference docs (architecture, conventions, workflows, onboarding)
+                # architecture, conventions, workflows, onboarding
 ```
 
 ## Key Commands
@@ -56,12 +56,12 @@ docker compose -f scripts/docker/compose.yaml up -d
 Every `project.json` has three tag families:
 
 - `type:app` | `type:lib` | `type:e2e` | `type:feature` | `type:ui` | `type:data-access` | `type:util`
-- `scope:<name>` — app-level scope (authui, container, rolesui, usersui, shared, authdb, servicediscovery, usersrole, platform)
+- `scope:<name>` — app-level scope; names come from `project.json` files. Run `pnpm exec nx show projects` for the current list.
 - `framework:angular` | `framework:go` | `framework:springboot` | `framework:database` | `framework:playwright`
 
-Module boundary rules in `.eslintrc.json` enforce:
+Module boundary rules in `eslint.config.ts` enforce:
 
-- Per-app-scope isolation: `scope:container` code may only import from `scope:container` or `scope:shared` libs
+- Per-app-scope isolation: a `scope:X` lib may only import from `scope:X` or `scope:shared` libs
 - Framework isolation: `framework:angular` libs may only import from other `framework:angular` libs
 - Type hierarchy: `type:feature` → `type:ui` + `type:util` + `type:data-access` (no circular)
 

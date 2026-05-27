@@ -16,12 +16,13 @@ pnpm exec nx run <lib-project-name>:test
 ```bash
 # Generate the app
 pnpm exec nx g @nx/angular:application --name=myapp --directory=apps/angular/myapp/myapp
-
-# Then manually:
-# 1. Add tags to project.json: ["type:app", "scope:myapp", "framework:angular"]
-# 2. Add scope:myapp isolation rule to .eslintrc.json depConstraints
-# 3. Add remote entry to container webpack.config.ts
 ```
+
+Then manually:
+
+1. Add tags to `project.json`: `["type:app", "scope:myapp", "framework:angular"]`
+2. Add `scope:myapp` isolation rule to `eslint.config.ts` `depConstraints`
+3. Add remote entry to `container` `webpack.config.ts`
 
 ## Running the Local Development Stack
 
@@ -29,8 +30,9 @@ pnpm exec nx g @nx/angular:application --name=myapp --directory=apps/angular/mya
 # Start databases and services
 docker compose -f scripts/docker/compose.yaml up -d
 
-# Start Angular MFE shell + all remotes
-pnpm exec nx run-many --target=serve --projects=container,authui,rolesui,usersui --parallel=4
+# Start all Angular apps (discover project names first)
+pnpm exec nx show projects --json | grep angular
+pnpm exec nx run-many --target=serve --projects=<comma-separated-app-names> --parallel=4
 ```
 
 ## Running Affected Lint + Tests
