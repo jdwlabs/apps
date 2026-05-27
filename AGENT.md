@@ -52,7 +52,7 @@ Subject: lowercase, no trailing period, max 100 chars
 
 ## Module Boundary Rules
 
-Angular libs are tag-scoped. A `scope:container` lib may only import from `scope:container` or `scope:shared` libs. Cross-scope imports will fail ESLint lint. Check `.eslintrc.json` `depConstraints` for the full ruleset.
+Angular libs are tag-scoped. A `scope:container` lib may only import from `scope:container` or `scope:shared` libs. Cross-scope imports will fail ESLint lint. See `eslint.config.ts` `depConstraints` for the full ruleset.
 
 ## Testing
 

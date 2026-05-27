@@ -43,7 +43,7 @@ No barrel files (`index.ts`) at the app level. Import directly from the source f
 
 ## Commits
 
-See `CLAUDE.md` → Commit Conventions section.
+See `CLAUDE.md` → Commit Conventions section. Types and rules are enforced by `.commitlintrc.json` — that file is the source of truth, not this doc.
 
 ## JSON / YAML
 
