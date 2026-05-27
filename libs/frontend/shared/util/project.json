@@ -1,0 +1,26 @@
+{
+  "name": "frontend-shared-util",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/frontend/shared/util/src",
+  "projectType": "library",
+  "tags": ["type:util", "scope:shared", "framework:angular"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/frontend/shared/util",
+        "main": "libs/frontend/shared/util/src/index.ts",
+        "tsConfig": "libs/frontend/shared/util/tsconfig.lib.json",
+        "assets": ["libs/frontend/shared/util/*.md"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/frontend/shared/util/jest.config.ts"
+      }
+    }
+  }
+}

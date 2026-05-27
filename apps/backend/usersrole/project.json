@@ -1,0 +1,76 @@
+{
+  "name": "usersrole",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/usersrole/src",
+  "tags": ["type:app", "scope:usersrole", "framework:springboot"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "bash gradlew build"
+      },
+      "cache": true,
+      "outputs": ["{projectRoot}/build"]
+    },
+    "lint": {
+      "cache": true,
+      "command": "echo Ignored in project configuration"
+    },
+    "version": {
+      "executor": "@jscutlery/semver:version",
+      "options": {
+        "push": true,
+        "preset": "conventionalcommits",
+        "postTargets": ["format", "update-version", "build-image", "update-app"]
+      }
+    },
+    "update-version": {
+      "command": "bash scripts/update-version.sh {projectRoot}/build.gradle.kts {version} {projectName}"
+    },
+    "update-app": {
+      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
+    },
+    "format": {
+      "command": "bash scripts/format.sh"
+    },
+    "serve-container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker run --rm -p 8080:8080 jdwlabs/usersrole:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          {
+            "command": "bash gradlew jib",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          {
+            "command": "bash gradlew jibDockerBuild",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    }
+  }
+}
