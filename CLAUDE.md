@@ -8,17 +8,18 @@ NX monorepo for jdwlabs application services. Contains Angular micro-frontends, 
 
 ### Structure
 
-- `apps/frontend/` — Angular micro-frontend apps (authui, rolesui, usersui)
-- `apps/backend/` — Go backend services (servicediscovery, usersrole)
+- `apps/angular/` — Angular micro-frontend apps (authui, container, rolesui, usersui, platform-e2e)
+- `apps/go/` — Go services (servicediscovery)
+- `apps/springboot/` — Spring Boot/Kotlin service (usersrole)
 - `apps/database/` — Database migration apps (authdb)
-- `apps/e2e/` — Cypress end-to-end tests
-- `libs/frontend/` — Shared Angular libraries
-- `libs/backend/` — Shared Go libraries
+- `libs/angular/` — Shared Angular libraries
+- `libs/go/` — Shared Go libraries
 
 ### Tech Stack
 
 - **Frontend:** Angular, Module Federation, Jest, Cypress
-- **Backend:** Go (workspace at repo root via go.work)
+- **Backend (Go):** Go 1.23, workspace at repo root via `go.work` (covers `apps/go/` and `libs/go/`)
+- **Backend (JVM):** Spring Boot, Kotlin, Gradle
 - **Monorepo tooling:** NX, pnpm
 
 ## Development Commands
@@ -65,13 +66,13 @@ go test ./...                     # Run all Go tests
 ### Add a new Angular app
 
 ```bash
-npx nx g @nx/angular:application <name> --directory=apps/frontend/<name>
+npx nx g @nx/angular:application <name> --directory=apps/angular/<name>
 ```
 
 ### Add a new shared Angular library
 
 ```bash
-npx nx g @nx/angular:library <name> --directory=libs/frontend/<name>
+npx nx g @nx/angular:library <name> --directory=libs/angular/<name>
 ```
 
 ### Add a dependency
@@ -84,7 +85,7 @@ pnpm install --frozen-lockfile    # Restore lockfile-exact install
 ## AI Agent Contract
 
 - Use `npx nx` for all build/test/lint operations — never invoke `ng` directly
-- For Go: use `go build ./...` and `go test ./...` from the repo root (go.work handles workspace)
+- For Go: use `go build ./...` and `go test ./...` from the repo root (`go.work` covers `apps/go/` and `libs/go/`)
 - Do not modify `pnpm-lock.yaml` directly — run `pnpm install` to update
 - Do not run `git push` — leave that to the developer
 - CI runs `nx affected` — changes that don't appear in the affected graph will not be tested in CI
