@@ -2,23 +2,23 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.2](https://github.com/jdwlabs/apps/compare/usersui-1.3.1...usersui-1.3.2) (2026-05-28)
+
 ## [1.3.2](https://github.com/jdwlabs/apps/compare/usersui-1.3.1...usersui-1.3.2) (2026-05-26)
 
 ## [1.3.1](https://github.com/jdwillmsen/jdw/compare/usersui-1.3.0...usersui-1.3.1) (2025-05-27)
 
 ## [1.3.0](https://github.com/jdwillmsen/jdw/compare/usersui-1.2.0...usersui-1.3.0) (2025-04-10)
 
-
 ### Features
 
-* **usersui:** update build-image task ([402ec00](https://github.com/jdwillmsen/jdw/commit/402ec00a78c57482e9ebbcada3fd13de8b9f3d47))
+- **usersui:** update build-image task ([402ec00](https://github.com/jdwillmsen/jdw/commit/402ec00a78c57482e9ebbcada3fd13de8b9f3d47))
 
 ## [1.2.0](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.6...usersui-1.2.0) (2025-04-10)
 
-
 ### Features
 
-* **usersui:** update start nginx script ([9b48cc3](https://github.com/jdwillmsen/jdw/commit/9b48cc3ade3c697d07caeb7706fe1e2cfa0e2cdf))
+- **usersui:** update start nginx script ([9b48cc3](https://github.com/jdwillmsen/jdw/commit/9b48cc3ade3c697d07caeb7706fe1e2cfa0e2cdf))
 
 ## [1.1.6](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.5...usersui-1.1.6) (2025-04-10)
 
@@ -26,24 +26,21 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [1.1.4](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.3...usersui-1.1.4) (2025-04-07)
 
-
 ### Bug Fixes
 
-* **usersui:** update Dockerfile setup for build-image targets ([049486c](https://github.com/jdwillmsen/jdw/commit/049486cf5f063a207f1140196730d245bc0bf74c))
+- **usersui:** update Dockerfile setup for build-image targets ([049486c](https://github.com/jdwillmsen/jdw/commit/049486cf5f063a207f1140196730d245bc0bf74c))
 
 ## [1.1.3](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.2...usersui-1.1.3) (2025-04-07)
 
-
 ### Performance Improvements
 
-* **usersui:** update Dockerfile setup for build-image targets ([721c8bc](https://github.com/jdwillmsen/jdw/commit/721c8bc2ba5d7d643fef9e7b7f1ddc6a2a0090d4))
+- **usersui:** update Dockerfile setup for build-image targets ([721c8bc](https://github.com/jdwillmsen/jdw/commit/721c8bc2ba5d7d643fef9e7b7f1ddc6a2a0090d4))
 
 ## [1.1.2](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.1...usersui-1.1.2) (2025-04-01)
 
-
 ### Bug Fixes
 
-* **usersui:** add dialog open fix ([6ba06df](https://github.com/jdwillmsen/jdw/commit/6ba06df67f6996ef71ae5b6e15053a12f9b313ef))
+- **usersui:** add dialog open fix ([6ba06df](https://github.com/jdwillmsen/jdw/commit/6ba06df67f6996ef71ae5b6e15053a12f9b313ef))
 
 ## [1.1.1](https://github.com/jdwillmsen/jdw/compare/usersui-1.1.0...usersui-1.1.1) (2025-03-30)
 
