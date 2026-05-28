@@ -42,6 +42,45 @@ refactor(rolesui): extract role list to shared component
 test(usersrole): add integration test for role assignment
 ```
 
+### Footers
+
+Footers appear after an optional body, separated by a blank line. Common footers:
+
+| Footer | When to use |
+|--------|-------------|
+| `Refs: JDWLABS-XX` | Links commit to a Jira issue (does not close it) |
+| `Closes: JDWLABS-XX` | Closes the Jira issue on merge |
+| `Closes: #N` | Closes a GitHub issue by number |
+| `BREAKING CHANGE: <desc>` | Required when a commit introduces a breaking API/interface change |
+| `Co-Authored-By: Name <email>` | Credit a co-author (human or AI) |
+
+**AI contributor footer** — include when commits were written with AI assistance:
+
+```
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+**Full examples with footers:**
+
+```
+feat(authui): add OIDC token refresh flow
+
+Implements silent refresh using a hidden iframe per the OIDC spec.
+Falls back to full re-login if the refresh token is expired.
+
+Refs: JDWLABS-42
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+```
+fix!(usersrole): remove deprecated /users/list endpoint
+
+BREAKING CHANGE: /users/list removed; use /users?page=N instead.
+
+Closes: JDWLABS-38
+Closes: #17
+```
+
 ### Rules
 
 - Subject line ≤72 characters, lowercase, no trailing period
