@@ -2,23 +2,23 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.2](https://github.com/jdwlabs/apps/compare/container-1.3.1...container-1.3.2) (2026-05-28)
+
 ## [1.3.2](https://github.com/jdwlabs/apps/compare/container-1.3.1...container-1.3.2) (2026-05-26)
 
 ## [1.3.1](https://github.com/jdwillmsen/jdw/compare/container-1.3.0...container-1.3.1) (2025-05-27)
 
 ## [1.3.0](https://github.com/jdwillmsen/jdw/compare/container-1.2.0...container-1.3.0) (2025-04-10)
 
-
 ### Features
 
-* **container:** update build-image task ([014871c](https://github.com/jdwillmsen/jdw/commit/014871c99fb705650a38ea24f4e329fc0a504bd9))
+- **container:** update build-image task ([014871c](https://github.com/jdwillmsen/jdw/commit/014871c99fb705650a38ea24f4e329fc0a504bd9))
 
 ## [1.2.0](https://github.com/jdwillmsen/jdw/compare/container-1.1.7...container-1.2.0) (2025-04-10)
 
-
 ### Features
 
-* **container:** update start nginx script ([0efddfe](https://github.com/jdwillmsen/jdw/commit/0efddfe496dace200cc56621b099d3fb7215caa7))
+- **container:** update start nginx script ([0efddfe](https://github.com/jdwillmsen/jdw/commit/0efddfe496dace200cc56621b099d3fb7215caa7))
 
 ## [1.1.7](https://github.com/jdwillmsen/jdw/compare/container-1.1.6...container-1.1.7) (2025-04-10)
 
@@ -26,24 +26,21 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [1.1.5](https://github.com/jdwillmsen/jdw/compare/container-1.1.4...container-1.1.5) (2025-04-07)
 
-
 ### Bug Fixes
 
-* **container:** update Dockerfile setup for build-image targets ([5db5185](https://github.com/jdwillmsen/jdw/commit/5db518577f5b734de25f6b83ed8ffd24503dba5a))
+- **container:** update Dockerfile setup for build-image targets ([5db5185](https://github.com/jdwillmsen/jdw/commit/5db518577f5b734de25f6b83ed8ffd24503dba5a))
 
 ## [1.1.4](https://github.com/jdwillmsen/jdw/compare/container-1.1.3...container-1.1.4) (2025-04-07)
 
-
 ### Performance Improvements
 
-* **container:** update Dockerfile setup for build-image targets ([4476d8c](https://github.com/jdwillmsen/jdw/commit/4476d8ca0e4f0a10ddca8bed937d9b6fe310f9ff))
+- **container:** update Dockerfile setup for build-image targets ([4476d8c](https://github.com/jdwillmsen/jdw/commit/4476d8ca0e4f0a10ddca8bed937d9b6fe310f9ff))
 
 ## [1.1.3](https://github.com/jdwillmsen/jdw/compare/container-1.1.2...container-1.1.3) (2025-04-01)
 
-
 ### Bug Fixes
 
-* **container:** add dialog open fix ([19bb154](https://github.com/jdwillmsen/jdw/commit/19bb1544adf4f35905a66c6a491b52221c70edd4))
+- **container:** add dialog open fix ([19bb154](https://github.com/jdwillmsen/jdw/commit/19bb1544adf4f35905a66c6a491b52221c70edd4))
 
 ## [1.1.2](https://github.com/jdwillmsen/jdw/compare/container-1.1.1...container-1.1.2) (2025-03-30)
 
