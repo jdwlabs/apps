@@ -2,9 +2,9 @@
 FROM nginx:1.27 AS run
 
 ENV JSFOLDER=/usr/share/nginx/html/*.js
-COPY apps/angular/usersui/usersui/start-nginx.sh /usr/bin/start-nginx.sh
+COPY apps/frontend/usersui/start-nginx.sh /usr/bin/start-nginx.sh
 RUN chmod +x /usr/bin/start-nginx.sh
-COPY apps/angular/usersui/usersui/default.conf /etc/nginx/conf.d
-COPY dist/apps/angular/usersui/usersui/ /usr/share/nginx/html/
+COPY apps/frontend/usersui/default.conf /etc/nginx/conf.d
+COPY dist/apps/frontend/usersui/ /usr/share/nginx/html/
 
 ENTRYPOINT [ "start-nginx.sh" ]

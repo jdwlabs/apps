@@ -1,4 +1,4 @@
-module apps/go/servicediscovery
+module apps/backend/servicediscovery
 
 go 1.23
 

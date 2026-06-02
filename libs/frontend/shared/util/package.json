@@ -1,5 +1,5 @@
 {
-  "name": "@jdw/angular-shared-util",
+  "name": "@jdw/frontend-shared-util",
   "version": "0.0.1",
   "dependencies": {
     "tslib": "^2.8.1",

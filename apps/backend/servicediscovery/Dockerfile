@@ -3,6 +3,6 @@
 FROM gcr.io/distroless/base-debian12:nonroot AS runner
 
 WORKDIR /app
-COPY ./dist/apps/go/servicediscovery .
+COPY ./dist/apps/backend/servicediscovery .
 
 ENTRYPOINT ["/app/servicediscovery"]

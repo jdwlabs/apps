@@ -2,9 +2,9 @@
 FROM nginx:1.27 AS run
 
 ENV JSFOLDER=/usr/share/nginx/html/*.js
-COPY apps/angular/authui/authui/start-nginx.sh /usr/bin/start-nginx.sh
+COPY apps/frontend/authui/start-nginx.sh /usr/bin/start-nginx.sh
 RUN chmod +x /usr/bin/start-nginx.sh
-COPY apps/angular/authui/authui/default.conf /etc/nginx/conf.d
-COPY dist/apps/angular/authui/authui/ /usr/share/nginx/html/
+COPY apps/frontend/authui/default.conf /etc/nginx/conf.d
+COPY dist/apps/frontend/authui/ /usr/share/nginx/html/
 
 ENTRYPOINT [ "start-nginx.sh" ]
