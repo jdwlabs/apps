@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rs/cors"
-	"libs/go/shared/util"
+	"libs/backend/shared/util"
 	"log"
 	"log/slog"
 	"net/http"
