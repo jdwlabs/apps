@@ -4,19 +4,47 @@ This file is read by Claude Code at the start of every session. Keep it current.
 
 ## Overview
 
-Nx 22 monorepo with Angular 21 micro-frontend apps, Go services, a Spring Boot service, PostgreSQL migration runners, and shared Angular libraries. All CI runs on self-hosted ARC runners (`ubuntu-jdwlabs`). Package manager is **pnpm**.
+Nx 22 monorepo with Angular 21 micro-frontend apps, Go services, a Spring Boot service, PostgreSQL migration runners, and shared Angular libraries. All CI runs on self-hosted ARC runners (`ubuntu-jdwlabs`). Package manager is **pnpm 10**.
+
+## Worktree Location (Windows — CRITICAL)
+
+This repo lives on **F: drive** (`F:\Dev\projects\personal\jdwlabs\apps`).
+
+**Worktrees MUST be created on the same drive (F:).**
+
+pnpm uses hard links for its content-addressable store. Hard links cannot cross NTFS volume boundaries. If a worktree is on C: and the repo is on F:, `pnpm install` will silently succeed but produce an empty `node_modules` (only `.pnpm` dir) — no binaries, no hoisted packages. Git hooks that call `npx --no-install <tool>` will then fail.
+
+```bash
+# CORRECT — same drive as repo
+gwta feat/my-feature   # creates F:\Dev\worktrees\apps\feat\my-feature
+
+# or manually:
+git worktree add F:/Dev/worktrees/apps/feat/my-feature -b feat/my-feature
+
+# keep worktrees on F: drive:
+export WT_BASE=F:/Dev/worktrees   # in ~/.bashrc
+```
+
+If a cross-drive worktree left `node_modules` with only `.pnpm` and no `.bin`, replace it with a junction to the main repo's `node_modules`:
+
+```powershell
+Remove-Item -Recurse -Force C:\path\to\worktree\node_modules
+New-Item -ItemType Junction -Path C:\path\to\worktree\node_modules -Target F:\Dev\projects\personal\jdwlabs\apps\node_modules
+```
 
 ## Directory Map
 
+Role-based layout (as of JDWLABS-20):
+
 ```
 apps/
-  angular/      # Angular deployable apps (authui, container, rolesui, usersui)
-  go/           # Go services (servicediscovery)
-  springboot/   # Spring Boot services (usersrole)
+  frontend/     # Angular micro-frontend apps (authui, container, rolesui, usersui)
+  backend/      # Go (servicediscovery) + Spring Boot (usersrole) services
   database/     # DB migration runners (authdb — PostgreSQL)
+  e2e/          # Playwright E2E tests
 libs/
-  angular/      # Shared Angular libs (per-app: authui/container/rolesui/usersui + shared)
-  go/           # Go shared packages
+  frontend/     # Shared Angular libs (per-app: authui/container/rolesui/usersui + shared)
+  backend/      # Go shared packages
 tools/
   agents/       # Nx-adjacent Docker dev agent — DO NOT move or restructure
 scripts/        # Non-Nx shell scripts and Docker Compose helpers
@@ -72,7 +100,7 @@ Four Angular apps use **webpack module federation**:
 - `container` — shell app, loads remotes at runtime
 - `authui`, `rolesui`, `usersui` — remote apps
 
-Each app has libs under `libs/angular/<app-name>/`: feature/, data-access/, and util/ (ui/ in shared).
+Each app has libs under `libs/frontend/<app-name>/`: feature/, data-access/, and util/ (ui/ in shared).
 
 ## Commit Conventions
 
@@ -98,7 +126,7 @@ Use `pnpm run commit` for the interactive Commitizen prompt.
 ## Coding Conventions
 
 - Angular file naming: kebab-case, suffix-typed (`.component.ts`, `.service.ts`, `.spec.ts`)
-- Styles: SCSS only. Themes in `libs/angular/shared/ui/src/lib/styles/themes/`
+- Styles: SCSS only. Themes in `libs/frontend/shared/ui/src/lib/styles/themes/`
 - No barrel `index.ts` files at app level — use direct path imports
 - Go packages: lowercase single-word names, follow standard Go layout
 
