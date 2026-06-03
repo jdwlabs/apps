@@ -12,9 +12,6 @@
       "Bash(git add *)",
       "Bash(git commit*)"
     ],
-    "deny": [
-      "Bash(git push*)",
-      "Bash(rm -rf *)"
-    ]
+    "deny": ["Bash(git push*)", "Bash(rm -rf *)"]
   }
 }
