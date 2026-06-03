@@ -1,96 +1,128 @@
-# CLAUDE.md
+# CLAUDE.md — jdwlabs/apps Monorepo
 
-This file provides guidance to Claude Code (claude.ai/code) when working in this repository.
+This file is read by Claude Code at the start of every session. Keep it current.
 
-## Repository Overview
+## Overview
 
-NX monorepo for jdwlabs application services. Contains Angular micro-frontends, Go backend services, and database migration tooling.
+Nx 22 monorepo with Angular 21 micro-frontend apps, Go services, a Spring Boot service, PostgreSQL migration runners, and shared Angular libraries. All CI runs on self-hosted ARC runners (`ubuntu-jdwlabs`). Package manager is **pnpm**.
 
-### Structure
+## Directory Map
 
-- `apps/angular/` — Angular micro-frontend apps (authui, container, rolesui, usersui, platform-e2e)
-- `apps/go/` — Go services (servicediscovery)
-- `apps/springboot/` — Spring Boot/Kotlin service (usersrole)
-- `apps/database/` — Database migration apps (authdb)
-- `libs/angular/` — Shared Angular libraries
-- `libs/go/` — Shared Go libraries
-
-### Tech Stack
-
-- **Frontend:** Angular, Module Federation, Jest, Cypress
-- **Backend (Go):** Go 1.23, workspace at repo root via `go.work` (covers `apps/go/` and `libs/go/`)
-- **Backend (JVM):** Spring Boot, Kotlin, Gradle
-- **Monorepo tooling:** NX, pnpm
-
-## Development Commands
-
-### Build
-
-```bash
-npx nx build <app-name>           # Build a single app
-npx nx run-many -t build          # Build all apps
+```
+apps/
+  angular/      # Angular deployable apps (authui, container, rolesui, usersui)
+  go/           # Go services (servicediscovery)
+  springboot/   # Spring Boot services (usersrole)
+  database/     # DB migration runners (authdb — PostgreSQL)
+libs/
+  angular/      # Shared Angular libs (per-app: authui/container/rolesui/usersui + shared)
+  go/           # Go shared packages
+tools/
+  agents/       # Nx-adjacent Docker dev agent — DO NOT move or restructure
+scripts/        # Non-Nx shell scripts and Docker Compose helpers
+  docker/       # docker/compose.yaml — local dev stack
+docs/
+                # architecture, conventions, workflows, onboarding
 ```
 
-### Test
+## Key Commands
 
 ```bash
-npx nx test <app-name>            # Unit tests for one app
-npx nx run-many -t test           # All unit tests
-npx nx e2e <app-name>-e2e         # Cypress E2E tests
+# Affected lint + test (use this during development)
+pnpm exec nx affected -t lint test
+
+# Format check (must pass in CI)
+pnpm exec nx format:check
+
+# Auto-fix formatting
+pnpm exec nx format:write
+
+# Run a specific Nx target
+pnpm exec nx run <project>:<target>
+# e.g. pnpm exec nx run container:build
+
+# Reset Nx project graph (required after editing project.json)
+pnpm exec nx reset
+
+# Interactive commit (commitizen)
+pnpm run commit
+
+# Start local Docker stack
+docker compose -f scripts/docker/compose.yaml up -d
 ```
 
-### Lint
+## Nx Project Tags
 
-```bash
-npx nx lint <app-name>            # Lint one app
-npx nx run-many -t lint           # Lint all
+Every `project.json` has three tag families:
+
+- `type:app` | `type:lib` | `type:e2e` | `type:feature` | `type:ui` | `type:data-access` | `type:util`
+- `scope:<name>` — app-level scope; names come from `project.json` files. Run `pnpm exec nx show projects` for the current list.
+- `framework:angular` | `framework:go` | `framework:springboot` | `framework:database` | `framework:playwright`
+
+Module boundary rules in `eslint.config.ts` enforce:
+
+- Per-app-scope isolation: a `scope:X` lib may only import from `scope:X` or `scope:shared` libs
+- Framework isolation: `framework:angular` libs may only import from other `framework:angular` libs
+- Type hierarchy: `type:feature` → `type:ui` + `type:util` + `type:data-access` (no circular)
+
+## Angular Architecture
+
+Four Angular apps use **webpack module federation**:
+
+- `container` — shell app, loads remotes at runtime
+- `authui`, `rolesui`, `usersui` — remote apps
+
+Each app has libs under `libs/angular/<app-name>/`: feature/, data-access/, and util/ (ui/ in shared).
+
+## Commit Conventions
+
+Format: `<type>(<scope>): <subject>` — scope is optional but encouraged.
+
+Allowed types: `feat` `fix` `chore` `docs` `style` `refactor` `perf` `test` `build` `ci` `revert`
+
+Rules:
+
+- Scope: kebab-case
+- Subject: lowercase, no trailing period, max header 100 chars
+- Body: blank line before body if present
+
+```
+feat(authui): add oauth2 login flow
+fix(container): resolve mfe chunk loading error
+chore(deps): bump @angular/core to 21.2.10
+build(lint): migrate to eslint flat config
 ```
 
-### Affected (used in CI to scope work to changed code)
+Use `pnpm run commit` for the interactive Commitizen prompt.
 
-```bash
-npx nx affected -t build          # Build only what changed vs main
-npx nx affected -t test           # Test only what changed
-npx nx affected -t lint           # Lint only what changed
-```
+## Coding Conventions
 
-### Go (backend services)
+- Angular file naming: kebab-case, suffix-typed (`.component.ts`, `.service.ts`, `.spec.ts`)
+- Styles: SCSS only. Themes in `libs/angular/shared/ui/src/lib/styles/themes/`
+- No barrel `index.ts` files at app level — use direct path imports
+- Go packages: lowercase single-word names, follow standard Go layout
 
-```bash
-go build ./...                    # Run from repo root (go.work)
-go test ./...                     # Run all Go tests
-```
+## Versioning / Release
 
-## Common Tasks
+Versioning is managed by `@jscutlery/semver` via the `version` Nx target on each app. It reads conventional commits, bumps semver, tags the repo, and triggers `postTargets` (format, save-version, build-image, update-app). **Do not manually edit version files.**
 
-### Add a new Angular app
+## CI/CD
 
-```bash
-npx nx g @nx/angular:application <name> --directory=apps/angular/<name>
-```
+GitHub Actions on `ubuntu-jdwlabs` (self-hosted ARC runner):
 
-### Add a new shared Angular library
+1. `nx format:check` — formatting gate
+2. PR only: `commitlint` — validates all commit messages in the PR
+3. `nx affected -t lint test` — affected projects
+4. `nx affected -t build` — affected builds
+5. **Main push only:** Docker image build+push (DockerHub), semver bump, Helm Chart update, push to `develop`
 
-```bash
-npx nx g @nx/angular:library <name> --directory=libs/angular/<name>
-```
+## Do Not
 
-### Add a dependency
-
-```bash
-pnpm add <package> --filter <project-name>
-pnpm install --frozen-lockfile    # Restore lockfile-exact install
-```
-
-## AI Agent Contract
-
-- Use `npx nx` for all build/test/lint operations — never invoke `ng` directly
-- For Go: use `go build ./...` and `go test ./...` from the repo root (`go.work` covers `apps/go/` and `libs/go/`)
-- Do not modify `pnpm-lock.yaml` directly — run `pnpm install` to update
-- Do not run `git push` — leave that to the developer
-- CI runs `nx affected` — changes that don't appear in the affected graph will not be tested in CI
-
-## References
-
-- [NX Documentation](https://nx.dev)
-- [Conventional Commits](CONTRIBUTING.md)
+- `git push --force` to `main`
+- `--no-verify` on commits — pre-commit (lint-staged) and commit-msg (commitlint) hooks run for a reason
+- Skip `pnpm exec nx reset` after editing `project.json` targets
+- Import `scope:authui` libs from `scope:container` code — use `scope:shared` instead
+- Add new projects without `type:`, `scope:`, and `framework:` tags in `project.json`
+- Commit anything to `docs/superpowers/` — it is gitignored intentionally (local planning only)
+- Modify `.github/workflows/ci.yml` `build-image` steps without understanding ARC + Kubernetes BuildKit constraints
+- Run `nx affected -t version` locally — semver tagging runs in CI only

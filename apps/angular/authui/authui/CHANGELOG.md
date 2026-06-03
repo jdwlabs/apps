@@ -2,23 +2,23 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.2](https://github.com/jdwlabs/apps/compare/authui-1.3.1...authui-1.3.2) (2026-05-28)
+
 ## [1.3.2](https://github.com/jdwlabs/apps/compare/authui-1.3.1...authui-1.3.2) (2026-05-26)
 
 ## [1.3.1](https://github.com/jdwillmsen/jdw/compare/authui-1.3.0...authui-1.3.1) (2025-05-27)
 
 ## [1.3.0](https://github.com/jdwillmsen/jdw/compare/authui-1.2.0...authui-1.3.0) (2025-04-10)
 
-
 ### Features
 
-* **authui:** update build-image task ([776fe96](https://github.com/jdwillmsen/jdw/commit/776fe968482c90bf20227cb4a1be353527dc0010))
+- **authui:** update build-image task ([776fe96](https://github.com/jdwillmsen/jdw/commit/776fe968482c90bf20227cb4a1be353527dc0010))
 
 ## [1.2.0](https://github.com/jdwillmsen/jdw/compare/authui-1.1.6...authui-1.2.0) (2025-04-10)
 
-
 ### Features
 
-* **authui:** update start nginx script ([0696775](https://github.com/jdwillmsen/jdw/commit/0696775fe130306b116b006b5776c18db18203c6))
+- **authui:** update start nginx script ([0696775](https://github.com/jdwillmsen/jdw/commit/0696775fe130306b116b006b5776c18db18203c6))
 
 ## [1.1.6](https://github.com/jdwillmsen/jdw/compare/authui-1.1.5...authui-1.1.6) (2025-04-10)
 
@@ -26,17 +26,15 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [1.1.4](https://github.com/jdwillmsen/jdw/compare/authui-1.1.3...authui-1.1.4) (2025-04-07)
 
-
 ### Bug Fixes
 
-* **authui:** update Dockerfile setup for build-image targets ([b2f937b](https://github.com/jdwillmsen/jdw/commit/b2f937b9b8ab90c5c3b0709ea8c5c944c24cefe5))
+- **authui:** update Dockerfile setup for build-image targets ([b2f937b](https://github.com/jdwillmsen/jdw/commit/b2f937b9b8ab90c5c3b0709ea8c5c944c24cefe5))
 
 ## [1.1.3](https://github.com/jdwillmsen/jdw/compare/authui-1.1.2...authui-1.1.3) (2025-04-07)
 
-
 ### Performance Improvements
 
-* **authui:** update Dockerfile setup for build-image targets ([11aeb3b](https://github.com/jdwillmsen/jdw/commit/11aeb3bde252f347617c9192d8d0b8b6e545316e))
+- **authui:** update Dockerfile setup for build-image targets ([11aeb3b](https://github.com/jdwillmsen/jdw/commit/11aeb3bde252f347617c9192d8d0b8b6e545316e))
 
 ## [1.1.2](https://github.com/jdwillmsen/jdw/compare/authui-1.1.1...authui-1.1.2) (2025-03-30)
 

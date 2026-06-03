@@ -26,13 +26,13 @@
       }
     },
     "update-version": {
-      "command": "bash tools/update-version.sh {projectRoot}/build.gradle.kts {version} {projectName}"
+      "command": "bash scripts/update-version.sh {projectRoot}/build.gradle.kts {version} {projectName}"
     },
     "update-app": {
-      "command": "bash tools/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
     },
     "format": {
-      "command": "bash tools/format.sh"
+      "command": "bash scripts/format.sh"
     },
     "serve-container": {
       "executor": "nx:run-commands",
