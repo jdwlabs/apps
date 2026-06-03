@@ -7,7 +7,7 @@ import { ColDef, GridOptions } from 'ag-grid-community';
 import {
   dateFilterComparator,
   dateSortComparator,
-} from '@jdw/angular-usersui-util';
+} from '@jdw/angular-shared-util';
 import { RolesActionButtonCellRendererComponent } from '../roles-action-button-cell-renderer/roles-action-button-cell-renderer.component';
 
 @Component({
