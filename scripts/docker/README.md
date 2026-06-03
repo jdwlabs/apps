@@ -122,4 +122,3 @@ mappings for the microfrontends and their respective URLs and metadata. Below is
 
 Ensure all services are up and running before performing any manual or automated tests. Access each service by
 navigating to their respective URLs as outlined above.
-
