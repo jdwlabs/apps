@@ -1,5 +1,5 @@
 @use '@angular/material' as mat;
-@use '../../../../../libs/angular/shared/ui/src/lib/styles/themes/black-white';
+@use 'themes/black-white';
 
 @include mat.elevation-classes();
 @include mat.app-background();
