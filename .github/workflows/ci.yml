@@ -17,6 +17,9 @@ env:
 jobs:
   main:
     runs-on: ubuntu-jdwlabs
+    # Fail fast: a stuck/looping job otherwise runs to the 6h platform cap,
+    # starving the self-hosted runner queue for other PRs.
+    timeout-minutes: 30
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -82,5 +85,8 @@ jobs:
           git pull origin main --rebase
           git push --force-with-lease origin develop
 
+      # Self-heal can loop indefinitely on a hard failure; cap it so it can't
+      # consume the whole job budget.
       - run: npx nx fix-ci
         if: always()
+        timeout-minutes: 10
