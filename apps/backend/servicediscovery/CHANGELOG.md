@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.3](https://github.com/jdwlabs/apps/compare/servicediscovery-0.4.2...servicediscovery-0.4.3) (2026-06-08)
+
+### Bug Fixes
+
+- **structure:** fix stale paths missed during role-based restructure ([93b0ce4](https://github.com/jdwlabs/apps/commit/93b0ce4f3b3fdf450ffdfb20fadb5f2a15375fd8))
+
 ## [0.4.2](https://github.com/jdwlabs/apps/compare/servicediscovery-0.4.1...servicediscovery-0.4.2) (2026-05-28)
 
 ## [0.4.1](https://github.com/jdwlabs/apps/compare/servicediscovery-0.4.0...servicediscovery-0.4.1) (2026-05-26)
