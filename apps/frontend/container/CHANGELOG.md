@@ -2,6 +2,14 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.3.2](https://github.com/jdwlabs/apps/compare/container-1.3.1...container-1.3.2) (2026-06-08)
+
+### Bug Fixes
+
+- **build:** point config targets at scripts/ not tools/ ([fb79c6f](https://github.com/jdwlabs/apps/commit/fb79c6f6b7de02b806b854b54ca8f5086fb12433))
+- **frontend:** resolve broken theme [@use](https://github.com/use) after role-based move (JDWLABS-20) ([de45530](https://github.com/jdwlabs/apps/commit/de455302e43c9ab093354d23041c2d79e4a0c393))
+- **structure:** fix stale paths missed during role-based restructure ([93b0ce4](https://github.com/jdwlabs/apps/commit/93b0ce4f3b3fdf450ffdfb20fadb5f2a15375fd8))
+
 ## [1.3.2](https://github.com/jdwlabs/apps/compare/container-1.3.1...container-1.3.2) (2026-05-28)
 
 ## [1.3.2](https://github.com/jdwlabs/apps/compare/container-1.3.1...container-1.3.2) (2026-05-26)
