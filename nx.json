@@ -171,7 +171,7 @@
     },
     {
       "plugin": "@nx/gradle",
-      "include": ["apps/springboot/**/*"],
+      "include": ["apps/backend/**/*"],
       "options": {
         "testTargetName": "test",
         "buildTargetName": "build"

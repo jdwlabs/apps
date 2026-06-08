@@ -25,48 +25,52 @@ organized into three main directories:
 ```
 .
 ├── apps/                    # Complete applications
-│   ├── angular/             # Grouped by framework / language
-│   │   ├── container/       # Specific application
+│   ├── frontend/            # Angular micro-frontends
+│   │   ├── container/
 │   │   ├── authui/
 │   │   ├── usersui/
-│   │   ├── rolesui/
-│   │   └── platform-e2e/
-│   ├── go/
-│   │   └── servicediscovery/
-│   └── springboot/
-│       └── usersrole/
+│   │   └── rolesui/
+│   ├── backend/             # Go + Spring Boot services
+│   │   ├── servicediscovery/
+│   │   └── usersrole/
+│   ├── database/            # DB migrations
+│   │   └── authdb/
+│   └── e2e/                 # Playwright end-to-end tests
+│       └── platform-e2e/
 │
 ├── libs/                    # Reusable libraries
-│   ├── angular/             # Grouped by framework
-│   │   ├── container/       # App-specific libraries
+│   ├── frontend/            # Angular shared libs
+│   │   ├── authui/
+│   │   │   ├── feature/
+│   │   │   └── util/
+│   │   ├── container/
+│   │   │   ├── feature/
+│   │   │   └── util/
+│   │   ├── rolesui/
 │   │   │   ├── feature/
 │   │   │   └── util/
 │   │   ├── usersui/
 │   │   │   ├── feature/
 │   │   │   ├── data-access/
 │   │   │   └── util/
-│   │   ├── shared/          # Framework-wide shared
-│   │   │   ├── ui/
-│   │   │   ├── util/
-│   │   │   └── data-access/
-│   ├── go/
-│   │   ├── shared/
-│   │   └── servicediscovery/
-│   │       └── util/
-│   └── shared/              # Cross-framework shared
-│       └── utils/
+│   │   └── shared/          # Cross-app frontend shared
+│   │       ├── ui/
+│   │       ├── util/
+│   │       └── data-access/
+│   └── backend/             # Go shared libs
+│       └── shared/
+│           └── util/
 │
 └── tools/                   # Monorepo tooling
 ```
 
 ### Key Structural Principles:
 
-- **Framework/Language Grouping**: Top-level organization by technology (Angular, Go, Java).
+- **Role-Based Grouping**: Top-level organization by role (`frontend`, `backend`, `e2e`, `database`).
 - **App-Specific Isolation**: Libraries scoped to specific applications.
 - **Shared Code Hierarchy**:
-    - **App-Scoped**: Only used by one application (e.g., `angular/usersui/*`).
-    - **Framework-Shared**: Shared within a framework (e.g., `angular/shared/*`).
-    - **Cross-Framework**: Shared across technologies (e.g., `shared/*`).
+    - **App-Scoped**: Only used by one application (e.g., `frontend/usersui/*`).
+    - **Frontend-Shared**: Shared across Angular apps (e.g., `frontend/shared/*`).
 - **Library Types**:
     - `feature/`: Domain-specific components and logic.
     - `data-access/`: API/backend communication.
@@ -83,10 +87,10 @@ npx nx <target> <project> [options]
 
 **Examples:**
 
-- Build the `angular-usersui-data-access` library:
+- Build the `frontend-usersui-data-access` library:
 
   ```bash
-  npx nx build angular-usersui-data-access
+  npx nx build frontend-usersui-data-access
   ```
 
 - Run multiple targets:
@@ -133,11 +137,11 @@ Cluster configuration, Terraform, and tenant definitions live in:
 
 The monorepo organizes libraries by type to encourage reuse and maintainability:
 
-- **Feature Libraries**: Provide UI components and feature-specific logic (e.g., `angular-usersui-feature-core`).
-- **Data-Access Libraries**: Encapsulate API communication and business logic (e.g., `angular-usersui-data-access`).
-- **Util Libraries**: Offer shared TypeScript utilities, helper functions, and models (e.g., `angular-usersui-util`,
-  `angular-shared-util`).
-- **UI Libraries**: Supply reusable UI components and theming (e.g., `angular-shared-ui`).
+- **Feature Libraries**: Provide UI components and feature-specific logic (e.g., `frontend-usersui-feature-core`).
+- **Data-Access Libraries**: Encapsulate API communication and business logic (e.g., `frontend-usersui-data-access`).
+- **Util Libraries**: Offer shared TypeScript utilities, helper functions, and models (e.g., `frontend-usersui-util`,
+  `frontend-shared-util`).
+- **UI Libraries**: Supply reusable UI components and theming (e.g., `frontend-shared-ui`).
 
 ## ✨ Additional Resources
 
