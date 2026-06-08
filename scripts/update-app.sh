@@ -4,12 +4,23 @@
 # Description: This script updates the version number of an application in a Git repository.
 # Usage: update-app.sh <file_path> <version_number> <project_name>
 
+set -euo pipefail
+
 git_repository="git@github.com:jdwlabs/deployments.git"
 temp_dir=$(mktemp -d)
 
+# Always remove the clone, even on an unexpected exit, so failed runs leave no temp dirs behind.
+trap 'rm -rf "${temp_dir}"' EXIT
+
 clone_repository() {
-  git clone "${git_repository}" "${temp_dir}"
-  cd "${temp_dir}" || exit
+  # A failed clone leaves temp_dir empty; without this guard the later git checks
+  # run in a non-repo and report the misleading "Not inside a Git repository".
+  # Surface the real cause instead — usually the CI SSH key lacking access to deployments.
+  if ! git clone "${git_repository}" "${temp_dir}"; then
+    echo "Error: Failed to clone ${git_repository}. Ensure the CI SSH key has access to the deployments repository." >&2
+    exit 1
+  fi
+  cd "${temp_dir}" || exit 1
 }
 
 clean_repository() {
