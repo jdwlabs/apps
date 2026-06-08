@@ -229,7 +229,7 @@
       "options": {
         "commands": [
           {
-            "command": "bash tools/prepare-config.sh apps/frontend/authui/src/config.json"
+            "command": "bash scripts/prepare-config.sh apps/frontend/authui/src/config.json"
           }
         ]
       }
@@ -239,7 +239,7 @@
       "options": {
         "commands": [
           {
-            "command": "bash tools/restore-config.sh apps/frontend/authui/src/config.json"
+            "command": "bash scripts/restore-config.sh apps/frontend/authui/src/config.json"
           }
         ]
       }
