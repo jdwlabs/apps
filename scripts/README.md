@@ -30,10 +30,10 @@ All scripts are executable and accept arguments described in the usage comment a
 docker compose -f scripts/docker/compose.yaml up -d
 
 # Prepare an app config before building manually
-bash scripts/prepare-config.sh apps/angular/container/container/src/config.json
+bash scripts/prepare-config.sh apps/frontend/container/src/config.json
 
 # Restore config after manual build
-bash scripts/restore-config.sh apps/angular/container/container/src/config.json
+bash scripts/restore-config.sh apps/frontend/container/src/config.json
 ```
 
 > These scripts are typically invoked by Nx targets (via `project.json` `command` entries), not directly by developers.
