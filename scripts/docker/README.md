@@ -35,7 +35,7 @@ up several microservices required for the platform, including:
 2. From the root of the project, run the following command to start all services:
 
 ```
-docker compose -f tools/docker/compose.yaml up
+docker compose -f scripts/docker/compose.yaml up
 ```
 
 This will start the services as defined in the `compose.yaml` file and map the respective ports:
@@ -52,7 +52,7 @@ This will start the services as defined in the `compose.yaml` file and map the r
 To stop all running services, use the following command:
 
 ```
-docker compose -f tools/docker/compose.yaml down
+docker compose -f scripts/docker/compose.yaml down
 ```
 
 This will stop and remove all running containers.
