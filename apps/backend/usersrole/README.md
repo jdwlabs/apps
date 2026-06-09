@@ -15,7 +15,7 @@ an Angular frontend and various shared libraries for components and utilities.
 ## 📁 Project Structure
 
 ```
-springboot/usersrole/
+apps/backend/usersrole/
 ├── build.gradle.kts                                   # Gradle build configuration
 ├── CHANGELOG.md                                       # Change log history
 ├── .gitignore                                         # Git ignore rules
