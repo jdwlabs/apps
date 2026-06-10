@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.10.15](https://github.com/jdwlabs/apps/compare/usersrole-0.10.14...usersrole-0.10.15) (2026-06-10)
+
 ## [0.10.11](https://github.com/jdwlabs/apps/compare/usersrole-0.10.10...usersrole-0.10.11) (2026-05-26)
 
 ## [0.10.10](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.9...usersrole-0.10.10) (2025-05-27)
@@ -20,17 +22,15 @@ This file was generated using [@jscutlery/semver](https://github.com/jscutlery/s
 
 ## [0.10.3](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.2...usersrole-0.10.3) (2025-04-01)
 
-
 ### Bug Fixes
 
-* **usersrole:** add build-image and local-build-image target fix ([4254cd8](https://github.com/jdwillmsen/jdw/commit/4254cd85538485bec3fdd96ca90a3a7ca2584c71))
+- **usersrole:** add build-image and local-build-image target fix ([4254cd8](https://github.com/jdwillmsen/jdw/commit/4254cd85538485bec3fdd96ca90a3a7ca2584c71))
 
 ## [0.10.2](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.1...usersrole-0.10.2) (2025-04-01)
 
-
 ### Bug Fixes
 
-* **usersrole:** update build-image target ([2d0296a](https://github.com/jdwillmsen/jdw/commit/2d0296a86d74224d17e8f4987dcb3a4edf2eac7e))
+- **usersrole:** update build-image target ([2d0296a](https://github.com/jdwillmsen/jdw/commit/2d0296a86d74224d17e8f4987dcb3a4edf2eac7e))
 
 ## [0.10.1](https://github.com/jdwillmsen/jdw/compare/usersrole-0.10.0...usersrole-0.10.1) (2025-03-30)
 
