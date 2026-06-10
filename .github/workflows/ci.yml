@@ -35,8 +35,6 @@ jobs:
       #   run: pnpm exec nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
       - name: Setup Base and SHAs for 'nx affected'
