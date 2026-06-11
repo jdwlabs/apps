@@ -135,6 +135,17 @@ jobs:
           git checkout -B main
           pnpm exec nx affected -t version --parallel=1
 
+      # Hands off post-deploy verification: the deployments repo runs
+      # platform-e2e against real staging once images are published.
+      - if: ${{ github.event_name != 'pull_request' }}
+        name: Dispatch E2E to Deployments Repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEPLOYMENTS_DISPATCH_TOKEN }}
+          repository: jdwlabs/deployments
+          event-type: apps-deployed
+          client-payload: '{"sha": "${{ github.sha }}"}'
+
       # Self-heal can loop indefinitely on a hard failure; cap it so it can't
       # consume the whole job budget.
       - run: npx nx fix-ci
