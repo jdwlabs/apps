@@ -1,26 +1,93 @@
+@use 'sass:map';
 @use '@angular/material' as mat;
 @use '../all-themes';
 @use '../theming';
-@use '../palette';
 
-$theme-primary: theming.define-palette(palette.$black-palette, 900);
-$theme-accent: theming.define-palette(palette.$white-palette, 600);
-$theme-warn: theming.define-palette(mat.$m2-yellow-palette);
-$theme-success: theming.define-palette(mat.$m2-green-palette);
-$theme-error: theming.define-palette(mat.$m2-red-palette);
-$theme-info: theming.define-palette(mat.$m2-blue-palette);
-$theme-typography: mat.m2-define-typography-config();
-$theme-density: 0;
-$theme-light: true;
-$theme: theming.define-theme(
-  $theme-primary,
-  $theme-accent,
-  $theme-warn,
-  $theme-success,
-  $theme-error,
-  $theme-info,
-  $theme-light,
-  $theme-typography,
-  $theme-density
+// No built-in M3 palette is monochrome, so this theme defines its own
+// grayscale palette (sRGB grays whose lightness matches each M3 tone) to
+// preserve the black-and-white look of the old M2 black/white palettes.
+$_grey-tones: (
+  0: #000000,
+  10: #1b1b1b,
+  20: #303030,
+  25: #3b3b3b,
+  30: #474747,
+  35: #525252,
+  40: #5e5e5e,
+  50: #777777,
+  60: #919191,
+  70: #ababab,
+  80: #c6c6c6,
+  90: #e2e2e2,
+  95: #f1f1f1,
+  98: #f9f9f9,
+  99: #fcfcfc,
+  100: #ffffff,
 );
-@include all-themes.all-component-themes($theme);
+
+// The neutral palette needs the extra surface tones that `mat.theme()` reads
+// for the surface-container token family.
+$_grey-neutral-tones: map.merge(
+  $_grey-tones,
+  (
+    4: #0e0e0e,
+    6: #131313,
+    12: #202020,
+    17: #2a2a2a,
+    22: #353535,
+    24: #393939,
+    87: #dadada,
+    92: #e8e8e8,
+    94: #eeeeee,
+    96: #f3f3f3,
+  )
+);
+
+// Error tones copied from the built-in M3 palettes so error surfaces stay
+// red rather than gray.
+$_grey-palette: map.merge(
+  $_grey-tones,
+  (
+    secondary: $_grey-tones,
+    neutral: $_grey-neutral-tones,
+    neutral-variant: $_grey-tones,
+    error: (
+      0: #000000,
+      10: #410002,
+      20: #690005,
+      25: #7e0007,
+      30: #93000a,
+      35: #a80710,
+      40: #ba1a1a,
+      50: #de3730,
+      60: #ff5449,
+      70: #ff897d,
+      80: #ffb4ab,
+      90: #ffdad6,
+      95: #ffedea,
+      98: #fff8f7,
+      99: #fffbff,
+      100: #ffffff,
+    ),
+  )
+);
+
+// Warn keeps this theme's M2 yellow instead of the shared orange default.
+html {
+  @include theming.theme(
+    (
+      color: (
+        primary: $_grey-palette,
+        theme-type: light,
+      ),
+      typography: Roboto,
+      density: 0,
+    ),
+    (
+      warn: #ffeb3b,
+      on-warn: rgba(black, 0.87),
+    )
+  );
+}
+
+@include all-themes.all-component-themes();

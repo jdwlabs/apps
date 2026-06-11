@@ -1,13 +1,15 @@
-@use '@angular/material' as mat;
 @use './components/button/variants' as button-variants;
 @use './components/ag-grid/ag-grid-theme.component' as ag-grid;
 @use '../navigation-item/navigation-item-theme.component' as navigation-item;
 @use '../snackbar/snackbar-theme.component' as snackbar;
 
-@mixin all-component-themes($theme) {
-  @include button-variants.theme($theme);
-  @include ag-grid.theme($theme);
-  @include navigation-item.theme($theme);
-  @include snackbar.theme($theme);
-  @include mat.all-component-themes($theme);
+// Material component styles flow through the `--mat-sys-*` tokens emitted by
+// `mat.theme()`, so only the app-specific component styles are included here.
+// `$dark` is still needed because ag-grid selects a whole different prebuilt
+// theme rather than reading CSS custom properties.
+@mixin all-component-themes($dark: false) {
+  @include button-variants.theme();
+  @include ag-grid.theme($dark);
+  @include navigation-item.theme();
+  @include snackbar.theme();
 }

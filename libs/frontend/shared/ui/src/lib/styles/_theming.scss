@@ -1,94 +1,33 @@
+@use 'sass:map';
 @use '@angular/material' as mat;
 
-/// Defines a theme with success, error, warn, and info colors.
-/// @param {Map} $primary The primary color palette.
-/// @param {Map} $accent The accent color palette.
-/// @param {Map} $warn The warn color palette.
-/// @param {Map} $success The success color palette.
-/// @param {Map} $error The error color palette.
-/// @param {Map} $info The info color palette.
-/// @param {Boolean} $create-light-theme If true a light theme is created, otherwise a dark theme is created
-/// @param {Boolean} $typography The typography config
-/// @param {Boolean} $density The density config
-@function define-theme(
-  $primary,
-  $accent,
-  $warn: mat.$m2-orange-palette,
-  $success: mat.$m2-green-palette,
-  $error: mat.$m2-red-palette,
-  $info: mat.$m2-blue-palette,
-  $create-light-theme: true,
-  $typography: mat.m2-define-typography-config(),
-  $density: 0
-) {
-  $theme: null;
+// Defaults match the M2 green/blue/orange 500 hues the apps used before the
+// M3 migration so existing success/info/warn surfaces keep their colors.
+$_default-semantic-colors: (
+  success: #4caf50,
+  on-success: white,
+  info: #2196f3,
+  on-info: white,
+  warn: #ff9800,
+  on-warn: rgba(black, 0.87),
+);
 
-  @if ($create-light-theme) {
-    $color-config: (
-      primary: $primary,
-      accent: $accent,
-      warn: $error,
-    );
-    $theme: mat.m2-define-light-theme(
-      (
-        color: $color-config,
-        typography: $typography,
-        density: $density,
-      )
-    );
-  } @else {
-    $color-config: (
-      primary: $primary,
-      accent: $accent,
-      warn: $error,
-    );
-    $theme: mat.m2-define-dark-theme(
-      (
-        color: $color-config,
-        typography: $typography,
-        density: $density,
-      )
-    );
-  }
+/// Emits the Material M3 system tokens plus the app's extra semantic color
+/// tokens. M3 only defines primary/secondary/tertiary/error color roles, so
+/// success, info, and warn are published as `--jdw-sys-*` custom properties
+/// alongside the `--mat-sys-*` tokens.
+/// @param {Map} $config `mat.theme()` configuration (color/typography/density).
+/// @param {Map} $semantic-colors Optional overrides for the semantic colors:
+///   success, on-success, info, on-info, warn, on-warn.
+@mixin theme($config, $semantic-colors: ()) {
+  $colors: map.merge($_default-semantic-colors, $semantic-colors);
 
-  $extra: (
-    success: $success,
-    error: $error,
-    info: $info,
-    warn: $warn,
-  );
-  @return map-merge($theme, $extra);
-}
+  @include mat.theme($config);
 
-@function define-palette(
-  $base-palette,
-  $default: 500,
-  $lighter: 100,
-  $darker: 700,
-  $extra-light: 50,
-  $extra-dark: 900,
-  $text: $default
-) {
-  $new-palette: mat.m2-define-palette(
-    $base-palette,
-    $default,
-    $lighter,
-    $darker,
-    $text: $default
-  );
-
-  $extra-palette: (
-    extra-light: map-get($base-palette, $extra-light),
-    extra-dark: map-get($base-palette, $extra-dark),
-    extra-light-contrast: mat.m2-get-contrast-color-from-palette(
-        $base-palette,
-        $extra-light
-      ),
-    extra-dark-contrast: mat.m2-get-contrast-color-from-palette(
-        $base-palette,
-        $extra-dark
-      ),
-  );
-
-  @return map-merge($new-palette, $extra-palette);
+  --jdw-sys-success: #{map.get($colors, success)};
+  --jdw-sys-on-success: #{map.get($colors, on-success)};
+  --jdw-sys-info: #{map.get($colors, info)};
+  --jdw-sys-on-info: #{map.get($colors, on-info)};
+  --jdw-sys-warn: #{map.get($colors, warn)};
+  --jdw-sys-on-warn: #{map.get($colors, on-warn)};
 }
