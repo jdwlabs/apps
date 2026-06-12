@@ -1,0 +1,28 @@
+{
+  "name": "jdwlabs-apps",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.23"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "jdkDistro": "ms"
+    }
+  },
+  "postCreateCommand": "npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "angular.ng-template",
+        "nrwl.angular-console",
+        "golang.go",
+        "vscjava.vscode-java-pack",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}
