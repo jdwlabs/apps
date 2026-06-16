@@ -46,6 +46,12 @@ jobs:
         with:
           app-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          # apps: persisted by checkout for the semver commit/tag push to main.
+          # deployments: used by the update-app postTarget to push the Helm appVersion bump.
+          repositories: |
+            apps
+            deployments
       - name: Checkout Codebase
         uses: actions/checkout@v6.0.3
         with:
@@ -108,12 +114,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - if: ${{ github.event_name != 'pull_request' }}
-        name: Setup SSH
-        uses: MrSquaare/ssh-setup-action@v3
-        with:
-          host: github.com
-          private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
-      - if: ${{ github.event_name != 'pull_request' }}
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -123,6 +123,10 @@ jobs:
           platforms: 'linux/amd64,linux/arm64'
       - if: ${{ github.event_name != 'pull_request' }}
         name: Run Version Upgrades
+        env:
+          # Consumed by the update-app postTarget (scripts/update-app.sh) to push
+          # the Helm appVersion bump to jdwlabs/deployments as the release App.
+          DEPLOYMENTS_TOKEN: ${{ steps.release-token.outputs.token }}
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
