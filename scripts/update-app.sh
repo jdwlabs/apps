@@ -1,13 +1,28 @@
 #!/bin/bash
 
 # Script: update-app.sh
-# Description: This script updates the version number of an application in a Git repository.
-# Usage: update-app.sh <file_path> <version_number> <project_name>
+# Description: Bumps a Helm chart's appVersion in a deployment repo and pushes the change.
+# Usage: update-app.sh <chart_file_path> <version_number> <project_name>
+#
+# Required env:
+#   DEPLOYMENTS_TOKEN  Token with write access to the target repo (a GitHub App
+#                      installation token in CI).
+# Optional env:
+#   DEPLOYMENTS_REPO   Target repo slug.  Default: jdwlabs/deployments
+#   DEPLOYMENTS_HOST   Git host.          Default: github.com
 
 set -euo pipefail
 
-: "${DEPLOYMENTS_TOKEN:?DEPLOYMENTS_TOKEN must be set to a token with write access to jdwlabs/deployments}"
-git_repository="https://x-access-token:${DEPLOYMENTS_TOKEN}@github.com/jdwlabs/deployments.git"
+: "${DEPLOYMENTS_TOKEN:?DEPLOYMENTS_TOKEN must be set to a token with write access to the deployments repo}"
+deployments_repo="${DEPLOYMENTS_REPO:-jdwlabs/deployments}"
+deployments_host="${DEPLOYMENTS_HOST:-github.com}"
+git_repository="https://${deployments_host}/${deployments_repo}.git"
+
+# Authenticate via an http extraheader instead of embedding the token in the
+# remote URL. This keeps the token out of .git/config and out of git's stderr
+# (which echoes the remote URL on failure). Mirrors actions/checkout.
+git_auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${DEPLOYMENTS_TOKEN}" | base64 | tr -d '\n')"
+
 temp_dir=$(mktemp -d)
 
 # Always remove the clone, even on an unexpected exit, so failed runs leave no temp dirs behind.
@@ -16,10 +31,9 @@ trap 'rm -rf "${temp_dir}"' EXIT
 clone_repository() {
   # A failed clone leaves temp_dir empty; without this guard the later git checks
   # run in a non-repo and report the misleading "Not inside a Git repository".
-  # Surface the real cause instead — usually DEPLOYMENTS_TOKEN lacking write access.
-  # Never echo ${git_repository}: it embeds the token.
-  if ! git clone "${git_repository}" "${temp_dir}"; then
-    echo "Error: Failed to clone jdwlabs/deployments. Ensure DEPLOYMENTS_TOKEN has write access." >&2
+  # Surface the real cause instead — usually DEPLOYMENTS_TOKEN lacking access.
+  if ! git -c http.extraheader="${git_auth_header}" clone "${git_repository}" "${temp_dir}"; then
+    echo "Error: Failed to clone ${deployments_repo}. Ensure DEPLOYMENTS_TOKEN has write access." >&2
     exit 1
   fi
   cd "${temp_dir}" || exit 1
@@ -65,7 +79,7 @@ check_uncommitted_changes() {
 
 # Function to push committed changes in the repository to remote
 push_changes() {
-  if ! git push; then
+  if ! git -c http.extraheader="${git_auth_header}" push; then
     echo "Error: Failed to push changes to remote repository."
     clean_repository
     exit 1
@@ -85,6 +99,14 @@ update_file() {
   check_uncommitted_changes
 
   git checkout HEAD "${file_path}"
+
+  # Fail loudly if the line is absent: otherwise sed is a no-op, nothing is
+  # staged, and the misleading failure surfaces later at the empty commit.
+  if ! grep -q '^appVersion:' "${file_path}"; then
+    echo "Error: no 'appVersion:' line found in ${file_path}." >&2
+    clean_repository
+    exit 1
+  fi
 
   # Replace the app version line in the file
   sed -i "s/^appVersion: .*/appVersion: \"${new_version}\"/" "${file_path}"
