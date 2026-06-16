@@ -25,10 +25,22 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
     steps:
+      - if: ${{ github.event_name != 'pull_request' }}
+        name: Generate release app token
+        id: release-token
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - name: Checkout Codebase
         uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
+          # On main-push, check out with the release App token so the persisted
+          # git credential IS the App's — every later push (semver/postTargets)
+          # authenticates as the App, a ruleset bypass actor, and isn't declined.
+          # Falls back to the default token on PRs (token step is skipped there).
+          token: ${{ steps.release-token.outputs.token || github.token }}
       # This line enables distribution
       # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "e2e-ci" targets have been requested
       # - name: Enable NX Cloud Distribution
@@ -74,25 +86,14 @@ jobs:
             qemu.install=true
           platforms: 'linux/amd64,linux/arm64'
       - if: ${{ github.event_name != 'pull_request' }}
-        name: Generate release app token
-        id: release-token
-        uses: actions/create-github-app-token@v3.2.0
-        with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-      - if: ${{ github.event_name != 'pull_request' }}
         name: Run Version Upgrades
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          # main-push is a detached HEAD; put HEAD on a real `main` so the
-          # version commit + push resolve (semver/postTargets push `main`).
+          # main-push is a detached HEAD; put HEAD on a real `main` so the version
+          # commit + push resolve. The push authenticates as the release App
+          # (token persisted by checkout above), which bypasses the require-PR rule.
           git checkout -B main
-          # Push via the release GitHub App — a ruleset bypass actor — so the
-          # version commit lands on PR-protected `main`. The default
-          # GITHUB_TOKEN and deploy keys cannot bypass "require a pull request";
-          # the App can. The token is short-lived and contents-scoped.
-          git remote set-url origin "https://x-access-token:${{ steps.release-token.outputs.token }}@github.com/${{ github.repository }}.git"
           pnpm exec nx affected -t version --parallel=1
 
       # Self-heal can loop indefinitely on a hard failure; cap it so it can't
