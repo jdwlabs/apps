@@ -74,15 +74,25 @@ jobs:
             qemu.install=true
           platforms: 'linux/amd64,linux/arm64'
       - if: ${{ github.event_name != 'pull_request' }}
+        name: Generate release app token
+        id: release-token
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+      - if: ${{ github.event_name != 'pull_request' }}
         name: Run Version Upgrades
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          # main-push checks out a detached HEAD; @jscutlery/semver (push: true)
-          # and the version postTarget scripts push to `main`, which fails with
-          # "src refspec main does not match any" with no local branch. Put HEAD
-          # on main at the pushed SHA so the version commit + push resolve.
+          # main-push is a detached HEAD; put HEAD on a real `main` so the
+          # version commit + push resolve (semver/postTargets push `main`).
           git checkout -B main
+          # Push via the release GitHub App — a ruleset bypass actor — so the
+          # version commit lands on PR-protected `main`. The default
+          # GITHUB_TOKEN and deploy keys cannot bypass "require a pull request";
+          # the App can. The token is short-lived and contents-scoped.
+          git remote set-url origin "https://x-access-token:${{ steps.release-token.outputs.token }}@github.com/${{ github.repository }}.git"
           pnpm exec nx affected -t version --parallel=1
 
       # Self-heal can loop indefinitely on a hard failure; cap it so it can't
