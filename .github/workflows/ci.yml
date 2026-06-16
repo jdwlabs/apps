@@ -46,12 +46,9 @@ jobs:
         with:
           app-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          # apps: persisted by checkout for the semver commit/tag push to main.
-          # deployments: used by the update-app postTarget to push the Helm appVersion bump.
-          repositories: |
-            apps
-            deployments
+          # Scoped to this repo: persisted by checkout for the semver commit/tag
+          # push to main. The deployments push uses a separate token minted at
+          # push time inside update-app.sh (see Run Version Upgrades).
       - name: Checkout Codebase
         uses: actions/checkout@v6.0.3
         with:
@@ -124,9 +121,11 @@ jobs:
       - if: ${{ github.event_name != 'pull_request' }}
         name: Run Version Upgrades
         env:
-          # Consumed by the update-app postTarget (scripts/update-app.sh) to push
-          # the Helm appVersion bump to jdwlabs/deployments as the release App.
-          DEPLOYMENTS_TOKEN: ${{ steps.release-token.outputs.token }}
+          # The update-app postTarget (scripts/update-app.sh) mints a fresh,
+          # deployments-scoped installation token from these at push time, so a
+          # long build-image step can't expire a token minted at job start.
+          GH_APP_ID: ${{ secrets.RELEASE_APP_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
