@@ -4,24 +4,66 @@
 # Description: Bumps a Helm chart's appVersion in a deployment repo and pushes the change.
 # Usage: update-app.sh <chart_file_path> <version_number> <project_name>
 #
-# Required env:
-#   DEPLOYMENTS_TOKEN  Token with write access to the target repo (a GitHub App
-#                      installation token in CI).
+# Auth (one of):
+#   GH_APP_ID + GH_APP_PRIVATE_KEY  GitHub App credentials. A fresh installation
+#                      token scoped to the target repo (contents:write) is minted
+#                      at push time — preferred in CI, never expires mid-run.
+#   DEPLOYMENTS_TOKEN  A pre-minted token with write access (escape hatch for
+#                      local/manual runs). Takes precedence if set.
 # Optional env:
 #   DEPLOYMENTS_REPO   Target repo slug.  Default: jdwlabs/deployments
 #   DEPLOYMENTS_HOST   Git host.          Default: github.com
 
 set -euo pipefail
 
-: "${DEPLOYMENTS_TOKEN:?DEPLOYMENTS_TOKEN must be set to a token with write access to the deployments repo}"
 deployments_repo="${DEPLOYMENTS_REPO:-jdwlabs/deployments}"
 deployments_host="${DEPLOYMENTS_HOST:-github.com}"
+api_url="${GITHUB_API_URL:-https://api.${deployments_host}}"
 git_repository="https://${deployments_host}/${deployments_repo}.git"
+
+base64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+
+# Mint a short-lived installation token scoped to ${deployments_repo} from App
+# credentials. Done at push time so a long build (e.g. multi-arch build-image
+# running before this postTarget) can't expire a token minted at job start.
+mint_installation_token() {
+  local app_id="${1}" private_key="${2}" repo="${3}"
+  local now iat exp header payload jwt inst_id repo_name token
+
+  now=$(date +%s)
+  iat=$((now - 60))   # backdate to tolerate clock skew
+  exp=$((now + 540))  # 9 min; max allowed by GitHub is 10
+  header='{"alg":"RS256","typ":"JWT"}'
+  payload="{\"iat\":${iat},\"exp\":${exp},\"iss\":\"${app_id}\"}"
+  jwt="$(printf '%s' "${header}" | base64url).$(printf '%s' "${payload}" | base64url)"
+  jwt="${jwt}.$(printf '%s' "${jwt}" | openssl dgst -sha256 -sign <(printf '%s' "${private_key}") -binary | base64url)"
+
+  inst_id=$(curl -sf -H "Authorization: Bearer ${jwt}" -H "Accept: application/vnd.github+json" \
+    "${api_url}/repos/${repo}/installation" | grep -o '"id"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*$')
+  [ -n "${inst_id}" ] || { echo "Error: no App installation found for ${repo} (is the App installed?)." >&2; return 1; }
+
+  repo_name="${repo#*/}"
+  token=$(curl -sf -X POST -H "Authorization: Bearer ${jwt}" -H "Accept: application/vnd.github+json" \
+    "${api_url}/app/installations/${inst_id}/access_tokens" \
+    -d "{\"repositories\":[\"${repo_name}\"],\"permissions\":{\"contents\":\"write\"}}" \
+    | grep -o '"token"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
+  [ -n "${token}" ] || { echo "Error: failed to mint installation token for ${repo}." >&2; return 1; }
+  printf '%s' "${token}"
+}
+
+if [ -n "${DEPLOYMENTS_TOKEN:-}" ]; then
+  deployments_token="${DEPLOYMENTS_TOKEN}"
+elif [ -n "${GH_APP_ID:-}" ] && [ -n "${GH_APP_PRIVATE_KEY:-}" ]; then
+  deployments_token=$(mint_installation_token "${GH_APP_ID}" "${GH_APP_PRIVATE_KEY}" "${deployments_repo}")
+else
+  echo "Error: set GH_APP_ID + GH_APP_PRIVATE_KEY (preferred) or DEPLOYMENTS_TOKEN." >&2
+  exit 1
+fi
 
 # Authenticate via an http extraheader instead of embedding the token in the
 # remote URL. This keeps the token out of .git/config and out of git's stderr
 # (which echoes the remote URL on failure). Mirrors actions/checkout.
-git_auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${DEPLOYMENTS_TOKEN}" | base64 | tr -d '\n')"
+git_auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${deployments_token}" | base64 | tr -d '\n')"
 
 temp_dir=$(mktemp -d)
 
