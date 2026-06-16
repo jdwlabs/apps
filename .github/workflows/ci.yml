@@ -138,10 +138,21 @@ jobs:
       # Hands off post-deploy verification: the deployments repo runs
       # platform-e2e against real staging once images are published.
       - if: ${{ github.event_name != 'pull_request' }}
-        name: Dispatch E2E to Deployments Repo
-        uses: peter-evans/repository-dispatch@v4
+        name: Generate deployments dispatch token
+        id: dispatch-token
+        uses: actions/create-github-app-token@v3.2.0
         with:
-          token: ${{ secrets.DEPLOYMENTS_DISPATCH_TOKEN }}
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: deployments
+          # repository_dispatch only needs contents:write — keep it least-privilege.
+          permission-contents: write
+      - if: ${{ github.event_name != 'pull_request' }}
+        name: Dispatch E2E to Deployments Repo
+        uses: peter-evans/repository-dispatch@v4.0.1
+        with:
+          token: ${{ steps.dispatch-token.outputs.token }}
           repository: jdwlabs/deployments
           event-type: apps-deployed
           client-payload: '{"sha": "${{ github.sha }}"}'
