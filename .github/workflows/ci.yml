@@ -23,6 +23,11 @@ env:
   # @nx/gradle graph creation. Run gradle one-shot.
   NX_DAEMON: 'false'
   GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+  # @nx/gradle generates the project graph by invoking gradle with a 120s default
+  # timeout. A cold gradle (dist download + full Spring Boot dep resolution) can
+  # exceed it, failing the whole graph. Raise it so a cold run can complete and
+  # seed the gradle cache. The Warm Gradle step below makes the steady state fast.
+  NX_GRADLE_PROJECT_GRAPH_TIMEOUT: '600'
 
 jobs:
   main:
@@ -61,6 +66,12 @@ jobs:
           java-version: '21'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6.2.0
+      # Pre-warm gradle (download dist + resolve deps) so the later @nx/gradle
+      # graph generation is ~1s instead of timing out cold. Seeds the gradle
+      # cache; near-instant once the cache is warm.
+      - name: Warm Gradle
+        working-directory: apps/backend/usersrole
+        run: ./gradlew help -q
       # This line enables distribution
       # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "e2e-ci" targets have been requested
       # - name: Enable NX Cloud Distribution
