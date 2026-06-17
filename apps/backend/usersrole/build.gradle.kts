@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.jdw"
-version = "0.10.32"
+version = "0.10.33"
 
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
