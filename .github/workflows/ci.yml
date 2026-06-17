@@ -34,7 +34,7 @@ jobs:
       # - name: Enable NX Cloud Distribution
       #   run: pnpm exec nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.8
+        uses: pnpm/action-setup@v6.0.9
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
       - name: Setup Base and SHAs for 'nx affected'
