@@ -4,7 +4,7 @@ This file is read by Claude Code at the start of every session. Keep it current.
 
 ## Overview
 
-Nx 22 monorepo with Angular 21 micro-frontend apps, Go services, a Spring Boot service, PostgreSQL migration runners, and shared Angular libraries. All CI runs on self-hosted ARC runners (`ubuntu-jdwlabs`). Package manager is **pnpm 10**.
+Nx 22 monorepo with Angular 21 micro-frontend apps, Go services, a Spring Boot service, PostgreSQL migration runners, and shared Angular libraries. CI runs on GitHub-hosted runners (`ubuntu-latest`) — the repo is public, so this is free and avoids OOMing the self-hosted cluster. Package manager is **pnpm 10**.
 
 ## Worktree Location (Windows — CRITICAL)
 
@@ -136,7 +136,7 @@ Versioning is managed by `@jscutlery/semver` via the `version` Nx target on each
 
 ## CI/CD
 
-GitHub Actions on `ubuntu-jdwlabs` (self-hosted ARC runner):
+GitHub Actions on `ubuntu-latest` (GitHub-hosted):
 
 1. `nx format:check` — formatting gate
 2. PR only: `commitlint` — validates all commit messages in the PR
@@ -152,5 +152,5 @@ GitHub Actions on `ubuntu-jdwlabs` (self-hosted ARC runner):
 - Import `scope:authui` libs from `scope:container` code — use `scope:shared` instead
 - Add new projects without `type:`, `scope:`, and `framework:` tags in `project.json`
 - Commit anything to `docs/superpowers/` — it is gitignored intentionally (local planning only)
-- Modify `.github/workflows/ci.yml` `build-image` steps without understanding ARC + Kubernetes BuildKit constraints
+- Modify `.github/workflows/ci.yml` buildx/`build-image` steps without understanding the docker-container BuildKit + multi-arch qemu setup
 - Run `nx affected -t version` locally — semver tagging runs in CI only
