@@ -19,7 +19,7 @@ concurrency:
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  # Ephemeral ARC pods: no daemon to reuse, and a lingering daemon is what hangs
+  # Ephemeral CI runners: no daemon to reuse, and a lingering daemon is what hangs
   # @nx/gradle graph creation. Run gradle one-shot.
   NX_DAEMON: 'false'
   GRADLE_OPTS: '-Dorg.gradle.daemon=false'
@@ -31,9 +31,8 @@ env:
 
 jobs:
   main:
-    runs-on: ubuntu-jdwlabs
-    # Fail fast: a stuck/looping job otherwise runs to the 6h platform cap,
-    # starving the self-hosted runner queue for other PRs.
+    runs-on: ubuntu-latest
+    # Fail fast: cap runtime so a stuck/looping job can't burn the Actions budget.
     timeout-minutes: 30
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -112,9 +111,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - if: ${{ github.event_name != 'pull_request' }}
         name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4.1.0
         with:
-          driver: 'kubernetes'
+          driver: 'docker-container'
           driver-opts: |
             qemu.install=true
           platforms: 'linux/amd64,linux/arm64'
