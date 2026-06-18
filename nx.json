@@ -179,6 +179,5 @@
     },
     "@nx-go/nx-go"
   ],
-  "defaultBase": "main",
-  "nxCloudId": "69e5ca23f497e47cfe103a29"
+  "defaultBase": "main"
 }
