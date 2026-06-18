@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.4.5](https://github.com/jdwlabs/apps/compare/authdb-0.4.4...authdb-0.4.5) (2026-06-18)
+
+### Bug Fixes
+
+- **authdb:** use jdwlabs.com domain for system seed user ([7cd837f](https://github.com/jdwlabs/apps/commit/7cd837f7124fa4a65ff2dc47d9f0d91f5c9ecc39))
+
 ## [0.4.4](https://github.com/jdwlabs/apps/compare/authdb-0.4.3...authdb-0.4.4) (2026-05-28)
 
 ## [0.4.3](https://github.com/jdwlabs/apps/compare/authdb-0.4.2...authdb-0.4.3) (2026-05-26)
