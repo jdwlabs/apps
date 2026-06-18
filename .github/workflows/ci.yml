@@ -114,13 +114,17 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      # qemu.install is a kubernetes-driver option; for docker-container we
+      # register binfmt handlers via setup-qemu-action so the amd64 runner can
+      # cross-build linux/arm64.
+      - if: ${{ github.event_name != 'pull_request' }}
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v4.1.0
       - if: ${{ github.event_name != 'pull_request' }}
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.1.0
         with:
           driver: 'docker-container'
-          driver-opts: |
-            qemu.install=true
           platforms: 'linux/amd64,linux/arm64'
       - if: ${{ github.event_name != 'pull_request' }}
         name: Run Version Upgrades
