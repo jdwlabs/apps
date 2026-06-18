@@ -17,7 +17,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   # Ephemeral CI runners: no daemon to reuse, and a lingering daemon is what hangs
   # @nx/gradle graph creation. Run gradle one-shot.
@@ -74,10 +73,6 @@ jobs:
       - name: Warm Gradle
         working-directory: apps/backend/usersrole
         run: ./gradlew help -q
-      # This line enables distribution
-      # The "--stop-agents-after" is optional, but allows idle agents to shut down once the "e2e-ci" targets have been requested
-      # - name: Enable NX Cloud Distribution
-      #   run: pnpm exec nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.9
       - name: Setup Node
@@ -87,6 +82,18 @@ jobs:
           cache: pnpm
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+      # Persist Nx's task cache across runs via the GitHub Actions cache. The
+      # run_id suffix always writes a fresh entry; restore-keys pull the most
+      # recent prior cache. GitHub scopes caches per branch, so a PR can't poison
+      # main's cache (the CREEP class of issue with shared remote caches).
+      - name: Restore Nx cache
+        uses: actions/cache@v5.0.5
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            nx-${{ runner.os }}-
       - name: Setup Base and SHAs for 'nx affected'
         uses: nrwl/nx-set-shas@v5.0.1
       - if: ${{ github.event_name == 'pull_request' }}
@@ -96,9 +103,7 @@ jobs:
         name: Validate Commit Messages
         run: pnpm exec commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }}
       - name: Run Format Check
-        run: pnpm exec nx-cloud record -- nx format:check
-      - name: Reset NX
-        run: pnpm exec nx reset
+        run: pnpm exec nx format:check
       - name: Run Linting & Unit Tests
         run: pnpm exec nx affected -t lint test
       - name: Run Build
@@ -155,9 +160,3 @@ jobs:
           repository: jdwlabs/deployments
           event-type: apps-deployed
           client-payload: '{"sha": "${{ github.sha }}"}'
-
-      # Self-heal can loop indefinitely on a hard failure; cap it so it can't
-      # consume the whole job budget.
-      - run: npx nx fix-ci
-        if: always()
-        timeout-minutes: 10
