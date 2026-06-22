@@ -1,18 +1,26 @@
 #!/bin/bash
 
 # Script: update-app.sh
-# Description: Bumps a Helm chart's appVersion in a deployment repo and pushes the change.
+# Description: Bumps a Helm chart's appVersion in the deployments repo by opening
+#              a pull request (never a direct push to the default branch).
 # Usage: update-app.sh <chart_file_path> <version_number> <project_name>
 #
 # Auth (one of):
 #   GH_APP_ID + GH_APP_PRIVATE_KEY  GitHub App credentials. A fresh installation
-#                      token scoped to the target repo (contents:write) is minted
-#                      at push time — preferred in CI, never expires mid-run.
-#   DEPLOYMENTS_TOKEN  A pre-minted token with write access (escape hatch for
+#                      token scoped to the target repo (contents:write +
+#                      pull_requests:write) is minted at push time — preferred in
+#                      CI, never expires mid-run.
+#   DEPLOYMENTS_TOKEN  A pre-minted token with write + PR access (escape hatch for
 #                      local/manual runs). Takes precedence if set.
 # Optional env:
-#   DEPLOYMENTS_REPO   Target repo slug.  Default: jdwlabs/deployments
-#   DEPLOYMENTS_HOST   Git host.          Default: github.com
+#   DEPLOYMENTS_REPO     Target repo slug.  Default: jdwlabs/deployments
+#   DEPLOYMENTS_HOST     Git host.          Default: github.com
+#   RELEASE_AUTO_MERGE   When "true", enable auto-merge on the opened PR so it
+#                        merges once branch protection is satisfied. Default off:
+#                        the PR waits for the required review. Flip this on only
+#                        after the deployments rulesets/repo settings actually
+#                        permit an unattended merge (auto-merge enabled, required
+#                        approvals reconciled) — otherwise it is a no-op warning.
 
 set -euo pipefail
 
@@ -26,6 +34,7 @@ base64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 # Mint a short-lived installation token scoped to ${deployments_repo} from App
 # credentials. Done at push time so a long build (e.g. multi-arch build-image
 # running before this postTarget) can't expire a token minted at job start.
+# Scopes contents:write (push the branch) + pull_requests:write (open the PR).
 mint_installation_token() {
   local app_id="${1}" private_key="${2}" repo="${3}"
   local now iat exp header payload jwt inst_id repo_name token
@@ -45,7 +54,7 @@ mint_installation_token() {
   repo_name="${repo#*/}"
   token=$(curl -sf -X POST -H "Authorization: Bearer ${jwt}" -H "Accept: application/vnd.github+json" \
     "${api_url}/app/installations/${inst_id}/access_tokens" \
-    -d "{\"repositories\":[\"${repo_name}\"],\"permissions\":{\"contents\":\"write\"}}" \
+    -d "{\"repositories\":[\"${repo_name}\"],\"permissions\":{\"contents\":\"write\",\"pull_requests\":\"write\"}}" \
     | grep -o '"token"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
   [ -n "${token}" ] || { echo "Error: failed to mint installation token for ${repo}." >&2; return 1; }
   printf '%s' "${token}"
@@ -73,9 +82,9 @@ trap 'rm -rf "${temp_dir}"' EXIT
 clone_repository() {
   # A failed clone leaves temp_dir empty; without this guard the later git checks
   # run in a non-repo and report the misleading "Not inside a Git repository".
-  # Surface the real cause instead — usually DEPLOYMENTS_TOKEN lacking access.
+  # Surface the real cause instead — usually the token lacking access.
   if ! git -c http.extraheader="${git_auth_header}" clone "${git_repository}" "${temp_dir}"; then
-    echo "Error: Failed to clone ${deployments_repo}. Ensure DEPLOYMENTS_TOKEN has write access." >&2
+    echo "Error: Failed to clone ${deployments_repo}. Ensure the token has write access." >&2
     exit 1
   fi
   cd "${temp_dir}" || exit 1
@@ -119,26 +128,63 @@ check_uncommitted_changes() {
   fi
 }
 
-# Function to push committed changes in the repository to remote
-push_changes() {
-  if ! git -c http.extraheader="${git_auth_header}" push; then
-    echo "Error: Failed to push changes to remote repository."
+# Open a pull request for the pushed branch. The default branch is protected
+# (PR required + signed commits), so the bump lands via PR review/merge, never a
+# direct push. The squash/merge commit is created by GitHub and is therefore
+# verified, satisfying the required-signatures rule.
+open_pull_request() {
+  local branch=${1} base=${2} title=${3} body=${4}
+  local payload resp pr_url pr_node
+
+  payload=$(printf '{"title":"%s","head":"%s","base":"%s","body":"%s"}' \
+    "${title}" "${branch}" "${base}" "${body}")
+
+  if ! resp=$(curl -sf -X POST \
+      -H "Authorization: token ${deployments_token}" \
+      -H "Accept: application/vnd.github+json" \
+      "${api_url}/repos/${deployments_repo}/pulls" -d "${payload}"); then
+    echo "Error: Failed to open pull request on ${deployments_repo} (token needs pull_requests:write; branch may already have an open PR)." >&2
     clean_repository
     exit 1
   fi
+
+  pr_url=$(printf '%s' "${resp}" | grep -o '"html_url"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
+  pr_node=$(printf '%s' "${resp}" | grep -o '"node_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
+
+  echo "Opened pull request: ${pr_url:-"(URL unavailable)"}"
+
+  if [ "${RELEASE_AUTO_MERGE:-false}" = "true" ] && [ -n "${pr_node}" ]; then
+    enable_auto_merge "${pr_node}" || \
+      echo "Warning: could not enable auto-merge; PR will wait for a manual/required merge." >&2
+  fi
 }
 
+# Best-effort: enable auto-merge via GraphQL. Requires the repo to allow
+# auto-merge and the token to have pull_requests:write. A failure here is not
+# fatal — the PR is open and can be merged once protection is satisfied.
+enable_auto_merge() {
+  local pr_node=${1} query
+  query=$(printf '{"query":"mutation { enablePullRequestAutoMerge(input: {pullRequestId: \\"%s\\", mergeMethod: SQUASH}) { clientMutationId } }"}' "${pr_node}")
+  curl -sf -X POST \
+    -H "Authorization: token ${deployments_token}" \
+    -H "Accept: application/vnd.github+json" \
+    "${api_url}/graphql" -d "${query}" >/dev/null
+}
 
-# Function to update a file in a Git repository
+# Function to update a file in a Git repository and open a PR for the change
 update_file() {
   local file_path=${1}
   local new_version=${2}
   local project_name=${3}
+  local base_branch branch title body
 
   clone_repository
   check_git_repository
   check_file "${file_path}"
   check_uncommitted_changes
+
+  base_branch=$(git symbolic-ref --short HEAD)
+  branch="chore/bump-${project_name}-appversion-${new_version}"
 
   git checkout HEAD "${file_path}"
 
@@ -150,14 +196,26 @@ update_file() {
     exit 1
   fi
 
+  git switch -c "${branch}"
+
   # Replace the app version line in the file
   sed -i "s/^appVersion: .*/appVersion: \"${new_version}\"/" "${file_path}"
 
-  git add "${file_path}"
-  git commit -m "chore(${project_name}): update app version to version ${new_version}"
-  push_changes
+  title="chore(${project_name}): update appVersion to ${new_version}"
+  body="Automated appVersion bump for ${project_name} to ${new_version}. Updates ${file_path}."
 
-  echo "[${project_name}]: appVersion in ${file_path} updated to ${new_version}."
+  git add "${file_path}"
+  git commit -m "${title}"
+
+  if ! git -c http.extraheader="${git_auth_header}" push -u origin "${branch}"; then
+    echo "Error: Failed to push branch ${branch} to ${deployments_repo}." >&2
+    clean_repository
+    exit 1
+  fi
+
+  open_pull_request "${branch}" "${base_branch}" "${title}" "${body}"
+
+  echo "[${project_name}]: appVersion bump to ${new_version} proposed via PR against ${base_branch}."
   clean_repository
 }
 
