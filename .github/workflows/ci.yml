@@ -137,10 +137,17 @@ jobs:
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          # main-push is a detached HEAD; put HEAD on a real `main` so the version
-          # commit + push resolve. The push authenticates as the release App
-          # (token persisted by checkout above), which bypasses the require-PR rule.
-          git checkout -B main
+          # Version against the live remote main tip, not the detached push SHA.
+          # `git checkout -B main` alone roots HEAD at the trigger commit, which
+          # can already be behind origin/main; @jscutlery/semver then cuts the tag
+          # on that stale base, so the tag lands on a commit that never becomes the
+          # real main tip — orphaned tags ratchet ahead of main (JDWLABS-72) and
+          # the next release collides. Fetch + reset onto origin/main so HEAD ==
+          # main and every semver commit/tag push fast-forwards onto the branch it
+          # tagged. The push authenticates as the release App (token persisted by
+          # checkout above), a ruleset bypass actor.
+          git fetch origin main --tags --prune --force
+          git checkout -B main origin/main
           pnpm exec nx affected -t version --parallel=1
 
       # Hands off post-deploy verification: the deployments repo runs
