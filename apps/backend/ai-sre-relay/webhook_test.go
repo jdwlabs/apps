@@ -29,6 +29,30 @@ func TestHealthz(t *testing.T) {
 	}
 }
 
+func TestWebhookRecoversFromPanic(t *testing.T) {
+	started := make(chan struct{})
+	h := handlerFunc(func(_ context.Context, a Alert) error {
+		close(started) // signal goroutine is running before we panic
+		panic("induced panic for " + a.Fingerprint)
+	})
+
+	const payload = `{"alerts":[{"status":"firing","fingerprint":"fp-panic","labels":{"alertname":"Crasher"}}]}`
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(payload))
+	newRouter(h).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("code = %d, want 202", rr.Code)
+	}
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("goroutine did not start within 1s")
+	}
+	// Wait for the deferred recover to complete after the panic.
+	time.Sleep(50 * time.Millisecond)
+}
+
 func TestWebhookDispatchesFiringAlerts(t *testing.T) {
 	done := make(chan Alert, 2)
 	h := handlerFunc(func(_ context.Context, a Alert) error { done <- a; return nil })

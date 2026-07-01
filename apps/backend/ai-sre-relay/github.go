@@ -64,12 +64,17 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 		return "", fmt.Errorf("github: empty base sha")
 	}
 
-	// 2. create branch (ignore 422 already-exists)
+	// 2. create branch; 422 means the branch already exists and is fine (idempotent
+	// re-run of the same patch), other non-2xx statuses are real failures.
 	brResp, err := g.req(ctx, http.MethodPost, repoPath+"/git/refs", map[string]string{
 		"ref": "refs/heads/" + p.Branch, "sha": ref.Object.SHA,
 	})
 	if err != nil {
 		return "", err
+	}
+	if brResp.StatusCode >= 300 && brResp.StatusCode != http.StatusUnprocessableEntity {
+		brResp.Body.Close()
+		return "", fmt.Errorf("github create branch: status %d", brResp.StatusCode)
 	}
 	brResp.Body.Close()
 
@@ -88,7 +93,6 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	}
 	fResp.Body.Close()
 
-	// 4. put contents
 	put := map[string]any{
 		"message": fmt.Sprintf("fix(ai-sre): %s (%s)", p.Rationale, issue),
 		"content": base64.StdEncoding.EncodeToString([]byte(p.NewContent)),

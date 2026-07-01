@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
@@ -31,8 +32,15 @@ func newRouter(h handler) *http.ServeMux {
 			}
 			a := a
 			// Async: return 202 fast so Alertmanager is not held open for the
-			// full investigation (which can take tens of seconds).
+			// full investigation (which can take tens of seconds). A deferred
+			// recover ensures a panicking client does not crash the process and
+			// silently drop all subsequent alerts.
 			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						slog.Error("pipeline panic", "fingerprint", a.Fingerprint, "panic", r)
+					}
+				}()
 				_ = h.Handle(context.Background(), a)
 			}()
 		}
