@@ -1,4 +1,5 @@
 import com.google.cloud.tools.jib.api.buildplan.ImageFormat
+import java.time.Instant
 import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 plugins {
@@ -86,7 +87,7 @@ val gitRevision: String = runCatching {
 		.inputStream.bufferedReader().readText().trim()
 }.getOrNull()?.takeIf { it.isNotEmpty() } ?: "unknown"
 
-val imageCreated: String = java.time.Instant.now().toString()
+val imageCreated: String = Instant.now().toString()
 
 jib {
 	to {
