@@ -19,7 +19,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "build-image"]
+        "postTargets": ["format", "build-image", "update-description"]
       }
     },
     "build-image": {
@@ -27,7 +27,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/authdb:latest -t jdwlabs/authdb:{version} .",
+            "command": "bash scripts/build-image.sh authdb {version} {projectRoot}/Dockerfile \"PostgreSQL image with jdwlabs auth schema initialization scripts\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           }
         ],
@@ -39,7 +39,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwlabs/authdb:latest .",
+            "command": "bash scripts/build-image.sh authdb local {projectRoot}/Dockerfile \"PostgreSQL image with jdwlabs auth schema initialization scripts\" --load",
             "forwardAllArgs": false
           }
         ],
@@ -48,6 +48,9 @@
     },
     "format": {
       "command": "bash scripts/format.sh"
+    },
+    "update-description": {
+      "command": "bash scripts/update-description.sh jdwlabs/authdb {projectRoot}/README.docker.md"
     },
     "serve": {
       "command": "docker run --rm -p 5432:5432 jdwlabs/authdb:latest"

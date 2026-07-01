@@ -32,7 +32,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/servicediscovery:latest -t jdwlabs/servicediscovery:{version} --push .",
+            "command": "bash scripts/build-image.sh servicediscovery {version} {projectRoot}/Dockerfile \"Micro-frontend service discovery API for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           }
         ],
@@ -44,7 +44,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile.local -t jdwlabs/servicediscovery:latest --load .",
+            "command": "bash scripts/build-image.sh servicediscovery local {projectRoot}/Dockerfile.local \"Micro-frontend service discovery API for the jdwlabs platform\" --load",
             "forwardAllArgs": false
           }
         ],
@@ -68,7 +68,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "build-image", "update-app"]
+        "postTargets": ["format", "build-image", "update-app", "update-description"]
       }
     },
     "format": {
@@ -76,6 +76,9 @@
     },
     "update-app": {
       "command": "bash scripts/update-app.sh charts/servicediscovery/Chart.yaml {version} {projectName}"
+    },
+    "update-description": {
+      "command": "bash scripts/update-description.sh jdwlabs/servicediscovery {projectRoot}/README.docker.md"
     },
     "download": {
       "command": "go mod download"

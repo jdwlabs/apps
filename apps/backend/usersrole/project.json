@@ -22,7 +22,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "update-version", "build-image", "update-app"]
+        "postTargets": ["format", "update-version", "build-image", "update-app", "update-description"]
       }
     },
     "update-version": {
@@ -30,6 +30,9 @@
     },
     "update-app": {
       "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
+    },
+    "update-description": {
+      "command": "bash scripts/update-description.sh jdwlabs/usersrole {projectRoot}/README.docker.md"
     },
     "format": {
       "command": "bash scripts/format.sh"
