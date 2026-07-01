@@ -1,24 +1,28 @@
 package main
 
 import (
-	"context"
+	"crypto/subtle"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 )
 
-// handler is the pipeline seam; webhook depends only on this narrow interface.
-type handler interface {
-	Handle(ctx context.Context, a Alert) error
+// maxWebhookBytes caps the request body. Alertmanager batches are small; the
+// cap guards the memory-capped replica against an oversized/malicious payload.
+const maxWebhookBytes = 1 << 20 // 1 MiB
+
+// enqueuer is the seam to the worker pool; the HTTP layer depends only on this.
+type enqueuer interface {
+	enqueue(a Alert) bool
 }
 
-func newRouter(h handler) *http.ServeMux {
+func newRouter(e enqueuer, webhookToken string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("POST /webhook", func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, maxWebhookBytes)
 		var payload struct {
 			Alerts []Alert `json:"alerts"`
 		}
@@ -26,25 +30,38 @@ func newRouter(h handler) *http.ServeMux {
 			http.Error(w, "bad payload", http.StatusBadRequest)
 			return
 		}
+		// Return 202 fast so Alertmanager is not held open for the full
+		// investigation; the worker pool does the slow work asynchronously.
 		for _, a := range payload.Alerts {
-			if a.Status != "firing" {
-				continue
+			if a.Status == "firing" {
+				e.enqueue(a)
 			}
-			a := a
-			// Async: return 202 fast so Alertmanager is not held open for the
-			// full investigation (which can take tens of seconds). A deferred
-			// recover ensures a panicking client does not crash the process and
-			// silently drop all subsequent alerts.
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						slog.Error("pipeline panic", "fingerprint", a.Fingerprint, "panic", r)
-					}
-				}()
-				_ = h.Handle(context.Background(), a)
-			}()
 		}
 		w.WriteHeader(http.StatusAccepted)
 	})
-	return mux
+	return withAuth(mux, webhookToken)
+}
+
+// withAuth enforces a bearer token on the expensive/side-effecting routes when
+// a token is configured, leaving /healthz open for kubelet probes. The Service
+// is ClusterIP, but the downstream (paid LLM calls, Jira issues, GitHub PRs)
+// warrants defense-in-depth against any in-cluster caller. When no token is set
+// the mux is returned unwrapped (startup logs a warning).
+func withAuth(next http.Handler, token string) http.Handler {
+	if token == "" {
+		return next
+	}
+	want := []byte("Bearer " + token)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Constant-time compare to avoid leaking the token via response timing.
+		if subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), want) != 1 {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
