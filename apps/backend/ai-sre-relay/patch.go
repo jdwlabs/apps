@@ -80,7 +80,7 @@ func (g *PatchGenerator) Generate(ctx context.Context, an Analysis) (*Patch, err
 	if err := json.Unmarshal([]byte(content), &p); err != nil {
 		return nil, nil
 	}
-	if p.Confidence < g.minConfidence || p.Repo == "" || p.FilePath == "" || p.NewContent == "" {
+	if p.Confidence < g.minConfidence || strings.TrimSpace(p.Repo) == "" || strings.TrimSpace(p.FilePath) == "" || strings.TrimSpace(p.NewContent) == "" {
 		return nil, nil
 	}
 	return &p, nil

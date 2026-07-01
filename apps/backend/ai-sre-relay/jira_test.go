@@ -63,6 +63,30 @@ func TestJiraUpsertCommentsWhenDuplicate(t *testing.T) {
 	}
 }
 
+func TestJiraUpsertSearchErrorsOnServerError(t *testing.T) {
+	created := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
+			w.WriteHeader(http.StatusInternalServerError)
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/3/issue":
+			created = true
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]string{"key": "JDWLABS-999"})
+		}
+	}))
+	defer srv.Close()
+
+	_, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", srv.Client()).
+		Upsert(context.Background(), Alert{Fingerprint: "fp1", Labels: map[string]string{"alertname": "X"}}, Analysis{RootCause: "y"})
+	if err == nil {
+		t.Fatal("expected error when search returns 500, got nil")
+	}
+	if created {
+		t.Fatal("create must not be attempted after a failed search")
+	}
+}
+
 func TestJiraUpsertCreateErrorsOnServerError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") == "" {
