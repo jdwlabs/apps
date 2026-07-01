@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.5.0](https://github.com/jdwlabs/apps/compare/authdb-0.4.5...authdb-0.5.0) (2026-07-01)
+
+### Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([bfd1325](https://github.com/jdwlabs/apps/commit/bfd1325172d58ceb042b9eb2994f1105d1cdce53))
+
 ## [0.4.5](https://github.com/jdwlabs/apps/compare/authdb-0.4.4...authdb-0.4.5) (2026-06-18)
 
 ### Bug Fixes
