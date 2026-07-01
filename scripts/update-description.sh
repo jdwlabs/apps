@@ -33,9 +33,10 @@ if [ ! -f "${readme}" ]; then
   exit 1
 fi
 
-# Hub's short description caps at 100 chars. Derive it from the first non-empty line
-# (dropping a leading markdown heading) so it stays in sync with the README too.
-short="$(grep -m1 . "${readme}" | sed 's/^#\+ *//' | cut -c1-100)"
+# Hub's short description caps at 100 chars. Derive it from the first line that is
+# neither blank nor a heading — i.e. the tagline under the title, not the "# name"
+# H1 — and strip markdown bold so it reads cleanly. Keeps it in sync with the README.
+short="$(grep -m1 -vE '^[[:space:]]*(#|$)' "${readme}" | sed -E 's/\*\*//g; s/^#+ *//' | cut -c1-100)"
 
 token="$(curl -sf -H 'Content-Type: application/json' \
   -d "{\"username\": \"${DOCKERHUB_USERNAME}\", \"password\": \"${DOCKERHUB_PASSWORD}\"}" \
