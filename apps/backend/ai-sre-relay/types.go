@@ -28,7 +28,7 @@ type Patch struct {
 	Confidence float64 `json:"confidence"` // 0..1
 }
 
-// IssueKey is a Jira issue identifier, e.g. "JDWLABS-123".
+// IssueKey is a Jira issue identifier, e.g. "ABC-123".
 type IssueKey string
 
 // PRLink is a rendered GitHub pull request URL.
