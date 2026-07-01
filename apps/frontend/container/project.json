@@ -145,7 +145,13 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "save-version", "build-image", "update-app", "update-description"]
+        "postTargets": [
+          "format",
+          "save-version",
+          "build-image",
+          "update-app",
+          "update-description"
+        ]
       }
     },
     "save-version": {
