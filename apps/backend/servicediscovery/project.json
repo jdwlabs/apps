@@ -68,7 +68,12 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "build-image", "update-app", "update-description"]
+        "postTargets": [
+          "format",
+          "build-image",
+          "update-app",
+          "update-description"
+        ]
       }
     },
     "format": {
