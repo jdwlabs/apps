@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.5.0](https://github.com/jdwlabs/apps/compare/servicediscovery-0.4.3...servicediscovery-0.5.0) (2026-07-01)
+
+### Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([bfd1325](https://github.com/jdwlabs/apps/commit/bfd1325172d58ceb042b9eb2994f1105d1cdce53))
+
 ## [0.4.3](https://github.com/jdwlabs/apps/compare/servicediscovery-0.4.2...servicediscovery-0.4.3) (2026-06-08)
 
 ### Bug Fixes
