@@ -145,7 +145,7 @@
       "options": {
         "push": true,
         "preset": "conventionalcommits",
-        "postTargets": ["format", "save-version", "build-image", "update-app"]
+        "postTargets": ["format", "save-version", "build-image", "update-app", "update-description"]
       }
     },
     "save-version": {
@@ -165,7 +165,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/container:latest -t jdwlabs/container:{version} --push .",
+            "command": "bash scripts/build-image.sh container {version} {projectRoot}/Dockerfile \"Angular module-federation host shell for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           },
           {
@@ -182,7 +182,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build -f {projectRoot}/Dockerfile -t jdwlabs/container:latest --load .",
+            "command": "bash scripts/build-image.sh container local {projectRoot}/Dockerfile \"Angular module-federation host shell for the jdwlabs platform\" --load",
             "forwardAllArgs": false
           },
           {
@@ -195,6 +195,9 @@
     },
     "update-app": {
       "command": "bash scripts/update-app.sh charts/container/Chart.yaml {version} {projectName}"
+    },
+    "update-description": {
+      "command": "bash scripts/update-description.sh jdwlabs/container {projectRoot}/README.docker.md"
     },
     "format": {
       "command": "bash scripts/format.sh"
