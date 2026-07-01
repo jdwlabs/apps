@@ -98,6 +98,27 @@ func TestPipelineJiraFailureStillNotifiesDiscord(t *testing.T) {
 	}
 }
 
+type fakeGHErr struct{}
+
+func (fakeGHErr) OpenPR(context.Context, Patch, IssueKey) (PRLink, error) {
+	return "", errors.New("github down")
+}
+
+func TestPipelineGithubFailureStillNotifiesDiscord(t *testing.T) {
+	d := &fakeDiscord{}
+	patch := &Patch{Repo: "a/b", FilePath: "f", NewContent: "c", Branch: "fix/x", Rationale: "r", Confidence: 0.9}
+	p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: patch}, &fakeJira{key: "JDWLABS-3"}, fakeGHErr{}, d, silentLogger())
+	if err := p.Handle(context.Background(), Alert{Fingerprint: "fp"}); err != nil {
+		t.Fatal(err)
+	}
+	if !d.called {
+		t.Fatal("discord must fire even when github fails")
+	}
+	if d.pr != nil {
+		t.Fatalf("PR link must be nil when github fails, got %v", d.pr)
+	}
+}
+
 type fakePatcherErr struct{}
 
 func (fakePatcherErr) Generate(context.Context, Analysis) (*Patch, error) {

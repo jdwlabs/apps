@@ -55,6 +55,14 @@ func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey
 	if err != nil {
 		return "", err
 	}
+	// A non-2xx search response (auth failure, rate-limit, server error) returns
+	// a JSON error body that decodes fine with Issues == nil, which would
+	// incorrectly pass the dedup check and create a duplicate issue. Fail-safe:
+	// surface the error instead.
+	if resp.StatusCode >= 300 {
+		resp.Body.Close()
+		return "", fmt.Errorf("jira search: status %d", resp.StatusCode)
+	}
 	var search struct {
 		Issues []struct {
 			Key string `json:"key"`

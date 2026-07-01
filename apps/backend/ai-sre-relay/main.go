@@ -29,6 +29,7 @@ func mustEnv(key string) string {
 
 func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(log)
 	hc := &http.Client{Timeout: 90 * time.Second}
 
 	holmes := NewHolmesClient(env("HOLMES_URL", "http://holmes-holmes.ai-sre.svc.cluster.local"), hc)
