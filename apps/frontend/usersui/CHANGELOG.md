@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.4.0](https://github.com/jdwlabs/apps/compare/usersui-1.3.2...usersui-1.4.0) (2026-07-01)
+
+### Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([bfd1325](https://github.com/jdwlabs/apps/commit/bfd1325172d58ceb042b9eb2994f1105d1cdce53))
+
 ## [1.3.2](https://github.com/jdwlabs/apps/compare/usersui-1.3.1...usersui-1.3.2) (2026-06-08)
 
 ### Bug Fixes
