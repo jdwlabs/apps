@@ -29,7 +29,10 @@ func (j *JiraClient) label(a Alert) string { return "amfp-" + a.Fingerprint }
 func (j *JiraClient) do(ctx context.Context, method, path string, body any) (*http.Response, error) {
 	var r *bytes.Reader
 	if body != nil {
-		b, _ := json.Marshal(body)
+		b, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
 		r = bytes.NewReader(b)
 	} else {
 		r = bytes.NewReader(nil)
@@ -57,7 +60,10 @@ func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey
 			Key string `json:"key"`
 		} `json:"issues"`
 	}
-	_ = json.NewDecoder(resp.Body).Decode(&search)
+	if err := json.NewDecoder(resp.Body).Decode(&search); err != nil {
+		resp.Body.Close()
+		return "", err
+	}
 	resp.Body.Close()
 
 	if len(search.Issues) > 0 {
