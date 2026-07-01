@@ -18,4 +18,7 @@ func TestHealthz(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("healthz = %d, want 200", rr.Code)
 	}
+	if got := rr.Body.String(); got != "ok" {
+		t.Errorf("healthz body = %q, want \"ok\"", got)
+	}
 }
