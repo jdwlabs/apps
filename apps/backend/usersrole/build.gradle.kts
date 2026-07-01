@@ -77,6 +77,17 @@ tasks.named<BootBuildImage>("bootBuildImage") {
 	}
 }
 
+// Resolved at configuration time for the OCI image.revision label. A missing git
+// context (e.g. a source-tarball build) is non-fatal — fall back rather than fail.
+val gitRevision: String = runCatching {
+	ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+		.redirectErrorStream(true)
+		.start()
+		.inputStream.bufferedReader().readText().trim()
+}.getOrNull()?.takeIf { it.isNotEmpty() } ?: "unknown"
+
+val imageCreated: String = java.time.Instant.now().toString()
+
 jib {
 	to {
 		image = "docker.io/jdwlabs/${project.name}:${version}"
@@ -96,5 +107,21 @@ jib {
 	container {
 		format = ImageFormat.OCI
 		ports = listOf("8080")
+		// Mirrors scripts/build-image.sh so the Jib-built image carries the same
+		// org.opencontainers.image.* set as the six buildx images.
+		labels.set(
+			mapOf(
+				"org.opencontainers.image.title" to "usersrole",
+				"org.opencontainers.image.description" to "Users & roles Spring Boot backend service for the jdwlabs platform",
+				"org.opencontainers.image.vendor" to "jdwlabs",
+				"org.opencontainers.image.licenses" to "PolyForm-Noncommercial-1.0.0",
+				"org.opencontainers.image.url" to "https://github.com/jdwlabs/apps",
+				"org.opencontainers.image.source" to "https://github.com/jdwlabs/apps",
+				"org.opencontainers.image.documentation" to "https://hub.docker.com/r/jdwlabs/usersrole",
+				"org.opencontainers.image.version" to version.toString(),
+				"org.opencontainers.image.revision" to gitRevision,
+				"org.opencontainers.image.created" to imageCreated,
+			),
+		)
 	}
 }
