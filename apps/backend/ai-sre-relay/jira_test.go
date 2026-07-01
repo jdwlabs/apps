@@ -12,6 +12,9 @@ import (
 
 func TestJiraUpsertCreatesWhenNoDuplicate(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" {
+			t.Errorf("missing Authorization header on %s %s", r.Method, r.URL.Path)
+		}
 		switch {
 		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
 			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []any{}})
@@ -38,6 +41,9 @@ func TestJiraUpsertCreatesWhenNoDuplicate(t *testing.T) {
 func TestJiraUpsertCommentsWhenDuplicate(t *testing.T) {
 	commented := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" {
+			t.Errorf("missing Authorization header on %s %s", r.Method, r.URL.Path)
+		}
 		switch {
 		case strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
 			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []map[string]string{{"key": "JDWLABS-77"}}})
@@ -54,5 +60,28 @@ func TestJiraUpsertCommentsWhenDuplicate(t *testing.T) {
 		Upsert(context.Background(), Alert{Fingerprint: "fp1"}, Analysis{RootCause: "y"})
 	if err != nil || key != "JDWLABS-77" || !commented {
 		t.Fatalf("key=%q err=%v commented=%v", key, err, commented)
+	}
+}
+
+func TestJiraUpsertCreateErrorsOnServerError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" {
+			t.Errorf("missing Authorization header on %s %s", r.Method, r.URL.Path)
+		}
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []any{}})
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/3/issue":
+			w.WriteHeader(http.StatusInternalServerError)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", srv.Client()).
+		Upsert(context.Background(), Alert{Fingerprint: "fp1", Labels: map[string]string{"alertname": "X"}}, Analysis{RootCause: "y"})
+	if err == nil {
+		t.Fatalf("expected error on server failure, got key=%q", key)
 	}
 }
