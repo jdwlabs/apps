@@ -1,0 +1,54 @@
+{
+  "name": "ai-sre-relay",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/backend/ai-sre-relay",
+  "tags": ["type:app", "scope:ai-sre-relay", "framework:go"],
+  "targets": {
+    "build": {
+      "executor": "@nx-go/nx-go:build",
+      "options": {
+        "main": ".",
+        "outputPath": "../../../dist/apps/backend/ai-sre-relay/ai-sre-relay"
+      }
+    },
+    "serve": { "executor": "@nx-go/nx-go:serve", "options": { "main": "." } },
+    "test": { "executor": "@nx-go/nx-go:test" },
+    "lint": { "executor": "@nx-go/nx-go:lint" },
+    "tidy": { "executor": "@nx-go/nx-go:tidy" },
+    "build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:{version} --push .",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker buildx build -f {projectRoot}/Dockerfile.local -t jdwlabs/ai-sre-relay:latest --load .",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "version": {
+      "executor": "@jscutlery/semver:version",
+      "options": {
+        "push": true,
+        "preset": "conventionalcommits",
+        "postTargets": ["format", "build-image"]
+      }
+    },
+    "format": { "command": "bash scripts/format.sh" },
+    "download": { "command": "go mod download" }
+  }
+}
