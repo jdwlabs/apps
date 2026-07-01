@@ -1,4 +1,4 @@
 package main
 
-// Entry point; wiring added in Task 9. No-op main so `nx build` produces a binary.
+// No-op entry point; wiring is deferred until the server is assembled. `nx build` produces a binary.
 func main() {}
