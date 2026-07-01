@@ -1,6 +1,7 @@
 go 1.23
 
 use (
+	./apps/backend/ai-sre-relay
 	./apps/backend/servicediscovery
 	./libs/backend/shared/util
 )
