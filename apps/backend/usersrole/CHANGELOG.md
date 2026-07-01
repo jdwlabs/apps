@@ -2,6 +2,16 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.11.0](https://github.com/jdwlabs/apps/compare/usersrole-0.10.42...usersrole-0.11.0) (2026-07-01)
+
+### Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([bfd1325](https://github.com/jdwlabs/apps/commit/bfd1325172d58ceb042b9eb2994f1105d1cdce53))
+
+### Bug Fixes
+
+- **usersrole:** import Instant so build.gradle.kts compiles ([40a0571](https://github.com/jdwlabs/apps/commit/40a05712fc59f4c8a6823479d4a33313bf29cfa4))
+
 ## [0.10.42](https://github.com/jdwlabs/apps/compare/usersrole-0.10.41...usersrole-0.10.42) (2026-06-18)
 
 ## [0.10.41](https://github.com/jdwlabs/apps/compare/usersrole-0.10.40...usersrole-0.10.41) (2026-06-18)
