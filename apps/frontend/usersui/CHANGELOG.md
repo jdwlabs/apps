@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.4.34](https://github.com/jdwlabs/apps/compare/usersui-1.4.33...usersui-1.4.34) (2026-07-01)
+
 ## [1.4.33](https://github.com/jdwlabs/apps/compare/usersui-1.4.32...usersui-1.4.33) (2026-07-01)
 
 ## [1.4.32](https://github.com/jdwlabs/apps/compare/usersui-1.4.31...usersui-1.4.32) (2026-07-01)
