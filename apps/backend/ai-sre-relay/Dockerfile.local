@@ -1,0 +1,13 @@
+# Self-contained build for local iteration (no prior `nx build` needed).
+FROM golang:1.23-bookworm AS build
+WORKDIR /src
+COPY apps/backend/ai-sre-relay/go.mod ./
+RUN go mod download || true
+COPY apps/backend/ai-sre-relay/ ./
+RUN CGO_ENABLED=0 go build -o /out/ai-sre-relay .
+
+FROM gcr.io/distroless/base-debian12:nonroot AS runner
+WORKDIR /app
+COPY --from=build /out/ai-sre-relay .
+EXPOSE 8080
+ENTRYPOINT ["/app/ai-sre-relay"]
