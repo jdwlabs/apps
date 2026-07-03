@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.4.116](https://github.com/jdwlabs/apps/compare/authui-1.4.115...authui-1.4.116) (2026-07-03)
+
 ## [1.4.115](https://github.com/jdwlabs/apps/compare/authui-1.4.114...authui-1.4.115) (2026-07-03)
 
 ## [1.4.114](https://github.com/jdwlabs/apps/compare/authui-1.4.113...authui-1.4.114) (2026-07-03)
