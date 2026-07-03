@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [1.4.87](https://github.com/jdwlabs/apps/compare/container-1.4.86...container-1.4.87) (2026-07-03)
+
 ## [1.4.86](https://github.com/jdwlabs/apps/compare/container-1.4.85...container-1.4.86) (2026-07-03)
 
 ## [1.4.85](https://github.com/jdwlabs/apps/compare/container-1.4.84...container-1.4.85) (2026-07-03)
