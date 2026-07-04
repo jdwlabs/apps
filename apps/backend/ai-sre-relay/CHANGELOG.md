@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.1.2](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.1...ai-sre-relay-0.1.2) (2026-07-04)
+
+### Bug Fixes
+
+- **ai-sre-relay:** drop client timeout on LLM-bound calls ([bca27ee](https://github.com/jdwlabs/apps/commit/bca27eebf888e36138c94ae1660be213f997059b))
+
 ## [0.1.1](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.0...ai-sre-relay-0.1.1) (2026-07-04)
 
 ### Bug Fixes
