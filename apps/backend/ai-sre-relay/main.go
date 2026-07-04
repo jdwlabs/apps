@@ -45,9 +45,13 @@ func main() {
 	// The per-alert context in the dispatcher bounds the pipeline as a whole.
 	hc := &http.Client{Timeout: 90 * time.Second}
 
-	holmes := NewHolmesClient(env("HOLMES_URL", "http://holmes-holmes.ai-sre.svc.cluster.local"), hc)
+	holmes := NewHolmesClient(
+		env("HOLMES_URL", "http://platform-holmes-holmes.ai-sre.svc.cluster.local"),
+		env("LITELLM_MODEL", "claude-sonnet"),
+		hc,
+	)
 	patchGen := NewPatchGenerator(
-		env("LITELLM_URL", "http://litellm.ai-sre.svc.cluster.local:4000/v1"),
+		env("LITELLM_URL", "http://platform-litellm.ai-sre.svc.cluster.local:4000/v1"),
 		mustEnv("LITELLM_KEY"),
 		env("LITELLM_MODEL", "claude-sonnet"),
 		0.75, hc,
