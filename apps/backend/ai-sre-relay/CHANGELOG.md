@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.1.3](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.2...ai-sre-relay-0.1.3) (2026-07-04)
+
+### Bug Fixes
+
+- **ai-sre-relay:** migrate jira dedup search to /search/jql ([4e94c3e](https://github.com/jdwlabs/apps/commit/4e94c3ed2d991584de7afa31c2b2e695c009dc4b))
+
 ## [0.1.2](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.1...ai-sre-relay-0.1.2) (2026-07-04)
 
 ### Bug Fixes
