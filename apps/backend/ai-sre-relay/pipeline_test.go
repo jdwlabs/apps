@@ -81,6 +81,31 @@ func TestPipelineHolmesFailureStillNotifies(t *testing.T) {
 	}
 }
 
+type ctxCheckingDiscord struct {
+	called bool
+	ctxErr error
+}
+
+func (f *ctxCheckingDiscord) Notify(ctx context.Context, _ Alert, _ Analysis, _ IssueKey, _ *PRLink) error {
+	f.called = true
+	f.ctxErr = ctx.Err()
+	return f.ctxErr
+}
+
+// The usual way Holmes fails is the per-alert deadline expiring mid
+// investigation — the same dead context must not also kill the notice that
+// tells humans about it.
+func TestPipelineFailureNoticeSurvivesDeadContext(t *testing.T) {
+	d := &ctxCheckingDiscord{}
+	p := NewPipeline(fakeHolmes{err: errors.New("deadline exceeded")}, fakePatcher{}, &fakeJira{}, &fakeGH{}, d, silentLogger())
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_ = p.Handle(ctx, Alert{Fingerprint: "f"})
+	if !d.called || d.ctxErr != nil {
+		t.Fatalf("failure notice must run on a live context: called=%v ctxErr=%v", d.called, d.ctxErr)
+	}
+}
+
 type fakeJiraErr struct{}
 
 func (fakeJiraErr) Upsert(context.Context, Alert, Analysis) (IssueKey, error) {
