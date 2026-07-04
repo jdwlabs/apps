@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"time"
 )
 
 type holmesInvestigator interface {
@@ -42,9 +43,13 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 	an, err := p.holmes.Investigate(ctx, a)
 	if err != nil {
 		// Holmes is terminal: nothing to fan out. Still tell humans so they
-		// are not left blind.
+		// are not left blind. The per-alert context is usually already dead
+		// here (deadline expired mid-investigation), so the notice gets a
+		// short-lived context of its own.
 		log.Error("holmes investigation failed", "err", err)
-		if derr := p.discord.Notify(ctx, a, Analysis{RootCause: "⚠️ investigation failed: " + err.Error()}, "", nil); derr != nil {
+		nctx, ncancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer ncancel()
+		if derr := p.discord.Notify(nctx, a, Analysis{RootCause: "⚠️ investigation failed: " + err.Error()}, "", nil); derr != nil {
 			log.Error("discord failure notice failed", "err", derr)
 		}
 		return err
