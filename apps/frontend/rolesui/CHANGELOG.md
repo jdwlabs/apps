@@ -2,6 +2,8 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.6.187](https://github.com/jdwlabs/apps/compare/rolesui-0.6.186...rolesui-0.6.187) (2026-07-04)
+
 ## [0.6.186](https://github.com/jdwlabs/apps/compare/rolesui-0.6.185...rolesui-0.6.186) (2026-07-04)
 
 ## [0.6.185](https://github.com/jdwlabs/apps/compare/rolesui-0.6.184...rolesui-0.6.185) (2026-07-04)
