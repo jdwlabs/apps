@@ -51,7 +51,9 @@ func (j *JiraClient) do(ctx context.Context, method, path string, body any) (*ht
 // issue that carries the fingerprint dedup label.
 func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey, error) {
 	jql := fmt.Sprintf(`project = %s AND labels = "%s" AND statusCategory != Done`, j.projectKey, j.label(a))
-	resp, err := j.do(ctx, http.MethodGet, "/rest/api/3/search?jql="+url.QueryEscape(jql), nil)
+	// /rest/api/3/search was removed by Atlassian in 2025; its /search/jql
+	// replacement returns bare issue IDs unless fields are requested.
+	resp, err := j.do(ctx, http.MethodGet, "/rest/api/3/search/jql?fields=key&jql="+url.QueryEscape(jql), nil)
 	if err != nil {
 		return "", err
 	}

@@ -16,7 +16,10 @@ func TestJiraUpsertCreatesWhenNoDuplicate(t *testing.T) {
 			t.Errorf("missing Authorization header on %s %s", r.Method, r.URL.Path)
 		}
 		switch {
-		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/3/search/jql":
+			if r.URL.Query().Get("fields") != "key" {
+				t.Errorf("search must request the key field explicitly, got %q", r.URL.RawQuery)
+			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []any{}})
 		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/3/issue":
 			raw, _ := io.ReadAll(r.Body)
