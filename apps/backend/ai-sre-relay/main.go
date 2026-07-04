@@ -41,20 +41,24 @@ func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(log)
 
-	// One shared client; the timeout bounds each individual upstream request.
-	// The per-alert context in the dispatcher bounds the pipeline as a whole.
+	// Output posts (Discord/Jira/GitHub) get a tight per-request cap. LLM-bound
+	// calls (Holmes investigation, patch generation) legitimately run for
+	// minutes on slow backends, so their client carries no timeout of its own —
+	// the dispatcher's per-alert context (INVESTIGATION_TIMEOUT_SECONDS) is
+	// their only deadline.
 	hc := &http.Client{Timeout: 90 * time.Second}
+	llmc := &http.Client{}
 
 	holmes := NewHolmesClient(
 		env("HOLMES_URL", "http://platform-holmes-holmes.ai-sre.svc.cluster.local"),
 		env("LITELLM_MODEL", "claude-sonnet"),
-		hc,
+		llmc,
 	)
 	patchGen := NewPatchGenerator(
 		env("LITELLM_URL", "http://platform-litellm.ai-sre.svc.cluster.local:4000/v1"),
 		mustEnv("LITELLM_KEY"),
 		env("LITELLM_MODEL", "claude-sonnet"),
-		0.75, hc,
+		0.75, llmc,
 	)
 	discord := NewDiscordNotifier(mustEnv("DISCORD_WEBHOOK_URL"), hc)
 	jira := NewJiraClient(mustEnv("JIRA_URL"), mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), hc)
