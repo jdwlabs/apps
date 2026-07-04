@@ -61,7 +61,9 @@ func main() {
 		0.75, llmc,
 	)
 	discord := NewDiscordNotifier(mustEnv("DISCORD_WEBHOOK_URL"), hc)
-	jira := NewJiraClient(mustEnv("JIRA_URL"), mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), hc)
+	// "Task" not "Bug": the target project's type scheme has no Bug type and
+	// Jira rejects creates with an unknown type (400).
+	jira := NewJiraClient(mustEnv("JIRA_URL"), mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), env("JIRA_ISSUE_TYPE", "Task"), hc)
 	github := NewGitHubClient(env("GITHUB_API", "https://api.github.com"), mustEnv("GITHUB_TOKEN"), hc)
 
 	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)
