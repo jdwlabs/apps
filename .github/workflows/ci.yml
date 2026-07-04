@@ -98,7 +98,11 @@ jobs:
         name: Validate Commit Messages
         run: pnpm exec commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }}
       - name: Run Format Check
-        run: pnpm exec nx format:check
+        # --all checks the whole repo, not just affected files. Without it the
+        # scope tracks git context (PR diff vs push range), so a repo-wide
+        # formatting violation in a file the change doesn't touch passes the PR
+        # gate yet fails on main-push — a green PR no longer implies a green main.
+        run: pnpm exec nx format:check --all
       - name: Run Linting & Unit Tests
         run: pnpm exec nx affected -t lint test
       - name: Run Build
