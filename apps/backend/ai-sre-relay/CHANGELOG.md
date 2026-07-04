@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.1.1](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.0...ai-sre-relay-0.1.1) (2026-07-04)
+
+### Bug Fixes
+
+- **ai-sre-relay:** call Holmes /api/chat; investigate endpoint gone ([6de9d11](https://github.com/jdwlabs/apps/commit/6de9d11d0493fa3b61185898ee509bcc46f8ad44))
+
 ## 0.1.0 (2026-07-03)
 
 ### Features
