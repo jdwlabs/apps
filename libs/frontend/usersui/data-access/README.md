@@ -44,7 +44,7 @@ export class ProfileManager {
   private profilesService = inject(ProfilesService);
 
   loadProfiles(): void {
-    this.profilesService.getProfiles().subscribe(profiles => {
+    this.profilesService.getProfiles().subscribe((profiles) => {
       console.log(profiles);
     });
   }
