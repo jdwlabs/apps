@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.1.5](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.4...ai-sre-relay-0.1.5) (2026-07-04)
+
+### Bug Fixes
+
+- **ai-sre-relay:** configurable jira issue type, default Task ([54d0c74](https://github.com/jdwlabs/apps/commit/54d0c7446b68a87608f7ea73a0fedd053bd1a6c4))
+
 ## [0.1.4](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.3...ai-sre-relay-0.1.4) (2026-07-04)
 
 ### Bug Fixes
