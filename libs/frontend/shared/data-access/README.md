@@ -90,7 +90,7 @@ class Example {
   login() {
     this.authService.login('user', 'pass').subscribe({
       next: () => this.snackbar.success('Login successful'),
-      error: () => this.snackbar.error('Login failed')
+      error: () => this.snackbar.error('Login failed'),
     });
   }
 }

@@ -26,16 +26,16 @@ The init scripts only run when the data volume is empty (standard Postgres behav
 
 ## Exposed ports
 
-| Port   | Purpose        |
-| ------ | -------------- |
-| `5432` | PostgreSQL     |
+| Port   | Purpose    |
+| ------ | ---------- |
+| `5432` | PostgreSQL |
 
 ## Environment variables
 
-| Name                | Default            | Purpose                 |
-| ------------------- | ------------------ | ----------------------- |
-| `POSTGRES_USER`     | `default_user`     | superuser name          |
-| `POSTGRES_PASSWORD` | `default_password` | superuser password      |
+| Name                | Default            | Purpose                  |
+| ------------------- | ------------------ | ------------------------ |
+| `POSTGRES_USER`     | `default_user`     | superuser name           |
+| `POSTGRES_PASSWORD` | `default_password` | superuser password       |
 | `POSTGRES_DB`       | `jdw`              | database created on init |
 
 Override the defaults in any non-local environment.

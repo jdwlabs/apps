@@ -85,7 +85,7 @@ import { inject } from '@angular/core';
 // constructor(private routeLoader: DynamicRouteLoaderService) {}
 const routeLoader = inject(DynamicRouteLoaderService);
 
-ngOnInit()
+ngOnInit();
 {
   this.routeLoader.loadRoutes();
 }

@@ -6,19 +6,19 @@ This repository follows [Conventional Commits](https://www.conventionalcommits.o
 
 ### Types
 
-| Type | When to use |
-|------|-------------|
-| `feat` | New feature or user-visible capability |
-| `fix` | Bug fix |
-| `build` | Build system or external dependency change (NX, pnpm, Go modules) |
-| `chore` | Maintenance: config, tooling (no production code change) |
-| `ci` | CI/CD pipeline changes |
-| `docs` | Documentation only (no code changes) |
-| `perf` | Performance improvement |
-| `refactor` | Code restructure with no behavior change |
-| `revert` | Reverting a previous commit |
-| `style` | Formatting or whitespace only (no logic change) |
-| `test` | Adding or updating tests |
+| Type       | When to use                                                       |
+| ---------- | ----------------------------------------------------------------- |
+| `feat`     | New feature or user-visible capability                            |
+| `fix`      | Bug fix                                                           |
+| `build`    | Build system or external dependency change (NX, pnpm, Go modules) |
+| `chore`    | Maintenance: config, tooling (no production code change)          |
+| `ci`       | CI/CD pipeline changes                                            |
+| `docs`     | Documentation only (no code changes)                              |
+| `perf`     | Performance improvement                                           |
+| `refactor` | Code restructure with no behavior change                          |
+| `revert`   | Reverting a previous commit                                       |
+| `style`    | Formatting or whitespace only (no logic change)                   |
+| `test`     | Adding or updating tests                                          |
 
 ### Format
 
@@ -46,13 +46,13 @@ test(usersrole): add integration test for role assignment
 
 Footers appear after an optional body, separated by a blank line. Common footers:
 
-| Footer | When to use |
-|--------|-------------|
-| `Refs: JDWLABS-XX` | Links commit to a Jira issue (does not close it) |
-| `Closes: JDWLABS-XX` | Closes the Jira issue on merge |
-| `Closes: #N` | Closes a GitHub issue by number |
-| `BREAKING CHANGE: <desc>` | Required when a commit introduces a breaking API/interface change |
-| `Co-Authored-By: Name <email>` | Credit a co-author (human or AI) |
+| Footer                         | When to use                                                       |
+| ------------------------------ | ----------------------------------------------------------------- |
+| `Refs: JDWLABS-XX`             | Links commit to a Jira issue (does not close it)                  |
+| `Closes: JDWLABS-XX`           | Closes the Jira issue on merge                                    |
+| `Closes: #N`                   | Closes a GitHub issue by number                                   |
+| `BREAKING CHANGE: <desc>`      | Required when a commit introduces a breaking API/interface change |
+| `Co-Authored-By: Name <email>` | Credit a co-author (human or AI)                                  |
 
 **AI contributor footer** — include when commits were written with AI assistance:
 

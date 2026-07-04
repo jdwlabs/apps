@@ -110,4 +110,3 @@ nx test angular-shared-util
 
 - This library is framework-agnostic and does not depend on Angular modules.
 - You can use this library in both Angular apps and Node-based tooling if needed.
-

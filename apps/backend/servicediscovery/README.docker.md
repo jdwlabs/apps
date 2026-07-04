@@ -22,24 +22,24 @@ curl http://localhost:9000/health
 
 ## Exposed ports
 
-| Port   | Purpose   |
-| ------ | --------- |
-| `9000` | HTTP API  |
+| Port   | Purpose  |
+| ------ | -------- |
+| `9000` | HTTP API |
 
 ## Endpoints
 
-| Method / Path            | Purpose                            |
-| ------------------------ | ---------------------------------- |
-| `GET /health`            | Liveness/readiness check           |
-| `GET /version`           | Running build version              |
-| `GET /api/remotes`       | Module-federation remote URL map   |
+| Method / Path              | Purpose                          |
+| -------------------------- | -------------------------------- |
+| `GET /health`              | Liveness/readiness check         |
+| `GET /version`             | Running build version            |
+| `GET /api/remotes`         | Module-federation remote URL map |
 | `GET /api/micro-frontends` | Micro-frontend catalog           |
 
 ## Environment variables
 
-| Name      | Default | Purpose               |
-| --------- | ------- | --------------------- |
-| `SD_PORT` | `9000`  | HTTP listen port      |
+| Name      | Default | Purpose          |
+| --------- | ------- | ---------------- |
+| `SD_PORT` | `9000`  | HTTP listen port |
 
 ## Tags
 

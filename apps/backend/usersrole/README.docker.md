@@ -33,11 +33,11 @@ docker run -p 8080:8080 \
 
 Standard Spring Boot externalized config. Common overrides:
 
-| Name                         | Purpose                          |
-| ---------------------------- | -------------------------------- |
-| `SPRING_DATASOURCE_URL`      | JDBC URL for the auth database   |
-| `SPRING_DATASOURCE_USERNAME` | database user                    |
-| `SPRING_DATASOURCE_PASSWORD` | database password                |
+| Name                         | Purpose                        |
+| ---------------------------- | ------------------------------ |
+| `SPRING_DATASOURCE_URL`      | JDBC URL for the auth database |
+| `SPRING_DATASOURCE_USERNAME` | database user                  |
+| `SPRING_DATASOURCE_PASSWORD` | database password              |
 
 ## Tags
 

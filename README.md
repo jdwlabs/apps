@@ -9,15 +9,15 @@
 ![Angular](https://img.shields.io/badge/Angular-21-blue)
 [![License](https://img.shields.io/badge/License-PolyForm%20NonCommercial%201.0-blue)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 
-This is a multi-language, multi-project repository that houses all code, configuration, and tooling. This repository is 
+This is a multi-language, multi-project repository that houses all code, configuration, and tooling. This repository is
 organized into three main directories:
 
 - **apps**: Contains full application code for both frontends and backends.
 - **libs**: Contains reusable libraries, grouped by type:
-    - **feature**: Components and views specific to a feature or domain.
-    - **data-access**: Logic for communicating with backends, APIs, or databases.
-    - **util**: Common utilities, helper functions, and shared models.
-    - **ui**: Reusable UI components, theming, and styling.
+  - **feature**: Components and views specific to a feature or domain.
+  - **data-access**: Logic for communicating with backends, APIs, or databases.
+  - **util**: Common utilities, helper functions, and shared models.
+  - **ui**: Reusable UI components, theming, and styling.
 - **tools**: Contains scripts and configuration for versioning, formatting, Docker orchestration, and CI/CD.
 
 ## Directory Structure
@@ -69,13 +69,13 @@ organized into three main directories:
 - **Role-Based Grouping**: Top-level organization by role (`frontend`, `backend`, `e2e`, `database`).
 - **App-Specific Isolation**: Libraries scoped to specific applications.
 - **Shared Code Hierarchy**:
-    - **App-Scoped**: Only used by one application (e.g., `frontend/usersui/*`).
-    - **Frontend-Shared**: Shared across Angular apps (e.g., `frontend/shared/*`).
+  - **App-Scoped**: Only used by one application (e.g., `frontend/usersui/*`).
+  - **Frontend-Shared**: Shared across Angular apps (e.g., `frontend/shared/*`).
 - **Library Types**:
-    - `feature/`: Domain-specific components and logic.
-    - `data-access/`: API/backend communication.
-    - `util/`: Helper functions and utilities.
-    - `ui/`: Reusable UI components.
+  - `feature/`: Domain-specific components and logic.
+  - `data-access/`: API/backend communication.
+  - `util/`: Helper functions and utilities.
+  - `ui/`: Reusable UI components.
 
 ## 🚀 Running Tasks
 
