@@ -26,6 +26,9 @@ func TestJiraUpsertCreatesWhenNoDuplicate(t *testing.T) {
 			if !strings.Contains(string(raw), "amfp-fp1") {
 				t.Errorf("create missing dedup label: %s", raw)
 			}
+			if !strings.Contains(string(raw), `"name":"Task"`) {
+				t.Errorf("create must use the configured issue type: %s", raw)
+			}
 			w.WriteHeader(http.StatusCreated)
 			_ = json.NewEncoder(w).Encode(map[string]string{"key": "JDWLABS-500"})
 		default:
@@ -34,7 +37,7 @@ func TestJiraUpsertCreatesWhenNoDuplicate(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", srv.Client()).
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
 		Upsert(context.Background(), Alert{Fingerprint: "fp1", Labels: map[string]string{"alertname": "X"}}, Analysis{RootCause: "y"})
 	if err != nil || key != "JDWLABS-500" {
 		t.Fatalf("key=%q err=%v", key, err)
@@ -59,7 +62,7 @@ func TestJiraUpsertCommentsWhenDuplicate(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", srv.Client()).
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
 		Upsert(context.Background(), Alert{Fingerprint: "fp1"}, Analysis{RootCause: "y"})
 	if err != nil || key != "JDWLABS-77" || !commented {
 		t.Fatalf("key=%q err=%v commented=%v", key, err, commented)
@@ -80,7 +83,7 @@ func TestJiraUpsertSearchErrorsOnServerError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", srv.Client()).
+	_, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
 		Upsert(context.Background(), Alert{Fingerprint: "fp1", Labels: map[string]string{"alertname": "X"}}, Analysis{RootCause: "y"})
 	if err == nil {
 		t.Fatal("expected error when search returns 500, got nil")
@@ -106,7 +109,7 @@ func TestJiraUpsertCreateErrorsOnServerError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", srv.Client()).
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
 		Upsert(context.Background(), Alert{Fingerprint: "fp1", Labels: map[string]string{"alertname": "X"}}, Analysis{RootCause: "y"})
 	if err == nil {
 		t.Fatalf("expected error on server failure, got key=%q", key)
