@@ -2,6 +2,12 @@
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
 
+## [0.1.4](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.3...ai-sre-relay-0.1.4) (2026-07-04)
+
+### Bug Fixes
+
+- **ai-sre-relay:** failure notice survives dead per-alert context ([7066f85](https://github.com/jdwlabs/apps/commit/7066f859ace3a8b1f136d5088f6ea979b706888c))
+
 ## [0.1.3](https://github.com/jdwlabs/apps/compare/ai-sre-relay-0.1.2...ai-sre-relay-0.1.3) (2026-07-04)
 
 ### Bug Fixes
