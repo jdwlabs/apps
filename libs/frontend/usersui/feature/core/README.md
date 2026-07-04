@@ -43,12 +43,16 @@ export const routes: Route[] = [
   {
     path: 'user',
     loadComponent: () =>
-      import('@jdw/angular-usersui-feature-core/user').then(m => m.UserComponent),
+      import('@jdw/angular-usersui-feature-core/user').then(
+        (m) => m.UserComponent,
+      ),
   },
   {
     path: 'profile',
     loadComponent: () =>
-      import('@jdw/angular-usersui-feature-core/profile').then(m => m.ProfileComponent),
+      import('@jdw/angular-usersui-feature-core/profile').then(
+        (m) => m.ProfileComponent,
+      ),
   },
 ];
 ```
@@ -64,8 +68,7 @@ import { DashboardComponent } from '@jdw/angular-usersui-feature-core/dashboard'
   imports: [DashboardComponent],
   template: `<app-dashboard />`,
 })
-export class WrapperComponent {
-}
+export class WrapperComponent {}
 ```
 
 ---

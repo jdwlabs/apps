@@ -7,16 +7,16 @@ These are **not Nx projects** and are excluded from Nx project detection via `.n
 
 All scripts are executable and accept arguments described in the usage comment at the top of each file.
 
-| Script              | Purpose                                                                                                    |
-| ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `build-image.sh`       | Build a `jdwlabs/*` image with the full OCI label set and hand off to `docker buildx` (caller passes `--platform`, `--push`/`--load`) |
-| `create-version.sh`    | Write a `version.json` file into an app's `public/` dir after a semver release                             |
-| `format.sh`            | Run `nx format:write` across the workspace — called by the Nx `format` target in each app's `project.json` |
-| `prepare-config.sh`    | Swap `config.json` to its production values before a Docker image build                                    |
-| `restore-config.sh`    | Restore `config.json` to its development defaults after a build                                            |
-| `update-app.sh`        | Bump the `appVersion` in a Helm `Chart.yaml` to match the released semver tag                              |
-| `update-description.sh` | Sync a DockerHub repo's Overview from that image's `README.docker.md` (needs `DOCKERHUB_USERNAME`/`DOCKERHUB_PASSWORD`) |
-| `update-version.sh`    | Update the version string in a `build.gradle.kts` (Spring Boot) to match the release tag                   |
+| Script                  | Purpose                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `build-image.sh`        | Build a `jdwlabs/*` image with the full OCI label set and hand off to `docker buildx` (caller passes `--platform`, `--push`/`--load`) |
+| `create-version.sh`     | Write a `version.json` file into an app's `public/` dir after a semver release                                                        |
+| `format.sh`             | Run `nx format:write` across the workspace — called by the Nx `format` target in each app's `project.json`                            |
+| `prepare-config.sh`     | Swap `config.json` to its production values before a Docker image build                                                               |
+| `restore-config.sh`     | Restore `config.json` to its development defaults after a build                                                                       |
+| `update-app.sh`         | Bump the `appVersion` in a Helm `Chart.yaml` to match the released semver tag                                                         |
+| `update-description.sh` | Sync a DockerHub repo's Overview from that image's `README.docker.md` (needs `DOCKERHUB_USERNAME`/`DOCKERHUB_PASSWORD`)               |
+| `update-version.sh`     | Update the version string in a `build.gradle.kts` (Spring Boot) to match the release tag                                              |
 
 ## Docker
 

@@ -15,8 +15,8 @@ and micro frontends.
 - **Version:** `0.0.1`
 - **Type:** Angular Library (UI Components)
 - **Dependencies:**
-    - `@angular/material`
-    - `@jdw/angular-shared-util`
+  - `@angular/material`
+  - `@jdw/angular-shared-util`
 
 ---
 
@@ -80,7 +80,6 @@ import { NavigationLayoutComponent } from '@jdw/angular-shared-ui';
 ### Sample Component Usage
 
 ```html
-
 <jdw-navigation-layout>
   <jdw-navigation-tile
     [title]="'Dashboard'"

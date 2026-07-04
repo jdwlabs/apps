@@ -72,14 +72,14 @@ Use `dev.sh` to build, run, or debug the image locally.
 
 ### 🔧 Commands
 
-| Command   | Description                          |
-|-----------|--------------------------------------|
-| build     | Build the image locally              |
-| run       | Run the container interactively      |
-| rebuild   | Build and run (clean start)          |
-| shell     | Exec into a running container shell  |
-| clean     | Remove container + image             |
-| help      | Show available commands              |
+| Command | Description                         |
+| ------- | ----------------------------------- |
+| build   | Build the image locally             |
+| run     | Run the container interactively     |
+| rebuild | Build and run (clean start)         |
+| shell   | Exec into a running container shell |
+| clean   | Remove container + image            |
+| help    | Show available commands             |
 
 Example:
 
