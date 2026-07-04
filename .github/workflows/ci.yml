@@ -30,6 +30,13 @@ env:
 
 jobs:
   main:
+    # Release postTargets push chore commits back to main authenticated as the
+    # release App — those pushes DO trigger workflows (App tokens bypass the
+    # GITHUB_TOKEN recursion suppression). Without this guard the pipeline
+    # re-versions the just-released projects forever: the conventionalcommits
+    # preset patch-bumps on any commit, including the release's own chore
+    # commits — producing an endless ~5-minute release loop.
+    if: ${{ github.event_name != 'push' || github.triggering_actor != 'jdwlabs-release-bot[bot]' }}
     runs-on: ubuntu-latest
     # Fail fast: cap runtime so a stuck/looping job can't burn the Actions budget.
     timeout-minutes: 30
