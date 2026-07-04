@@ -14,14 +14,15 @@ type JiraClient struct {
 	email      string
 	token      string
 	projectKey string
+	issueType  string
 	hc         *http.Client
 }
 
-func NewJiraClient(baseURL, email, token, projectKey string, hc *http.Client) *JiraClient {
+func NewJiraClient(baseURL, email, token, projectKey, issueType string, hc *http.Client) *JiraClient {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
-	return &JiraClient{baseURL: baseURL, email: email, token: token, projectKey: projectKey, hc: hc}
+	return &JiraClient{baseURL: baseURL, email: email, token: token, projectKey: projectKey, issueType: issueType, hc: hc}
 }
 
 func (j *JiraClient) label(a Alert) string { return "amfp-" + a.Fingerprint }
@@ -92,7 +93,7 @@ func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey
 	create := map[string]any{
 		"fields": map[string]any{
 			"project":     map[string]string{"key": j.projectKey},
-			"issuetype":   map[string]string{"name": "Bug"},
+			"issuetype":   map[string]string{"name": j.issueType},
 			"summary":     "AI-SRE: " + a.Name(),
 			"description": adfDoc(an.RootCause),
 			"labels":      []string{j.label(a), "ai-sre"},
