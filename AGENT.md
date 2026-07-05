@@ -18,7 +18,6 @@ docker compose -f scripts/docker/compose.yaml up -d   # start local stack
 ## Requires Confirmation Before Running
 
 - `git push` — always confirm destination branch
-- `pnpm exec nx affected -t version` — triggers Docker builds and semver tags
 - `docker buildx build --push` — pushes to DockerHub
 - Any `git reset`, `git rebase`, or `git push --force`
 - Changes to `.github/workflows/ci.yml`
@@ -62,4 +61,4 @@ Angular libs are tag-scoped. A `scope:container` lib may only import from `scope
 
 ## Versioning
 
-`@jscutlery/semver` manages versioning via conventional commits. Do not manually edit `version.json`, `Chart.yaml` appVersion, or `build.gradle.kts` version — these are auto-updated by CI.
+`nx release` manages versioning via conventional commits (config in `nx.json`). Per-project versions, independent tags `{projectName}-{version}`, conventional-commit driven bumps (feat=minor, fix=patch, breaking=major; chore never bumps). Version manifests: Angular apps `public/VERSION`, backend/database apps `VERSION` at root, shared libs `package.json`. Do not manually edit version files. **Never run `nx release` locally without `--dry-run` — releases run in CI only.** GitHub Releases and per-project CHANGELOG.md are auto-generated.
