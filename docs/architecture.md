@@ -49,8 +49,7 @@ flowchart LR
     lint --> build["build\naffected"]
 
     merge["Merge to main"]
-    merge --> ver["version bump\n@jscutlery/semver"]
-    ver --> docker["Docker build + push\nDockerHub"]
-    docker --> helm["Helm chart update"]
-    helm --> dev["push develop branch"]
+    merge --> rel["nx release job\n(version, changelog, tags)"]
+    rel --> deliver["deliver matrix\n(Docker, Helm, E2E)"]
+    deliver --> e2e["E2E dispatch"]
 ```
