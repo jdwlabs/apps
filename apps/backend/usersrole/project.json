@@ -23,7 +23,7 @@
       "command": "echo Ignored in project configuration"
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml \"$(tr -d '[:space:]' < apps/backend/usersrole/VERSION)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/usersrole {projectRoot}/README.docker.md"

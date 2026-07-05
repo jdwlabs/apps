@@ -26,7 +26,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:{version} --push .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:\"$(tr -d '[:space:]' < apps/backend/ai-sre-relay/VERSION)\" --push .",
             "forwardAllArgs": false
           }
         ],

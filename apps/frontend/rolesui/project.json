@@ -173,7 +173,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "bash scripts/build-image.sh rolesui {version} {projectRoot}/Dockerfile \"Roles management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh rolesui \"$(tr -d '[:space:]' < apps/frontend/rolesui/public/VERSION)\" {projectRoot}/Dockerfile \"Roles management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           },
           {
@@ -202,7 +202,7 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/rolesui/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/rolesui/Chart.yaml \"$(tr -d '[:space:]' < apps/frontend/rolesui/public/VERSION)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/rolesui {projectRoot}/README.docker.md"

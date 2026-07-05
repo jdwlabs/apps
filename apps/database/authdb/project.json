@@ -24,7 +24,7 @@
       "options": {
         "commands": [
           {
-            "command": "bash scripts/build-image.sh authdb {version} {projectRoot}/Dockerfile \"PostgreSQL image with jdwlabs auth schema initialization scripts\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh authdb \"$(tr -d '[:space:]' < apps/database/authdb/VERSION)\" {projectRoot}/Dockerfile \"PostgreSQL image with jdwlabs auth schema initialization scripts\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           }
         ],

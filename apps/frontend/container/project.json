@@ -160,7 +160,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "bash scripts/build-image.sh container {version} {projectRoot}/Dockerfile \"Angular module-federation host shell for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh container \"$(tr -d '[:space:]' < apps/frontend/container/public/VERSION)\" {projectRoot}/Dockerfile \"Angular module-federation host shell for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           },
           {
@@ -189,7 +189,7 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/container/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/container/Chart.yaml \"$(tr -d '[:space:]' < apps/frontend/container/public/VERSION)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/container {projectRoot}/README.docker.md"
