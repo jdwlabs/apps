@@ -4,7 +4,7 @@
 
 ```bash
 # Generate the library
-pnpm exec nx g @nx/angular:library --name=my-lib --directory=libs/angular/myapp/my-lib --tags="type:util,scope:myapp,framework:angular"
+pnpm exec nx g @nx/angular:library --name=my-lib --directory=libs/frontend/myapp/my-lib --tags="type:util,scope:myapp,framework:angular"
 
 # Run lint + test to verify it's set up correctly
 pnpm exec nx run <lib-project-name>:lint
@@ -15,7 +15,7 @@ pnpm exec nx run <lib-project-name>:test
 
 ```bash
 # Generate the app
-pnpm exec nx g @nx/angular:application --name=myapp --directory=apps/angular/myapp/myapp
+pnpm exec nx g @nx/angular:application --name=myapp --directory=apps/frontend/myapp/myapp
 ```
 
 Then manually:
