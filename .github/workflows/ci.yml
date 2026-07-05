@@ -167,7 +167,7 @@ jobs:
             matrix='[]'
           else
             matrix=$(printf '%s\n' "$tags" \
-              | sed -E 's/^(.+)-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$/{"project":"\1","version":"\2"}/' \
+              | sed -nE 's/^(.+)-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$/{"project":"\1","version":"\2"}/p' \
               | jq -sc '.')
             echo "Released: $tags"
           fi
@@ -212,8 +212,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Detect Delivery Targets
         id: targets
+        env:
+          PROJECT: ${{ matrix.project }}
         run: |
-          targets=$(pnpm exec nx show project "${{ matrix.project }}" --json | jq -r '.targets | keys | join(" ")')
+          targets=$(pnpm exec nx show project "$PROJECT" --json | jq -r '.targets | keys | join(" ")')
           echo "Available targets: $targets"
           for t in build-image update-app update-description; do
             case " $targets " in
@@ -238,19 +240,24 @@ jobs:
           platforms: 'linux/amd64,linux/arm64'
       - if: ${{ steps.targets.outputs.build-image == 'true' }}
         name: Build and Push Image
-        run: pnpm exec nx run ${{ matrix.project }}:build-image
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: pnpm exec nx run "$PROJECT":build-image
       - if: ${{ steps.targets.outputs.update-app == 'true' }}
         name: Update Deployments Chart
         env:
+          PROJECT: ${{ matrix.project }}
           GH_APP_ID: ${{ secrets.RELEASE_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          pnpm exec nx run ${{ matrix.project }}:update-app
+          pnpm exec nx run "$PROJECT":update-app
       - if: ${{ steps.targets.outputs.update-description == 'true' }}
         name: Update Docker Hub Description
-        run: pnpm exec nx run ${{ matrix.project }}:update-description
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: pnpm exec nx run "$PROJECT":update-description
 
   dispatch-e2e:
     needs: [release, deliver]
