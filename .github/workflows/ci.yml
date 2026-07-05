@@ -100,6 +100,10 @@ jobs:
         run: pnpm exec nx affected -t build
       - if: ${{ github.event_name == 'pull_request' }}
         name: Release Config Dry Run
+        env:
+          # Dry-run still reads the GitHub API while previewing release notes;
+          # unauthenticated calls from shared runner IPs get rate-limited (403).
+          GITHUB_TOKEN: ${{ github.token }}
         run: pnpm exec nx release --dry-run --skip-publish
 
   release:
