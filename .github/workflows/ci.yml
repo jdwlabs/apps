@@ -100,7 +100,7 @@ jobs:
         run: pnpm exec nx affected -t build
       - if: ${{ github.event_name == 'pull_request' }}
         name: Release Config Dry Run
-        run: pnpm exec nx release version --dry-run
+        run: pnpm exec nx release --dry-run --skip-publish
 
   release:
     needs: main
