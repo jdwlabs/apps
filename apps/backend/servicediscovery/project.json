@@ -4,6 +4,11 @@
   "projectType": "application",
   "sourceRoot": "apps/backend/servicediscovery",
   "tags": ["type:app", "scope:servicediscovery", "framework:go"],
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/text-file-version-actions.ts"
+    }
+  },
   "targets": {
     "build": {
       "executor": "@nx-go/nx-go:build",
@@ -32,7 +37,7 @@
       "options": {
         "commands": [
           {
-            "command": "bash scripts/build-image.sh servicediscovery {version} {projectRoot}/Dockerfile \"Micro-frontend service discovery API for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh servicediscovery \"$(tr -d '[:space:]' < apps/backend/servicediscovery/VERSION)\" {projectRoot}/Dockerfile \"Micro-frontend service discovery API for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           }
         ],
@@ -63,24 +68,8 @@
         "parallel": false
       }
     },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": [
-          "format",
-          "build-image",
-          "update-app",
-          "update-description"
-        ]
-      }
-    },
-    "format": {
-      "command": "bash scripts/format.sh"
-    },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/servicediscovery/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/servicediscovery/Chart.yaml \"$(tr -d '[:space:]' < apps/backend/servicediscovery/VERSION)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/servicediscovery {projectRoot}/README.docker.md"

@@ -5,6 +5,12 @@
   "prefix": "app",
   "sourceRoot": "apps/frontend/rolesui/src",
   "tags": ["type:app", "scope:rolesui", "framework:angular"],
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/text-file-version-actions.ts",
+      "manifestRootsToUpdate": ["{projectRoot}/public"]
+    }
+  },
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
@@ -153,23 +159,6 @@
         }
       }
     },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": [
-          "format",
-          "save-version",
-          "build-image",
-          "update-app",
-          "update-description"
-        ]
-      }
-    },
-    "save-version": {
-      "command": "bash scripts/create-version.sh {version} {projectRoot}/public {projectName}"
-    },
     "build-image": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build", "prepare-config", "build"],
@@ -184,7 +173,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "bash scripts/build-image.sh rolesui {version} {projectRoot}/Dockerfile \"Roles management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh rolesui \"$(tr -d '[:space:]' < apps/frontend/rolesui/public/VERSION)\" {projectRoot}/Dockerfile \"Roles management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           },
           {
@@ -213,13 +202,10 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/rolesui/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/rolesui/Chart.yaml \"$(tr -d '[:space:]' < apps/frontend/rolesui/public/VERSION)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/rolesui {projectRoot}/README.docker.md"
-    },
-    "format": {
-      "command": "bash scripts/format.sh"
     },
     "serve-container": {
       "executor": "nx:run-commands",
