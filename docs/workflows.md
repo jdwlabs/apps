@@ -60,14 +60,12 @@ git commit -m "feat(container): add dark mode toggle"
 
 ## Releasing a New Version
 
-Versioning runs in CI on push to `main`. Do not run `nx run <app>:version` locally.
+Versioning runs in CI on push to `main`. Do not run `nx release` locally without `--dry-run`.
 After merging, CI will:
 
-1. Bump semver (patch/minor/major based on commit types)
-2. Generate CHANGELOG
-3. Push Docker images to DockerHub
-4. Update Helm chart appVersion
-5. Push updated files to `develop` branch
+1. Run `nx release` job: bump versions, generate per-project CHANGELOGs, create tags, publish GitHub Releases
+2. Run per-project deliver matrix: Docker image build/push, update Helm chart appVersion, update Docker Hub description
+3. Dispatch E2E tests
 
 ## Resetting After a Failed Nx Operation
 

@@ -4,6 +4,11 @@
   "projectType": "application",
   "sourceRoot": "apps/backend/ai-sre-relay",
   "tags": ["type:app", "scope:ai-sre-relay", "framework:go"],
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/text-file-version-actions.ts"
+    }
+  },
   "targets": {
     "build": {
       "executor": "@nx-go/nx-go:build",
@@ -21,7 +26,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:{version} --push .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:\"$(tr -d '[:space:]' < apps/backend/ai-sre-relay/VERSION)\" --push .",
             "forwardAllArgs": false
           }
         ],
@@ -40,15 +45,6 @@
         "parallel": false
       }
     },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": ["format", "build-image"]
-      }
-    },
-    "format": { "command": "bash scripts/format.sh" },
     "download": { "command": "go mod download" }
   }
 }

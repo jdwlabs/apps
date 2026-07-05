@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "release-tools",
+  "projectType": "library",
+  "sourceRoot": "tools/release",
+  "tags": ["type:util", "scope:shared", "framework:node"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/tools/release"],
+      "options": { "jestConfig": "tools/release/jest.config.ts" }
+    }
+  }
+}

@@ -11,7 +11,7 @@ permissions:
   actions: write
   contents: write
 
-# Cancel superseded PR runs; never cancel a main-push (it may be mid-release).
+# Cancel superseded PR runs; a main-push always runs quality gates to completion.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -40,29 +40,12 @@ jobs:
     runs-on: ubuntu-latest
     # Fail fast: cap runtime so a stuck/looping job can't burn the Actions budget.
     timeout-minutes: 30
-    env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
     steps:
-      - if: ${{ github.event_name != 'pull_request' }}
-        name: Generate release app token
-        id: release-token
-        uses: actions/create-github-app-token@v3.2.0
-        with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          # Scoped to this repo: persisted by checkout for the semver commit/tag
-          # push to main. The deployments push uses a separate token minted at
-          # push time inside update-app.sh (see Run Version Upgrades).
       - name: Checkout Codebase
         uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
-          # On main-push, check out with the release App token so the persisted
-          # git credential IS the App's — every later push (semver/postTargets)
-          # authenticates as the App, a ruleset bypass actor, and isn't declined.
-          # Falls back to the default token on PRs (token step is skipped there).
-          token: ${{ steps.release-token.outputs.token || github.token }}
+          token: ${{ github.token }}
       # JDK must exist before the first nx command: @nx/gradle (apps/backend/**)
       # shells out to gradle 8.7 to build the project graph, and usersrole targets
       # Java 21. Without this, gradle stalls provisioning a toolchain — the cause
@@ -115,52 +98,178 @@ jobs:
         run: pnpm exec nx affected -t lint test
       - name: Run Build
         run: pnpm exec nx affected -t build
-      - if: ${{ github.event_name != 'pull_request' }}
+      - if: ${{ github.event_name == 'pull_request' }}
+        name: Release Config Dry Run
+        env:
+          # Dry-run still reads the GitHub API while previewing release notes;
+          # unauthenticated calls from shared runner IPs get rate-limited (403).
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm exec nx release --dry-run --skip-publish
+
+  release:
+    needs: main
+    if: ${{ github.event_name == 'push' && github.triggering_actor != 'jdwlabs-release-bot[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Serialize racing merges: nx release must never push onto a moved main tip.
+    concurrency:
+      group: release-main
+      cancel-in-progress: false
+    outputs:
+      matrix: ${{ steps.released.outputs.matrix }}
+      sha: ${{ steps.released.outputs.sha }}
+    steps:
+      - name: Generate release app token
+        id: release-token
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+      - name: Checkout Codebase
+        uses: actions/checkout@v6.0.3
+        with:
+          fetch-depth: 0
+          token: ${{ steps.release-token.outputs.token }}
+      - name: Setup Java
+        uses: actions/setup-java@v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6.2.0
+      - name: Warm Gradle
+        working-directory: apps/backend/usersrole
+        run: ./gradlew help -q
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.9
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run Nx Release
+        env:
+          # Nx creates the GitHub Releases via this token after pushing tags.
+          GITHUB_TOKEN: ${{ steps.release-token.outputs.token }}
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          # Version against the live remote tip so tags always land on the
+          # commit that becomes main (same rationale as the previous pipeline).
+          git fetch origin main --tags --prune --force
+          git checkout -B main origin/main
+          pnpm exec nx release --skip-publish --yes
+      - name: Determine Released Projects
+        id: released
+        run: |
+          sha=$(git rev-parse HEAD)
+          tags=$(git tag --points-at "$sha")
+          if [ -z "$tags" ]; then
+            echo "No projects released."
+            matrix='[]'
+          else
+            matrix=$(printf '%s\n' "$tags" \
+              | sed -nE 's/^(.+)-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$/{"project":"\1","version":"\2"}/p' \
+              | jq -sc '.')
+            echo "Released: $tags"
+          fi
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  deliver:
+    needs: release
+    if: ${{ needs.release.outputs.matrix != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.release.outputs.matrix) }}
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+    steps:
+      - name: Checkout Release Commit
+        uses: actions/checkout@v6.0.3
+        with:
+          ref: ${{ needs.release.outputs.sha }}
+      - name: Setup Java
+        uses: actions/setup-java@v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6.2.0
+      - name: Warm Gradle
+        working-directory: apps/backend/usersrole
+        run: ./gradlew help -q
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.9
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Detect Delivery Targets
+        id: targets
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: |
+          targets=$(pnpm exec nx show project "$PROJECT" --json | jq -r '.targets | keys | join(" ")')
+          echo "Available targets: $targets"
+          for t in build-image update-app update-description; do
+            case " $targets " in
+              *" $t "*) echo "$t=true"  >> "$GITHUB_OUTPUT" ;;
+              *)        echo "$t=false" >> "$GITHUB_OUTPUT" ;;
+            esac
+          done
+      - if: ${{ steps.targets.outputs.build-image == 'true' }}
         name: Login to Docker Hub
         uses: docker/login-action@v4.2.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      # qemu.install is a kubernetes-driver option; for docker-container we
-      # register binfmt handlers via setup-qemu-action so the amd64 runner can
-      # cross-build linux/arm64.
-      - if: ${{ github.event_name != 'pull_request' }}
+      - if: ${{ steps.targets.outputs.build-image == 'true' }}
         name: Set up QEMU
         uses: docker/setup-qemu-action@v4.1.0
-      - if: ${{ github.event_name != 'pull_request' }}
+      - if: ${{ steps.targets.outputs.build-image == 'true' }}
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.1.0
         with:
           driver: 'docker-container'
           platforms: 'linux/amd64,linux/arm64'
-      - if: ${{ github.event_name != 'pull_request' }}
-        name: Run Version Upgrades
+      - if: ${{ steps.targets.outputs.build-image == 'true' }}
+        name: Build and Push Image
         env:
-          # The update-app postTarget (scripts/update-app.sh) mints a fresh,
-          # deployments-scoped installation token from these at push time, so a
-          # long build-image step can't expire a token minted at job start.
+          PROJECT: ${{ matrix.project }}
+        run: pnpm exec nx run "$PROJECT":build-image
+      - if: ${{ steps.targets.outputs.update-app == 'true' }}
+        name: Update Deployments Chart
+        env:
+          PROJECT: ${{ matrix.project }}
           GH_APP_ID: ${{ secrets.RELEASE_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          # Version against the live remote main tip, not the detached push SHA.
-          # `git checkout -B main` alone roots HEAD at the trigger commit, which
-          # can already be behind origin/main; @jscutlery/semver then cuts the tag
-          # on that stale base, so the tag lands on a commit that never becomes the
-          # real main tip — orphaned tags ratchet ahead of main (JDWLABS-72) and
-          # the next release collides. Fetch + reset onto origin/main so HEAD ==
-          # main and every semver commit/tag push fast-forwards onto the branch it
-          # tagged. The push authenticates as the release App (token persisted by
-          # checkout above), a ruleset bypass actor.
-          git fetch origin main --tags --prune --force
-          git checkout -B main origin/main
-          pnpm exec nx affected -t version --parallel=1
+          pnpm exec nx run "$PROJECT":update-app
+      - if: ${{ steps.targets.outputs.update-description == 'true' }}
+        name: Update Docker Hub Description
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: pnpm exec nx run "$PROJECT":update-description
 
-      # Hands off post-deploy verification: the deployments repo runs
-      # platform-e2e against real staging once images are published.
-      - if: ${{ github.event_name != 'pull_request' }}
-        name: Generate deployments dispatch token
+  dispatch-e2e:
+    needs: [release, deliver]
+    if: ${{ needs.release.outputs.matrix != '[]' && needs.deliver.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Generate deployments dispatch token
         id: dispatch-token
         uses: actions/create-github-app-token@v3.2.0
         with:
@@ -168,13 +277,11 @@ jobs:
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: deployments
-          # repository_dispatch only needs contents:write — keep it least-privilege.
           permission-contents: write
-      - if: ${{ github.event_name != 'pull_request' }}
-        name: Dispatch E2E to Deployments Repo
+      - name: Dispatch E2E to Deployments Repo
         uses: peter-evans/repository-dispatch@v4.0.1
         with:
           token: ${{ steps.dispatch-token.outputs.token }}
           repository: jdwlabs/deployments
           event-type: apps-deployed
-          client-payload: '{"sha": "${{ github.sha }}"}'
+          client-payload: '{"sha": "${{ needs.release.outputs.sha }}"}'

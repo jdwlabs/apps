@@ -95,6 +95,37 @@
       "dependsOn": ["build", "^build"]
     }
   },
+  "release": {
+    "projectsRelationship": "independent",
+    "projects": [
+      "authui",
+      "container",
+      "rolesui",
+      "usersui",
+      "servicediscovery",
+      "usersrole",
+      "authdb",
+      "ai-sre-relay",
+      "frontend-shared-ui",
+      "frontend-shared-util"
+    ],
+    "releaseTagPattern": "{projectName}-{version}",
+    "git": {
+      "commitMessage": "chore(release): publish [skip ci]",
+      "push": true
+    },
+    "version": {
+      "conventionalCommits": true,
+      "fallbackCurrentVersionResolver": "disk"
+    },
+    "changelog": {
+      "workspaceChangelog": false,
+      "automaticFromRef": true,
+      "projectChangelogs": {
+        "createRelease": "github"
+      }
+    }
+  },
   "generators": {
     "@nx/angular:application": {
       "e2eTestRunner": "playwright",
