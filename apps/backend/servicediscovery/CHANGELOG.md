@@ -1,3 +1,7 @@
+## 0.5.1 (2026-07-05)
+
+This was a version bump only for servicediscovery to align it with other projects, there were no code changes.
+
 # Changelog
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
