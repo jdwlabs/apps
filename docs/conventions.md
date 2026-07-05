@@ -32,7 +32,7 @@ No barrel files (`index.ts`) at the app level. Import directly from the source f
 ### Testing
 
 - Jest for unit tests (`.spec.ts` alongside the file)
-- Playwright for E2E (all tests in `apps/angular/platform-e2e/`)
+- Playwright for E2E (all tests in `apps/e2e/platform-e2e/`)
 - No `TestBed` bootstrapping shortcuts — configure properly with `TestBed.configureTestingModule`
 
 ## Go

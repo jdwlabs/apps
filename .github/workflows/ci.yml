@@ -7,9 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  actions: write
-  contents: write
+# No default permissions: release/deliver/dispatch-e2e authenticate via a
+# GitHub App token (create-github-app-token), not the default GITHUB_TOKEN, so
+# they don't need it. Each job below grants only what its own steps use.
+permissions: {}
 
 # Cancel superseded PR runs; a main-push always runs quality gates to completion.
 concurrency:
@@ -40,6 +41,10 @@ jobs:
     runs-on: ubuntu-latest
     # Fail fast: cap runtime so a stuck/looping job can't burn the Actions budget.
     timeout-minutes: 30
+    permissions:
+      contents: read
+      # actions/cache's save step (post-job) needs this to write the cache entry.
+      actions: write
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v6.0.3
@@ -115,6 +120,8 @@ jobs:
     concurrency:
       group: release-main
       cancel-in-progress: false
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.released.outputs.matrix }}
       sha: ${{ steps.released.outputs.sha }}
@@ -130,6 +137,11 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ steps.release-token.outputs.token }}
+          # Don't leave the repo-write App token sitting in .git/config through
+          # Java/Gradle setup and pnpm install (dependency lifecycle scripts run
+          # with whatever's on disk). Re-authenticate immediately before the
+          # step that actually needs to push.
+          persist-credentials: false
       - name: Setup Java
         uses: actions/setup-java@v5.2.0
         with:
@@ -149,6 +161,11 @@ jobs:
           cache: pnpm
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+      - name: Authenticate Remote For Release Push
+        # persist-credentials: false above kept this token off disk until now;
+        # inject it right before the step that actually needs to push.
+        run: |
+          git remote set-url origin "https://x-access-token:${{ steps.release-token.outputs.token }}@github.com/${{ github.repository }}.git"
       - name: Run Nx Release
         env:
           # Nx creates the GitHub Releases via this token after pushing tags.
@@ -170,10 +187,26 @@ jobs:
             echo "No projects released."
             matrix='[]'
           else
-            matrix=$(printf '%s\n' "$tags" \
-              | sed -nE 's/^(.+)-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$/{"project":"\1","version":"\2"}/p' \
-              | jq -sc '.')
+            projects=$(printf '%s\n' "$tags" \
+              | sed -nE 's/^(.+)-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$/\1 \2/p')
             echo "Released: $tags"
+            entries='[]'
+            while read -r project version; do
+              [ -z "$project" ] && continue
+              # Detect delivery targets here (graph already built for this job)
+              # instead of every deliver matrix job separately installing
+              # Java+Gradle+pnpm solely to run this same lookup.
+              available=$(pnpm exec nx show project "$project" --json | jq -r '.targets | keys | join(" ")')
+              entry=$(jq -n \
+                --arg project "$project" \
+                --arg version "$version" \
+                --argjson buildImage "$(case " $available " in *' build-image '*) echo true;; *) echo false;; esac)" \
+                --argjson updateApp "$(case " $available " in *' update-app '*) echo true;; *) echo false;; esac)" \
+                --argjson updateDescription "$(case " $available " in *' update-description '*) echo true;; *) echo false;; esac)" \
+                '{project: $project, version: $version, "build-image": $buildImage, "update-app": $updateApp, "update-description": $updateDescription}')
+              entries=$(printf '%s\n%s' "$entries" "$entry" | jq -sc 'flatten')
+            done <<< "$projects"
+            matrix="$entries"
           fi
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
@@ -183,6 +216,8 @@ jobs:
     if: ${{ needs.release.outputs.matrix != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -214,40 +249,31 @@ jobs:
           cache: pnpm
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-      - name: Detect Delivery Targets
-        id: targets
-        env:
-          PROJECT: ${{ matrix.project }}
-        run: |
-          targets=$(pnpm exec nx show project "$PROJECT" --json | jq -r '.targets | keys | join(" ")')
-          echo "Available targets: $targets"
-          for t in build-image update-app update-description; do
-            case " $targets " in
-              *" $t "*) echo "$t=true"  >> "$GITHUB_OUTPUT" ;;
-              *)        echo "$t=false" >> "$GITHUB_OUTPUT" ;;
-            esac
-          done
-      - if: ${{ steps.targets.outputs.build-image == 'true' }}
+      # Delivery targets (build-image/update-app/update-description) were
+      # already detected once in the release job and embedded in this matrix
+      # entry (matrix.build-image etc) — no need for every matrix job here to
+      # redo the same `nx show project` lookup.
+      - if: ${{ matrix['build-image'] == true }}
         name: Login to Docker Hub
         uses: docker/login-action@v4.2.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - if: ${{ steps.targets.outputs.build-image == 'true' }}
+      - if: ${{ matrix['build-image'] == true }}
         name: Set up QEMU
         uses: docker/setup-qemu-action@v4.1.0
-      - if: ${{ steps.targets.outputs.build-image == 'true' }}
+      - if: ${{ matrix['build-image'] == true }}
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.1.0
         with:
           driver: 'docker-container'
           platforms: 'linux/amd64,linux/arm64'
-      - if: ${{ steps.targets.outputs.build-image == 'true' }}
+      - if: ${{ matrix['build-image'] == true }}
         name: Build and Push Image
         env:
           PROJECT: ${{ matrix.project }}
         run: pnpm exec nx run "$PROJECT":build-image
-      - if: ${{ steps.targets.outputs.update-app == 'true' }}
+      - if: ${{ matrix['update-app'] == true }}
         name: Update Deployments Chart
         env:
           PROJECT: ${{ matrix.project }}
@@ -257,7 +283,7 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
           pnpm exec nx run "$PROJECT":update-app
-      - if: ${{ steps.targets.outputs.update-description == 'true' }}
+      - if: ${{ matrix['update-description'] == true }}
         name: Update Docker Hub Description
         env:
           PROJECT: ${{ matrix.project }}
@@ -268,6 +294,7 @@ jobs:
     if: ${{ needs.release.outputs.matrix != '[]' && needs.deliver.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}
     steps:
       - name: Generate deployments dispatch token
         id: dispatch-token

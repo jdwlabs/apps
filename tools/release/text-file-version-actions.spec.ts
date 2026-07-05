@@ -56,4 +56,18 @@ describe('TextFileVersionActions', () => {
       actions.updateProjectDependencies(tree, {} as never, {}),
     ).resolves.toEqual([]);
   });
+
+  it('reports no dependency version, regardless of which dependency is asked about', async () => {
+    // VERSION-file projects carry no manifest-declared dependency specs, so
+    // there is nothing for @nx/release's dependent-bump resolution to read
+    // here — it must fall back to git-tag-based current-version resolution
+    // for any dependent project. This is the cascade behavior only verified
+    // via dry-run until now: a dependent project's version bump must not
+    // silently depend on this ever returning a real version.
+    const actions = makeActions('apps/demo', 'apps/demo/VERSION');
+    await expect(actions.readCurrentVersionOfDependency()).resolves.toEqual({
+      currentVersion: null,
+      dependencyCollection: null,
+    });
+  });
 });

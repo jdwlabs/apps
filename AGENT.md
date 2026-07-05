@@ -31,12 +31,12 @@ docker compose -f scripts/docker/compose.yaml up -d   # start local stack
 ## Repository Layout
 
 ```
-apps/angular/        Angular apps: authui, container, rolesui, usersui
-apps/go/             Go services: servicediscovery
-apps/springboot/     Spring Boot: usersrole
+apps/frontend/       Angular apps: authui, container, rolesui, usersui
+apps/backend/        Go (servicediscovery) + Spring Boot (usersrole)
 apps/database/       PostgreSQL: authdb
-libs/angular/        Shared Angular libs (per-app + shared)
-libs/go/             Go shared packages
+apps/e2e/            Playwright E2E: platform-e2e
+libs/frontend/       Shared Angular libs (per-app + shared)
+libs/backend/        Go shared packages
 tools/agents/        Docker dev agent (do not modify structure)
 scripts/             Shell helpers and Docker Compose
 ```
@@ -56,7 +56,7 @@ Angular libs are tag-scoped. A `scope:container` lib may only import from `scope
 ## Testing
 
 - Unit tests: Jest (`pnpm exec nx run <project>:test`)
-- E2E: Playwright in `apps/angular/platform-e2e` (`pnpm exec nx run platform-e2e:e2e`)
+- E2E: Playwright in `apps/e2e/platform-e2e` (`pnpm exec nx run platform-e2e:e2e`)
 - No mocking of Nx project graph or module boundaries in tests
 
 ## Versioning
