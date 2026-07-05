@@ -3,6 +3,11 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/backend/usersrole/src",
   "tags": ["type:app", "scope:usersrole", "framework:springboot"],
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/text-file-version-actions.ts"
+    }
+  },
   "targets": {
     "build": {
       "executor": "nx:run-commands",
@@ -17,31 +22,11 @@
       "cache": true,
       "command": "echo Ignored in project configuration"
     },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": [
-          "format",
-          "update-version",
-          "build-image",
-          "update-app",
-          "update-description"
-        ]
-      }
-    },
-    "update-version": {
-      "command": "bash scripts/update-version.sh {projectRoot}/build.gradle.kts {version} {projectName}"
-    },
     "update-app": {
       "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/usersrole {projectRoot}/README.docker.md"
-    },
-    "format": {
-      "command": "bash scripts/format.sh"
     },
     "serve-container": {
       "executor": "nx:run-commands",

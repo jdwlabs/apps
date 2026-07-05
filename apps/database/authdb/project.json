@@ -5,6 +5,11 @@
   "prefix": "jdw",
   "sourceRoot": "apps/database/authdb/src",
   "tags": ["type:app", "scope:authdb", "framework:database"],
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/text-file-version-actions.ts"
+    }
+  },
   "targets": {
     "lint": {
       "cache": true,
@@ -13,14 +18,6 @@
     "build": {
       "cache": true,
       "command": "echo no build - check out 'npx nx run authdb:build-image'"
-    },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": ["format", "build-image", "update-description"]
-      }
     },
     "build-image": {
       "executor": "nx:run-commands",
@@ -45,9 +42,6 @@
         ],
         "parallel": false
       }
-    },
-    "format": {
-      "command": "bash scripts/format.sh"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/authdb {projectRoot}/README.docker.md"
