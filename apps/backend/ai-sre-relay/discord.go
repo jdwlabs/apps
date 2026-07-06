@@ -83,7 +83,7 @@ func (d *DiscordNotifier) buildEmbed(a Alert, an Analysis, issue IssueKey, pr *P
 	if patch != nil {
 		e.Fields = append(e.Fields, discordEmbedField{
 			Name:  "Patch",
-			Value: fmt.Sprintf("%.0f%% confidence — %s", patch.Confidence*100, patch.Rationale),
+			Value: fmt.Sprintf("%.0f%% confidence — %s", patch.Confidence*100, truncate(patch.Rationale, 900)),
 		})
 	}
 	if _, err := time.Parse(time.RFC3339, a.StartsAt); err == nil {
