@@ -101,3 +101,48 @@ func TestDiscordNotifyOmitsFieldsWhenAbsent(t *testing.T) {
 		t.Fatalf("expected no fields when namespace/severity/issue/pr/patch absent, got %+v", body.Embeds[0].Fields)
 	}
 }
+
+func TestDiscordNotifyTruncatesPatchRationaleThenStayUnder1024Chars(t *testing.T) {
+	var body struct {
+		Embeds []discordEmbed `json:"embeds"`
+	}
+	srv := newRecordingServer(t, &body)
+	defer srv.Close()
+
+	// Create a patch with an extremely long rationale (2000 chars)
+	longRationale := strings.Repeat("x", 2000)
+	patch := &Patch{Confidence: 0.95, Rationale: longRationale}
+	alert := Alert{
+		Labels: map[string]string{"alertname": "TestAlert"},
+	}
+	err := NewDiscordNotifier(srv.URL, "https://jdwlabs.atlassian.net", srv.Client()).Notify(
+		context.Background(), alert, Analysis{RootCause: "test"}, "", nil, patch)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Find the Patch field and verify its value is under 1024 chars
+	if len(body.Embeds) != 1 {
+		t.Fatalf("expected 1 embed, got %d", len(body.Embeds))
+	}
+	e := body.Embeds[0]
+	var patchFieldValue string
+	for _, f := range e.Fields {
+		if f.Name == "Patch" {
+			patchFieldValue = f.Value
+			break
+		}
+	}
+	if patchFieldValue == "" {
+		t.Fatal("Patch field not found")
+	}
+	if len(patchFieldValue) >= 1024 {
+		t.Fatalf("patch field value exceeds discord's 1024-char limit: got %d chars", len(patchFieldValue))
+	}
+	if !strings.Contains(patchFieldValue, "95% confidence") {
+		t.Fatalf("patch field missing confidence: %q", patchFieldValue)
+	}
+	if !strings.Contains(patchFieldValue, "…") {
+		t.Fatalf("expected truncate ellipsis in field value: %q", patchFieldValue)
+	}
+}
