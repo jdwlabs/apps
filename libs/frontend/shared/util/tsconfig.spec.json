@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../../../../dist/out-tsc",
     "module": "preserve",
-    "types": ["jest", "node"],
+    "types": ["vitest/globals", "node"],
     "moduleResolution": "bundler",
     "isolatedModules": true
   },

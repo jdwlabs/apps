@@ -6,9 +6,9 @@
   "tags": ["type:util", "scope:shared", "framework:node"],
   "targets": {
     "test": {
-      "executor": "@nx/jest:jest",
+      "executor": "@nx/vitest:test",
       "outputs": ["{workspaceRoot}/coverage/tools/release"],
-      "options": { "jestConfig": "tools/release/jest.config.ts" }
+      "options": { "configFile": "tools/release/vite.config.ts" }
     }
   }
 }

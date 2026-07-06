@@ -14,9 +14,9 @@ describe('IconComponent', () => {
 
   beforeEach(async () => {
     mockProfilesService = {
-      getIcon: jest.fn().mockReturnValue(of(null)),
-      addIcon: jest.fn().mockReturnValue(of({ userId: 1 })),
-      editIcon: jest.fn().mockReturnValue(of({ userId: 1 })),
+      getIcon: vi.fn().mockReturnValue(of(null)),
+      addIcon: vi.fn().mockReturnValue(of({ userId: 1 })),
+      editIcon: vi.fn().mockReturnValue(of({ userId: 1 })),
     };
 
     await TestBed.configureTestingModule({
@@ -81,7 +81,7 @@ describe('IconComponent', () => {
   it('should set selected file on valid upload', () => {
     const file = new File(['dummy'], 'image.png', { type: 'image/png' });
     const objectURL = 'blob://dummy-url';
-    global.URL.createObjectURL = jest.fn().mockReturnValue(objectURL);
+    global.URL.createObjectURL = vi.fn().mockReturnValue(objectURL);
 
     component.processFile(file);
 

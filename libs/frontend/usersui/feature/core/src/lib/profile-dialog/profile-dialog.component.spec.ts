@@ -47,7 +47,7 @@ const mockData: DialogData & Profile = {
 };
 
 const mockDialogRef = {
-  close: jest.fn(),
+  close: vi.fn(),
 };
 
 describe('ProfileDialogComponent', () => {

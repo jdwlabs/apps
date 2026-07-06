@@ -16,10 +16,10 @@
       }
     },
     "test": {
-      "executor": "@nx/jest:jest",
+      "executor": "@analogjs/vitest-angular:test",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "libs/frontend/shared/util/jest.config.ts"
+        "configFile": "vite.config.ts"
       }
     }
   }
