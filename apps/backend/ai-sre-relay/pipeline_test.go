@@ -41,7 +41,7 @@ type fakeDiscord struct {
 	pr     *PRLink
 }
 
-func (f *fakeDiscord) Notify(_ context.Context, _ Alert, _ Analysis, _ IssueKey, pr *PRLink) error {
+func (f *fakeDiscord) Notify(_ context.Context, _ Alert, _ Analysis, _ IssueKey, pr *PRLink, _ *Patch) error {
 	f.called = true
 	f.pr = pr
 	return nil
@@ -86,7 +86,7 @@ type ctxCheckingDiscord struct {
 	ctxErr error
 }
 
-func (f *ctxCheckingDiscord) Notify(ctx context.Context, _ Alert, _ Analysis, _ IssueKey, _ *PRLink) error {
+func (f *ctxCheckingDiscord) Notify(ctx context.Context, _ Alert, _ Analysis, _ IssueKey, _ *PRLink, _ *Patch) error {
 	f.called = true
 	f.ctxErr = ctx.Err()
 	return f.ctxErr
