@@ -1,0 +1,17 @@
+name: Security Scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    uses: jdwlabs/.github/.github/workflows/security-scan.yml@main
+    # Non-blocking PoC (JDWLABS-71): findings surface in the Security tab
+    # without gating merges. Flip fail-on-findings to true once the finding
+    # volume across all repos has been triaged as real signal, not noise.
