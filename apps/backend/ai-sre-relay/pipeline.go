@@ -19,7 +19,7 @@ type prOpener interface {
 	OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error)
 }
 type discordNotifier interface {
-	Notify(ctx context.Context, a Alert, an Analysis, issue IssueKey, pr *PRLink) error
+	Notify(ctx context.Context, a Alert, an Analysis, issue IssueKey, pr *PRLink, patch *Patch) error
 }
 
 type Pipeline struct {
@@ -49,7 +49,7 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 		log.Error("holmes investigation failed", "err", err)
 		nctx, ncancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 		defer ncancel()
-		if derr := p.discord.Notify(nctx, a, Analysis{RootCause: "⚠️ investigation failed: " + err.Error()}, "", nil); derr != nil {
+		if derr := p.discord.Notify(nctx, a, Analysis{RootCause: "⚠️ investigation failed: " + err.Error()}, "", nil, nil); derr != nil {
 			log.Error("discord failure notice failed", "err", derr)
 		}
 		return err
@@ -79,7 +79,7 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 		}
 	}
 
-	if derr := p.discord.Notify(ctx, a, an, issue, prLink); derr != nil {
+	if derr := p.discord.Notify(ctx, a, an, issue, prLink, patch); derr != nil {
 		log.Error("discord notify failed", "err", derr)
 	}
 	return nil
