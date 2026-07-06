@@ -15,8 +15,8 @@ describe('SnackbarService', () => {
   let service: SnackbarService;
 
   const snackbarMock = {
-    openFromComponent: jest.fn(),
-    dismiss: jest.fn(),
+    openFromComponent: vi.fn(),
+    dismiss: vi.fn(),
   };
   const defaultType: PaletteColors = 'primary';
   const defaultMessage = 'test message';

@@ -50,7 +50,7 @@ describe('RolesComponent', () => {
         {
           provide: RolesService,
           useValue: {
-            getRoles: jest.fn(() => of(mockRoles)),
+            getRoles: vi.fn(() => of(mockRoles)),
           },
         },
       ],

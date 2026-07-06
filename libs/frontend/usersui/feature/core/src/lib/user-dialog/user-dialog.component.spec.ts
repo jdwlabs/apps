@@ -65,7 +65,7 @@ const mockData: DialogData & User = {
 };
 
 const mockDialogRef = {
-  close: jest.fn(),
+  close: vi.fn(),
 };
 
 describe('UserDialogComponent', () => {

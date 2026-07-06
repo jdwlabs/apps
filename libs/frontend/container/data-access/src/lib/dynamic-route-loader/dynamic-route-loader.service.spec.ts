@@ -11,9 +11,9 @@ import { loadRemoteModule, setRemoteDefinitions } from '@nx/angular/mf';
 import { FallbackComponent } from '@jdw/frontend-shared-ui';
 /* eslint-enable @nx/enforce-module-boundaries */
 
-jest.mock('@nx/angular/mf', () => ({
-  loadRemoteModule: jest.fn(),
-  setRemoteDefinitions: jest.fn(),
+vi.mock('@nx/angular/mf', () => ({
+  loadRemoteModule: vi.fn(),
+  setRemoteDefinitions: vi.fn(),
 }));
 
 const mockEnvironment = {
@@ -27,12 +27,12 @@ describe('DynamicRouteLoaderService', () => {
 
   beforeEach(() => {
     mockRouter = {
-      resetConfig: jest.fn(),
+      resetConfig: vi.fn(),
       config: [],
     } as unknown as Router;
 
     mockMfService = {
-      getRoutes: jest.fn().mockReturnValue(of([])),
+      getRoutes: vi.fn().mockReturnValue(of([])),
     } as unknown as MicroFrontendService;
 
     TestBed.configureTestingModule({
@@ -65,7 +65,7 @@ describe('DynamicRouteLoaderService', () => {
         url: 'http://example.com',
       },
     ];
-    (mockMfService.getRoutes as jest.Mock).mockReturnValue(of(routes));
+    (mockMfService.getRoutes as vi.Mock).mockReturnValue(of(routes));
 
     await service.loadRoutes();
 
@@ -83,8 +83,8 @@ describe('DynamicRouteLoaderService', () => {
         url: 'http://example.com',
       },
     ];
-    (mockMfService.getRoutes as jest.Mock).mockReturnValue(of(routes));
-    (loadRemoteModule as jest.Mock).mockResolvedValue({ remoteRoutes: [] });
+    (mockMfService.getRoutes as vi.Mock).mockReturnValue(of(routes));
+    (loadRemoteModule as vi.Mock).mockResolvedValue({ remoteRoutes: [] });
 
     await service.loadRoutes();
 
@@ -106,15 +106,14 @@ describe('DynamicRouteLoaderService', () => {
         url: 'http://example.com',
       },
     ];
-    (mockMfService.getRoutes as jest.Mock).mockReturnValue(of(routes));
-    (loadRemoteModule as jest.Mock).mockRejectedValue(
+    (mockMfService.getRoutes as vi.Mock).mockReturnValue(of(routes));
+    (loadRemoteModule as vi.Mock).mockRejectedValue(
       new Error('Failed to load remote module'),
     );
 
     await service.loadRoutes();
 
-    const configCallArgs = (mockRouter.resetConfig as jest.Mock).mock
-      .calls[0][0];
+    const configCallArgs = (mockRouter.resetConfig as vi.Mock).mock.calls[0][0];
     const exampleRoute = configCallArgs.find(
       (route: any) => route.path === 'example',
     );

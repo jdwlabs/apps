@@ -8,6 +8,12 @@ export default [
       '**/eslint.config.ts',
       '**/eslint.config.js',
       '**/eslint.config.mjs',
+      // vite.config.ts is read directly by Vite (outside Nx's module graph,
+      // before the tsconfig-paths plugin is active) and test-setup.ts is
+      // Vitest tooling, not application code -- both import the shared
+      // tools/testing helpers via relative path rather than a @jdw/* alias.
+      '**/vite.config.ts',
+      '**/src/test-setup.ts',
     ],
   },
   ...nx.configs['flat/base'],
@@ -70,6 +76,6 @@ export default [
   },
   {
     files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.spec.js', '**/*.spec.jsx'],
-    languageOptions: { globals: { ...globals.jest } },
+    languageOptions: { globals: { ...globals.vitest } },
   },
 ];
