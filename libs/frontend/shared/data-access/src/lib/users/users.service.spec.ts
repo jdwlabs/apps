@@ -17,12 +17,12 @@ import { UsersService } from './users.service';
 import { SnackbarService } from '../snackbar/snackbar.service';
 
 const mockAuthService = {
-  getToken: jest.fn(),
+  getToken: vi.fn(),
 };
 
 const mockSnackbarService = {
-  success: jest.fn(),
-  error: jest.fn(),
+  success: vi.fn(),
+  error: vi.fn(),
 };
 
 const environmentMock = {

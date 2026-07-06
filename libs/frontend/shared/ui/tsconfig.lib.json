@@ -9,16 +9,16 @@
     "moduleResolution": "bundler"
   },
   "exclude": [
-    "src/**/*.spec.ts",
-    "src/test-setup.ts",
-    "jest.config.ts",
-    "src/**/*.test.ts",
-    "cypress/**/*",
-    "cypress.config.ts",
-    "**/*.cy.ts",
     "**/*.cy.js",
+    "**/*.cy.jsx",
+    "**/*.cy.ts",
     "**/*.cy.tsx",
-    "**/*.cy.jsx"
+    "cypress.config.ts",
+    "cypress/**/*",
+    "jest.config.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "src/test-setup.ts"
   ],
   "include": ["src/**/*.ts"]
 }

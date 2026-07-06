@@ -12,7 +12,7 @@ const mockData: ConfirmationDialogData = {
 };
 
 const mockDialogRef = {
-  close: jest.fn(),
+  close: vi.fn(),
 };
 
 describe('ConfirmationDialogComponent', () => {

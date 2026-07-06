@@ -89,7 +89,7 @@ describe('ProfilesComponent', () => {
         {
           provide: ProfilesService,
           useValue: {
-            getProfiles: jest.fn(() => of(mockProfiles)),
+            getProfiles: vi.fn(() => of(mockProfiles)),
           },
         },
       ],

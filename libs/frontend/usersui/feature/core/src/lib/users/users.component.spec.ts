@@ -52,7 +52,7 @@ describe('UsersComponent', () => {
         {
           provide: UsersService,
           useValue: {
-            getUsers: jest.fn(() => of(mockUsers)),
+            getUsers: vi.fn(() => of(mockUsers)),
           },
         },
       ],

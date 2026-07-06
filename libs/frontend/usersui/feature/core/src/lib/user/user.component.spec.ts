@@ -81,11 +81,11 @@ const mockRole: Role = {
 };
 
 const mockUsersService = {
-  getUser: jest.fn(() => of(mockUser)),
+  getUser: vi.fn(() => of(mockUser)),
 };
 
 const mockRolesService = {
-  getRole: jest.fn(() => of(mockRole)),
+  getRole: vi.fn(() => of(mockRole)),
 };
 
 describe('UserComponent', () => {

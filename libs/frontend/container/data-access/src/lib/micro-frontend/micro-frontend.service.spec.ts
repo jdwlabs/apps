@@ -11,7 +11,7 @@ import { SnackbarService } from '@jdw/frontend-shared-data-access';
 import { ENVIRONMENT, getErrorMessage } from '@jdw/frontend-shared-util';
 
 const mockSnackbarService = {
-  error: jest.fn(),
+  error: vi.fn(),
 };
 
 const mockEnvironment = {
@@ -39,9 +39,9 @@ const mockRoutes: MicroFrontendRoute[] = [
   },
 ];
 
-jest.mock('@jdw/frontend-shared-util', () => ({
-  ...jest.requireActual('@jdw/frontend-shared-util'),
-  getErrorMessage: jest.fn(),
+vi.mock('@jdw/frontend-shared-util', async () => ({
+  ...(await vi.importActual('@jdw/frontend-shared-util')),
+  getErrorMessage: vi.fn(),
 }));
 
 describe('MicroFrontendService', () => {
@@ -71,10 +71,10 @@ describe('MicroFrontendService', () => {
   });
 
   describe('getRoutes', () => {
-    it('should make an HTTP GET request and return an array of routes', (done) => {
+    it('should make an HTTP GET request and return an array of routes', () => {
+      let emitted: MicroFrontendRoute[] | undefined;
       service.getRoutes().subscribe((routes) => {
-        expect(routes).toEqual(mockRoutes);
-        done();
+        emitted = routes;
       });
 
       const req = httpTesting.expectOne(
@@ -82,38 +82,42 @@ describe('MicroFrontendService', () => {
       );
       expect(req.request.method).toBe('GET');
       req.flush(mockRoutes);
+
+      expect(emitted).toEqual(mockRoutes);
     });
 
-    it('should call handleError and return an empty array on error', (done) => {
+    it('should call handleError and return an empty array on error', () => {
       const errorResponse = new HttpErrorResponse({
         error: 'Error message',
         status: 500,
         statusText: 'Server Error',
         url: `${mockEnvironment.SERVICE_DISCOVERY_BASE_URL}/api/micro-frontends`,
       });
-      jest.spyOn(service, 'handleError');
+      vi.spyOn(service, 'handleError');
 
+      let emitted: MicroFrontendRoute[] | undefined;
       service.getRoutes().subscribe((routes) => {
-        expect(routes).toEqual([]);
-        expect(service.handleError).toHaveBeenCalledWith(errorResponse);
-        done();
+        emitted = routes;
       });
 
       const req = httpTesting.expectOne(
         `${mockEnvironment.SERVICE_DISCOVERY_BASE_URL}/api/micro-frontends`,
       );
       req.flush('Error message', { status: 500, statusText: 'Server Error' });
+
+      expect(emitted).toEqual([]);
+      expect(service.handleError).toHaveBeenCalledWith(errorResponse);
     });
   });
 
   describe('handleError', () => {
-    it('should call snackbarService.error with the correct arguments and return an empty array', (done) => {
+    it('should call snackbarService.error with the correct arguments and return an empty array', () => {
       const errorResponse = new HttpErrorResponse({
         error: 'Error message',
         status: 500,
       });
       const mockErrorMessage = 'Mock error message';
-      (getErrorMessage as jest.Mock).mockReturnValue(mockErrorMessage);
+      vi.mocked(getErrorMessage).mockReturnValue(mockErrorMessage);
 
       const result = service.handleError(errorResponse);
 
@@ -124,10 +128,11 @@ describe('MicroFrontendService', () => {
         true,
       );
 
+      let emitted: unknown[] | undefined;
       result.subscribe((data) => {
-        expect(data).toEqual([]);
-        done();
+        emitted = data;
       });
+      expect(emitted).toEqual([]);
     });
   });
 });

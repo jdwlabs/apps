@@ -17,12 +17,12 @@ import {
 import { EMPTY } from 'rxjs';
 
 const authServiceMock = {
-  getToken: jest.fn(),
+  getToken: vi.fn(),
 };
 
 const snackbarServiceMock = {
-  error: jest.fn(),
-  success: jest.fn(),
+  error: vi.fn(),
+  success: vi.fn(),
 };
 
 const environmentMock = {

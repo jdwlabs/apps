@@ -15,13 +15,13 @@ import { CookieService } from 'ngx-cookie-service';
 import { SnackbarService } from '../snackbar/snackbar.service';
 
 const mockSnackbarService = {
-  success: jest.fn(),
-  error: jest.fn(),
+  success: vi.fn(),
+  error: vi.fn(),
 };
 
 const mockCookieService = {
-  get: jest.fn(),
-  set: jest.fn(),
+  get: vi.fn(),
+  set: vi.fn(),
 };
 const environmentMock = {
   AUTH_BASE_URL: 'http://localhost:8080',
