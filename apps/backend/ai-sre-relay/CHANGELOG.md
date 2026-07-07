@@ -1,3 +1,13 @@
+## 0.2.1 (2026-07-07)
+
+### 🩹 Fixes
+
+- **ai-sre-relay:** reopen done jira issues instead of duplicating ([18173894](https://github.com/jdwlabs/apps/commit/18173894))
+
+### ❤️ Thank You
+
+- Jake Willmsen @jdwillmsen
+
 ## 0.2.0 (2026-07-07)
 
 ### 🚀 Features
