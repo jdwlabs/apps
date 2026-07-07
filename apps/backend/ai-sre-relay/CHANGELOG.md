@@ -1,3 +1,18 @@
+## 0.2.0 (2026-07-07)
+
+### 🚀 Features
+
+- **ai-sre-relay:** render Discord alerts as rich embeds ([8ac68d07](https://github.com/jdwlabs/apps/commit/8ac68d07))
+
+### 🩹 Fixes
+
+- **ai-sre-relay:** truncate patch rationale to stay under discord's field limit ([4f58859d](https://github.com/jdwlabs/apps/commit/4f58859d))
+
+### ❤️ Thank You
+
+- Claude Sonnet 5
+- Jake Willmsen @jdwillmsen
+
 # Changelog
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
