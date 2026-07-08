@@ -129,6 +129,7 @@ Use `pnpm run commit` for the interactive Commitizen prompt.
 - Styles: SCSS only. Themes in `libs/frontend/shared/ui/src/lib/styles/themes/`
 - No barrel `index.ts` files at app level — use direct path imports
 - Go packages: lowercase single-word names, follow standard Go layout
+- Never put a Jira ticket ID (`JDWLABS-*`) or PR/issue number in a code comment — traceability lives in the commit message and PR description, not in source that outlives the ticket
 
 ## Versioning / Release
 
