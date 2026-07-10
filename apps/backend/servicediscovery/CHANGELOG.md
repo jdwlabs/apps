@@ -1,3 +1,19 @@
+# 1.0.0 (2026-07-10)
+
+### 🚀 Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([74feb95c](https://github.com/jdwlabs/apps/commit/74feb95c))
+
+### 🩹 Fixes
+
+- **structure:** fix stale paths missed during role-based restructure ([a012da32](https://github.com/jdwlabs/apps/commit/a012da32))
+
+### ❤️ Thank You
+
+- Claude Opus 4.8
+- Claude Sonnet 4.6
+- Jake Willmsen @jdwillmsen
+
 ## 0.5.1 (2026-07-05)
 
 This was a version bump only for servicediscovery to align it with other projects, there were no code changes.

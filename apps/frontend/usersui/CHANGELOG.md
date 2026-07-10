@@ -1,3 +1,25 @@
+# 2.0.0 (2026-07-10)
+
+### 🚀 Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([74feb95c](https://github.com/jdwlabs/apps/commit/74feb95c))
+
+### 🩹 Fixes
+
+- **build:** point config targets at scripts/ not tools/ ([75122982](https://github.com/jdwlabs/apps/commit/75122982))
+- **frontend:** resolve broken theme @use after role-based move (JDWLABS-20) ([2ed97b5a](https://github.com/jdwlabs/apps/commit/2ed97b5a))
+- **structure:** fix stale paths missed during role-based restructure ([a012da32](https://github.com/jdwlabs/apps/commit/a012da32))
+
+### 🧱 Updated Dependencies
+
+- Updated frontend-shared-util to 1.0.0
+
+### ❤️ Thank You
+
+- Claude Opus 4.8
+- Claude Sonnet 4.6
+- Jake Willmsen @jdwillmsen
+
 # Changelog
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).

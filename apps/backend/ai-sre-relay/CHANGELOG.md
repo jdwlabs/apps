@@ -1,3 +1,42 @@
+# 1.0.0 (2026-07-10)
+
+### 🚀 Features
+
+- **ai-sre-relay:** render Discord alerts as rich embeds ([9d782844](https://github.com/jdwlabs/apps/commit/9d782844))
+- **ai-sre-relay:** bound concurrency, drain on shutdown, auth+limits ([d7d75a93](https://github.com/jdwlabs/apps/commit/d7d75a93))
+- **ai-sre-relay:** add container images ([3fd53ad8](https://github.com/jdwlabs/apps/commit/3fd53ad8))
+- **ai-sre-relay:** add webhook ingress and wire main ([dcbb56b1](https://github.com/jdwlabs/apps/commit/dcbb56b1))
+- **ai-sre-relay:** add pipeline orchestrator with independence tests ([9a293fc2](https://github.com/jdwlabs/apps/commit/9a293fc2))
+- **ai-sre-relay:** add github pr opener ([f423ef55](https://github.com/jdwlabs/apps/commit/f423ef55))
+- **ai-sre-relay:** add jira upsert with fingerprint dedup ([38fd20ae](https://github.com/jdwlabs/apps/commit/38fd20ae))
+- **ai-sre-relay:** add discord notifier ([41816b6b](https://github.com/jdwlabs/apps/commit/41816b6b))
+- **ai-sre-relay:** add litellm patch generator with confidence gate ([3448f2c2](https://github.com/jdwlabs/apps/commit/3448f2c2))
+- **ai-sre-relay:** add holmes investigation client ([a5660cb6](https://github.com/jdwlabs/apps/commit/a5660cb6))
+- **ai-sre-relay:** add domain types ([d73db1e0](https://github.com/jdwlabs/apps/commit/d73db1e0))
+- **ai-sre-relay:** scaffold nx go project with healthz ([2544cc27](https://github.com/jdwlabs/apps/commit/2544cc27))
+
+### 🩹 Fixes
+
+- **ai-sre-relay:** reopen done jira issues instead of duplicating ([c5072ddf](https://github.com/jdwlabs/apps/commit/c5072ddf))
+- **ai-sre-relay:** truncate patch rationale to stay under discord's field limit ([2aadfdd7](https://github.com/jdwlabs/apps/commit/2aadfdd7))
+- **ai-sre-relay:** configurable jira issue type, default Task ([2044b870](https://github.com/jdwlabs/apps/commit/2044b870))
+- **ai-sre-relay:** failure notice survives dead per-alert context ([75498899](https://github.com/jdwlabs/apps/commit/75498899))
+- **ai-sre-relay:** migrate jira dedup search to /search/jql ([f49dda49](https://github.com/jdwlabs/apps/commit/f49dda49))
+- **ai-sre-relay:** drop client timeout on LLM-bound calls ([8db9f384](https://github.com/jdwlabs/apps/commit/8db9f384))
+- **ai-sre-relay:** call Holmes /api/chat; investigate endpoint gone ([ff0194da](https://github.com/jdwlabs/apps/commit/ff0194da))
+- **ai-sre-relay:** check jira search status, recover webhook panics, harden github/patch ([212ec5b0](https://github.com/jdwlabs/apps/commit/212ec5b0))
+- **ai-sre-relay:** fail on jira decode/marshal errors and test error+auth paths ([64ff7a03](https://github.com/jdwlabs/apps/commit/64ff7a03))
+- **ai-sre-relay:** use generic example in IssueKey comment ([a39e083f](https://github.com/jdwlabs/apps/commit/a39e083f))
+- **ai-sre-relay:** remove build artifact and comment refs, assert healthz body ([b39625e4](https://github.com/jdwlabs/apps/commit/b39625e4))
+
+### ❤️ Thank You
+
+- Claude Fable 5
+- Claude Opus 4.8
+- Claude Sonnet 4.6
+- Claude Sonnet 5
+- Jake Willmsen @jdwillmsen
+
 ## 0.2.1 (2026-07-07)
 
 ### 🩹 Fixes

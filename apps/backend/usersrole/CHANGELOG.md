@@ -1,3 +1,18 @@
+# 1.0.0 (2026-07-10)
+
+### 🚀 Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([74feb95c](https://github.com/jdwlabs/apps/commit/74feb95c))
+
+### 🩹 Fixes
+
+- **usersrole:** import Instant so build.gradle.kts compiles ([6720c591](https://github.com/jdwlabs/apps/commit/6720c591))
+
+### ❤️ Thank You
+
+- Claude Opus 4.8
+- Jake Willmsen @jdwillmsen
+
 # Changelog
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).

@@ -1,3 +1,29 @@
+# 1.0.0 (2026-07-10)
+
+### 🚀 Features
+
+- **apps:** enrich all images with OCI labels and Overview sync ([74feb95c](https://github.com/jdwlabs/apps/commit/74feb95c))
+- **authdb:** add multi-os-arch support ([738bd43e](https://github.com/jdwlabs/apps/commit/738bd43e))
+- **authdb:** add multi-os-arch support ([08e52ad4](https://github.com/jdwlabs/apps/commit/08e52ad4))
+- **authdb:** update database init data ([9a3cb544](https://github.com/jdwlabs/apps/commit/9a3cb544))
+- **authdb:** add unique constraint for role name and role data update ([fe7cc034](https://github.com/jdwlabs/apps/commit/fe7cc034))
+- **authdb:** add birthdate to profiles table ([764a674d](https://github.com/jdwlabs/apps/commit/764a674d))
+- **authdb:** update database init data ([7579430e](https://github.com/jdwlabs/apps/commit/7579430e))
+- **authdb:** add unique constraint for role name and role data update ([a6a79d8a](https://github.com/jdwlabs/apps/commit/a6a79d8a))
+- **authdb:** add birthdate to profiles table ([24c10a7b](https://github.com/jdwlabs/apps/commit/24c10a7b))
+- **authdb:** add authdb app ([86af1830](https://github.com/jdwlabs/apps/commit/86af1830))
+
+### 🩹 Fixes
+
+- **authdb:** use jdwlabs.com domain for system seed user ([c53214ca](https://github.com/jdwlabs/apps/commit/c53214ca))
+- fix Dockerfile pathing for ci ([cb0b522a](https://github.com/jdwlabs/apps/commit/cb0b522a))
+
+### ❤️ Thank You
+
+- Claude Opus 4.8
+- Jacob David Willmsen @jdwillmsen
+- Jake Willmsen @jdwillmsen
+
 # Changelog
 
 This file was generated using [@jscutlery/semver](https://github.com/jscutlery/semver).
