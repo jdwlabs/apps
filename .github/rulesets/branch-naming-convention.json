@@ -7,13 +7,8 @@
   "enforcement": "active",
   "conditions": {
     "ref_name": {
-      "exclude": [
-        "refs/heads/main",
-        "refs/heads/gh-pages"
-      ],
-      "include": [
-        "refs/heads/**"
-      ]
+      "exclude": ["refs/heads/main", "refs/heads/gh-pages"],
+      "include": ["refs/heads/**"]
     }
   },
   "rules": [
