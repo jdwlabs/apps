@@ -49,3 +49,12 @@ Thumbs.db
 
 # Local planning docs (specs, design docs — not for version control)
 docs/superpowers/
+
+# Secrets — local credentials must never be committed
+.env*
+*.key
+*.pem
+kubeconfig*
+*.kubeconfig
+# Go sources named kubeconfig*.go (backend services) are code, not credentials
+!kubeconfig*.go

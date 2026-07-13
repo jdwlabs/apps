@@ -12,6 +12,7 @@ permissions:
 jobs:
   scan:
     uses: jdwlabs/.github/.github/workflows/security-scan.yml@main
-    # Non-blocking PoC (JDWLABS-71): findings surface in the Security tab
+    # Trivy findings are non-blocking: they surface in the Security tab
     # without gating merges. Flip fail-on-findings to true once the finding
     # volume across all repos has been triaged as real signal, not noise.
+    # The gitleaks secrets gate inside the reusable workflow always blocks.
