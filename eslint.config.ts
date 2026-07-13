@@ -25,11 +25,11 @@ export default [
         {
           enforceBuildableLibDependency: true,
           allow: [],
+          // Three independent tag axes (type/scope/framework); a dependency
+          // must satisfy every constraint that matches the importing project.
+          // The full rules live in docs/conventions.md#module-boundaries.
           depConstraints: [
-            {
-              sourceTag: 'scope:shared',
-              onlyDependOnLibsWithTags: ['scope:shared'],
-            },
+            // type axis: layering, high to low
             {
               sourceTag: 'type:app',
               onlyDependOnLibsWithTags: [
@@ -53,11 +53,80 @@ export default [
             },
             {
               sourceTag: 'type:ui',
-              onlyDependOnLibsWithTags: ['type:ui', 'type:util'],
+              onlyDependOnLibsWithTags: ['type:util'],
             },
             {
               sourceTag: 'type:util',
               onlyDependOnLibsWithTags: ['type:util'],
+            },
+            // E2E sits above everything and nothing depends on it, so it may
+            // import from any project.
+            {
+              sourceTag: 'type:e2e',
+              onlyDependOnLibsWithTags: ['*'],
+            },
+            // scope axis: each app scope sees only itself + shared
+            {
+              sourceTag: 'scope:shared',
+              onlyDependOnLibsWithTags: ['scope:shared'],
+            },
+            {
+              sourceTag: 'scope:authui',
+              onlyDependOnLibsWithTags: ['scope:authui', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:container',
+              onlyDependOnLibsWithTags: ['scope:container', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:rolesui',
+              onlyDependOnLibsWithTags: ['scope:rolesui', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:usersui',
+              onlyDependOnLibsWithTags: ['scope:usersui', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:servicediscovery',
+              onlyDependOnLibsWithTags: [
+                'scope:servicediscovery',
+                'scope:shared',
+              ],
+            },
+            {
+              sourceTag: 'scope:usersrole',
+              onlyDependOnLibsWithTags: ['scope:usersrole', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:authdb',
+              onlyDependOnLibsWithTags: ['scope:authdb', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:ai-sre-relay',
+              onlyDependOnLibsWithTags: ['scope:ai-sre-relay', 'scope:shared'],
+            },
+            // framework axis: no cross-framework imports. ESLint only lints
+            // JS/TS, so this bites on the Angular/Node side; Go and JVM code
+            // is additionally fenced by its own toolchain.
+            {
+              sourceTag: 'framework:angular',
+              onlyDependOnLibsWithTags: ['framework:angular'],
+            },
+            {
+              sourceTag: 'framework:go',
+              onlyDependOnLibsWithTags: ['framework:go'],
+            },
+            {
+              sourceTag: 'framework:springboot',
+              onlyDependOnLibsWithTags: ['framework:springboot'],
+            },
+            {
+              sourceTag: 'framework:database',
+              onlyDependOnLibsWithTags: ['framework:database'],
+            },
+            {
+              sourceTag: 'framework:node',
+              onlyDependOnLibsWithTags: ['framework:node'],
             },
           ],
         },
