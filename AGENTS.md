@@ -1,37 +1,165 @@
 # AGENTS.md
 
-Context for AI agents (OpenAI Codex, GitHub Copilot, and others) working in this repository.
+Canonical context for AI agents (Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot, and others) working in this repository. `CLAUDE.md`, `GEMINI.md`, and `AGENT.md` are thin pointers to this file — make edits here.
 
 ## What This Repo Is
 
-jdwlabs `apps` is an NX monorepo containing the full application stack for the jdwlabs platform:
+jdwlabs `apps` is an Nx 22 monorepo containing the full application stack for the jdwlabs platform. Angular 21 micro-frontends, Go services, a Spring Boot/Kotlin service, PostgreSQL migration runners, and shared libraries. Package manager is **pnpm 10**. CI runs on GitHub-hosted runners (`ubuntu-latest`).
 
-- **Auth UI** (`apps/angular/authui`) — login, registration, session management
-- **Roles UI** (`apps/angular/rolesui`) — role assignment and management
-- **Users UI** (`apps/angular/usersui`) — user listing and administration
-- **Container** (`apps/angular/container`) — shell app that composes micro-frontends via Module Federation
-- **Platform E2E** (`apps/angular/platform-e2e`) — Cypress end-to-end test suite
-- **Service Discovery** (`apps/go/servicediscovery`) — Go backend service registry
-- **Users/Role service** (`apps/springboot/usersrole`) — Spring Boot/Kotlin user-role assignment API
+- **Auth UI** (`apps/frontend/authui`) — login, registration, session management
+- **Roles UI** (`apps/frontend/rolesui`) — role assignment and management
+- **Users UI** (`apps/frontend/usersui`) — user listing and administration
+- **Container** (`apps/frontend/container`) — shell app that composes micro-frontends via Module Federation
+- **Platform E2E** (`apps/e2e/platform-e2e`) — Playwright end-to-end test suite
+- **Service Discovery** (`apps/backend/servicediscovery`) — Go backend service registry
+- **AI-SRE Relay** (`apps/backend/ai-sre-relay`) — Go alert-relay service for the AI-SRE stack
+- **Users/Role service** (`apps/backend/usersrole`) — Spring Boot/Kotlin user-role assignment API
 - **Auth DB** (`apps/database/authdb`) — database migration management
+
+## Directory Map
+
+```
+apps/
+  frontend/     # Angular micro-frontend apps (authui, container, rolesui, usersui)
+  backend/      # Go (servicediscovery, ai-sre-relay) + Spring Boot (usersrole) services
+  database/     # DB migration runners (authdb — PostgreSQL)
+  e2e/          # Playwright E2E tests (platform-e2e)
+libs/
+  frontend/     # Shared Angular libs (per-app: authui/container/rolesui/usersui + shared)
+  backend/      # Go shared packages
+tools/
+  agents/       # Nx-adjacent Docker dev agent — DO NOT move or restructure
+  release/      # Custom nx release version actions
+  testing/      # Shared test tooling
+scripts/        # Non-Nx shell scripts and Docker Compose helpers
+  docker/       # docker/compose.yaml — local dev stack
+docs/           # architecture, conventions, workflows, onboarding
+```
 
 ## Key Concepts
 
-- **Module Federation:** frontends are micro-frontends composed at runtime via Webpack Module Federation — each Angular app is independently deployable but the container app assembles them
+- **Module Federation:** frontends are micro-frontends composed at runtime via Webpack Module Federation — each Angular app is independently deployable but the `container` app assembles them
 - **NX affected:** CI only builds/tests code touched by a PR — understand the dependency graph before assuming a change is isolated (`npx nx graph` to visualize)
-- **go.work:** a Go workspace at the repo root covers `apps/go/servicediscovery` and `libs/go/shared/util` — always run `go` commands from the repo root
+- **go.work:** a Go workspace at the repo root covers `apps/backend/servicediscovery`, `apps/backend/ai-sre-relay`, and `libs/backend/shared/util` — always run `go` commands from the repo root
 
-## Navigation
+## Worktree Location (Windows — CRITICAL)
 
-- Angular entry points: `apps/angular/<app>/src/main.ts`
-- Go entry point: `apps/go/servicediscovery/main.go`
-- Spring Boot entry point: `apps/springboot/usersrole/src/main/kotlin/`
-- Shared Angular code: `libs/angular/`
-- Shared Go code: `libs/go/`
-- NX project graph: `npx nx graph`
+This repo lives on **F: drive** (`F:\Dev\projects\personal\jdwlabs\apps`).
+**Worktrees MUST be created on the same drive (F:).**
 
-## Constraints
+pnpm uses hard links for its content-addressable store. Hard links cannot cross NTFS volume boundaries. If a worktree is on C: and the repo is on F:, `pnpm install` will silently succeed but produce an empty `node_modules` (only `.pnpm` dir) — no binaries, no hoisted packages. Git hooks that call `npx --no-install <tool>` will then fail.
 
-- Do not add direct dependencies between Angular apps — use shared libs in `libs/angular/`
-- All secrets come from environment variables injected at deploy time — no hardcoded secrets
-- Do not push to remote without developer review
+```bash
+# CORRECT — same drive as repo
+git worktree add F:/Dev/worktrees/apps/feat/my-feature -b feat/my-feature
+```
+
+If a cross-drive worktree left `node_modules` with only `.pnpm` and no `.bin`, replace it with a junction to the main repo's `node_modules`:
+
+```powershell
+Remove-Item -Recurse -Force C:\path\to\worktree\node_modules
+New-Item -ItemType Junction -Path C:\path\to\worktree\node_modules -Target F:\Dev\projects\personal\jdwlabs\apps\node_modules
+```
+
+## Key Commands
+
+```bash
+pnpm exec nx affected -t lint test        # affected lint + tests (use during development)
+pnpm exec nx format:check                 # check formatting (must pass in CI)
+pnpm exec nx format:write                 # fix formatting
+pnpm exec nx run <project>:<target>       # run any build/lint/test target
+pnpm exec nx reset                        # clear Nx cache (required after editing project.json)
+pnpm exec nx show projects                # list all projects
+pnpm run commit                           # interactive commit (commitizen)
+docker compose -f scripts/docker/compose.yaml up -d   # start local stack
+go build ./... && go test ./...           # Go workspace build/test (from repo root)
+```
+
+## Nx Project Tags
+
+Every `project.json` has three tag families:
+
+- `type:app` | `type:lib` | `type:e2e` | `type:feature` | `type:ui` | `type:data-access` | `type:util`
+- `scope:<name>` — app-level scope; names come from `project.json` files. Run `pnpm exec nx show projects` for the current list.
+- `framework:angular` | `framework:go` | `framework:springboot` | `framework:database` | `framework:playwright`
+
+Module boundary rules in `eslint.config.ts` enforce:
+
+- Per-app-scope isolation: a `scope:X` lib may only import from `scope:X` or `scope:shared` libs
+- Framework isolation: `framework:angular` libs may only import from other `framework:angular` libs
+- Type hierarchy: `type:feature` → `type:ui` + `type:util` + `type:data-access` (no circular)
+
+## Angular Architecture
+
+Four Angular apps use **webpack module federation**:
+
+- `container` — shell app, loads remotes at runtime
+- `authui`, `rolesui`, `usersui` — remote apps
+
+Each app has libs under `libs/frontend/<app-name>/`: feature/, data-access/, and util/ (ui/ in shared).
+
+## Commit Conventions
+
+Format: `<type>(<scope>): <subject>` — scope is optional but encouraged.
+
+Allowed types: `feat` `fix` `chore` `docs` `style` `refactor` `perf` `test` `build` `ci` `revert`
+
+Rules:
+
+- Scope: kebab-case
+- Subject: lowercase, no trailing period, max header 100 chars
+- Body: blank line before body if present
+
+Use `pnpm run commit` for the interactive Commitizen prompt.
+
+## Coding Conventions
+
+- Angular file naming: kebab-case, suffix-typed (`.component.ts`, `.service.ts`, `.spec.ts`)
+- Styles: SCSS only. Themes in `libs/frontend/shared/ui/src/lib/styles/themes/`
+- No barrel `index.ts` files at app level — use direct path imports
+- Go packages: lowercase single-word names, follow standard Go layout
+- Never put a Jira ticket ID (`JDWLABS-*`) or PR/issue number in a code comment — traceability lives in the commit message and PR description, not in source that outlives the ticket
+
+## Versioning / Release
+
+Versioning is managed by `nx release` (config in `nx.json` under `release`). Independent
+per-project versions, tags `{projectName}-{version}`, conventional-commit driven bumps
+(feat=minor, fix=patch, breaking=major; chore/docs/etc never bump). Version manifests:
+Angular apps `public/VERSION`, backend/database apps `VERSION` at project root
+(custom actions in `tools/release/`), shared libs `package.json`. Per-project
+`CHANGELOG.md` and GitHub Releases are generated by the release job in CI.
+**Do not manually edit version files. Never run `nx release` locally without `--dry-run`.**
+
+## CI/CD
+
+GitHub Actions on `ubuntu-latest` (GitHub-hosted):
+
+1. `nx format:check` — formatting gate
+2. PR only: `commitlint` — validates all commit messages in the PR
+3. `nx affected -t lint test` — affected projects
+4. `nx affected -t build` — affected builds
+5. **Main push only:** `nx release` job (version, changelog, tag, GitHub Release), then per-project deliver matrix (Docker image → deployments Helm bump → Docker Hub description), then E2E dispatch.
+
+## Autonomy Boundaries
+
+Safe to run autonomously: any `pnpm exec nx ...` build/lint/test/format target, `docker compose -f scripts/docker/compose.yaml up -d`.
+
+Require confirmation first:
+
+- `git push` — always confirm destination branch
+- `docker buildx build --push` — pushes to DockerHub
+- Any `git reset`, `git rebase`, or `git push --force`
+- Changes to `.github/workflows/ci.yml`
+
+## Do Not
+
+- `git push --force` to `main`
+- `--no-verify` on commits — pre-commit (lint-staged) and commit-msg (commitlint) hooks run for a reason
+- `npm install` or `yarn` — this project uses **pnpm** only
+- Skip `pnpm exec nx reset` after editing `project.json` targets
+- Add direct dependencies between Angular apps — use shared libs in `libs/frontend/` (e.g. never import `scope:authui` libs from `scope:container` code; use `scope:shared`)
+- Add new projects without `type:`, `scope:`, and `framework:` tags in `project.json`
+- Commit anything to `docs/superpowers/` — it is gitignored intentionally (local planning only)
+- Modify `.github/workflows/ci.yml` buildx/`build-image` steps without understanding the docker-container BuildKit + multi-arch qemu setup
+- Run `nx release` without `--dry-run` locally — real releases are CI-only
+- Hardcode secrets — all secrets come from environment variables injected at deploy time
