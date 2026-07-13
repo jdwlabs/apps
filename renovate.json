@@ -1,0 +1,10 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Renovate is the single owner of dependency updates for this repo; keep repository-level (UI) Dependabot disabled.",
+    "Covers: pnpm dependencies (package.json + pnpm-lock.yaml — this repo uses pnpm, there is no package-lock.json), Go modules under apps/backend, Gradle dependencies, GitHub Actions pins, and Docker base images (nginx, postgres, distroless, golang, actions-runner).",
+    "The packageManager field (pnpm) is updated by the npm manager; Nx and Angular packages are grouped via the monorepo presets that config:recommended pulls in."
+  ],
+  "extends": ["github>jdwlabs/.github"],
+  "postUpdateOptions": ["gomodTidy", "pnpmDedupe"]
+}
