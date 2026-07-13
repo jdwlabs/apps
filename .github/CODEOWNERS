@@ -1,0 +1,9 @@
+# Last matching pattern wins; keep the catch-all first.
+* @jdwillmsen
+
+# CI/CD workflows control release and delivery; changes need owner review.
+/.github/workflows/ @jdwillmsen
+
+# Shared libraries fan out to every app that consumes them.
+/libs/backend/ @jdwillmsen
+/libs/frontend/ @jdwillmsen
