@@ -183,3 +183,107 @@ func TestJiraUpsertCreateErrorsOnServerError(t *testing.T) {
 		t.Fatalf("expected error on server failure, got key=%q", key)
 	}
 }
+
+// TestJiraUpsertGroupsSameAlertnameOpenTicket replays the observed duplicate
+// pair: the same alert re-fired under a different labelset, so its fingerprint
+// (and dedup label) changed and the fingerprint search found nothing. With an
+// open ticket for the same alertname, the relay must comment there instead of
+// filing a sibling duplicate.
+func TestJiraUpsertGroupsSameAlertnameOpenTicket(t *testing.T) {
+	created, commented := false, false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
+			jql, _ := url.QueryUnescape(r.URL.Query().Get("jql"))
+			if strings.Contains(jql, "amfp-") {
+				// New fingerprint: no issue carries its label yet.
+				_ = json.NewEncoder(w).Encode(map[string]any{"issues": []any{}})
+				return
+			}
+			if !strings.Contains(jql, `"amalert-targetdown"`) || !strings.Contains(jql, "statusCategory != Done") {
+				t.Errorf("alertname search must be label-scoped and open-only, got jql %q", jql)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []map[string]any{{
+				"key":    "JDWLABS-152",
+				"fields": map[string]any{"status": map[string]any{"statusCategory": map[string]any{"key": "indeterminate"}}},
+			}}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			commented = true
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/3/issue":
+			created = true
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]string{"key": "JDWLABS-153"})
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Upsert(context.Background(), Alert{Fingerprint: "7e2b7cad96ebf3c4", Labels: map[string]string{"alertname": "TargetDown"}}, Analysis{RootCause: "y"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created {
+		t.Fatal("must group into the open same-alertname ticket, not create a duplicate")
+	}
+	if key != "JDWLABS-152" || !commented {
+		t.Fatalf("expected comment on JDWLABS-152, got key=%q commented=%v", key, commented)
+	}
+}
+
+// TestJiraUpsertDedupSurvivesSearchIndexLag replays the create-then-refire
+// race: Jira's JQL index is eventually consistent, so searches keep returning
+// empty for a while after a create. Follow-up upserts — same fingerprint or a
+// new fingerprint of the same alertname — must land on the issue this process
+// just created, not create duplicates.
+func TestJiraUpsertDedupSurvivesSearchIndexLag(t *testing.T) {
+	creates, comments := 0, 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
+			// Simulated index lag: the created issue is never searchable.
+			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []any{}})
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/api/3/issue/JDWLABS-160":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"fields": map[string]any{"status": map[string]any{"statusCategory": map[string]any{"key": "indeterminate"}}},
+			})
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/3/issue/JDWLABS-160/comment":
+			comments++
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/3/issue":
+			creates++
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]string{"key": "JDWLABS-160"})
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	j := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client())
+	an := Analysis{RootCause: "y"}
+
+	key, err := j.Upsert(context.Background(), Alert{Fingerprint: "fp-a", Labels: map[string]string{"alertname": "TargetDown"}}, an)
+	if err != nil || key != "JDWLABS-160" {
+		t.Fatalf("first upsert: key=%q err=%v", key, err)
+	}
+	// Same fingerprint re-fires while the index still lags.
+	key, err = j.Upsert(context.Background(), Alert{Fingerprint: "fp-a", Labels: map[string]string{"alertname": "TargetDown"}}, an)
+	if err != nil || key != "JDWLABS-160" {
+		t.Fatalf("same-fingerprint refire: key=%q err=%v", key, err)
+	}
+	// A different labelset of the same alert fires while the index still lags.
+	key, err = j.Upsert(context.Background(), Alert{Fingerprint: "fp-b", Labels: map[string]string{"alertname": "TargetDown"}}, an)
+	if err != nil || key != "JDWLABS-160" {
+		t.Fatalf("same-alertname refire: key=%q err=%v", key, err)
+	}
+
+	if creates != 1 {
+		t.Fatalf("created %d issues, want exactly 1", creates)
+	}
+	if comments != 2 {
+		t.Fatalf("expected both refires to comment (2), got %d", comments)
+	}
+}
