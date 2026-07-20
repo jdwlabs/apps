@@ -23,6 +23,14 @@ type dispatcher struct {
 	perAlertTO time.Duration
 	log        *slog.Logger
 	wg         sync.WaitGroup
+
+	// inflight tracks fingerprints that are queued or being investigated.
+	// Alertmanager re-notifies on group_interval while an investigation for
+	// the same fingerprint can still be running (they take minutes);
+	// investigating the repeat would double the LLM spend and race the Jira
+	// upsert into a duplicate ticket, so repeats are coalesced at the door.
+	mu       sync.Mutex
+	inflight map[string]struct{}
 }
 
 func newDispatcher(h handler, workers, queueSize int, perAlertTO time.Duration, log *slog.Logger) *dispatcher {
@@ -31,6 +39,7 @@ func newDispatcher(h handler, workers, queueSize int, perAlertTO time.Duration, 
 		queue:      make(chan Alert, queueSize),
 		perAlertTO: perAlertTO,
 		log:        log,
+		inflight:   map[string]struct{}{},
 	}
 	for range workers {
 		d.wg.Add(1)
@@ -47,6 +56,7 @@ func (d *dispatcher) worker() {
 }
 
 func (d *dispatcher) process(a Alert) {
+	defer d.release(a)
 	// A panicking client must not kill the worker — that would shrink the pool
 	// and eventually stall the queue.
 	defer func() {
@@ -66,19 +76,41 @@ func (d *dispatcher) process(a Alert) {
 		"duration_ms", time.Since(start).Milliseconds())
 }
 
-// enqueue submits an alert without blocking the HTTP response. It returns false
-// (and logs) when the queue is saturated; Alertmanager re-sends on
-// repeat_interval and Jira dedup absorbs the repeat, so a drop is recoverable,
-// not silent.
+// enqueue submits an alert without blocking the HTTP response. A fingerprint
+// already queued or under investigation is coalesced (accepted but not
+// re-queued). It returns false (and logs) when the queue is saturated;
+// Alertmanager re-sends on repeat_interval and Jira dedup absorbs the repeat,
+// so a drop is recoverable, not silent.
 func (d *dispatcher) enqueue(a Alert) bool {
+	if a.Fingerprint != "" {
+		d.mu.Lock()
+		if _, dup := d.inflight[a.Fingerprint]; dup {
+			d.mu.Unlock()
+			d.log.Info("alert already queued or investigating; coalescing repeat",
+				"fingerprint", a.Fingerprint, "alert", a.Name())
+			return true
+		}
+		d.inflight[a.Fingerprint] = struct{}{}
+		d.mu.Unlock()
+	}
 	select {
 	case d.queue <- a:
 		return true
 	default:
+		d.release(a)
 		d.log.Error("investigation queue full; dropping alert (alertmanager will retry)",
 			"fingerprint", a.Fingerprint, "alert", a.Name())
 		return false
 	}
+}
+
+func (d *dispatcher) release(a Alert) {
+	if a.Fingerprint == "" {
+		return
+	}
+	d.mu.Lock()
+	delete(d.inflight, a.Fingerprint)
+	d.mu.Unlock()
 }
 
 // shutdown stops accepting work and waits for in-flight and queued

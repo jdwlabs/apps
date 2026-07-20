@@ -56,24 +56,48 @@ func buildAsk(a Alert) string {
 	return b.String()
 }
 
+// investigateAttempts bounds re-asks when the model returns unusable output
+// (empty, tool-call markup, all conversational filler). One retry usually
+// clears a bad sample; more would burn the per-alert deadline.
+const investigateAttempts = 2
+
+// Investigate runs the Holmes chat and sanitizes the result. Unusable output
+// is re-asked up to investigateAttempts times and then surfaced as an error,
+// so downstream outputs (Jira, Discord) never publish a raw model artifact.
 func (c *HolmesClient) Investigate(ctx context.Context, a Alert) (Analysis, error) {
+	var lastErr error
+	for range investigateAttempts {
+		raw, err := c.chat(ctx, a)
+		if err != nil {
+			return Analysis{}, err
+		}
+		clean, serr := sanitizeAnalysis(raw)
+		if serr == nil {
+			return Analysis{RootCause: clean}, nil
+		}
+		lastErr = serr
+	}
+	return Analysis{}, fmt.Errorf("holmes: unusable analysis after %d attempts: %w", investigateAttempts, lastErr)
+}
+
+func (c *HolmesClient) chat(ctx context.Context, a Alert) (string, error) {
 	body, _ := json.Marshal(chatRequest{Ask: buildAsk(a), Model: c.model, Stream: false})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/chat", bytes.NewReader(body))
 	if err != nil {
-		return Analysis{}, err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.hc.Do(req)
 	if err != nil {
-		return Analysis{}, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return Analysis{}, fmt.Errorf("holmes: status %d", resp.StatusCode)
+		return "", fmt.Errorf("holmes: status %d", resp.StatusCode)
 	}
 	var cr chatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&cr); err != nil {
-		return Analysis{}, fmt.Errorf("holmes: decode: %w", err)
+		return "", fmt.Errorf("holmes: decode: %w", err)
 	}
-	return Analysis{RootCause: cr.Analysis}, nil
+	return cr.Analysis, nil
 }
