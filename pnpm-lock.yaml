@@ -65,11 +65,11 @@ importers:
         specifier: 21.2.9
         version: 21.2.9(@angular/common@21.2.17(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2))(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(@angular/platform-browser@21.2.9(@angular/animations@21.2.9(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2)))(@angular/common@21.2.17(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2))(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2)))(rxjs@7.8.2)
       ag-grid-angular:
-        specifier: ^32.3.3
-        version: 32.3.9(@angular/common@21.2.17(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2))(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(ag-grid-community@32.3.9)
+        specifier: ^36.0.0
+        version: 36.0.1(@angular/common@21.2.17(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2))(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))
       ag-grid-community:
-        specifier: ^32.3.3
-        version: 32.3.9
+        specifier: ^36.0.0
+        version: 36.0.1
       rxjs:
         specifier: ~7.8.1
         version: 7.8.2
@@ -4173,18 +4173,20 @@ packages:
     resolution: {integrity: sha512-x0HvcHqVJNTPk/Bw8JbLWlWoo6Wwnsug0fnYYro1HBrjxZ3G7/AZk7Ahv8JwDe1uIcz8eBqvu86FuF1POiG7vQ==}
     engines: {node: '>=6.0'}
 
-  ag-charts-types@10.3.9:
-    resolution: {integrity: sha512-drcRiJVencliC8LnRwk4MmeQDNNBg5GzmOoLFihO3/k0CUK0VF/N+2nc7iFozwaNG0btSB9vAhYuJLjqHMtRrQ==}
+  ag-charts-types@14.0.1:
+    resolution: {integrity: sha512-fGNDptlNzaQDqDoZxAYeLtBrV8sIXE1iRXX9s5W+/drobP3Ig2fhdAOlKp3IIrHlbiKZUiuhraqT0D4IYVyM4w==}
 
-  ag-grid-angular@32.3.9:
-    resolution: {integrity: sha512-37vYmgM8NmKhL8lgQXRZrPYuvccRfl/5pQf0XpxksRAX1ClwMgdMLJumiOlPIlobArBSstbo25dHfyrlBVvO2Q==}
+  ag-grid-angular@36.0.1:
+    resolution: {integrity: sha512-SRfyvCtv8T6LNnXRu9kjg/u6a+bFdXF41UhHtJH/X0HDa/BJV/S2hIvZdcSvTHD4ss77tz1wwdg5DXRTmj6a9g==}
     peerDependencies:
-      '@angular/common': '>= 16.0.0'
-      '@angular/core': '>= 16.0.0'
-      ag-grid-community: 32.3.9
+      '@angular/common': '>= 20.0.0'
+      '@angular/core': '>= 20.0.0'
 
-  ag-grid-community@32.3.9:
-    resolution: {integrity: sha512-l07SB0mCbGPkC1R8rQQFgBtI5+1FoXBi3RUk1+dHKV/UPeorMEFAzCokcsOhz0qwcWCPrHauUsbRa1SIxfVEJQ==}
+  ag-grid-community@36.0.1:
+    resolution: {integrity: sha512-wQetUqoY6SBCtKzDjsYkImiGpM4+hU7S5/NvxcCAO6liL6mSRXlEvCHdQZUfj6amuhsdjVlGK1C8e+B54EyDTQ==}
+
+  ag-stack@36.0.1:
+    resolution: {integrity: sha512-FsrO55fl7EDToQVgRDaTF1+QKWpfJK1nxTxTavkkfHeq6Kei4skAeP0MsjXm7zECjfyHczlwmWvp+KN7KHnlYQ==}
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -13979,18 +13981,21 @@ snapshots:
 
   adm-zip@0.5.10: {}
 
-  ag-charts-types@10.3.9: {}
+  ag-charts-types@14.0.1: {}
 
-  ag-grid-angular@32.3.9(@angular/common@21.2.17(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2))(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(ag-grid-community@32.3.9):
+  ag-grid-angular@36.0.1(@angular/common@21.2.17(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2))(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2)):
     dependencies:
       '@angular/common': 21.2.17(@angular/core@21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2))(rxjs@7.8.2)
       '@angular/core': 21.2.17(@angular/compiler@21.2.17)(rxjs@7.8.2)(zone.js@0.16.2)
-      ag-grid-community: 32.3.9
+      ag-grid-community: 36.0.1
       tslib: 2.8.1
 
-  ag-grid-community@32.3.9:
+  ag-grid-community@36.0.1:
     dependencies:
-      ag-charts-types: 10.3.9
+      ag-charts-types: 14.0.1
+      ag-stack: 36.0.1
+
+  ag-stack@36.0.1: {}
 
   agent-base@7.1.4: {}
 
