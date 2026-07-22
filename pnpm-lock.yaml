@@ -11,7 +11,7 @@ overrides:
   form-data@<4.0.6: ^4.0.6
   hono@<4.12.25: ^4.12.25
   http-proxy-middleware@2: ^2.0.10
-  http-proxy-middleware@3: ^3.0.7
+  http-proxy-middleware@3: ^4.0.0
   js-yaml@3: ^3.15.0
   js-yaml@4: ^4.2.0
   launch-editor@<2.14.1: ^2.14.1
@@ -5944,9 +5944,9 @@ packages:
       '@types/express':
         optional: true
 
-  http-proxy-middleware@3.0.7:
-    resolution: {integrity: sha512-iwbQltVlx8bCrqePUM8C+hllHvdawVhQJaLrj1X7qllkvFQdXFsr16pW/mo9+JDVjN+QO2XUx9jd8SmoFkE5qw==}
-    engines: {node: ^14.18.0 || ^16.10.0 || >=18.0.0}
+  http-proxy-middleware@4.2.0:
+    resolution: {integrity: sha512-ZA+oNOoM+GLoFTIzhkJptVQov73Srep2LBqhF8hG8CIPKO3nam1jonXVQ/QUH8RbwsmaaVz2SOJdzBNBHNtKbw==}
+    engines: {node: ^22.15.0 || ^24.0.0 || >=26.0.0}
 
   http-proxy@1.18.1:
     resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
@@ -5964,6 +5964,9 @@ packages:
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
+
+  httpxy@0.5.5:
+    resolution: {integrity: sha512-uDjmnPyp1q4Sgzf3w+J/Fc6UqcCEj0x4Wjp7OqK5dGhNeDgpyrAmnS6ey8QWrX3SWDon2DMKf9sBa5X9+CVyMA==}
 
   human-signals@1.1.1:
     resolution: {integrity: sha512-SEQu7vl8KjNL2eoGBLF3+wAjpsNfA9XMlXAYj/3EdaNfAlxKthD1xjEQfGOUhllCGGJVNY34bRr6lPINhNjyZw==}
@@ -6161,12 +6164,12 @@ packages:
     resolution: {integrity: sha512-gwsOE28k+23GP1B6vFl1oVh/WOzmawBrKwo5Ev6wMKzPkaXaCDIQKzLnvsA42DRlbVTWorkgTKIviAKCWkfUwA==}
     engines: {node: '>=10'}
 
+  is-plain-obj@4.1.0:
+    resolution: {integrity: sha512-+Pgi+vMuUNkJyExiMBt5IlFoMyKnr5zhJ4Uspz58WOhBF5QoIZkFyNHIbBAtHwzVAgk5RtndVNsDRN61/mmDqg==}
+    engines: {node: '>=12'}
+
   is-plain-object@2.0.4:
     resolution: {integrity: sha512-h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==}
-    engines: {node: '>=0.10.0'}
-
-  is-plain-object@5.0.0:
-    resolution: {integrity: sha512-VRSzKkbMm5jMDoKLbltAkFQ5Qr7VDiTFGXxYFXXowVj387GeGNOCsOH6Msy00SGZ3Fp84b1Naa1psqgcCIEP5Q==}
     engines: {node: '>=0.10.0'}
 
   is-potential-custom-element-name@1.0.1:
@@ -9334,7 +9337,7 @@ snapshots:
       copy-webpack-plugin: 14.0.0(webpack@5.105.2(@swc/core@1.15.8(@swc/helpers@0.5.18))(esbuild@0.28.1)(postcss@8.5.12))
       css-loader: 7.1.3(@rspack/core@1.7.11(@swc/helpers@0.5.18))(webpack@5.105.2(@swc/core@1.15.8(@swc/helpers@0.5.18))(esbuild@0.28.1)(postcss@8.5.12))
       esbuild-wasm: 0.27.3
-      http-proxy-middleware: 3.0.7
+      http-proxy-middleware: 4.2.0
       istanbul-lib-instrument: 6.0.3
       jsonc-parser: 3.3.1
       karma-source-map-support: 1.4.0
@@ -12310,7 +12313,7 @@ snapshots:
       '@nx/web': 22.7.3(4b18b34426e79619d0ab6ebf29d05fe6)
       '@rspack/core': 1.6.8(@swc/helpers@0.5.18)
       express: 4.22.2
-      http-proxy-middleware: 3.0.7
+      http-proxy-middleware: 4.2.0
       picocolors: 1.1.1
       tslib: 2.8.1
       webpack: 5.107.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(postcss@8.5.15)
@@ -12415,7 +12418,7 @@ snapshots:
       css-loader: 6.11.0(@rspack/core@1.6.8(@swc/helpers@0.5.18))(webpack@5.107.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(postcss@8.5.15))
       enquirer: 2.3.6
       express: 4.22.2
-      http-proxy-middleware: 3.0.7
+      http-proxy-middleware: 4.2.0
       less-loader: 12.3.1(@rspack/core@1.6.8(@swc/helpers@0.5.18))(less@4.6.4)(webpack@5.107.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(postcss@8.5.15))
       license-webpack-plugin: 4.0.2(webpack@5.107.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(postcss@8.5.15))
       loader-utils: 2.0.4
@@ -14181,7 +14184,7 @@ snapshots:
 
   axios@1.16.0:
     dependencies:
-      follow-redirects: 1.16.0(debug@4.4.3)
+      follow-redirects: 1.16.0
       form-data: 4.0.6
       proxy-from-env: 2.1.0
     transitivePeerDependencies:
@@ -15740,9 +15743,7 @@ snapshots:
 
   flatted@3.4.2: {}
 
-  follow-redirects@1.16.0(debug@4.4.3):
-    optionalDependencies:
-      debug: 4.4.3(supports-color@8.1.1)
+  follow-redirects@1.16.0: {}
 
   foreground-child@3.3.1:
     dependencies:
@@ -16067,7 +16068,7 @@ snapshots:
   http-proxy-middleware@2.0.10(@types/express@4.17.25):
     dependencies:
       '@types/http-proxy': 1.17.17
-      http-proxy: 1.18.1(debug@4.4.3)
+      http-proxy: 1.18.1
       is-glob: 4.0.3
       is-plain-obj: 3.0.0
       micromatch: 4.0.8
@@ -16076,21 +16077,20 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  http-proxy-middleware@3.0.7:
+  http-proxy-middleware@4.2.0:
     dependencies:
-      '@types/http-proxy': 1.17.17
       debug: 4.4.3(supports-color@8.1.1)
-      http-proxy: 1.18.1(debug@4.4.3)
+      httpxy: 0.5.5
       is-glob: 4.0.3
-      is-plain-object: 5.0.0
+      is-plain-obj: 4.1.0
       micromatch: 4.0.8
     transitivePeerDependencies:
       - supports-color
 
-  http-proxy@1.18.1(debug@4.4.3):
+  http-proxy@1.18.1:
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.16.0(debug@4.4.3)
+      follow-redirects: 1.16.0
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -16102,7 +16102,7 @@ snapshots:
       corser: 2.0.1
       he: 1.2.0
       html-encoding-sniffer: 3.0.0
-      http-proxy: 1.18.1(debug@4.4.3)
+      http-proxy: 1.18.1
       mime: 1.6.0
       minimist: 1.2.8
       opener: 1.5.2
@@ -16127,6 +16127,8 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
+
+  httpxy@0.5.5: {}
 
   human-signals@1.1.1:
     optional: true
@@ -16283,11 +16285,11 @@ snapshots:
 
   is-plain-obj@3.0.0: {}
 
+  is-plain-obj@4.1.0: {}
+
   is-plain-object@2.0.4:
     dependencies:
       isobject: 3.0.1
-
-  is-plain-object@5.0.0: {}
 
   is-potential-custom-element-name@1.0.1: {}
 
@@ -17449,7 +17451,7 @@ snapshots:
       escape-string-regexp: 1.0.5
       figures: 3.2.0
       flat: 5.0.2
-      follow-redirects: 1.16.0(debug@4.4.3)
+      follow-redirects: 1.16.0
       form-data: 4.0.6
       fs-constants: 1.0.0
       function-bind: 1.1.2
