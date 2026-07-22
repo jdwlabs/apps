@@ -64,7 +64,7 @@
     "jsonc-eslint-parser": "^2.4.0",
     "jwt-decode": "^4.0.0",
     "lint-staged": "^17.0.5",
-    "ng-packagr": "21.2.3",
+    "ng-packagr": "22.0.1",
     "ngx-cookie-service": "^20.0.0",
     "nx": "22.7.3",
     "postcss": "^8.4.49",
