@@ -1,6 +1,6 @@
 # Remember to check for updates to base images to incorporate security patches
 # Use a specific version of golang based on SHA256 digest for reproducibility and security
-FROM golang:1.23 AS builder-go
+FROM golang:1.26 AS builder-go
 
 # Use a specific version of node base on SHA256 digest for reproducibility and security
 FROM node:lts-alpine AS builder

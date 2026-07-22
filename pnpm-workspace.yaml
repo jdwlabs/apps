@@ -12,7 +12,7 @@ allowBuilds:
   unrs-resolver: false
 
 overrides:
-  memfs: '4.56.11'
+  memfs: '4.64.0'
   '@babel/core@<7.29.6': '^7.29.6'
   'esbuild@<0.28.1': '^0.28.1'
   'form-data@<4.0.6': '^4.0.6'

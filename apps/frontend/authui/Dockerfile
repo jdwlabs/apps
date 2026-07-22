@@ -1,5 +1,5 @@
 # Use a specific version of distroless based on SHA256 digest for reproducibility and security
-FROM nginx:1.27 AS run
+FROM nginx:1.31 AS run
 
 ENV JSFOLDER=/usr/share/nginx/html/*.js
 COPY apps/frontend/authui/start-nginx.sh /usr/bin/start-nginx.sh

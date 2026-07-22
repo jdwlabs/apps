@@ -4,11 +4,11 @@ import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 plugins {
 	java
-	id("org.springframework.boot") version "3.3.2"
-	id("io.spring.dependency-management") version "1.1.5"
+	id("org.springframework.boot") version "3.5.16"
+	id("io.spring.dependency-management") version "1.1.7"
 	id("maven-publish")
-	id("com.google.cloud.tools.jib") version "3.4.5"
-	id("dev.nx.gradle.project-graph") version "0.1.20"
+	id("com.google.cloud.tools.jib") version "3.5.4"
+	id("dev.nx.gradle.project-graph") version "0.1.24"
 }
 
 group = "com.jdw"
@@ -36,10 +36,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-aop")
-	implementation("io.jsonwebtoken:jjwt-api:0.12.5")
-	implementation("io.jsonwebtoken:jjwt-impl:0.12.5")
-	implementation("io.jsonwebtoken:jjwt-jackson:0.12.5")
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+	implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+	implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
+	implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
 	annotationProcessor("org.projectlombok:lombok")
