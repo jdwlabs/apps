@@ -82,7 +82,7 @@ jobs:
       # recent prior cache. GitHub scopes caches per branch, so a PR can't poison
       # main's cache (the CREEP class of issue with shared remote caches).
       - name: Restore Nx cache
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: .nx/cache
           key: nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}
