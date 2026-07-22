@@ -65,7 +65,7 @@
     "jwt-decode": "^4.0.0",
     "lint-staged": "^17.0.5",
     "ng-packagr": "21.2.3",
-    "ngx-cookie-service": "^20.0.0",
+    "ngx-cookie-service": "^22.0.0",
     "nx": "22.7.3",
     "postcss": "^8.4.49",
     "postcss-url": "~10.1.3",
