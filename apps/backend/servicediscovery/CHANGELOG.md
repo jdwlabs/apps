@@ -1,3 +1,7 @@
+## 1.0.1 (2026-07-22)
+
+This was a version bump only for servicediscovery to align it with other projects, there were no code changes.
+
 # 1.0.0 (2026-07-10)
 
 ### 🚀 Features
