@@ -23,7 +23,7 @@ overrides:
   tmp@<0.2.6: ^0.2.7
   undici@<6.27.0: ^6.27.0
   undici@7: ^7.28.0
-  uuid@<9: ^11.1.1
+  uuid@<9: ^14.0.0
   vite@<7.3.5: ^7.3.5
   webpack-dev-server@<5.2.5: ^5.2.5
 
@@ -8745,8 +8745,8 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  uuid@11.1.1:
-    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
+  uuid@14.0.1:
+    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
     hasBin: true
 
   v8-compile-cache-lib@3.0.1:
@@ -10843,7 +10843,7 @@ snapshots:
       safe-buffer: 5.2.1
       tough-cookie: 5.1.2
       tunnel-agent: 0.6.0
-      uuid: 11.1.1
+      uuid: 14.0.1
     optional: true
 
   '@cypress/xvfb@1.2.4(supports-color@8.1.1)':
@@ -18794,7 +18794,7 @@ snapshots:
   sockjs@0.3.24:
     dependencies:
       faye-websocket: 0.11.4
-      uuid: 11.1.1
+      uuid: 14.0.1
       websocket-driver: 0.7.4
 
   socks-proxy-agent@8.0.5:
@@ -19398,7 +19398,7 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
-  uuid@11.1.1: {}
+  uuid@14.0.1: {}
 
   v8-compile-cache-lib@3.0.1: {}
 
