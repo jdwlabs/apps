@@ -3,25 +3,18 @@
 // ag-grid ships whole separate style sets for light and dark, so the choice
 // is a compile-time flag per theme bundle rather than a runtime token.
 @mixin theme($dark: false) {
+  $extend-theme: balham;
   @if $dark {
-    @include ag.grid-styles(
-      (
-        themes: (
-          jdw: (
-            extend-theme: balham-dark,
-          ),
-        ),
-      )
-    );
-  } @else {
-    @include ag.grid-styles(
-      (
-        themes: (
-          jdw: (
-            extend-theme: balham,
-          ),
-        ),
-      )
-    );
+    $extend-theme: balham-dark;
   }
+
+  @include ag.grid-styles(
+    (
+      themes: (
+        jdw: (
+          extend-theme: $extend-theme,
+        ),
+      ),
+    )
+  );
 }
