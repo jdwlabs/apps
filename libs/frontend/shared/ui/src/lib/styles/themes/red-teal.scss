@@ -9,7 +9,13 @@ html {
   @include theming.theme(
     $primary: custom-palettes.$red-teal-primary,
     $tertiary: custom-palettes.$red-teal-tertiary,
-    $theme-type: dark
+    $theme-type: dark,
+    $success: #1b5e20,
+    $on-success: white,
+    $info: #0d47a1,
+    $on-info: white,
+    $warn: #e65100,
+    $on-warn: white
   );
 }
 
