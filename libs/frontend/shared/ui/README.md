@@ -38,7 +38,8 @@ libs/frontend/shared/ui/
 ├── styles/
 │   ├── themes/                        # Predefined theme files
 │   ├── components/                    # SCSS for individual UI elements
-│   └── _theming.scss                  # Global SCSS mixins and palette
+│   ├── _custom-palettes.scss          # Generated M3 tonal palettes (schematic output)
+│   └── _theming.scss                  # Theme mixin (mat.theme + extra semantic roles)
 ├── jest.config.ts
 ├── ng-package.json
 ├── tsconfig.*.json
