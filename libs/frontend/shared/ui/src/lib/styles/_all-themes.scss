@@ -1,13 +1,17 @@
-@use '@angular/material' as mat;
 @use './components/button/variants' as button-variants;
 @use './components/ag-grid/ag-grid-theme.component' as ag-grid;
 @use '../navigation-item/navigation-item-theme.component' as navigation-item;
 @use '../snackbar/snackbar-theme.component' as snackbar;
 
-@mixin all-component-themes($theme) {
-  @include button-variants.theme($theme);
-  @include ag-grid.theme($theme);
-  @include navigation-item.theme($theme);
-  @include snackbar.theme($theme);
-  @include mat.all-component-themes($theme);
+// Custom component styling layered on top of the M3 system tokens that
+// `theming.theme` emits. Material's own component styles need no explicit
+// include under M3 — `mat.theme` covers them via CSS custom properties.
+//
+// $dark is only needed by ag-grid: its balham vs balham-dark selection
+// happens at compile time and cannot key off a runtime CSS variable.
+@mixin all-component-themes($dark: false) {
+  @include button-variants.theme;
+  @include ag-grid.theme($dark);
+  @include navigation-item.theme;
+  @include snackbar.theme;
 }

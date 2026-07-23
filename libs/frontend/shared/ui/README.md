@@ -93,14 +93,31 @@ import { NavigationLayoutComponent } from '@jdw/angular-shared-ui';
 
 ## 🎨 Theming
 
-This library supports multiple predefined themes stored in:
+This library uses the Angular Material **M3 token-based theming system**
+(`mat.theme()`). Each predefined theme lives in:
 
 ```
 libs/frontend/shared/ui/src/lib/styles/themes/
 ```
 
-To switch themes, apply the appropriate SCSS class (e.g. `deeppurple-amber`, `indigo-pink`, or your custom one like
-`user-custom-dark`) to your root container.
+A theme file applies `theming.theme()` on `html`, which emits the Material
+system tokens (`--mat-sys-*`) plus this design system's extra semantic roles
+(`--jdw-sys-success`, `--jdw-sys-info`, `--jdw-sys-warn` and their `on-`
+counterparts). Apps import exactly one theme in `styles.scss`; the container
+additionally compiles every theme as a lazy CSS bundle (`inject: false` in
+`project.json`), so a different theme can be activated at runtime by swapping
+the loaded stylesheet.
+
+Component styles should consume tokens (`var(--mat-sys-primary)`,
+`var(--jdw-sys-success)`, …) instead of Sass theme maps. The
+`user-custom-light` / `user-custom-dark` themes additionally re-point the key
+system tokens at runtime CSS variables (`--primary-500`, `--accent-500`,
+`--error-500`, `--success-500`, `--info-500`, `--warn-500` and matching
+`--*-contrast-500`), so user-supplied colors keep working without a rebuild.
+
+Custom tonal palettes (black-white, red-teal, user-custom defaults) are
+generated with `ng generate @angular/material:theme-color` from the original
+seed colors — see `styles/_custom-palettes.scss`.
 
 ---
 

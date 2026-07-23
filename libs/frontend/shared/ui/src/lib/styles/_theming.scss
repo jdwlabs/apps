@@ -1,94 +1,55 @@
 @use '@angular/material' as mat;
 
-/// Defines a theme with success, error, warn, and info colors.
-/// @param {Map} $primary The primary color palette.
-/// @param {Map} $accent The accent color palette.
-/// @param {Map} $warn The warn color palette.
-/// @param {Map} $success The success color palette.
-/// @param {Map} $error The error color palette.
-/// @param {Map} $info The info color palette.
-/// @param {Boolean} $create-light-theme If true a light theme is created, otherwise a dark theme is created
-/// @param {Boolean} $typography The typography config
-/// @param {Boolean} $density The density config
-@function define-theme(
+/// Applies the Material 3 theme (system design tokens) plus the extra
+/// semantic color roles this design system defines on top of M3.
+///
+/// M3 has no success / info / warn roles (M2's `warn` maps to M3 `error`),
+/// so each extra role is published as CSS custom properties that mirror the
+/// `--mat-sys-*` naming: `--jdw-sys-<role>` and `--jdw-sys-on-<role>`.
+/// Component styles consume them exactly like Material system tokens.
+///
+/// Include on the document root (`html`). Values may be plain colors or
+/// `var(...)` references — they pass straight through to CSS output, which
+/// is what allows the user-custom themes to stay runtime-overridable.
+///
+/// @param {Map} $primary M3 tonal palette for the primary role.
+/// @param {Map} $tertiary M3 tonal palette for the tertiary role (M2 accent).
+/// @param {String} $theme-type light | dark | color-scheme.
+/// @param {Color|String} $success Success role color.
+/// @param {Color|String} $on-success Text/icon color on success.
+/// @param {Color|String} $info Info role color.
+/// @param {Color|String} $on-info Text/icon color on info.
+/// @param {Color|String} $warn Warn role color.
+/// @param {Color|String} $on-warn Text/icon color on warn.
+/// @param {Number} $density Material density scale (0 to -5).
+@mixin theme(
   $primary,
-  $accent,
-  $warn: mat.$m2-orange-palette,
-  $success: mat.$m2-green-palette,
-  $error: mat.$m2-red-palette,
-  $info: mat.$m2-blue-palette,
-  $create-light-theme: true,
-  $typography: mat.m2-define-typography-config(),
+  $tertiary,
+  $theme-type: light,
+  $success: #4caf50,
+  $on-success: white,
+  $info: #2196f3,
+  $on-info: white,
+  $warn: #ff9800,
+  $on-warn: rgba(black, 0.87),
   $density: 0
 ) {
-  $theme: null;
-
-  @if ($create-light-theme) {
-    $color-config: (
-      primary: $primary,
-      accent: $accent,
-      warn: $error,
-    );
-    $theme: mat.m2-define-light-theme(
-      (
-        color: $color-config,
-        typography: $typography,
-        density: $density,
-      )
-    );
-  } @else {
-    $color-config: (
-      primary: $primary,
-      accent: $accent,
-      warn: $error,
-    );
-    $theme: mat.m2-define-dark-theme(
-      (
-        color: $color-config,
-        typography: $typography,
-        density: $density,
-      )
-    );
-  }
-
-  $extra: (
-    success: $success,
-    error: $error,
-    info: $info,
-    warn: $warn,
-  );
-  @return map-merge($theme, $extra);
-}
-
-@function define-palette(
-  $base-palette,
-  $default: 500,
-  $lighter: 100,
-  $darker: 700,
-  $extra-light: 50,
-  $extra-dark: 900,
-  $text: $default
-) {
-  $new-palette: mat.m2-define-palette(
-    $base-palette,
-    $default,
-    $lighter,
-    $darker,
-    $text: $default
-  );
-
-  $extra-palette: (
-    extra-light: map-get($base-palette, $extra-light),
-    extra-dark: map-get($base-palette, $extra-dark),
-    extra-light-contrast: mat.m2-get-contrast-color-from-palette(
-        $base-palette,
-        $extra-light
+  @include mat.theme(
+    (
+      color: (
+        primary: $primary,
+        tertiary: $tertiary,
+        theme-type: $theme-type,
       ),
-    extra-dark-contrast: mat.m2-get-contrast-color-from-palette(
-        $base-palette,
-        $extra-dark
-      ),
+      typography: Roboto,
+      density: $density,
+    )
   );
 
-  @return map-merge($new-palette, $extra-palette);
+  --jdw-sys-success: #{$success};
+  --jdw-sys-on-success: #{$on-success};
+  --jdw-sys-info: #{$info};
+  --jdw-sys-on-info: #{$on-info};
+  --jdw-sys-warn: #{$warn};
+  --jdw-sys-on-warn: #{$on-warn};
 }
