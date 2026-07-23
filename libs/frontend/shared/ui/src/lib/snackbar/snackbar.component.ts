@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import {
   MAT_SNACK_BAR_DATA,
@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'jdw-snackbar',
   imports: [MatIconModule, MatButtonModule],
   templateUrl: './snackbar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './snackbar.component.scss',
 })
 export class SnackbarComponent {

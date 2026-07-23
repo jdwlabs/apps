@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormArray,
@@ -41,6 +46,7 @@ export interface DialogData {
     ReactiveFormsModule,
   ],
   templateUrl: './roles-dialog.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './roles-dialog.component.scss',
 })
 export class RolesDialogComponent implements OnInit {

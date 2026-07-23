@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import {
   FormArray,
   FormBuilder,
@@ -38,6 +43,7 @@ export interface DialogData {
     ReactiveFormsModule,
   ],
   templateUrl: './profile-dialog.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './profile-dialog.component.scss',
 })
 export class ProfileDialogComponent implements OnInit {

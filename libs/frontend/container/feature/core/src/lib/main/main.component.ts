@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemePalette } from '@angular/material/core';
 import { MatDrawerMode } from '@angular/material/sidenav';
@@ -29,6 +34,7 @@ import {
     MatButton,
   ],
   templateUrl: './main.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './main.component.scss',
 })
 export class MainComponent implements OnInit {

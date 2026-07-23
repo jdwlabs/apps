@@ -16,6 +16,10 @@ export default [
         'error',
         { type: 'element', prefix: 'lib', style: 'kebab-case' },
       ],
+      // Angular v22's change-detection-eager migration sets an explicit
+      // ChangeDetectionStrategy.Eager on every component to preserve pre-v22
+      // behaviour, which this angular-eslint preset rule would otherwise flag.
+      '@angular-eslint/prefer-on-push-component-change-detection': 'off',
     },
   },
 ];

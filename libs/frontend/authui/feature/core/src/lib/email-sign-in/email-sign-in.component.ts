@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import {
   FormControl,
@@ -27,6 +27,7 @@ import {
     ReactiveFormsModule,
   ],
   templateUrl: './email-sign-in.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './email-sign-in.component.scss',
 })
 export class EmailSignInComponent {

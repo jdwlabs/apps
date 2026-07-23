@@ -58,3 +58,4 @@ kubeconfig*
 *.kubeconfig
 # Go sources named kubeconfig*.go (backend services) are code, not credentials
 !kubeconfig*.go
+.nx/migrate-runs

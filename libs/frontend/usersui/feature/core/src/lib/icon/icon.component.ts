@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
@@ -10,6 +15,7 @@ import { Icon } from '@jdw/frontend-shared-util';
   selector: 'lib-icon',
   imports: [MatButton, MatIcon, MatIconButton],
   templateUrl: './icon.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './icon.component.scss',
 })
 export class IconComponent implements OnInit {

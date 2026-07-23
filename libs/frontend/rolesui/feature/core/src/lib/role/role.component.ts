@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
@@ -23,6 +28,7 @@ import { MatLabel } from '@angular/material/form-field';
   ],
   selector: 'lib-role',
   styleUrl: './role.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './role.component.html',
 })
 export class RoleComponent implements OnInit {

@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { ProfilesService } from '@jdw/frontend-usersui-data-access';
 import {
@@ -14,6 +19,7 @@ import { Profile } from '@jdw/frontend-shared-util';
   selector: 'lib-profiles',
   imports: [AgGridAngular],
   templateUrl: './profiles.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './profiles.component.scss',
 })
 export class ProfilesComponent implements OnInit {

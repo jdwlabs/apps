@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import {
   FormControl,
@@ -24,6 +29,7 @@ import { MatInput } from '@angular/material/input';
     MatInput,
   ],
   templateUrl: './address.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './address.component.scss',
 })
 export class AddressComponent implements OnInit {

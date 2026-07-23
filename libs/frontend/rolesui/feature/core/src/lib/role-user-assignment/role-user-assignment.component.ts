@@ -1,4 +1,10 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ViewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
@@ -54,6 +60,7 @@ type FormControlName = keyof UserRoleAssignmentFormControls | 'form';
     MatFormField,
   ],
   templateUrl: './role-user-assignment.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './role-user-assignment.component.scss',
 })
 export class RoleUserAssignmentComponent implements OnInit {

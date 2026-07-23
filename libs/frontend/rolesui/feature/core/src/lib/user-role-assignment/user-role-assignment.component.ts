@@ -25,7 +25,13 @@ import {
 } from '@angular/material/autocomplete';
 import { MatError, MatInput, MatLabel } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ViewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { RolesService, UsersService } from '@jdw/frontend-shared-data-access';
 import { forkJoin, map, Observable, startWith } from 'rxjs';
 
@@ -54,6 +60,7 @@ type FormControlName = keyof UserRoleAssignmentFormControls | 'form';
     AgGridAngular,
   ],
   templateUrl: './user-role-assignment.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './user-role-assignment.component.scss',
 })
 export class UserRoleAssignmentComponent implements OnInit {

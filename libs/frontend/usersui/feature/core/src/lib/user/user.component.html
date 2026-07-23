@@ -181,7 +181,9 @@
         <img
           [src]="
             'data:image/png;base64,' +
-            userForm.get('profile')?.get('icon')?.value
+            $safeNavigationMigration(
+              userForm.get('profile')?.get('icon')?.value
+            )
           "
           alt="User Icon"
           data-cy="icon-image"

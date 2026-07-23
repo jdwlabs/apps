@@ -104,7 +104,6 @@
       "frontend-shared-ui",
       "frontend-shared-util"
     ],
-    "releaseTagPattern": "{projectName}-{version}",
     "git": {
       "commitMessage": "chore(release): publish [skip ci]",
       "push": true
@@ -119,6 +118,9 @@
       "projectChangelogs": {
         "createRelease": "github"
       }
+    },
+    "releaseTag": {
+      "pattern": "{projectName}-{version}"
     }
   },
   "generators": {
