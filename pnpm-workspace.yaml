@@ -8,6 +8,7 @@ allowBuilds:
   '@parcel/watcher': false
   core-js-pure: false
   cypress: false
+  less: false
   msgpackr-extract: false
   unrs-resolver: false
 
@@ -20,7 +21,7 @@ overrides:
   'http-proxy-middleware@2': '^2.0.10'
   'http-proxy-middleware@3': '^3.0.7'
   'js-yaml@3': '^3.15.0'
-  'js-yaml@4': '^4.2.0'
+  'js-yaml@4': '^5.0.0'
   'launch-editor@<2.14.1': '^2.14.1'
   'lodash@<4.18.0': '^4.18.1'
   'piscina@<5.2.0': '^5.2.0'
@@ -28,8 +29,8 @@ overrides:
   'systeminformation@<5.31.6': '^5.31.6'
   'tar@7': '^7.5.16'
   'tmp@<0.2.6': '^0.2.7'
-  'undici@<6.27.0': '^6.27.0'
+  'undici@<6.27.0': '^8.0.0'
   'undici@7': '^7.28.0'
   'uuid@<9': '^11.1.1'
   'vite@<7.3.5': '^7.3.5'
-  'webpack-dev-server@<5.2.5': '^5.2.5'
+  'webpack-dev-server@<5.2.5': '^6.0.0'

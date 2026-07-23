@@ -30,9 +30,9 @@ export class RolesService {
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     return this.http
-      .get<
-        Role[]
-      >(`${this.environment.AUTH_BASE_URL}/api/roles`, { headers: headers })
+      .get<Role[]>(`${this.environment.AUTH_BASE_URL}/api/roles`, {
+        headers: headers,
+      })
       .pipe(catchError((error) => this.handleError(error)));
   }
 
