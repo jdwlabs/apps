@@ -47,8 +47,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager() {
         log.debug("Retrieving authentication manager");
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(jwtUserDetailService);
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(jwtUserDetailService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(authenticationProvider);
     }

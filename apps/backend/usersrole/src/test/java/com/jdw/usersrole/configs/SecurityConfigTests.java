@@ -1,9 +1,11 @@
 package com.jdw.usersrole.configs;
 
+import com.jdw.usersrole.services.JwtUserDetailService;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,6 +24,8 @@ import static org.mockito.Mockito.*;
 @Tag("fast")
 @Tag("unit")
 class SecurityConfigTests {
+    @Mock
+    private JwtUserDetailService jwtUserDetailService;
     @InjectMocks
     private SecurityConfig securityConfig;
 
