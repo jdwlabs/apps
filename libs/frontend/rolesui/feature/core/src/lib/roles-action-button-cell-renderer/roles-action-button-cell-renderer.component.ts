@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
@@ -15,6 +15,7 @@ import { Role } from '@jdw/frontend-shared-util';
   selector: 'lib-roles-action-button-cell-renderer',
   imports: [MatIcon, MatIconButton, MatTooltip],
   templateUrl: './roles-action-button-cell-renderer.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './roles-action-button-cell-renderer.component.scss',
 })
 export class RolesActionButtonCellRendererComponent implements ICellRendererAngularComp {

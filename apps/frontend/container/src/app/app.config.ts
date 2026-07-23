@@ -4,7 +4,7 @@ import {
   provideAppInitializer,
 } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { ENVIRONMENT } from '@jdw/frontend-shared-util';
 import config from '../config.json';
 import { appRoutes } from './app.routes';
@@ -14,7 +14,7 @@ import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideHttpClient(),
+    provideHttpClient(withXhr()),
     provideAnimations(),
     provideRouter(appRoutes),
     {

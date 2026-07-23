@@ -18,6 +18,10 @@ export default [
         { type: 'element', prefix: 'jdw', style: 'kebab-case' },
       ],
       '@angular-eslint/prefer-standalone': 'off',
+      // Angular v22's change-detection-eager migration sets an explicit
+      // ChangeDetectionStrategy.Eager on every component to preserve pre-v22
+      // behaviour, which this angular-eslint preset rule would otherwise flag.
+      '@angular-eslint/prefer-on-push-component-change-detection': 'off',
     },
   },
   {

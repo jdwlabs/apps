@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 import { NavigationTileComponent } from '@jdw/frontend-shared-ui';
 import { NavigationTile } from '@jdw/frontend-shared-util';
@@ -7,6 +7,7 @@ import { NavigationTile } from '@jdw/frontend-shared-util';
   selector: 'lib-dashboard',
   imports: [NavigationTileComponent],
   templateUrl: './dashboard.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent {

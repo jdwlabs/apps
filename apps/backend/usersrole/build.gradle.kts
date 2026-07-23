@@ -8,7 +8,7 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.7"
 	id("maven-publish")
 	id("com.google.cloud.tools.jib") version "3.4.5"
-	id("dev.nx.gradle.project-graph") version "0.1.20"
+	id("dev.nx.gradle.project-graph") version "0.1.24"
 }
 
 group = "com.jdw"
@@ -125,4 +125,10 @@ jib {
 			),
 		)
 	}
+}
+
+allprojects {
+    apply {
+        plugin("dev.nx.gradle.project-graph")
+    }
 }

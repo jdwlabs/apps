@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,6 +14,7 @@ import { ProfileDialogComponent } from '../profile-dialog/profile-dialog.compone
   selector: 'lib-profiles-action-button-cell-renderer',
   imports: [MatIcon, MatIconButton, MatTooltip],
   templateUrl: './profiles-action-button-cell-renderer.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './profiles-action-button-cell-renderer.component.scss',
 })
 export class ProfilesActionButtonCellRendererComponent implements ICellRendererAngularComp {

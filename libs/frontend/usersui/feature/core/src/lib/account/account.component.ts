@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import {
   AbstractControl,
@@ -39,6 +44,7 @@ import { finalize } from 'rxjs';
     ReactiveFormsModule,
   ],
   templateUrl: './account.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './account.component.scss',
 })
 export class AccountComponent implements OnInit {

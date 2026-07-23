@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import {
@@ -40,6 +45,7 @@ import { dateFormats } from '@jdw/frontend-usersui-util';
     { provide: MAT_DATE_FORMATS, useValue: dateFormats },
   ],
   templateUrl: './profile.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './profile.component.scss',
 })
 export class ProfileComponent implements OnInit {

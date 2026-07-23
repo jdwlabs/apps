@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 
 import { NavigationItem } from '@jdw/frontend-shared-util';
 import { RouterLink, RouterLinkActive } from '@angular/router';
@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'jdw-navigation-item',
   imports: [MatIconModule, MatListModule, RouterLinkActive, RouterLink],
   templateUrl: './navigation-item.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './navigation-item.component.scss',
 })
 export class NavigationItemComponent {

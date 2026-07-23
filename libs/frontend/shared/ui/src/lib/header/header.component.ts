@@ -1,4 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,6 +23,7 @@ import { ThemePalette } from '@angular/material/core';
     RouterLink,
   ],
   templateUrl: './header.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {

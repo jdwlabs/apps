@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { MatIconButton } from '@angular/material/button';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -15,6 +15,7 @@ import { User } from '@jdw/frontend-shared-util';
   selector: 'lib-actions-button-cell-renderer',
   imports: [MatIconButton, MatTooltip, MatIcon],
   templateUrl: './users-actions-button-cell-renderer.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './users-actions-button-cell-renderer.component.scss',
 })
 export class UsersActionsButtonCellRendererComponent implements ICellRendererAngularComp {

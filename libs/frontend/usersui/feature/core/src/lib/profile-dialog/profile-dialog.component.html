@@ -130,7 +130,10 @@
         <h3 data-cy="profile-icon-title">Profile Icon</h3>
         <div>
           <img
-            [src]="'data:image/png;base64,' + icon.get('icon')?.value"
+            [src]="
+              'data:image/png;base64,' +
+              $safeNavigationMigration(icon.get('icon')?.value)
+            "
             alt="User Icon"
             data-cy="profile-icon-image"
             height="150"

@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { User } from '@jdw/frontend-shared-util';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -33,6 +38,7 @@ import { ConfirmationDialogComponent } from '@jdw/frontend-shared-ui';
   ],
   templateUrl: './user.component.html',
   styleUrl: './user.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
 })
 export class UserComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,6 +28,7 @@ import { EmailSignInComponent } from '../email-sign-in/email-sign-in.component';
     MatCard,
   ],
   templateUrl: './sign-in.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './sign-in.component.scss',
 })
 export class SignInComponent {}

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
 import { MatCard } from '@angular/material/card';
@@ -7,6 +7,7 @@ import { MatCard } from '@angular/material/card';
   selector: 'jdw-navigation-tile',
   imports: [RouterLink, MatCard],
   templateUrl: './navigation-tile.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './navigation-tile.component.scss',
 })
 export class NavigationTileComponent {

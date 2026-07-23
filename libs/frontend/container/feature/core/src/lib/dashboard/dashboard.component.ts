@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { NavigationTileComponent } from '@jdw/frontend-shared-ui';
 import { NavigationTile } from '@jdw/frontend-shared-util';
@@ -8,6 +13,7 @@ import { MicroFrontendService } from '@jdw/frontend-container-data-access';
   selector: 'jdw-dashboard',
   imports: [NavigationTileComponent],
   templateUrl: './dashboard.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {

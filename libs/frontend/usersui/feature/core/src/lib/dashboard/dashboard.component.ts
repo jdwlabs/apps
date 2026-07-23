@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { NavigationTile } from '@jdw/frontend-shared-util';
 import { NavigationTileComponent } from '@jdw/frontend-shared-ui';
@@ -9,6 +9,7 @@ import { jwtDecode, JwtPayload } from 'jwt-decode';
   selector: 'lib-dashboard',
   imports: [NavigationTileComponent],
   templateUrl: './dashboard.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent {

@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { AgGridAngular } from 'ag-grid-angular';
 import { RolesService } from '@jdw/frontend-shared-data-access';
@@ -14,6 +19,7 @@ import { RolesActionButtonCellRendererComponent } from '../roles-action-button-c
   selector: 'lib-roles',
   imports: [AgGridAngular],
   templateUrl: './roles.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './roles.component.scss',
 })
 export class RolesComponent implements OnInit {

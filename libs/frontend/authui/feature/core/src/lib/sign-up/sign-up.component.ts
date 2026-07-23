@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import {
   AbstractControl,
@@ -48,6 +48,7 @@ import { AuthService } from '@jdw/frontend-shared-data-access';
     },
   ],
   templateUrl: './sign-up.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './sign-up.component.scss',
 })
 export class SignUpComponent {

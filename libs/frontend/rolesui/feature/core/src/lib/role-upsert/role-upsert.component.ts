@@ -1,4 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import {
   FormControl,
@@ -30,6 +35,7 @@ import { finalize } from 'rxjs';
     MatButton,
   ],
   templateUrl: './role-upsert.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './role-upsert.component.scss',
 })
 export class RoleUpsertComponent implements OnInit {

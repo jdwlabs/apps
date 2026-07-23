@@ -10,10 +10,7 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
@@ -21,9 +18,7 @@
       "@jdw/frontend-authui-feature-core": [
         "libs/frontend/authui/feature/core/src/index.ts"
       ],
-      "@jdw/frontend-authui-util": [
-        "libs/frontend/authui/util/src/index.ts"
-      ],
+      "@jdw/frontend-authui-util": ["libs/frontend/authui/util/src/index.ts"],
       "@jdw/frontend-container-data-access": [
         "libs/frontend/container/data-access/src/index.ts"
       ],
@@ -36,27 +31,19 @@
       "@jdw/frontend-rolesui-feature-core": [
         "libs/frontend/rolesui/feature/core/src/index.ts"
       ],
-      "@jdw/frontend-rolesui-util": [
-        "libs/frontend/rolesui/util/src/index.ts"
-      ],
+      "@jdw/frontend-rolesui-util": ["libs/frontend/rolesui/util/src/index.ts"],
       "@jdw/frontend-shared-data-access": [
         "libs/frontend/shared/data-access/src/index.ts"
       ],
-      "@jdw/frontend-shared-ui": [
-        "libs/frontend/shared/ui/src/index.ts"
-      ],
-      "@jdw/frontend-shared-util": [
-        "libs/frontend/shared/util/src/index.ts"
-      ],
+      "@jdw/frontend-shared-ui": ["libs/frontend/shared/ui/src/index.ts"],
+      "@jdw/frontend-shared-util": ["libs/frontend/shared/util/src/index.ts"],
       "@jdw/frontend-usersui-data-access": [
         "libs/frontend/usersui/data-access/src/index.ts"
       ],
       "@jdw/frontend-usersui-feature-core": [
         "libs/frontend/usersui/feature/core/src/index.ts"
       ],
-      "@jdw/frontend-usersui-util": [
-        "libs/frontend/usersui/util/src/index.ts"
-      ],
+      "@jdw/frontend-usersui-util": ["libs/frontend/usersui/util/src/index.ts"],
       "authui/Routes": [
         "apps/frontend/authui/src/app/remote-entry/entry.routes.ts"
       ],
@@ -66,10 +53,12 @@
       "usersui/Routes": [
         "apps/frontend/usersui/src/app/remote-entry/entry.routes.ts"
       ]
-    }
+    },
+    "strict": false,
+    "noUncheckedSideEffectImports": false,
+    "types": ["*"],
+    "esModuleInterop": false,
+    "ignoreDeprecations": "6.0"
   },
-  "exclude": [
-    "node_modules",
-    "tmp"
-  ]
+  "exclude": ["node_modules", "tmp"]
 }

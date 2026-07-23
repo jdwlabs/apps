@@ -1,4 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,6 +25,7 @@ import { NavigationItem } from '@jdw/frontend-shared-util';
     NavigationItemComponent,
   ],
   templateUrl: './navigation-layout.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './navigation-layout.component.scss',
 })
 export class NavigationLayoutComponent {
