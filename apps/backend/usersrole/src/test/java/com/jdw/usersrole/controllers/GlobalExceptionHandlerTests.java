@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -87,7 +88,7 @@ class GlobalExceptionHandlerTests {
 
     @Test
     void handleHttpMessageNotReadableException_shouldReturnBadRequest() {
-        HttpMessageNotReadableException ex = new HttpMessageNotReadableException("Http message is not readable", new Throwable());
+        HttpMessageNotReadableException ex = new HttpMessageNotReadableException("Http message is not readable", new Throwable(), mock(HttpInputMessage.class));
 
         ResponseEntity<String> response = globalExceptionHandler.handle(ex);
 
