@@ -24,7 +24,10 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - authdb-data:/var/lib/postgresql/data # Persistent storage for PostgreSQL
+      # Postgres 18+ images store data in a per-major-version subdirectory and
+      # refuse to start if anything is mounted at the old /var/lib/postgresql/data
+      # path, so the persistent volume must mount at /var/lib/postgresql.
+      - authdb-data:/var/lib/postgresql
     restart: unless-stopped
 
   jdw-usersrole:

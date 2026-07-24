@@ -58,6 +58,10 @@ nx run authdb:clear-cache
 
 Removes the persistent Docker volume (`authdb-data`).
 
+> **Upgrading across a Postgres major version:** an `authdb-data` volume initialized by an
+> older major version will not start under the new image. The contents are pure seed data,
+> so run `nx run authdb:clear-cache` and start the container again to re-initialize.
+
 ---
 
 ## 🔨 Build
