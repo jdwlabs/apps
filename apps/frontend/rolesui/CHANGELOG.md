@@ -1,3 +1,14 @@
+## 1.0.2 (2026-07-24)
+
+### 🚀 Features
+
+- **frontend-shared-ui:** migrate theming from material m2 to m3 tokens ([#000000](https://github.com/jdwlabs/apps/issues/000000), [#00](https://github.com/jdwlabs/apps/issues/00), [#7](https://github.com/jdwlabs/apps/issues/7))
+
+### ❤️ Thank You
+
+- Claude Fable 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.1 (2026-07-22)
 
 ### 🧱 Updated Dependencies

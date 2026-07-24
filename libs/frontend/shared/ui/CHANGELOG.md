@@ -1,3 +1,18 @@
+## 1.1.0 (2026-07-24)
+
+### 🚀 Features
+
+- **frontend-shared-ui:** migrate theming from material m2 to m3 tokens ([#000000](https://github.com/jdwlabs/apps/issues/000000), [#00](https://github.com/jdwlabs/apps/issues/00), [#7](https://github.com/jdwlabs/apps/issues/7))
+
+### 🩹 Fixes
+
+- **frontend-shared-ui:** restore red-teal 900-tone semantic roles, dedup ag-grid mixin ([9dd8330f](https://github.com/jdwlabs/apps/commit/9dd8330f))
+
+### ❤️ Thank You
+
+- Claude Fable 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.1 (2026-07-22)
 
 ### 🧱 Updated Dependencies
