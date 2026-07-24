@@ -1,3 +1,14 @@
+## 1.0.2 (2026-07-24)
+
+### 🩹 Fixes
+
+- **authdb:** add non-root user and healthcheck to satisfy image scan ([a2ff6d55](https://github.com/jdwlabs/apps/commit/a2ff6d55))
+
+### ❤️ Thank You
+
+- Claude Fable 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.1 (2026-07-22)
 
 This was a version bump only for authdb to align it with other projects, there were no code changes.
