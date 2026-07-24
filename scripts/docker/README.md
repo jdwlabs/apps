@@ -114,7 +114,9 @@ mappings for the microfrontends and their respective URLs and metadata. Below is
 - The **jdw-servicediscovery** service allows for dynamic discovery of microfrontends and enables smooth routing between
   them.
 - The **authdb** service uses persistent storage with Docker volumes to ensure that the PostgreSQL data persists between
-  container restarts.
+  container restarts. After a Postgres major-version upgrade of the authdb image, the old volume is incompatible and the
+  container will refuse to start — the data is pure seed data, so run `nx run authdb:clear-cache` (or
+  `docker volume rm jdw_authdb-data`) and bring the stack up again to re-initialize.
 
 ---
 

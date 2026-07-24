@@ -8,7 +8,7 @@ PostgreSQL image with **jdwlabs auth schema** initialization scripts.
 
 ## What it is
 
-A `postgres:16.4` image that bundles the jdwlabs auth database bootstrap. The SQL in
+A `postgres:18.4` image that bundles the jdwlabs auth database bootstrap. The SQL in
 `/docker-entrypoint-initdb.d/` runs on first startup against an empty data directory,
 creating the schema and seed data the `jdwlabs/usersrole` backend expects.
 
@@ -23,6 +23,12 @@ docker run -p 5432:5432 \
 ```
 
 The init scripts only run when the data volume is empty (standard Postgres behavior).
+
+For persistence, mount the volume at `/var/lib/postgresql` (not the pre-18
+`/var/lib/postgresql/data` path — the container refuses to start with anything
+mounted there). A data directory initialized by an older major version is not
+usable by this image; since the contents are pure seed data, delete the volume
+and let the init scripts recreate it.
 
 ## Exposed ports
 
