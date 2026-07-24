@@ -42,3 +42,8 @@ ENV JAVA_HOME=/usr/local/zulu-21 \
 
 WORKDIR /home/runner
 USER runner
+
+# no exposed service to probe (this is a GitHub Actions runner agent, not a
+# server) — liveness check only confirms the container's own process
+# namespace is up
+HEALTHCHECK --interval=60s --timeout=5s CMD test -d /proc/1 || exit 1
