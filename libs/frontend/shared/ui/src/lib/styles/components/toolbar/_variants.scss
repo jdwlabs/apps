@@ -1,0 +1,33 @@
+// Toolbar color variants on top of the M3 role tokens. Material 3 ignores the
+// `color` input (it is an M2-only API) but the component still emits a
+// `mat-<color>` class, so the variants are rebuilt against the toolbar's own
+// container tokens.
+//
+// The fill comes from the *container* roles rather than the bare
+// primary/tertiary roles: in a dark theme those resolve to tone 80, a pale
+// tint that reads as a disabled bar rather than a branded one.
+@mixin theme {
+  @include _variant(
+    'primary',
+    var(--mat-sys-primary-container),
+    var(--mat-sys-on-primary-container)
+  );
+  @include _variant(
+    'accent',
+    var(--mat-sys-tertiary-container),
+    var(--mat-sys-on-tertiary-container)
+  );
+  @include _variant('warn', var(--jdw-sys-warn), var(--jdw-sys-on-warn));
+}
+
+@mixin _variant($type, $color, $color-contrast) {
+  .mat-toolbar.mat-#{$type} {
+    --mat-toolbar-container-background-color: #{$color};
+    --mat-toolbar-container-text-color: #{$color-contrast};
+
+    // Projected icon buttons inherit the bar's contrast color; without this
+    // they fall back to the page-level on-surface role and disappear.
+    --mat-icon-button-icon-color: #{$color-contrast};
+    --mat-icon-color: #{$color-contrast};
+  }
+}

@@ -1,4 +1,5 @@
 @use './components/button/variants' as button-variants;
+@use './components/toolbar/variants' as toolbar-variants;
 @use './components/ag-grid/ag-grid-theme.component' as ag-grid;
 @use '../navigation-item/navigation-item-theme.component' as navigation-item;
 @use '../snackbar/snackbar-theme.component' as snackbar;
@@ -11,6 +12,7 @@
 // happens at compile time and cannot key off a runtime CSS variable.
 @mixin all-component-themes($dark: false) {
   @include button-variants.theme;
+  @include toolbar-variants.theme;
   @include ag-grid.theme($dark);
   @include navigation-item.theme;
   @include snackbar.theme;
