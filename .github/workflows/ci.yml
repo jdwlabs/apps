@@ -129,6 +129,9 @@ jobs:
     outputs:
       matrix: ${{ steps.released.outputs.matrix }}
       sha: ${{ steps.released.outputs.sha }}
+      # Distinguishes "nothing was released" from "detection never got there":
+      # unset means the step failed, so downstream jobs stay off.
+      released: ${{ steps.released.outputs.released }}
     steps:
       - name: Generate release app token
         id: release-token
@@ -170,6 +173,41 @@ jobs:
         # inject it right before the step that actually needs to push.
         run: |
           git remote set-url origin "https://x-access-token:${{ steps.release-token.outputs.token }}@github.com/${{ github.repository }}.git"
+      - name: Map Delivery Targets
+        id: targets
+        # Resolve delivery targets for every project BEFORE the irreversible
+        # release step. Tagging is a push; a graph lookup is fragile. Running
+        # the fragile act first means a broken lookup fails the run while it is
+        # still recoverable, instead of stranding tags that have no image.
+        # One graph read covers every project, so there is a single place for
+        # this to go wrong rather than one per released project. --silent keeps
+        # pnpm's lockfile/progress chatter out of the pipe, and --file makes nx
+        # write JSON instead of serving the graph UI. The graph goes to the
+        # runner temp dir so it never shows up in the tree nx release commits.
+        run: |
+          set -euo pipefail
+          graph="$RUNNER_TEMP/project-graph.json"
+          pnpm --silent exec nx graph --file="$graph"
+          map=$(jq -c '
+            .graph.nodes
+            | with_entries(
+                .value = (
+                  (.value.data.targets // {} | keys) as $targets
+                  | {
+                      "build-image": ($targets | index("build-image") != null),
+                      "update-app": ($targets | index("update-app") != null),
+                      "update-description": ($targets | index("update-description") != null)
+                    }
+                )
+              )
+          ' "$graph")
+          count=$(jq -r 'length' <<< "$map")
+          if [ "$count" -eq 0 ]; then
+            echo "::error::Project graph resolved zero projects; refusing to run a release that could not be delivered"
+            exit 1
+          fi
+          echo "Resolved delivery targets for $count projects."
+          echo "map=$map" >> "$GITHUB_OUTPUT"
       - name: Run Nx Release
         env:
           # Nx creates the GitHub Releases via this token after pushing tags.
@@ -184,35 +222,46 @@ jobs:
           pnpm exec nx release --skip-publish
       - name: Determine Released Projects
         id: released
+        env:
+          TARGET_MAP: ${{ steps.targets.outputs.map }}
         run: |
+          set -euo pipefail
           sha=$(git rev-parse HEAD)
           tags=$(git tag --points-at "$sha")
           if [ -z "$tags" ]; then
             echo "No projects released."
+            echo "released=false" >> "$GITHUB_OUTPUT"
             matrix='[]'
           else
+            echo "Released: $tags"
             projects=$(printf '%s\n' "$tags" \
               | sed -nE 's/^(.+)-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$/\1 \2/p')
-            echo "Released: $tags"
+            # Every branch below this point must fail rather than yield an empty
+            # matrix: the tags are already pushed, so a skipped deliver leaves
+            # versions published with no image behind them.
+            if [ -z "$projects" ]; then
+              echo "::error::Tags were pushed but no project/version pair parsed out of them: ${tags//$'\n'/ }"
+              exit 1
+            fi
             entries='[]'
             while read -r project version; do
               [ -z "$project" ] && continue
-              # Detect delivery targets here (graph already built for this job)
-              # instead of every deliver matrix job separately installing
-              # Java+Gradle+pnpm solely to run this same lookup.
-              # --silent keeps pnpm's own lockfile/progress chatter off stdout;
-              # without it that text lands in the pipe ahead of the JSON and jq
-              # aborts, skipping deliver while the release tags are already pushed.
-              available=$(pnpm --silent exec nx show project "$project" --json | jq -r '.targets | keys | join(" ")')
-              entry=$(jq -n \
+              if ! targets=$(jq -e --arg project "$project" '.[$project]' <<< "$TARGET_MAP"); then
+                echo "::error::Released project '$project' has no delivery targets in the pre-release map"
+                exit 1
+              fi
+              entry=$(jq -nc \
                 --arg project "$project" \
                 --arg version "$version" \
-                --argjson buildImage "$(case " $available " in *' build-image '*) echo true;; *) echo false;; esac)" \
-                --argjson updateApp "$(case " $available " in *' update-app '*) echo true;; *) echo false;; esac)" \
-                --argjson updateDescription "$(case " $available " in *' update-description '*) echo true;; *) echo false;; esac)" \
-                '{project: $project, version: $version, "build-image": $buildImage, "update-app": $updateApp, "update-description": $updateDescription}')
+                --argjson targets "$targets" \
+                '{project: $project, version: $version} + $targets')
               entries=$(printf '%s\n%s' "$entries" "$entry" | jq -sc 'flatten')
             done <<< "$projects"
+            if [ "$(jq -r 'length' <<< "$entries")" -eq 0 ]; then
+              echo "::error::Tags were pushed but the deliver matrix is empty; those versions would ship with no image"
+              exit 1
+            fi
+            echo "released=true" >> "$GITHUB_OUTPUT"
             matrix="$entries"
           fi
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
@@ -220,7 +269,7 @@ jobs:
 
   deliver:
     needs: release
-    if: ${{ needs.release.outputs.matrix != '[]' }}
+    if: ${{ needs.release.outputs.released == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -298,7 +347,7 @@ jobs:
 
   dispatch-e2e:
     needs: [release, deliver]
-    if: ${{ needs.release.outputs.matrix != '[]' && needs.deliver.result == 'success' }}
+    if: ${{ needs.release.outputs.released == 'true' && needs.deliver.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}

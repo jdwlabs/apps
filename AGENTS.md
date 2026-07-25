@@ -143,7 +143,9 @@ GitHub Actions on `ubuntu-latest` (GitHub-hosted):
 2. PR only: `commitlint` — validates all commit messages in the PR
 3. `nx affected -t lint test` — affected projects
 4. `nx affected -t build` — affected builds
-5. **Main push only:** `nx release` job (version, changelog, tag, GitHub Release), then per-project deliver matrix (Docker image → deployments Helm bump → Docker Hub description), then E2E dispatch.
+5. **Main push only:** the `release` job resolves every project's delivery targets from `nx graph` *first*, then runs `nx release` (version, changelog, tag, GitHub Release) and joins the pushed tags against that map. Downstream: per-project deliver matrix (Docker image → deployments Helm bump → Docker Hub description), then E2E dispatch.
+
+Target resolution deliberately precedes `nx release` because tagging is irreversible and graph resolution is not. Once tags exist, the job must fail rather than produce an empty matrix — a skipped `deliver` reads as benign on the run summary while leaving versions tagged with no image behind them. `deliver` and `dispatch-e2e` gate on the `released` output, so "nothing to release" and "detection broke" are distinguishable.
 
 ## Autonomy Boundaries
 
