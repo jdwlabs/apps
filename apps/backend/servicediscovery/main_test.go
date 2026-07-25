@@ -137,6 +137,32 @@ func TestMicroFrontendsHandler(t *testing.T) {
 	}
 }
 
+// A nil map/slice is what loadConfig leaves behind when the config file is
+// missing or unreadable. Assert on the raw body: decoding null into a map or
+// slice succeeds and yields a zero-length value, so a len() check passes either
+// way and hides the difference from clients that dereference the result.
+func TestRemotesHandlerNilMapEncodesAsEmptyObject(t *testing.T) {
+	config.Remotes = nil
+
+	w := httptest.NewRecorder()
+	remotesHandler(w, httptest.NewRequest(http.MethodGet, "/api/remotes", nil))
+
+	if got := strings.TrimSpace(w.Body.String()); got != "{}" {
+		t.Errorf("remotesHandler with nil map returned %q, want %q", got, "{}")
+	}
+}
+
+func TestMicroFrontendsHandlerNilSliceEncodesAsEmptyArray(t *testing.T) {
+	config.MicroFrontends = nil
+
+	w := httptest.NewRecorder()
+	microFrontendsHandler(w, httptest.NewRequest(http.MethodGet, "/api/micro-frontends", nil))
+
+	if got := strings.TrimSpace(w.Body.String()); got != "[]" {
+		t.Errorf("microFrontendsHandler with nil slice returned %q, want %q", got, "[]")
+	}
+}
+
 func TestVersionHandler(t *testing.T) {
 	// Set up a mock environment with the SD_VERSION variable
 	mockEnv := mockEnvGetter{envs: map[string]string{"SD_VERSION": "1.2.3"}}
