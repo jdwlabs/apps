@@ -1,3 +1,13 @@
+## 2.0.4 (2026-07-25)
+
+### 🩹 Fixes
+
+- **container:** guard shell against unusable remote definitions (JDWLABS-189) ([3a1526bf](https://github.com/jdwlabs/apps/commit/3a1526bf))
+
+### ❤️ Thank You
+
+- Jake Willmsen @jdwillmsen
+
 ## 2.0.3 (2026-07-24)
 
 ### 🧱 Updated Dependencies
