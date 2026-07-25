@@ -61,7 +61,13 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 
 func remotesHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(config.Remotes)
+	remotes := config.Remotes
+	// A nil map/slice marshals to JSON null, which clients cannot distinguish
+	// from a populated response until they dereference it.
+	if remotes == nil {
+		remotes = map[string]string{}
+	}
+	err := json.NewEncoder(w).Encode(remotes)
 	if err != nil {
 		return
 	}
@@ -81,7 +87,11 @@ func versionHandler(envGetter envGetter) http.HandlerFunc {
 
 func microFrontendsHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(config.MicroFrontends)
+	microFrontends := config.MicroFrontends
+	if microFrontends == nil {
+		microFrontends = []MicroFrontend{}
+	}
+	err := json.NewEncoder(w).Encode(microFrontends)
 	if err != nil {
 		http.Error(w, "Unable to fetch micro frontends", http.StatusInternalServerError)
 	}
