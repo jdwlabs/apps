@@ -2,6 +2,7 @@
   @if (isSideNavEnabled) {
     <mat-sidenav
       (openedChange)="openedChanged($event)"
+      [class.rail]="isRail"
       [mode]="sideNavMode"
       [opened]="isSideNavOpened"
       role="navigation"
@@ -13,7 +14,7 @@
             <jdw-navigation-item
               [attr.data-cy]="item.title.toLowerCase() + '-navigation-item'"
               [navigationItem]="item"
-              [isExpanded]="sideNavMode === 'side' ? isExpanded : true"
+              [isExpanded]="!isRail"
             />
           }
         </mat-nav-list>

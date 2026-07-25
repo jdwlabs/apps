@@ -1,29 +1,51 @@
 // Navigation styling from M3 system tokens. The M2 version branched on
 // is-dark to hand-pick light/dark hues; system tokens already resolve per
-// theme, so the branches collapse: tertiary carries the old accent role and
-// the surface-container scale replaces the hard-coded hover backgrounds.
+// theme, so the branches collapse and tertiary carries the old accent role.
+//
+// The active treatment is the M3 pill indicator rather than M2's left border
+// bar: nav list items are shaped with `corner-full` under M3, and a 3px bar
+// down the straight edge of a pill reads as a rendering fault.
+//
+// These rules are global (included via all-themes), which is also what lets
+// them reach `.nav` from the drawer's rail state — the drawer belongs to a
+// different component, and view encapsulation would otherwise block it.
 @mixin theme {
+  // The fill is set directly rather than through
+  // `--mat-list-active-indicator-color`: Material only reads that token under
+  // its own `mdc-list-item--activated` class, and routerLinkActive marks the
+  // current route with a plain `active` class. The pill shape still comes for
+  // free from the nav list's `corner-full` radius.
   .nav {
     .icon {
-      color: var(--mat-sys-on-surface) !important;
-    }
-
-    &.active {
-      border-left: 3px solid var(--mat-sys-tertiary);
-      background-color: color-mix(
-        in srgb,
-        var(--mat-sys-tertiary) 20%,
-        transparent
-      );
-
-      .icon {
-        color: var(--mat-sys-tertiary) !important;
-      }
+      color: var(--mat-sys-on-surface-variant) !important;
     }
 
     &:hover {
       background-color: var(--mat-sys-surface-container-high);
       color: var(--mat-sys-on-surface) !important;
     }
+
+    &.active {
+      background-color: var(--mat-sys-tertiary-container);
+      color: var(--mat-sys-on-tertiary-container) !important;
+
+      .icon {
+        color: var(--mat-sys-on-tertiary-container) !important;
+      }
+    }
+  }
+
+  // Rail state: the item collapses to a pill centred in the rail. The leading
+  // icon keeps Material's default 16px inset in both states, which is what
+  // lands its centre on the same x expanded or collapsed — the icons hold
+  // still while the drawer animates around them.
+  mat-sidenav.rail .nav {
+    width: 56px;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  mat-sidenav:not(.rail) .nav {
+    padding-left: 12px;
   }
 }

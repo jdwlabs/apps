@@ -36,6 +36,11 @@ export class NavigationLayoutComponent {
   @Output() sideNavChange = new EventEmitter<boolean>();
   isExpanded = false;
 
+  /** Icons-only state. Over-mode drawers always show their labels. */
+  get isRail() {
+    return this.sideNavMode === 'side' && !this.isExpanded;
+  }
+
   toggleSideNav() {
     this.isExpanded = !this.isExpanded;
   }

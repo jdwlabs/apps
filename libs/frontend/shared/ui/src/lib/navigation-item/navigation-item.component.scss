@@ -1,18 +1,12 @@
+// Leading-icon spacing comes from the M3 list tokens
+// (`--mat-list-list-item-leading-icon-start-space` / `-end-space`). M2 left
+// those tokens unset, so the gaps were set here instead; under M3 the two
+// stack and every gap doubles. The active state's 13px inset likewise only
+// existed to offset a left border bar the M3 pill indicator replaced.
 .nav {
-  padding-right: 0;
   margin: 0;
-
-  .icon {
-    margin: 0 16px;
-  }
 
   .title {
     margin-right: 16px;
-  }
-
-  &.active {
-    .icon {
-      margin: 0 16px 0 13px;
-    }
   }
 }
