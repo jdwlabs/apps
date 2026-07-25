@@ -3,6 +3,7 @@
 // system's legacy seed colors. Regenerate with the same schematic if seeds
 // change; do not hand-edit tone values.
 @use 'sass:map';
+@use '@angular/material' as mat;
 
 // black-white: seeds primary #000000, secondary #c2c2c2
 $black-white-palettes: (
@@ -160,24 +161,6 @@ $red-teal-palettes: (
     99: #fffbff,
     100: #ffffff,
   ),
-  secondary: (
-    0: #000000,
-    10: #410000,
-    20: #690100,
-    25: #7e0100,
-    30: #930100,
-    35: #a61108,
-    40: #b72114,
-    50: #db3c2a,
-    60: #ff5541,
-    70: #ff8a78,
-    80: #ffb4a8,
-    90: #ffdad4,
-    95: #ffedea,
-    98: #fff8f6,
-    99: #fffbff,
-    100: #ffffff,
-  ),
   tertiary: (
     0: #000000,
     10: #002022,
@@ -194,52 +177,6 @@ $red-teal-palettes: (
     95: #c7faff,
     98: #e9fdff,
     99: #f4feff,
-    100: #ffffff,
-  ),
-  neutral: (
-    0: #000000,
-    10: #2b1613,
-    20: #422a27,
-    25: #4e3531,
-    30: #5b403c,
-    35: #684c47,
-    40: #755753,
-    50: #8f706b,
-    60: #ab8984,
-    70: #c7a39d,
-    80: #e4beb8,
-    90: #ffdad4,
-    95: #ffedea,
-    98: #fff8f6,
-    99: #fffbff,
-    100: #ffffff,
-    4: #1b0907,
-    6: #210e0b,
-    12: #2f1a17,
-    17: #3b2420,
-    22: #472f2b,
-    24: #4c332f,
-    87: #f8d1cb,
-    92: #ffe2dd,
-    94: #ffe9e6,
-    96: #fff0ee,
-  ),
-  neutral-variant: (
-    0: #000000,
-    10: #2e1410,
-    20: #472824,
-    25: #53332e,
-    30: #603e39,
-    35: #6d4a44,
-    40: #7a554f,
-    50: #956d67,
-    60: #b18780,
-    70: #cea199,
-    80: #ebbbb4,
-    90: #ffdad4,
-    95: #ffedea,
-    98: #fff8f6,
-    99: #fffbff,
     100: #ffffff,
   ),
   error: (
@@ -261,10 +198,17 @@ $red-teal-palettes: (
     100: #ffffff,
   ),
 );
+// The schematic derives every role from the seed's own chroma, so a maximally
+// saturated seed (#ff0000) produces brown surfaces and salmon body text where
+// M3 intends near-grey, and a secondary indistinguishable from primary.
+// Material's own red palette sits at the same hue but is generated with the
+// spec's supporting-role chroma (neutral 4, neutral-variant 8, muted
+// secondary), so the supporting roles come from there and only the two brand
+// hues stay local.
 $red-teal-rest: (
-  secondary: map.get($red-teal-palettes, secondary),
-  neutral: map.get($red-teal-palettes, neutral),
-  neutral-variant: map.get($red-teal-palettes, neutral-variant),
+  secondary: map.get(mat.$red-palette, secondary),
+  neutral: map.get(mat.$red-palette, neutral),
+  neutral-variant: map.get(mat.$red-palette, neutral-variant),
   error: map.get($red-teal-palettes, error),
 );
 $red-teal-primary: map.merge(
