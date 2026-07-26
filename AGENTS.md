@@ -54,9 +54,11 @@ pnpm uses hard links for its content-addressable store. Hard links cannot cross 
 git worktree add F:/Dev/worktrees/apps/feat/my-feature -b feat/my-feature
 ```
 
-Set `NX_CACHE_DIRECTORY` (e.g. `F:/Dev/.nx-cache`) so all worktrees share one
-Nx task cache instead of each rebuilding from scratch — see
-[docs/nx-caching.md](docs/nx-caching.md). Never accept an `nx connect` / Nx
+Do **not** set `NX_CACHE_DIRECTORY`. Nx resolves its cache against the main
+worktree root, so every worktree already shares one cache at
+`apps/.nx/cache` — see [docs/nx-caching.md](docs/nx-caching.md). Exporting the
+variable in some shells and not others splits the cache in two and makes
+whichever half you did not use look cold. Never accept an `nx connect` / Nx
 Cloud prompt; this repo is self-hosted-cache only.
 
 If a cross-drive worktree left `node_modules` with only `.pnpm` and no `.bin`, replace it with a junction to the main repo's `node_modules`:
