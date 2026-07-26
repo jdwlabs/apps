@@ -6,37 +6,35 @@ every `nx connect` prompt. Caching is self-hosted at these levels:
 
 | Level                           | Mechanism                                      | Status              |
 | ------------------------------- | ---------------------------------------------- | ------------------- |
-| Per-checkout local cache        | `.nx/cache` (Nx default)                       | Always on           |
-| Shared dev-machine cache        | `NX_CACHE_DIRECTORY` env var                   | Opt-in, recommended |
+| Shared local cache (worktrees)  | `.nx/cache` at the main worktree root          | Always on           |
 | CI cache                        | `actions/cache` on `.nx/cache` (branch-scoped) | Always on in CI     |
 | LAN remote cache (MinIO-backed) | Nx OpenAPI cache server                        | Planned — see below |
 
 ## Shared local cache (dev machines, worktrees)
 
-By default every git worktree gets its own `.nx/cache`, so a fresh worktree
-rebuilds everything the main checkout already built. Point all checkouts on a
-machine at one cache directory instead:
+Worktrees already share one cache. Nx resolves `cacheDir` through
+`getMainWorktreeRoot()`, so a run started from any linked worktree reads and
+writes `<main-checkout>/.nx/cache` rather than a worktree-local copy —
+verified on Nx 23.1 by running in a fresh worktree with no environment
+variables set and watching the main checkout's cache grow.
 
-```powershell
-# Windows — persist as a user environment variable (new shells only)
-setx NX_CACHE_DIRECTORY F:\Dev\.nx-cache
-```
-
-```bash
-# Git Bash / current session
-export NX_CACHE_DIRECTORY=F:/Dev/.nx-cache
-```
+**Do not set `NX_CACHE_DIRECTORY`.** It overrides the above and, because it
+only applies in shells that happen to export it, produces two caches: one at
+the custom path and one at the default. Whichever a given shell does not use
+looks cold, which reads as "worktrees aren't sharing" when in fact the cache
+was simply split. That misdiagnosis is what this section exists to prevent.
 
 Notes:
 
 - Cache entries are keyed by content hash (sources, deps, env inputs), so
   sharing across branches, worktrees, and even repos is collision-safe. A
   stale entry can never be "wrong", only unused.
-- Keep the directory on the same drive as the repos (F:) — cheap hard links,
-  and no cross-volume surprises.
-- `pnpm exec nx reset` clears whatever cache directory is configured.
-- CI does **not** set this variable — CI keeps the default `.nx/cache` path,
-  which the `actions/cache` step in `ci.yml` persists across runs.
+- `pnpm exec nx reset` clears the cache.
+- CI keeps the same default `.nx/cache` path, which the `actions/cache` step
+  in `ci.yml` persists across runs — nothing environment-specific to set.
+- A committed absolute `cacheDirectory` would not survive CI anyway:
+  `path.posix.isAbsolute('F:/Dev/.nx-cache')` is `false`, so a Linux runner
+  resolves it _relative to the workspace_ and caches nothing.
 
 ## CI cache (GitHub-hosted runners)
 
