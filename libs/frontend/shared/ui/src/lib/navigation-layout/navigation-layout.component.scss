@@ -15,23 +15,17 @@ mat-sidenav-container {
     --mat-sidenav-container-width: #{geometry.$expanded-width};
     --mat-sidenav-container-shape: 0;
 
-    // Longhands, not the `transition` shorthand: the shorthand would reset
-    // transition-property and drop Material's own transform transition, which
-    // both animates open/close and fires the transitionend that clears
-    // `mat-drawer-animating`. Transform is re-added only under the class
-    // Material gates it on, so the drawer still does not animate on first
-    // render.
-    transition-property: width;
-    transition-duration: 400ms;
-    transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
+    // The rail resizes instantly and deliberately. Animating the width looks
+    // smoother but breaks two things: MatDrawer's transitionend handler does
+    // not filter on property name, so every width transition end emits
+    // `openedChange` and surfaces as a spurious `sideNavChange`; and
+    // `autosize` samples the drawer roughly every 10ms, so it spends the
+    // animation rewriting the content margin against an intermediate width.
+    // Material's own transform transition for open/close is left untouched.
 
     &.rail {
       --mat-sidenav-container-width: #{geometry.$rail-width};
     }
-  }
-
-  &.mat-drawer-transition mat-sidenav {
-    transition-property: width, transform;
   }
 
   .side-nav-container {
@@ -60,17 +54,5 @@ mat-sidenav-container {
   mat-sidenav.rail .expand {
     align-self: center;
     margin: 4px 0;
-  }
-}
-
-// A near-zero duration rather than `transition: none`, so transitionend still
-// fires and Material's drawer lifecycle still completes. Removing the
-// transition strands `mat-drawer-animating` permanently for these users —
-// Material gates its own reduced-motion path on an injection token, not on
-// this media query, so it cannot compensate.
-@media (prefers-reduced-motion: reduce) {
-  mat-sidenav-container mat-sidenav,
-  mat-sidenav-container.mat-drawer-transition mat-sidenav {
-    transition-duration: 1ms;
   }
 }

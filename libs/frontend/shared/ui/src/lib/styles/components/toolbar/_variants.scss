@@ -25,16 +25,12 @@
     --mat-toolbar-container-background-color: #{$color};
     --mat-toolbar-container-text-color: #{$color-contrast};
 
-    // Buttons do not inherit the bar's text color — each resolves its own
-    // label token, which falls back to the bare primary role and would paint
-    // a brand hue on a container fill. The header's app title is a text
-    // button, so it needs this as much as the bar itself did.
-    --mat-button-text-label-text-color: #{$color-contrast};
-
-    // Icon buttons likewise; their icons then inherit from the button. The
-    // scoping stops here on purpose: setting `--mat-icon-color` would force
-    // every icon in the projected subtree to the bar's contrast role,
-    // including ones carrying their own color variant.
+    // Text and outlined buttons need nothing here: Material's own toolbar
+    // stylesheet already re-points their label tokens at the container text
+    // colour above. Icon buttons are not covered by that rule, and their
+    // icons then inherit from the button — which is why `--mat-icon-color`
+    // is deliberately not set, as it would force every icon in the projected
+    // subtree to the bar's contrast role regardless of its own colour.
     --mat-icon-button-icon-color: #{$color-contrast};
   }
 }
