@@ -24,12 +24,10 @@
 
     &:hover {
       background-color: var(--mat-sys-surface-container-high);
-      color: var(--mat-sys-on-surface) !important;
     }
 
     &.active {
       background-color: var(--mat-sys-tertiary-container);
-      color: var(--mat-sys-on-tertiary-container) !important;
 
       // The label carries its own colour declaration
       // (`.mdc-list-item__primary-text`), which an inherited value cannot beat
@@ -58,20 +56,30 @@
     }
   }
 
-  // The rail item is centred in the rail; the expanded item takes the same
-  // inset so the leading icon's centre does not move between states. Both
-  // values come from the shared geometry partial — see the invariant there.
-  // An explicit inset, not `margin: 0 auto`: the nav list scrolls, and once a
-  // scrollbar appears it shrinks the content box, so auto margins resolve
-  // smaller and shift the icons — breaking the very invariant this geometry
-  // exists to hold.
-  mat-sidenav.rail .nav {
-    width: geometry.$rail-item-width;
-    margin: 0 0 0 geometry.$item-inset;
-    padding: 0;
+  // Both states inset the item by the same amount, which keeps the leading
+  // icon's centre still across the toggle and gives the active pill the same
+  // gutter either way. The inset is a margin, not padding: padding would move
+  // the content while leaving the background box — and so the pill — spanning
+  // the drawer edge to edge.
+  //
+  // A fixed margin rather than `margin: 0 auto`, because the nav list scrolls,
+  // and a scrollbar shrinks the content box that auto margins resolve against.
+  // Both selectors are qualified by the drawer state rather than written as a
+  // bare `.nav` base rule: the item's own encapsulated stylesheet resolves to
+  // an attribute selector, which outweighs an unqualified class here.
+  mat-sidenav:not(.rail) .nav {
+    // Material sets `width: 100%` on list items, which the margins below would
+    // otherwise push past the drawer edge instead of insetting.
+    width: auto;
+    margin-left: geometry.$item-inset;
+    margin-right: geometry.$item-inset;
+    padding-left: 0;
   }
 
-  mat-sidenav:not(.rail) .nav {
-    padding-left: geometry.$item-inset;
+  mat-sidenav.rail .nav {
+    width: geometry.$rail-item-width;
+    margin-left: geometry.$item-inset;
+    margin-right: 0;
+    padding: 0;
   }
 }
