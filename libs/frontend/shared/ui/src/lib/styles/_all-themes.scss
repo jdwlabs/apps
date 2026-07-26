@@ -8,10 +8,24 @@
 // `theming.theme` emits. Material's own component styles need no explicit
 // include under M3 — `mat.theme` covers them via CSS custom properties.
 //
-// $dark is needed by ag-grid, whose balham vs balham-dark selection happens at
-// compile time and cannot key off a runtime CSS variable, and by the toolbar,
-// which picks the role that resolves to the saturated tone in each theme type.
-@mixin all-component-themes($dark: false) {
+// Takes $theme-type rather than a boolean, and takes it without a default, so
+// a theme states its type in the same vocabulary it passes to `theming.theme`
+// and cannot silently fall through to a wrong one. The type is load-bearing
+// for colour, not just for ag-grid's compile-time skin choice: the toolbar
+// picks whichever role resolves to the saturated tone for this type.
+//
+// This mixin must stay at the root, outside the `html` block the theme mixin
+// is applied in, or every component selector below gains an `html` ancestor
+// and the resulting specificity bump changes which rules win.
+@mixin all-component-themes($theme-type) {
+  @if $theme-type != light and $theme-type != dark {
+    @error 'all-component-themes expects light or dark, got #{$theme-type}. ' +
+      'A runtime `color-scheme` theme cannot resolve the compile-time choices ' +
+      'below, so it needs handling here before it can be used.';
+  }
+
+  $dark: $theme-type == dark;
+
   @include button-variants.theme;
   @include toolbar-variants.theme($dark);
   @include ag-grid.theme($dark);

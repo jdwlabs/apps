@@ -4,11 +4,17 @@
 
 // User-customizable theme (dark). See user-custom-light.scss for how the
 // runtime CSS-variable overrides compose with the compiled default seeds.
+
+// The theme type, stated once. The html block configures Material's system
+// tokens from it and the component themes below pick their compile-time
+// variants from the same value, so the two cannot drift apart.
+$theme-type: dark;
+
 html {
   @include theming.theme(
     $primary: custom-palettes.$user-custom-primary,
     $tertiary: custom-palettes.$user-custom-tertiary,
-    $theme-type: dark,
+    $theme-type: $theme-type,
     $success: var(--success-500, #4caf50),
     $on-success: var(--success-contrast-500, white),
     $info: var(--info-500, #2196f3),
@@ -23,6 +29,16 @@ html {
   --mat-sys-on-tertiary: var(--accent-contrast-500, white);
   --mat-sys-error: var(--error-500, #f44336);
   --mat-sys-on-error: var(--error-contrast-500, white);
+
+  // The container roles follow the same runtime variables. There is no
+  // container-tone variable for a user to set, and leaving these on the
+  // compiled seed would strand every surface that fills from a container role
+  // — the header bar and the active nav pill among them — on the default
+  // colours while the buttons beside them track the user's choice.
+  --mat-sys-primary-container: var(--primary-500, #7dcf2a);
+  --mat-sys-on-primary-container: var(--primary-contrast-500, white);
+  --mat-sys-tertiary-container: var(--accent-500, #ed00db);
+  --mat-sys-on-tertiary-container: var(--accent-contrast-500, white);
 }
 
-@include all-themes.all-component-themes($dark: true);
+@include all-themes.all-component-themes($theme-type);

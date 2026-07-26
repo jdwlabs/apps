@@ -5,11 +5,17 @@
 // Custom tonal palettes generated from this theme's original seed colors
 // (#ff0000 red, #00f0ff teal) — no built-in M3 palette matches the pure
 // red/cyan hues faithfully.
+
+// The theme type, stated once. The html block configures Material's system
+// tokens from it and the component themes below pick their compile-time
+// variants from the same value, so the two cannot drift apart.
+$theme-type: dark;
+
 html {
   @include theming.theme(
     $primary: custom-palettes.$red-teal-primary,
     $tertiary: custom-palettes.$red-teal-tertiary,
-    $theme-type: dark,
+    $theme-type: $theme-type,
     $success: #1b5e20,
     $on-success: white,
     $info: #0d47a1,
@@ -19,4 +25,4 @@ html {
   );
 }
 
-@include all-themes.all-component-themes($dark: true);
+@include all-themes.all-component-themes($theme-type);

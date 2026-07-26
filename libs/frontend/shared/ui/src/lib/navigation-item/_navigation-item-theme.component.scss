@@ -31,6 +31,15 @@
       background-color: var(--mat-sys-tertiary-container);
       color: var(--mat-sys-on-tertiary-container) !important;
 
+      // The label carries its own colour declaration
+      // (`.mdc-list-item__primary-text`), which an inherited value cannot beat
+      // however important it is, so it needs the token rather than `color`.
+      // Without this the pill renders a contrast-coloured icon beside an
+      // on-surface label.
+      --mat-list-list-item-label-text-color: var(
+        --mat-sys-on-tertiary-container
+      );
+
       .icon {
         color: var(--mat-sys-on-tertiary-container) !important;
       }

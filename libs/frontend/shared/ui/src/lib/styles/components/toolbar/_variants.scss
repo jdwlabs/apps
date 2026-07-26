@@ -10,8 +10,13 @@
 // `primary` is tone 40 (indigo-pink: #005cbb) and `primary-container` tone 90
 // (#d7e3ff), a pale wash. Both branches therefore aim at the saturated tone.
 @mixin theme($dark: false) {
-  $primary: if($dark, primary-container, primary);
-  $accent: if($dark, tertiary-container, tertiary);
+  $primary: primary;
+  $accent: tertiary;
+
+  @if $dark {
+    $primary: primary-container;
+    $accent: tertiary-container;
+  }
 
   @include _variant(
     'primary',
@@ -32,11 +37,14 @@
     --mat-toolbar-container-text-color: #{$color-contrast};
 
     // Text and outlined buttons need nothing here: Material's own toolbar
-    // stylesheet already re-points their label tokens at the container text
-    // colour above. Icon buttons are not covered by that rule, and their
-    // icons then inherit from the button — which is why `--mat-icon-color`
-    // is deliberately not set, as it would force every icon in the projected
-    // subtree to the bar's contrast role regardless of its own colour.
+    // stylesheet re-points their label tokens at the container text colour
+    // above. That rule only covers `.mat-unthemed` buttons, which is every
+    // button the header itself projects; one carrying an explicit colour
+    // keeps that colour, which is the sensible reading of an explicit choice.
+    // Icon buttons are not covered by it at all, and their icons inherit from
+    // the button — which is why `--mat-icon-color` is deliberately not set,
+    // as it would force every icon in the projected subtree to the bar's
+    // contrast role regardless of its own colour.
     --mat-icon-button-icon-color: #{$color-contrast};
   }
 }
