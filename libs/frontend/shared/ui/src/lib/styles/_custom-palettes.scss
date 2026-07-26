@@ -2,6 +2,10 @@
 // schematic (Material color utilities — HCT tonal mapping) from this design
 // system's legacy seed colors. Regenerate with the same schematic if seeds
 // change; do not hand-edit tone values.
+//
+// One exception, which a regeneration must preserve: red-teal's supporting
+// roles do not come from the schematic. See $red-teal-rest below — taking the
+// schematic's output there reintroduces brown surfaces and salmon body text.
 @use 'sass:map';
 @use '@angular/material' as mat;
 
