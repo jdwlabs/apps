@@ -1,3 +1,13 @@
+## 1.0.3 (2026-07-26)
+
+### 🩹 Fixes
+
+- **container:** survive unusable micro-frontend route payloads ([1ff494f7](https://github.com/jdwlabs/apps/commit/1ff494f7))
+
+### ❤️ Thank You
+
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.2 (2026-07-24)
 
 This was a version bump only for servicediscovery to align it with other projects, there were no code changes.
