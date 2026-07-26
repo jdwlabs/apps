@@ -1,0 +1,16 @@
+// Rail geometry, shared by the drawer (navigation-layout) and the nav items
+// (navigation-item theme partial). The two must agree or the icons jump when
+// the rail expands, and they live in different stylesheets because view
+// encapsulation keeps the layout out of the items.
+//
+// The invariant: a collapsed item is centred in the rail, so its inset is
+// (rail - item) / 2. Give the expanded item that same inset and both states
+// place the leading icon's centre identically — at inset + the list's 16px
+// leading-icon-start-space + half a 24px icon. Deriving $item-inset keeps that
+// true by construction rather than by three literals happening to agree.
+@use 'sass:math';
+
+$rail-width: 80px;
+$expanded-width: 240px;
+$rail-item-width: 56px;
+$item-inset: math.div($rail-width - $rail-item-width, 2);
