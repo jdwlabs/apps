@@ -25,9 +25,16 @@
     --mat-toolbar-container-background-color: #{$color};
     --mat-toolbar-container-text-color: #{$color-contrast};
 
-    // Projected icon buttons inherit the bar's contrast color; without this
-    // they fall back to the page-level on-surface role and disappear.
+    // Buttons do not inherit the bar's text color — each resolves its own
+    // label token, which falls back to the bare primary role and would paint
+    // a brand hue on a container fill. The header's app title is a text
+    // button, so it needs this as much as the bar itself did.
+    --mat-button-text-label-text-color: #{$color-contrast};
+
+    // Icon buttons likewise; their icons then inherit from the button. The
+    // scoping stops here on purpose: setting `--mat-icon-color` would force
+    // every icon in the projected subtree to the bar's contrast role,
+    // including ones carrying their own color variant.
     --mat-icon-button-icon-color: #{$color-contrast};
-    --mat-icon-color: #{$color-contrast};
   }
 }
