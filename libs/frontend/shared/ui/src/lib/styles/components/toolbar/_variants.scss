@@ -3,19 +3,25 @@
 // `mat-<color>` class, so the variants are rebuilt against the toolbar's own
 // container tokens.
 //
-// The fill comes from the *container* roles rather than the bare
-// primary/tertiary roles: in a dark theme those resolve to tone 80, a pale
-// tint that reads as a disabled bar rather than a branded one.
-@mixin theme {
+// Which role carries the fill flips with the theme type, because the tone the
+// roles resolve to flips. A dark theme's `primary` is tone 80 (red-teal:
+// #ffb4a8) and reads as a disabled bar, while its `primary-container` is tone
+// 30 (#930100) and reads as branded. A light theme is the other way round —
+// `primary` is tone 40 (indigo-pink: #005cbb) and `primary-container` tone 90
+// (#d7e3ff), a pale wash. Both branches therefore aim at the saturated tone.
+@mixin theme($dark: false) {
+  $primary: if($dark, primary-container, primary);
+  $accent: if($dark, tertiary-container, tertiary);
+
   @include _variant(
     'primary',
-    var(--mat-sys-primary-container),
-    var(--mat-sys-on-primary-container)
+    var(--mat-sys-#{$primary}),
+    var(--mat-sys-on-#{$primary})
   );
   @include _variant(
     'accent',
-    var(--mat-sys-tertiary-container),
-    var(--mat-sys-on-tertiary-container)
+    var(--mat-sys-#{$accent}),
+    var(--mat-sys-on-#{$accent})
   );
   @include _variant('warn', var(--jdw-sys-warn), var(--jdw-sys-on-warn));
 }

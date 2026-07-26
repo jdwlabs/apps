@@ -8,11 +8,12 @@
 // `theming.theme` emits. Material's own component styles need no explicit
 // include under M3 — `mat.theme` covers them via CSS custom properties.
 //
-// $dark is only needed by ag-grid: its balham vs balham-dark selection
-// happens at compile time and cannot key off a runtime CSS variable.
+// $dark is needed by ag-grid, whose balham vs balham-dark selection happens at
+// compile time and cannot key off a runtime CSS variable, and by the toolbar,
+// which picks the role that resolves to the saturated tone in each theme type.
 @mixin all-component-themes($dark: false) {
   @include button-variants.theme;
-  @include toolbar-variants.theme;
+  @include toolbar-variants.theme($dark);
   @include ag-grid.theme($dark);
   @include navigation-item.theme;
   @include snackbar.theme;
