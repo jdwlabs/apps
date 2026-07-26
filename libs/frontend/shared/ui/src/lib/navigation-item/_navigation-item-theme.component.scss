@@ -52,9 +52,13 @@
   // The rail item is centred in the rail; the expanded item takes the same
   // inset so the leading icon's centre does not move between states. Both
   // values come from the shared geometry partial — see the invariant there.
+  // An explicit inset, not `margin: 0 auto`: the nav list scrolls, and once a
+  // scrollbar appears it shrinks the content box, so auto margins resolve
+  // smaller and shift the icons — breaking the very invariant this geometry
+  // exists to hold.
   mat-sidenav.rail .nav {
     width: geometry.$rail-item-width;
-    margin: 0 auto;
+    margin: 0 0 0 geometry.$item-inset;
     padding: 0;
   }
 
