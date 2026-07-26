@@ -39,6 +39,7 @@ libs/frontend/shared/ui/
 │   ├── themes/                        # Predefined theme files
 │   ├── components/                    # SCSS for individual UI elements
 │   ├── _custom-palettes.scss          # Generated M3 tonal palettes (schematic output)
+│   ├── _nav-geometry.scss             # Shared rail/drawer widths (see invariant within)
 │   └── _theming.scss                  # Theme mixin (mat.theme + extra semantic roles)
 ├── jest.config.ts
 ├── ng-package.json
@@ -119,6 +120,15 @@ system tokens at runtime CSS variables (`--primary-500`, `--accent-500`,
 Custom tonal palettes (black-white, red-teal, user-custom defaults) are
 generated with `ng generate @angular/material:theme-color` from the original
 seed colors — see `styles/_custom-palettes.scss`.
+
+One exception: red-teal's supporting roles (secondary, neutral,
+neutral-variant) come from Angular's own `mat.$red-palette` rather than the
+schematic. The schematic derives neutrals from the seed's chroma, and
+red-teal's seed is fully saturated, so its generated neutrals tint every
+surface brown and every body text salmon. `mat.$red-palette` sits at the same
+hue but is generated at the M3 spec's supporting-role chroma. Regenerating
+red-teal must keep that substitution — only its primary and tertiary ramps
+are schematic output.
 
 ---
 
