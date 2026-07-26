@@ -35,10 +35,10 @@ html {
   // compiled seed would strand every surface that fills from a container role
   // — the header bar and the active nav pill among them — on the default
   // colours while the buttons beside them track the user's choice.
-  --mat-sys-primary-container: var(--primary-500, #7dcf2a);
-  --mat-sys-on-primary-container: var(--primary-contrast-500, white);
-  --mat-sys-tertiary-container: var(--accent-500, #ed00db);
-  --mat-sys-on-tertiary-container: var(--accent-contrast-500, white);
+  --mat-sys-primary-container: var(--mat-sys-primary);
+  --mat-sys-on-primary-container: var(--mat-sys-on-primary);
+  --mat-sys-tertiary-container: var(--mat-sys-tertiary);
+  --mat-sys-on-tertiary-container: var(--mat-sys-on-tertiary);
 }
 
 @include all-themes.all-component-themes($theme-type);
