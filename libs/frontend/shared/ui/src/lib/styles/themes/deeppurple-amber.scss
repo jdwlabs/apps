@@ -5,12 +5,18 @@
 // M2 deep-purple/amber mapped to the closest M3 hue families: violet and
 // orange (amber sits between M3 orange and yellow; orange is the closer
 // visual match).
+
+// The theme type, stated once. The html block configures Material's system
+// tokens from it and the component themes below pick their compile-time
+// variants from the same value, so the two cannot drift apart.
+$theme-type: light;
+
 html {
   @include theming.theme(
     $primary: mat.$violet-palette,
     $tertiary: mat.$orange-palette,
-    $theme-type: light
+    $theme-type: $theme-type
   );
 }
 
-@include all-themes.all-component-themes($dark: false);
+@include all-themes.all-component-themes($theme-type);

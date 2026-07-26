@@ -4,12 +4,18 @@
 
 // M2 purple/green mapped to the closest M3 hue families: magenta (purple)
 // and spring-green (green A200's mint hue).
+
+// The theme type, stated once. The html block configures Material's system
+// tokens from it and the component themes below pick their compile-time
+// variants from the same value, so the two cannot drift apart.
+$theme-type: dark;
+
 html {
   @include theming.theme(
     $primary: mat.$magenta-palette,
     $tertiary: mat.$spring-green-palette,
-    $theme-type: dark
+    $theme-type: $theme-type
   );
 }
 
-@include all-themes.all-component-themes($dark: true);
+@include all-themes.all-component-themes($theme-type);
