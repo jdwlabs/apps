@@ -4,10 +4,17 @@ import { NavigationItem } from '@jdw/frontend-shared-util';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'jdw-navigation-item',
-  imports: [MatIconModule, MatListModule, RouterLinkActive, RouterLink],
+  imports: [
+    MatIconModule,
+    MatListModule,
+    MatTooltipModule,
+    RouterLinkActive,
+    RouterLink,
+  ],
   templateUrl: './navigation-item.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './navigation-item.component.scss',

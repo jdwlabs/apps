@@ -1,3 +1,5 @@
+@use '../styles/nav-geometry' as geometry;
+
 // Navigation styling from M3 system tokens. The M2 version branched on
 // is-dark to hand-pick light/dark hues; system tokens already resolve per
 // theme, so the branches collapse and tertiary carries the old accent role.
@@ -33,19 +35,30 @@
         color: var(--mat-sys-on-tertiary-container) !important;
       }
     }
+
+    // `.active` and `:hover` carry equal specificity and `.active` is emitted
+    // last, so without this the current item has no hover affordance at all.
+    // Blending keeps the pill's identity instead of swapping it for the plain
+    // hover surface.
+    &.active:hover {
+      background-color: color-mix(
+        in srgb,
+        var(--mat-sys-on-tertiary-container) 12%,
+        var(--mat-sys-tertiary-container)
+      );
+    }
   }
 
-  // Rail state: the item collapses to a pill centred in the rail. The leading
-  // icon keeps Material's default 16px inset in both states, which is what
-  // lands its centre on the same x expanded or collapsed — the icons hold
-  // still while the drawer animates around them.
+  // The rail item is centred in the rail; the expanded item takes the same
+  // inset so the leading icon's centre does not move between states. Both
+  // values come from the shared geometry partial — see the invariant there.
   mat-sidenav.rail .nav {
-    width: 56px;
+    width: geometry.$rail-item-width;
     margin: 0 auto;
     padding: 0;
   }
 
   mat-sidenav:not(.rail) .nav {
-    padding-left: 12px;
+    padding-left: geometry.$item-inset;
   }
 }

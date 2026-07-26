@@ -2,6 +2,9 @@
   mat-list-item
   [routerLink]="navigationItem.path"
   [routerLinkActive]="['active']"
+  [attr.aria-label]="navigationItem.title"
+  [matTooltip]="isExpanded ? '' : navigationItem.title"
+  matTooltipPosition="right"
   role="navigation"
   class="nav"
   data-cy="navigation-link"

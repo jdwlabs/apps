@@ -1,12 +1,10 @@
-// Leading-icon spacing comes from the M3 list tokens
-// (`--mat-list-list-item-leading-icon-start-space` / `-end-space`). M2 left
-// those tokens unset, so the gaps were set here instead; under M3 the two
-// stack and every gap doubles. The active state's 13px inset likewise only
-// existed to offset a left border bar the M3 pill indicator replaced.
+// Item spacing comes from the M3 list tokens and Material's own item padding:
+// `--mat-list-list-item-leading-icon-start-space` / `-end-space` for the icon,
+// and a 16px padding on each side of an item that has a leading icon. M2 left
+// those unset, so the gaps were declared here instead; under M3 the two stack
+// and the inset doubles on whichever side still declares its own. The active
+// state's 13px offset likewise only existed to compensate for a left border
+// bar that the M3 pill indicator replaced.
 .nav {
   margin: 0;
-
-  .title {
-    margin-right: 16px;
-  }
 }

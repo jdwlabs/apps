@@ -1,3 +1,5 @@
+@use '../styles/nav-geometry' as geometry;
+
 // Material 3 gives the drawer a fixed 360px width and a large rounded outer
 // edge, both of which assume a floating modal drawer. This one is a permanent
 // full-height rail docked to the viewport edge, so the two states carry
@@ -6,25 +8,30 @@
 // The container keeps `autosize` even though the widths are no longer derived
 // from content: it is what re-measures the drawer and re-offsets the content
 // margin when the rail expands. Without it the drawer widens over the page.
-//
-// Item-level spacing that pairs with these widths lives in the global
-// navigation-item theme partial — the items belong to a child component and
-// are out of reach of this stylesheet's view encapsulation.
-$rail-width: 80px;
-$expanded-width: 240px;
-
 mat-sidenav-container {
   height: calc(100vh - var(--header-height, 52px));
 
   mat-sidenav {
-    --mat-sidenav-container-width: #{$expanded-width};
+    --mat-sidenav-container-width: #{geometry.$expanded-width};
     --mat-sidenav-container-shape: 0;
 
-    transition: width 400ms cubic-bezier(0.25, 0.8, 0.25, 1);
+    // Longhands, not the `transition` shorthand: the shorthand would reset
+    // transition-property and drop Material's own transform transition, which
+    // both animates open/close and fires the transitionend that clears
+    // `mat-drawer-animating`. Transform is re-added only under the class
+    // Material gates it on, so the drawer still does not animate on first
+    // render.
+    transition-property: width;
+    transition-duration: 400ms;
+    transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
 
     &.rail {
-      --mat-sidenav-container-width: #{$rail-width};
+      --mat-sidenav-container-width: #{geometry.$rail-width};
     }
+  }
+
+  &.mat-drawer-transition mat-sidenav {
+    transition-property: width, transform;
   }
 
   .side-nav-container {
@@ -47,7 +54,7 @@ mat-sidenav-container {
 
   .expand {
     align-self: flex-end;
-    margin: 4px 12px;
+    margin: 4px geometry.$item-inset;
   }
 
   mat-sidenav.rail .expand {
@@ -56,8 +63,14 @@ mat-sidenav-container {
   }
 }
 
+// A near-zero duration rather than `transition: none`, so transitionend still
+// fires and Material's drawer lifecycle still completes. Removing the
+// transition strands `mat-drawer-animating` permanently for these users —
+// Material gates its own reduced-motion path on an injection token, not on
+// this media query, so it cannot compensate.
 @media (prefers-reduced-motion: reduce) {
-  mat-sidenav-container mat-sidenav {
-    transition: none;
+  mat-sidenav-container mat-sidenav,
+  mat-sidenav-container.mat-drawer-transition mat-sidenav {
+    transition-duration: 1ms;
   }
 }
