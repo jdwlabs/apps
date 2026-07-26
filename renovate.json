@@ -6,5 +6,15 @@
     "The packageManager field (pnpm) is updated by the npm manager; Nx and Angular packages are grouped via the monorepo presets that config:recommended pulls in."
   ],
   "extends": ["github>jdwlabs/.github"],
-  "postUpdateOptions": ["gomodTidy", "pnpmDedupe"]
+  "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
+  "packageRules": [
+    {
+      "description": [
+        "The @jdw/* libraries are private workspace packages, versioned in-repo by nx release and never published to any registry.",
+        "libs/frontend/shared/ui declares @jdw/frontend-shared-util as a pinned peerDependency, so Renovate resolves it against npm, fails, and reports a repository problem on the dependency dashboard."
+      ],
+      "matchPackageNames": ["@jdw/**"],
+      "enabled": false
+    }
+  ]
 }
