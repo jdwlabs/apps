@@ -1,3 +1,22 @@
+## 1.1.2 (2026-07-27)
+
+### 🩹 Fixes
+
+- **frontend-shared-ui:** inset the expanded pill and drop dead declarations ([ebb61eb6](https://github.com/jdwlabs/apps/commit/ebb61eb6))
+- **frontend-shared-ui:** track runtime colours and colour the active label ([ab1bda99](https://github.com/jdwlabs/apps/commit/ab1bda99))
+- **frontend-shared-ui:** pick the toolbar fill per theme type, pin rail inset ([#930100](https://github.com/jdwlabs/apps/issues/930100), [#005](https://github.com/jdwlabs/apps/issues/005))
+- **frontend-shared-ui:** drop the rail width animation and name links correctly ([4f801a14](https://github.com/jdwlabs/apps/commit/4f801a14))
+- **frontend-shared-ui:** scope toolbar contrast tokens to the buttons ([95e04d00](https://github.com/jdwlabs/apps/commit/95e04d00))
+- **frontend-shared-ui:** keep material's drawer lifecycle and centre the rail ([fa5af139](https://github.com/jdwlabs/apps/commit/fa5af139))
+- **frontend-shared-ui:** rebuild nav rail geometry for the m3 drawer ([f13f5b7a](https://github.com/jdwlabs/apps/commit/f13f5b7a))
+- **frontend-shared-ui:** restore toolbar color variants under m3 ([59e171d8](https://github.com/jdwlabs/apps/commit/59e171d8))
+- **frontend-shared-ui:** de-tint red-teal surfaces under m3 ([#210](https://github.com/jdwlabs/apps/issues/210), [#181211](https://github.com/jdwlabs/apps/issues/181211))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.1 (2026-07-24)
 
 ### 🧱 Updated Dependencies

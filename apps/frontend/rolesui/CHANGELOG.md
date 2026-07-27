@@ -1,3 +1,7 @@
+## 1.0.4 (2026-07-27)
+
+This was a version bump only for rolesui to align it with other projects, there were no code changes.
+
 ## 1.0.3 (2026-07-24)
 
 ### 🧱 Updated Dependencies

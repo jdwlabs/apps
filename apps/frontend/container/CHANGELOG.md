@@ -1,3 +1,7 @@
+## 2.0.6 (2026-07-27)
+
+This was a version bump only for container to align it with other projects, there were no code changes.
+
 ## 2.0.5 (2026-07-26)
 
 This was a version bump only for container to align it with other projects, there were no code changes.
