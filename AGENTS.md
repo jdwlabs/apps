@@ -127,6 +127,21 @@ Use `pnpm run commit` for the interactive Commitizen prompt.
 - Go packages: lowercase single-word names, follow standard Go layout
 - Never put a Jira ticket ID (`JDWLABS-*`) or PR/issue number in a code comment — traceability lives in the commit message and PR description, not in source that outlives the ticket
 
+## Tooling Traps
+
+| Symptom                                                                                                  | Cause                                                                                                                                                                                 | Fix                                                                                                         |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `rtk go build -o <path>` reports `Go build: Success` with no binary written, or swallows a non-zero exit | Same RTK success-line bug as any Go build; inside a git worktree, `go build` additionally fails VCS stamping (`error obtaining VCS status: exit status 128`) that RTK doesn't surface | `rtk proxy go build ...` for the real exit code/output; add `-buildvcs=false` when building from a worktree |
+| `gh pr edit` fails on every PR in this org                                                               | The GraphQL mutation it uses needs the `read:org` scope; the active `GITHUB_TOKEN` (`ghp_...`) lacks it                                                                               | `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> --input payload.json`                                       |
+
+## Verify Before You Start
+
+Ticket evidence more than ~a week old (or gathered in a different investigation) is a hypothesis, not ground truth. Before acting on it:
+
+- Re-confirm the ticket's premises against live state — don't build on a stale finding
+- State the scope you searched before claiming something is absent ("checked all N projects", "every affected target") — one sample is not the whole set
+- A disproved premise is a valuable result: record it on the ticket, don't quietly work around it
+
 ## Versioning / Release
 
 Versioning is managed by `nx release` (config in `nx.json` under `release`). Independent
