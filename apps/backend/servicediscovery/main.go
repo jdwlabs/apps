@@ -104,7 +104,7 @@ func initServer(envGetter envGetter) *http.Server {
 
 	return &http.Server{
 		Addr:    ":" + port,
-		Handler: util.Logging(cors.Default().Handler(router)),
+		Handler: traced(util.Logging(cors.Default().Handler(router))),
 	}
 }
 
@@ -130,15 +130,24 @@ func loadConfig(envGetter envGetter) {
 }
 
 func registerRoutes(router *http.ServeMux, envGetter envGetter) {
-	router.HandleFunc("GET /", rootHandler)
-	router.HandleFunc("GET /health", healthHandler)
-	router.HandleFunc("GET /version", versionHandler(envGetter))
-	router.HandleFunc("GET /api/remotes", remotesHandler)
-	router.HandleFunc("GET /api/micro-frontends", microFrontendsHandler)
+	router.HandleFunc("GET /", tracedRoute("GET /", rootHandler))
+	router.HandleFunc("GET /health", tracedRoute("GET /health", healthHandler))
+	router.HandleFunc("GET /version", tracedRoute("GET /version", versionHandler(envGetter)))
+	router.HandleFunc("GET /api/remotes", tracedRoute("GET /api/remotes", remotesHandler))
+	router.HandleFunc("GET /api/micro-frontends", tracedRoute("GET /api/micro-frontends", microFrontendsHandler))
 }
 
 func main() {
 	loadConfig(realEnv{})
+
+	// Fail open: a missing or broken collector is an observability problem, and
+	// must not stop the service from serving traffic.
+	shutdownTracing, err := initTracing(context.Background(), realEnv{})
+	if err != nil {
+		log.Printf("Tracing disabled: %+v", err)
+		shutdownTracing = noopShutdown
+	}
+
 	server := initServer(realEnv{})
 
 	go func() {
@@ -158,6 +167,12 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatalf("Server shutdown failed: %+v", err)
+	}
+
+	// After the server stops, so spans from in-flight requests are batched
+	// before the exporter is torn down.
+	if err := shutdownTracing(ctx); err != nil {
+		log.Printf("Tracing shutdown failed: %+v", err)
 	}
 	slog.Info("Server shutdown successfully")
 }
