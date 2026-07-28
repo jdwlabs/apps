@@ -1,0 +1,36 @@
+#!/bin/bash
+# Test double for the gh CLI. Records every invocation and replays canned
+# responses so update-app.sh can be exercised with no network and no token.
+set -euo pipefail
+
+printf '%s\n' "$*" >> "${FAKE_GH_DIR}/calls.log"
+
+# Fail exactly one named call so error paths are reachable from the tests.
+if [ -n "${FAKE_GH_FAIL:-}" ] && [[ "$*" == *"${FAKE_GH_FAIL}"* ]]; then
+  echo "fake-gh: forced failure for ${FAKE_GH_FAIL}" >&2
+  exit 1
+fi
+
+appversion=$(cat "${FAKE_GH_DIR}/appversion")
+
+case "$*" in
+  *"git/ref/heads/main"*)
+    printf '%s' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ;;
+  *"git/ref/heads/chore/"*)
+    # Branch does not exist yet unless the test says otherwise.
+    [ -f "${FAKE_GH_DIR}/branch-exists" ] || exit 1
+    printf '%s' "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ;;
+  *"contents/"*"?ref="*)
+    printf 'apiVersion: v2\nname: demo\nversion: 0.1.0\nappVersion: "%s"\n' "${appversion}" \
+      | base64 -w0 \
+      | { read -r encoded; printf '{"sha":"cccccccccccccccccccccccccccccccccccccccc","content":"%s"}' "${encoded}"; }
+    ;;
+  *"pr list"*)
+    if [ -f "${FAKE_GH_DIR}/pr-open" ]; then printf '1\n'; else printf '0\n'; fi
+    ;;
+  *)
+    printf '{}'
+    ;;
+esac
