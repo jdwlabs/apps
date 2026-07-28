@@ -1,12 +1,13 @@
 <div class="dashboard-container">
   <h1 data-cy="title">Users Dashboard</h1>
   <div class="tiles" data-cy="tiles">
-    @for (tile of navigationTiles; track tile) {
+    @for (tile of navigationTiles; track tile.link) {
       <jdw-navigation-tile
         [attr.data-cy]="tile.title.toLowerCase() + '-tile'"
         [title]="tile.title"
         [description]="tile.description"
         [link]="tile.link"
+        [icon]="tile.icon ?? ''"
         class="tile"
       />
     }
