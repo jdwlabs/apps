@@ -1,14 +1,39 @@
 <div class="dashboard-container">
   <h1 data-cy="title">Apps</h1>
-  <div class="tiles" data-cy="tiles">
-    @for (tile of navigationTiles; track tile) {
-      <jdw-navigation-tile
-        [attr.data-cy]="tile.title.toLowerCase() + '-tile'"
-        [title]="tile.title"
-        [description]="tile.description"
-        [link]="tile.link"
-        class="tile"
-      />
-    }
-  </div>
+  @if (isLoading) {
+    <div class="tiles" data-cy="tiles-loading" aria-busy="true">
+      @for (skeleton of skeletons; track skeleton) {
+        <div class="skeleton" aria-hidden="true">
+          <div class="skeleton-header">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-line skeleton-line-title"></div>
+          </div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line skeleton-line-short"></div>
+        </div>
+      }
+    </div>
+  } @else if (!navigationTiles.length) {
+    <div class="empty" data-cy="tiles-empty">
+      <mat-icon class="empty-icon" aria-hidden="true">grid_off</mat-icon>
+      <p class="empty-title">No applications available</p>
+      <p class="empty-body">
+        Service discovery returned no micro-frontends. Check that it is
+        reachable and that its configuration lists at least one entry.
+      </p>
+    </div>
+  } @else {
+    <div class="tiles" data-cy="tiles">
+      @for (tile of navigationTiles; track tile.link) {
+        <jdw-navigation-tile
+          [attr.data-cy]="tile.title.toLowerCase() + '-tile'"
+          [title]="tile.title"
+          [description]="tile.description"
+          [link]="tile.link"
+          [icon]="tile.icon ?? ''"
+          class="tile"
+        />
+      }
+    </div>
+  }
 </div>
