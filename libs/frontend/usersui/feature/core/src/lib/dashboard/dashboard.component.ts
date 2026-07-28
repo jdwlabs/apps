@@ -20,21 +20,25 @@ export class DashboardComponent {
       title: 'Users',
       link: './users',
       description: 'This is a page for viewing all the users',
+      icon: 'groups',
     },
     {
       title: 'Profiles',
       link: './profiles',
       description: 'This is a page for viewing all the profiles',
+      icon: 'badge',
     },
     {
       title: 'Current User',
       link: './user/' + this.getCurrentUserId(),
       description: 'This is a page for viewing the current logged in user',
+      icon: 'account_circle',
     },
     {
       title: 'Add User',
       link: './account',
       description: 'This is a page for adding a new user account',
+      icon: 'person_add',
     },
   ];
 

@@ -1,0 +1,26 @@
+/// Page layout shared by the container, roles and users dashboards. The three
+/// used to carry byte-identical copies of these rules, which is how they drifted
+/// apart from the tile component they lay out.
+///
+/// Apps put this directory on the sass load path through
+/// `stylePreprocessorOptions.includePaths` in their `project.json`, so component
+/// stylesheets reach it as `@use 'dashboard'`.
+///
+/// The grid is `auto-fill` rather than the previous `flex-wrap` row of
+/// fixed-width tiles: tiles then share the row evenly at any viewport instead of
+/// leaving a ragged gap on the right.
+@mixin layout($min-tile-width: 240px) {
+  padding: 24px;
+
+  h1 {
+    margin: 0 0 16px;
+    font: var(--mat-sys-headline-small);
+    color: var(--mat-sys-on-surface);
+  }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax($min-tile-width, 1fr));
+    gap: 16px;
+  }
+}

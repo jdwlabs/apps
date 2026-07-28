@@ -16,21 +16,25 @@ export class DashboardComponent {
       title: 'Roles',
       link: './roles',
       description: 'This is a page for viewing all the roles',
+      icon: 'lock',
     },
     {
       title: 'Add Role',
       link: './role',
       description: 'This is a page for adding a new role',
+      icon: 'add_moderator',
     },
     {
       title: 'Assign Roles',
       link: './assign/roles',
       description: 'This is a page for assigning roles to a user',
+      icon: 'assignment_ind',
     },
     {
       title: 'Assign Users',
       link: './assign/users',
       description: 'This is a page for assigning users to a role',
+      icon: 'group_add',
     },
   ];
 }
