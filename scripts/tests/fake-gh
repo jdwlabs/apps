@@ -23,9 +23,10 @@ case "$*" in
     printf '%s' "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     ;;
   *"contents/"*"?ref="*)
-    printf 'apiVersion: v2\nname: demo\nversion: 0.1.0\nappVersion: "%s"\n' "${appversion}" \
-      | base64 -w0 \
-      | { read -r encoded; printf '{"sha":"cccccccccccccccccccccccccccccccccccccccc","content":"%s"}' "${encoded}"; }
+    # base64 -w0 emits no trailing newline, so this must not be consumed by
+    # `read`, which would report EOF and trip set -e before the response is written.
+    encoded=$(printf 'apiVersion: v2\nname: demo\nversion: 0.1.0\nappVersion: "%s"\n' "${appversion}" | base64 -w0)
+    printf '{"sha":"cccccccccccccccccccccccccccccccccccccccc","content":"%s"}' "${encoded}"
     ;;
   *"pr list"*)
     if [ -f "${FAKE_GH_DIR}/pr-open" ]; then printf '1\n'; else printf '0\n'; fi

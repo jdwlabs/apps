@@ -1,25 +1,30 @@
 #!/bin/bash
 
 # Script: update-app.sh
-# Description: Bumps a Helm chart's appVersion in a deployment repo and pushes the change.
+# Description: Opens an auto-merging pull request that bumps a Helm chart's appVersion
+#              in the deployments repo.
 # Usage: update-app.sh <chart_file_path> <version_number> <project_name>
 #
 # Auth (one of):
 #   GH_APP_ID + GH_APP_PRIVATE_KEY  GitHub App credentials. A fresh installation
-#                      token scoped to the target repo (contents:write) is minted
-#                      at push time — preferred in CI, never expires mid-run.
+#                      token scoped to the target repo (contents:write,
+#                      pull_requests:write) is minted at push time — preferred in
+#                      CI, never expires mid-run.
 #   DEPLOYMENTS_TOKEN  A pre-minted token with write access (escape hatch for
 #                      local/manual runs). Takes precedence if set.
 # Optional env:
 #   DEPLOYMENTS_REPO   Target repo slug.  Default: jdwlabs/deployments
 #   DEPLOYMENTS_HOST   Git host.          Default: github.com
+#
+# Requires gh and jq. Every mutation goes through the API rather than a clone:
+# the commit is then minted server-side under the App's own identity, and the
+# branch/PR path leaves an audit trail that a direct push does not.
 
 set -euo pipefail
 
 deployments_repo="${DEPLOYMENTS_REPO:-jdwlabs/deployments}"
 deployments_host="${DEPLOYMENTS_HOST:-github.com}"
 api_url="${GITHUB_API_URL:-https://api.${deployments_host}}"
-git_repository="https://${deployments_host}/${deployments_repo}.git"
 
 base64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 
@@ -45,11 +50,114 @@ mint_installation_token() {
   repo_name="${repo#*/}"
   token=$(curl -sf -X POST -H "Authorization: Bearer ${jwt}" -H "Accept: application/vnd.github+json" \
     "${api_url}/app/installations/${inst_id}/access_tokens" \
-    -d "{\"repositories\":[\"${repo_name}\"],\"permissions\":{\"contents\":\"write\"}}" \
+    -d "{\"repositories\":[\"${repo_name}\"],\"permissions\":{\"contents\":\"write\",\"pull_requests\":\"write\"}}" \
     | grep -o '"token"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
   [ -n "${token}" ] || { echo "Error: failed to mint installation token for ${repo}." >&2; return 1; }
   printf '%s' "${token}"
 }
+
+require_tools() {
+  local tool
+  for tool in gh jq; do
+    command -v "${tool}" >/dev/null 2>&1 || {
+      echo "Error: ${tool} is required but was not found on PATH." >&2
+      exit 1
+    }
+  done
+}
+
+# Point the branch at the current main tip, creating it if absent. Rebuilding
+# rather than appending keeps a rerun idempotent and the diff a single commit.
+reset_branch_to_main() {
+  local branch="${1}" main_sha="${2}"
+
+  if gh api "repos/${deployments_repo}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+    gh api -X PATCH "repos/${deployments_repo}/git/refs/heads/${branch}" \
+      -f sha="${main_sha}" -F force=true >/dev/null
+  else
+    gh api -X POST "repos/${deployments_repo}/git/refs" \
+      -f ref="refs/heads/${branch}" -f sha="${main_sha}" >/dev/null
+  fi
+}
+
+update_file() {
+  local file_path="${1}" new_version="${2}" project_name="${3}"
+  local main_sha branch payload current file_sha before after changed removed open_prs
+
+  main_sha=$(gh api "repos/${deployments_repo}/git/ref/heads/main" --jq .object.sha)
+  branch="chore/${project_name}-appversion-${new_version}"
+
+  payload=$(gh api "repos/${deployments_repo}/contents/${file_path}?ref=${main_sha}")
+  # jq builds that open stdout in text mode terminate lines with CRLF; the stray
+  # CR corrupts the blob sha and makes base64 reject the content outright.
+  file_sha=$(printf '%s' "${payload}" | jq -r .sha | tr -d '\r')
+  before=$(mktemp); after=$(mktemp)
+  trap 'rm -f "${before}" "${after}"' RETURN
+  printf '%s' "${payload}" | jq -r .content | tr -d '\r' | base64 -d > "${before}"
+
+  # Fail loudly if the line is absent: otherwise sed is a no-op and the
+  # misleading failure surfaces later as an empty commit.
+  if ! grep -q '^appVersion:' "${before}"; then
+    echo "Error: no 'appVersion:' line found in ${file_path}." >&2
+    exit 1
+  fi
+
+  current=$(sed -n 's/^appVersion:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' "${before}" | head -1)
+  if [ "${current}" = "${new_version}" ]; then
+    echo "[${project_name}]: ${file_path} already pins ${new_version}; nothing to do."
+    return 0
+  fi
+
+  sed "s/^appVersion: .*/appVersion: \"${new_version}\"/" "${before}" > "${after}"
+
+  # Guard the blast radius of the sed: anything other than one appVersion line
+  # means the chart's shape changed and this script should not be writing to it.
+  removed=$(diff "${before}" "${after}" | grep '^<' || true)
+  changed=$(printf '%s\n' "${removed}" | grep -c '^<' || true)
+  if [ "${changed}" -ne 1 ] || ! printf '%s\n' "${removed}" | grep -q '^< appVersion:'; then
+    echo "Error: expected exactly one changed line (appVersion) in ${file_path}, got ${changed}." >&2
+    exit 1
+  fi
+
+  reset_branch_to_main "${branch}" "${main_sha}"
+
+  # Commit through the contents API: the commit is created server-side, signed
+  # by GitHub, and authored by the bot identity behind the token.
+  gh api -X PUT "repos/${deployments_repo}/contents/${file_path}" \
+    -f message="chore(${project_name}): update app version to version ${new_version}" \
+    -f branch="${branch}" \
+    -f sha="${file_sha}" \
+    -f content="$(base64 -w0 "${after}")" >/dev/null
+
+  open_prs=$(gh pr list -R "${deployments_repo}" --head "${branch}" --state open --json number --jq length)
+  if [ "${open_prs}" -gt 0 ]; then
+    echo "[${project_name}]: pull request already open for ${branch}; branch updated in place."
+    return 0
+  fi
+
+  gh pr create -R "${deployments_repo}" --base main --head "${branch}" \
+    --title "chore(${project_name}): update app version to version ${new_version}" \
+    --body "Automated appVersion bump opened by the apps release pipeline.
+
+| | |
+|---|---|
+| Chart | \`${file_path}\` |
+| appVersion | \`${current}\` -> \`${new_version}\` |
+
+This pull request changes **only** the \`appVersion\` line in \`${file_path}\`.
+Merging it causes ArgoCD to sync the non environment to the new version."
+
+  gh pr merge -R "${deployments_repo}" "${branch}" --auto --rebase --delete-branch
+
+  echo "[${project_name}]: appVersion in ${file_path} set to ${new_version} via pull request on ${branch}."
+}
+
+require_tools
+
+if [ "${#}" -lt 3 ]; then
+  echo "Usage: ${0} <file_path> <version_number> <project_name>"
+  exit 1
+fi
 
 if [ -n "${DEPLOYMENTS_TOKEN:-}" ]; then
   deployments_token="${DEPLOYMENTS_TOKEN}"
@@ -60,112 +168,7 @@ else
   exit 1
 fi
 
-# Authenticate via an http extraheader instead of embedding the token in the
-# remote URL. This keeps the token out of .git/config and out of git's stderr
-# (which echoes the remote URL on failure). Mirrors actions/checkout.
-git_auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${deployments_token}" | base64 | tr -d '\n')"
-
-temp_dir=$(mktemp -d)
-
-# Always remove the clone, even on an unexpected exit, so failed runs leave no temp dirs behind.
-trap 'rm -rf "${temp_dir}"' EXIT
-
-clone_repository() {
-  # A failed clone leaves temp_dir empty; without this guard the later git checks
-  # run in a non-repo and report the misleading "Not inside a Git repository".
-  # Surface the real cause instead — usually DEPLOYMENTS_TOKEN lacking access.
-  if ! git -c http.extraheader="${git_auth_header}" clone "${git_repository}" "${temp_dir}"; then
-    echo "Error: Failed to clone ${deployments_repo}. Ensure DEPLOYMENTS_TOKEN has write access." >&2
-    exit 1
-  fi
-  cd "${temp_dir}" || exit 1
-}
-
-clean_repository() {
-  rm -rf "${temp_dir}"
-}
-
-# Function to check if the repository is a Git repository
-check_git_repository() {
-  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    echo "Error: Not inside a Git repository."
-    clean_repository
-    exit 1
-  fi
-}
-
-# Function to check if a file exists and is tracked by Git
-check_file() {
-  local file_path=${1}
-  if [ ! -f "${file_path}" ]; then
-    echo "Error: File ${file_path} does not exist."
-    clean_repository
-    exit 1
-  fi
-
-  if ! git ls-files --error-unmatch "${file_path}" >/dev/null 2>&1; then
-    echo "Error: File ${file_path} is not tracked by Git."
-    clean_repository
-    exit 1
-  fi
-}
-
-# Function to check if there are uncommitted changes in the repository
-check_uncommitted_changes() {
-  if ! git diff-index --quiet HEAD --; then
-    echo "Error: There are uncommitted changes in the repository. Please commit or stash them first."
-    clean_repository
-    exit 1
-  fi
-}
-
-# Function to push committed changes in the repository to remote
-push_changes() {
-  if ! git -c http.extraheader="${git_auth_header}" push; then
-    echo "Error: Failed to push changes to remote repository."
-    clean_repository
-    exit 1
-  fi
-}
-
-
-# Function to update a file in a Git repository
-update_file() {
-  local file_path=${1}
-  local new_version=${2}
-  local project_name=${3}
-
-  clone_repository
-  check_git_repository
-  check_file "${file_path}"
-  check_uncommitted_changes
-
-  git checkout HEAD "${file_path}"
-
-  # Fail loudly if the line is absent: otherwise sed is a no-op, nothing is
-  # staged, and the misleading failure surfaces later at the empty commit.
-  if ! grep -q '^appVersion:' "${file_path}"; then
-    echo "Error: no 'appVersion:' line found in ${file_path}." >&2
-    clean_repository
-    exit 1
-  fi
-
-  # Replace the app version line in the file
-  sed -i "s/^appVersion: .*/appVersion: \"${new_version}\"/" "${file_path}"
-
-  git add "${file_path}"
-  git commit -m "chore(${project_name}): update app version to version ${new_version}"
-  push_changes
-
-  echo "[${project_name}]: appVersion in ${file_path} updated to ${new_version}."
-  clean_repository
-}
-
-# Check if correct number of arguments are provided
-if [ "${#}" -lt 3 ]; then
-  echo "Usage: ${0} <file_path> <version_number> <project_name>"
-  clean_repository
-  exit 1
-fi
+export GH_TOKEN="${deployments_token}"
+export GH_HOST="${deployments_host}"
 
 update_file "${1}" "${2}" "${3}"
