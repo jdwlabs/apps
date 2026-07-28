@@ -1,5 +1,21 @@
-<mat-card [routerLink]="link" class="tile" data-cy="tile">
-  <h3 class="header" data-cy="title">{{ title }}</h3>
+<mat-card class="tile" data-cy="tile">
+  <div class="header">
+    @if (icon) {
+      <!-- Decorative: the link text beside it already names the destination, and
+      a ligature-font icon would otherwise leak its glyph name into the
+      accessible name. -->
+      <span class="avatar" aria-hidden="true">
+        <mat-icon data-cy="icon">{{ icon }}</mat-icon>
+      </span>
+    }
+    <h3 class="title" data-cy="title">
+      <!-- The link carries the title as its own text and is stretched over the
+      whole card by `.link::after`. Putting routerLink on the card instead makes
+      it focusable but not keyboard-activatable: the directive only listens for
+      click, which Enter does not synthesise on a non-anchor host. -->
+      <a class="link" [routerLink]="link" data-cy="tile-link">{{ title }}</a>
+    </h3>
+  </div>
   <div class="body" data-cy="message">{{ description }}</div>
   <div class="footer" data-cy="extra">
     <ng-content></ng-content>
