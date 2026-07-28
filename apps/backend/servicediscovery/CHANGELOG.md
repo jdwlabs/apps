@@ -1,3 +1,14 @@
+## 1.1.0 (2026-07-28)
+
+### 🚀 Features
+
+- **servicediscovery:** emit OTLP traces to Tempo ([ef76b9d7](https://github.com/jdwlabs/apps/commit/ef76b9d7))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.3 (2026-07-26)
 
 ### 🩹 Fixes
