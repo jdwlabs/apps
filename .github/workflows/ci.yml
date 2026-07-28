@@ -335,10 +335,7 @@ jobs:
           PROJECT: ${{ matrix.project }}
           GH_APP_ID: ${{ secrets.RELEASE_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-        run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "github-actions[bot]"
-          pnpm exec nx run "$PROJECT":update-app
+        run: pnpm exec nx run "$PROJECT":update-app
       - if: ${{ matrix['update-description'] == true }}
         name: Update Docker Hub Description
         env:
