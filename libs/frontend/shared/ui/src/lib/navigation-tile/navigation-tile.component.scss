@@ -1,21 +1,88 @@
+$avatar-size: 40px;
+
 .tile {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: auto 1fr auto;
-  cursor: pointer;
+  gap: 12px;
+  padding: 16px;
+  min-height: 140px;
   height: 100%;
   width: 100%;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container-high);
+    box-shadow: var(--mat-sys-level2);
+  }
+
+  // The focus ring belongs on the card, not on the title-sized anchor that
+  // actually takes focus.
+  &:has(.link:focus-visible) {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
 
   .header {
-    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: $avatar-size;
+    height: $avatar-size;
+    border-radius: 50%;
+    background-color: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+  }
+
+  .title {
     margin: 0;
+    font: var(--mat-sys-title-medium);
+    color: var(--mat-sys-on-surface);
+  }
+
+  .link {
+    color: inherit;
+    font: inherit;
+    text-decoration: none;
+    outline: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
   }
 
   .body {
-    padding: 8px;
+    font: var(--mat-sys-body-medium);
+    color: var(--mat-sys-on-surface-variant);
   }
 
+  // Projected content sits above the stretched link so buttons in the footer
+  // stay clickable.
   .footer {
-    padding: 8px;
+    position: relative;
+
+    &:empty {
+      display: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile {
+    transition: none;
   }
 }
