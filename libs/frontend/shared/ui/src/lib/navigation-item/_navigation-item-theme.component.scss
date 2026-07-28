@@ -18,6 +18,8 @@
   // current route with a plain `active` class. The pill shape still comes for
   // free from the nav list's `corner-full` radius.
   .nav {
+    --mat-list-list-item-one-line-container-height: #{geometry.$item-height};
+
     .icon {
       color: var(--mat-sys-on-surface-variant) !important;
     }
@@ -76,10 +78,25 @@
     padding-left: 0;
   }
 
+  // The rail indicator is 56x32 rather than the item's full 56x56 box. Clipping
+  // the background to a content box inset top and bottom is what produces it:
+  // `corner-full` on a 56x56 item paints a circle, and on the 56x48 item this
+  // replaced it painted an oval. Neither is the M3 rail indicator.
+  //
+  // The state layer needs the same inset. Material paints hover and focus
+  // through `.mat-mdc-list-item-interactive::before`, which is pinned to all
+  // four edges of the item, so without this a hover ghost the full height of the
+  // item appears behind the pill.
   mat-sidenav.rail .nav {
     width: geometry.$rail-item-width;
     margin-left: geometry.$item-inset;
     margin-right: 0;
-    padding: 0;
+    padding: geometry.$rail-indicator-inset 0;
+    background-clip: content-box;
+
+    &::before {
+      top: geometry.$rail-indicator-inset;
+      bottom: geometry.$rail-indicator-inset;
+    }
   }
 }

@@ -14,3 +14,16 @@ $rail-width: 80px;
 $expanded-width: 240px;
 $rail-item-width: 56px;
 $item-inset: math.div($rail-width - $rail-item-width, 2);
+
+// M3 sizes a navigation destination at 56px in both the drawer and the rail.
+// Material's list default is 48px and scales with the density setting, so the
+// height is pinned rather than inherited: the rail indicator is derived from it,
+// and a density change would otherwise silently reshape the pill.
+$item-height: 56px;
+
+// The rail indicator is 56x32, not the full item box. Deriving the inset from
+// the two heights keeps it centred if either changes, and clipping the item's
+// background to that inset is what turns the item's `corner-full` radius into a
+// 16px pill instead of an oval spanning the whole 56px item.
+$rail-indicator-height: 32px;
+$rail-indicator-inset: math.div($item-height - $rail-indicator-height, 2);
