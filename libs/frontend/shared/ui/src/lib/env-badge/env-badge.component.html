@@ -1,0 +1,14 @@
+<!-- One element with one accessible name: a screen reader should hear the pair
+once, not two unlabelled fragments. This is status, not an action, so it is
+deliberately not a button. -->
+<span
+  class="badge"
+  [class]="tone"
+  [attr.aria-label]="label"
+  data-cy="env-badge"
+>
+  <span class="segment env" data-cy="env-segment">{{
+    environment.toUpperCase()
+  }}</span>
+  <span class="segment version" data-cy="version-segment">{{ version }}</span>
+</span>

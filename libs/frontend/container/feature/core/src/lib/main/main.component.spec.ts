@@ -24,6 +24,8 @@ describe('MainComponent', () => {
           provide: ENVIRONMENT,
           useValue: {
             ENVIRONMENT: 'test',
+            AUTH_BASE_URL: 'http://localhost:8080',
+            SERVICE_DISCOVERY_BASE_URL: 'http://localhost:9000',
           },
         },
       ],
