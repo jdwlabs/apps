@@ -59,3 +59,6 @@ kubeconfig*
 # Go sources named kubeconfig*.go (backend services) are code, not credentials
 !kubeconfig*.go
 .nx/migrate-runs
+# Go build output — a stray `go build` in a backend dir drops the binary at
+# the repo root, where nothing else would catch it.
+*.exe
