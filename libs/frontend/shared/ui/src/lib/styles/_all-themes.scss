@@ -1,6 +1,5 @@
 @use './components/button/variants' as button-variants;
 @use './components/toolbar/variants' as toolbar-variants;
-@use './components/ag-grid/ag-grid-theme.component' as ag-grid;
 @use '../navigation-item/navigation-item-theme.component' as navigation-item;
 @use '../snackbar/snackbar-theme.component' as snackbar;
 
@@ -11,8 +10,8 @@
 // Takes $theme-type rather than a boolean, and takes it without a default, so
 // a theme states its type in the same vocabulary it passes to `theming.theme`
 // and cannot silently fall through to a wrong one. The type is load-bearing
-// for colour, not just for ag-grid's compile-time skin choice: the toolbar
-// picks whichever role resolves to the saturated tone for this type.
+// for colour: the toolbar picks whichever role resolves to the saturated tone
+// for this type.
 //
 // This mixin must stay at the root, outside the `html` block the theme mixin
 // is applied in, or every component selector below gains an `html` ancestor
@@ -28,7 +27,6 @@
 
   @include button-variants.theme;
   @include toolbar-variants.theme($dark);
-  @include ag-grid.theme($dark);
   @include navigation-item.theme;
   @include snackbar.theme;
 }

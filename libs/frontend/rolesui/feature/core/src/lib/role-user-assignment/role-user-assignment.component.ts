@@ -31,6 +31,7 @@ import {
   GridReadyEvent,
   RowSelectionOptions,
 } from 'ag-grid-community';
+import { jdwGridTheme } from '@jdw/frontend-shared-ui';
 import { MatFormField, MatInput } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
 import { MatError, MatLabel } from '@angular/material/form-field';
@@ -157,6 +158,7 @@ export class RoleUserAssignmentComponent implements OnInit {
   };
 
   gridOptions: GridOptions = {
+    theme: jdwGridTheme,
     columnDefs: this.colDefs,
     defaultColDef: this.defaultColDef,
     pagination: true,
