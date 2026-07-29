@@ -1,0 +1,40 @@
+@use '../styles/shape';
+
+.badge {
+  display: inline-flex;
+  align-items: stretch;
+  // Clipping is what makes two boxes read as one control; without it the inner
+  // corners stay square against the outer radius.
+  overflow: hidden;
+  border-radius: shape.$shape-small;
+  font: var(--mat-sys-label-small);
+  line-height: 1;
+  white-space: nowrap;
+
+  .segment {
+    display: flex;
+    align-items: center;
+    padding: 6px 9px;
+    letter-spacing: 0.6px;
+  }
+
+  .version {
+    background-color: var(--mat-sys-surface-container-highest);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &.prod .env {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
+  &.non .env {
+    background-color: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+  }
+
+  &.local .env {
+    background-color: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}

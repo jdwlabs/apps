@@ -1,3 +1,5 @@
+@use '../styles/shape';
+
 $avatar-size: 40px;
 
 .tile {
@@ -40,7 +42,8 @@ $avatar-size: 40px;
     flex: 0 0 auto;
     width: $avatar-size;
     height: $avatar-size;
-    border-radius: 50%;
+    // A category icon, not a person — so it is a rounded square.
+    border-radius: shape.$shape-small;
     background-color: var(--mat-sys-tertiary-container);
     color: var(--mat-sys-on-tertiary-container);
   }

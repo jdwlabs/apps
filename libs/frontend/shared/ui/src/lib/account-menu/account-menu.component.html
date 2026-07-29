@@ -1,0 +1,64 @@
+<button
+  [matMenuTriggerFor]="menu"
+  [matTooltip]="current.isLoggedIn ? current.displayName : 'Account'"
+  [attr.aria-label]="
+    current.isLoggedIn ? 'Account menu for ' + current.displayName : 'Sign in'
+  "
+  class="trigger"
+  mat-icon-button
+  data-cy="account-menu-button"
+>
+  @switch (current.avatarState) {
+    @case ('icon') {
+      <!-- Decorative: the button's aria-label already names the account. -->
+      <img
+        [src]="current.iconData"
+        alt=""
+        class="avatar"
+        data-cy="avatar-image"
+      />
+    }
+    @case ('initials') {
+      <span class="avatar initials" data-cy="avatar-initials">{{
+        current.initials
+      }}</span>
+    }
+    @default {
+      <mat-icon data-cy="avatar-signed-out">login</mat-icon>
+    }
+  }
+</button>
+
+<mat-menu #menu="matMenu" xPosition="before">
+  @if (current.isLoggedIn) {
+    <div class="identity" data-cy="identity">
+      <span class="name" data-cy="identity-name">{{
+        current.displayName
+      }}</span>
+      <span class="email" data-cy="identity-email">{{
+        current.user?.emailAddress
+      }}</span>
+    </div>
+    <button (click)="account.emit()" mat-menu-item data-cy="account-button">
+      <mat-icon>account_circle</mat-icon>
+      <span>Account</span>
+    </button>
+    <button (click)="profile.emit()" mat-menu-item data-cy="profile-button">
+      <mat-icon>badge</mat-icon>
+      <span>Profile</span>
+    </button>
+    <button (click)="signOut.emit()" mat-menu-item data-cy="sign-out-button">
+      <mat-icon>logout</mat-icon>
+      <span>Sign Out</span>
+    </button>
+  } @else {
+    <button (click)="signIn.emit()" mat-menu-item data-cy="sign-in-button">
+      <mat-icon>login</mat-icon>
+      <span>Sign In</span>
+    </button>
+    <button (click)="signUp.emit()" mat-menu-item data-cy="sign-up-button">
+      <mat-icon>person_add</mat-icon>
+      <span>Sign Up</span>
+    </button>
+  }
+</mat-menu>

@@ -1,0 +1,14 @@
+// Material 22 defines exactly seven corner values (0/4/8/12/16/28/full, design
+// system v0.161). The ten-step Expressive scale and its shape morphing are not
+// available here, so any value outside that set is hand-rolled and drifts on
+// the next Material bump.
+//
+// Two rules generate the four steps below:
+//   1. Circle means a person. Only account avatars and the nav rail's state
+//      indicator are fully round; a category icon is not a person.
+//   2. Radius grows with the container, so nesting stays legible.
+
+$shape-small: var(--mat-sys-corner-small); // 8px — badges, icon containers
+$shape-content: var(--mat-sys-corner-medium); // 12px — tiles, cards
+$shape-surface: var(--mat-sys-corner-large); // 16px — menus, drawer
+$shape-identity: 50%; // account avatars only

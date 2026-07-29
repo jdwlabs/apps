@@ -1,0 +1,42 @@
+@use '../styles/shape';
+
+$avatar-size: 32px;
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $avatar-size;
+  height: $avatar-size;
+  // The one circle in the header: this is a person, not a container.
+  border-radius: shape.$shape-identity;
+  object-fit: cover;
+}
+
+.initials {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  font: var(--mat-sys-label-medium);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px 12px;
+  // The menu sizes to its widest item; an unbounded email address would drag
+  // the whole panel wider than the actions below it.
+  max-width: 240px;
+
+  .name {
+    font: var(--mat-sys-title-small);
+    color: var(--mat-sys-on-surface);
+  }
+
+  .email {
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
