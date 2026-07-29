@@ -26,14 +26,15 @@ const mockCookieService = {
   delete: vi.fn(),
 };
 
-// alg none, user_id 42, exp 2000000000 (2033).
-const VALID_TOKEN =
-  'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.' +
-  'eyJ1c2VyX2lkIjo0MiwiZXhwIjoyMDAwMDAwMDAwfQ.';
-// Same header, exp 1000000000 (2001).
-const EXPIRED_TOKEN =
-  'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.' +
-  'eyJ1c2VyX2lkIjo0MiwiZXhwIjoxMDAwMDAwMDAwfQ.';
+// Built rather than pasted: a literal JWT is a high-entropy string that reads
+// as a real credential to secret scanners, and the claims are the point here.
+const segment = (value: object) =>
+  btoa(JSON.stringify(value)).replace(/=+$/, '');
+const unsignedToken = (claims: object) =>
+  `${segment({ alg: 'none', typ: 'JWT' })}.${segment(claims)}.`;
+
+const VALID_TOKEN = unsignedToken({ user_id: 42, exp: 2_000_000_000 }); // 2033
+const EXPIRED_TOKEN = unsignedToken({ user_id: 42, exp: 1_000_000_000 }); // 2001
 const environmentMock = {
   AUTH_BASE_URL: 'http://localhost:8080',
 };
