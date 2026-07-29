@@ -7,19 +7,66 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
+	"strings"
 )
 
 type GitHubClient struct {
 	apiBase string // https://api.github.com (override in tests)
 	token   string
+	// allowed bounds which repositories a patch may target. Repo, file path,
+	// and file body all originate from a model prompted with alert
+	// annotations and Holmes output — untrusted text — so without this the
+	// only limit on where the relay writes is the token's own scope.
+	allowed map[string]struct{}
 	hc      *http.Client
 }
 
-func NewGitHubClient(apiBase, token string, hc *http.Client) *GitHubClient {
+func NewGitHubClient(apiBase, token string, allowedRepos []string, hc *http.Client) *GitHubClient {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
-	return &GitHubClient{apiBase: apiBase, token: token, hc: hc}
+	allowed := make(map[string]struct{}, len(allowedRepos))
+	for _, r := range allowedRepos {
+		if r = strings.TrimSpace(r); r != "" {
+			allowed[r] = struct{}{}
+		}
+	}
+	return &GitHubClient{apiBase: apiBase, token: token, allowed: allowed, hc: hc}
+}
+
+// checkRepo fails closed: an empty allowlist disables the PR arm entirely
+// rather than falling back to whatever the model named.
+func (g *GitHubClient) checkRepo(repo string) error {
+	if len(g.allowed) == 0 {
+		return fmt.Errorf("github: no repo allowlist configured; refusing to open a PR")
+	}
+	if _, ok := g.allowed[repo]; !ok {
+		return fmt.Errorf("github: repo %q is not allowlisted", repo)
+	}
+	return nil
+}
+
+// safeFilePath rejects a model-supplied path that is absolute or climbs out of
+// the repository root, and escapes each segment so it cannot inject further
+// path or query structure into the Contents API URL.
+func safeFilePath(p string) (string, error) {
+	if strings.TrimSpace(p) == "" {
+		return "", fmt.Errorf("github: empty file path")
+	}
+	if strings.HasPrefix(p, "/") {
+		return "", fmt.Errorf("github: absolute file path %q", p)
+	}
+	clean := path.Clean(p)
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
+		return "", fmt.Errorf("github: file path %q escapes the repository root", p)
+	}
+	segs := strings.Split(clean, "/")
+	for i, s := range segs {
+		segs[i] = url.PathEscape(s)
+	}
+	return strings.Join(segs, "/"), nil
 }
 
 func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (*http.Response, error) {
@@ -46,12 +93,27 @@ func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (
 // PR for human review. The branch name comes from the patch so callers control
 // dedup (re-running the same patch lands on the same branch).
 func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error) {
+	if err := g.checkRepo(p.Repo); err != nil {
+		return "", err
+	}
+	filePath, err := safeFilePath(p.FilePath)
+	if err != nil {
+		return "", err
+	}
 	repoPath := "/repos/" + p.Repo
 
 	// 1. base ref SHA
 	refResp, err := g.req(ctx, http.MethodGet, repoPath+"/git/ref/heads/main", nil)
 	if err != nil {
 		return "", err
+	}
+	// The status is what distinguishes "repo does not exist" from "token
+	// cannot see it" from a genuine empty ref. Decoding a non-2xx body yields
+	// an empty SHA, which previously surfaced as a generic error that hid the
+	// real cause.
+	if refResp.StatusCode != http.StatusOK {
+		refResp.Body.Close()
+		return "", fmt.Errorf("github base ref: status %d (repo %s)", refResp.StatusCode, p.Repo)
 	}
 	var ref struct {
 		Object struct {
@@ -61,7 +123,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	_ = json.NewDecoder(refResp.Body).Decode(&ref)
 	refResp.Body.Close()
 	if ref.Object.SHA == "" {
-		return "", fmt.Errorf("github: empty base sha")
+		return "", fmt.Errorf("github: empty base sha (repo %s)", p.Repo)
 	}
 
 	// 2. create branch; 422 means the branch already exists and is fine (idempotent
@@ -80,7 +142,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 
 	// 3. existing file SHA (needed to update; absent => new file)
 	var existingSHA string
-	fResp, err := g.req(ctx, http.MethodGet, repoPath+"/contents/"+p.FilePath+"?ref="+p.Branch, nil)
+	fResp, err := g.req(ctx, http.MethodGet, repoPath+"/contents/"+filePath+"?ref="+url.QueryEscape(p.Branch), nil)
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +163,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	if existingSHA != "" {
 		put["sha"] = existingSHA
 	}
-	pResp, err := g.req(ctx, http.MethodPut, repoPath+"/contents/"+p.FilePath, put)
+	pResp, err := g.req(ctx, http.MethodPut, repoPath+"/contents/"+filePath, put)
 	if err != nil {
 		return "", err
 	}
