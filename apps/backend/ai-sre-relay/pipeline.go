@@ -3,8 +3,15 @@ package main
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 )
+
+// maxTrackedFirings bounds the repeat-tracking map. Beyond it, new
+// fingerprints are simply not tracked and get a full investigation — the
+// memory ceiling matters more than suppressing every possible repeat on a
+// 32Mi replica.
+const maxTrackedFirings = 1024
 
 type holmesInvestigator interface {
 	Investigate(ctx context.Context, a Alert) (Analysis, error)
@@ -14,12 +21,29 @@ type patcher interface {
 }
 type jiraUpserter interface {
 	Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey, error)
+	// IsOpen reports whether an issue is still actionable, so a repeat that a
+	// human has already closed out is investigated afresh rather than skipped.
+	IsOpen(ctx context.Context, key IssueKey) (bool, error)
+	// NoteRefire records a repeat that was not investigated. A skipped repeat
+	// must stay visible; silent suppression is indistinguishable from a
+	// pipeline that has stopped working.
+	NoteRefire(ctx context.Context, key IssueKey, count int) error
 }
 type prOpener interface {
 	OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error)
 }
 type discordNotifier interface {
 	Notify(ctx context.Context, a Alert, an Analysis, issue IssueKey, pr *PRLink, patch *Patch) error
+}
+
+// firing is the last completed investigation for one fingerprint. startsAt
+// distinguishes a repeat notification of the same firing episode from the same
+// alert firing again after it resolved: Alertmanager fingerprints hash the
+// labelset, so the fingerprint alone cannot tell those apart.
+type firing struct {
+	startsAt string
+	issue    IssueKey
+	repeats  int
 }
 
 type Pipeline struct {
@@ -29,16 +53,97 @@ type Pipeline struct {
 	github  prOpener
 	discord discordNotifier
 	log     *slog.Logger
+
+	counters counters
+
+	mu     sync.Mutex
+	active map[string]firing
 }
 
 func NewPipeline(h holmesInvestigator, pg patcher, j jiraUpserter, gh prOpener, d discordNotifier, log *slog.Logger) *Pipeline {
-	return &Pipeline{holmes: h, patch: pg, jira: j, github: gh, discord: d, log: log}
+	return &Pipeline{
+		holmes: h, patch: pg, jira: j, github: gh, discord: d, log: log,
+		active: map[string]firing{},
+	}
+}
+
+// Counters exposes the pipeline's own operational signal for the metrics
+// endpoint.
+func (p *Pipeline) Counters() *counters { return &p.counters }
+
+// repeatOf returns the open issue recorded for this exact firing episode, if
+// this process has already investigated it.
+func (p *Pipeline) repeatOf(a Alert) (firing, bool) {
+	if a.Fingerprint == "" {
+		return firing{}, false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, ok := p.active[a.Fingerprint]
+	if !ok || f.startsAt != a.StartsAt || f.issue == "" {
+		return firing{}, false
+	}
+	return f, true
+}
+
+// countRepeat increments and returns the repeat count for a skipped refire.
+func (p *Pipeline) countRepeat(a Alert) int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f := p.active[a.Fingerprint]
+	f.repeats++
+	p.active[a.Fingerprint] = f
+	return f.repeats
+}
+
+func (p *Pipeline) remember(a Alert, issue IssueKey) {
+	if a.Fingerprint == "" || issue == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if _, known := p.active[a.Fingerprint]; !known && len(p.active) >= maxTrackedFirings {
+		return
+	}
+	p.active[a.Fingerprint] = firing{startsAt: a.StartsAt, issue: issue}
+}
+
+func (p *Pipeline) forget(a Alert) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.active, a.Fingerprint)
 }
 
 // Handle runs one alert through the pipeline. Each output is independent: a
 // failure is logged with the fingerprint and never suppresses later outputs.
 func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 	log := p.log.With("fingerprint", a.Fingerprint, "alert", a.Name())
+
+	// Alertmanager re-notifies a still-firing alert every repeat_interval.
+	// Re-running the investigation produces the same analysis at full LLM
+	// cost, so a repeat of a firing episode this process already investigated
+	// is recorded on the existing ticket instead.
+	if f, ok := p.repeatOf(a); ok {
+		open, err := p.jira.IsOpen(ctx, f.issue)
+		switch {
+		case err != nil:
+			// Unknown ticket state is not a reason to skip work.
+			log.Error("refire ticket check failed; investigating", "issue", f.issue, "err", err)
+		case open:
+			n := p.countRepeat(a)
+			if nerr := p.jira.NoteRefire(ctx, f.issue, n); nerr != nil {
+				log.Error("refire note failed", "issue", f.issue, "err", nerr)
+			}
+			p.counters.repeatsSkipped.Add(1)
+			log.Info("alert still firing with an open ticket; skipping investigation",
+				"issue", f.issue, "repeat", n)
+			return nil
+		default:
+			// Closed since we filed it: a refire is new work again.
+			p.forget(a)
+		}
+	}
+	p.counters.investigationsRun.Add(1)
 
 	an, err := p.holmes.Investigate(ctx, a)
 	if err != nil {
@@ -68,6 +173,7 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 		log.Error("jira upsert failed", "err", jerr)
 	} else {
 		issue = k
+		p.remember(a, issue)
 	}
 
 	var prLink *PRLink

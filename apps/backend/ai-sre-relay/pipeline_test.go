@@ -20,13 +20,32 @@ type fakePatcher struct{ p *Patch }
 func (f fakePatcher) Generate(context.Context, Analysis) (*Patch, error) { return f.p, nil }
 
 type fakeJira struct {
-	key    IssueKey
-	called bool
+	key      IssueKey
+	called   bool
+	upserts  int
+	closed   bool // IsOpen reports the issue as Done
+	refires  []int
+	openErr  error
+	refireOn bool // records that IsOpen was consulted at all
 }
 
 func (f *fakeJira) Upsert(context.Context, Alert, Analysis) (IssueKey, error) {
 	f.called = true
+	f.upserts++
 	return f.key, nil
+}
+
+func (f *fakeJira) IsOpen(context.Context, IssueKey) (bool, error) {
+	f.refireOn = true
+	if f.openErr != nil {
+		return false, f.openErr
+	}
+	return !f.closed, nil
+}
+
+func (f *fakeJira) NoteRefire(_ context.Context, _ IssueKey, count int) error {
+	f.refires = append(f.refires, count)
+	return nil
 }
 
 type fakeGH struct{ called bool }
@@ -112,6 +131,14 @@ func (fakeJiraErr) Upsert(context.Context, Alert, Analysis) (IssueKey, error) {
 	return "", errors.New("jira down")
 }
 
+func (fakeJiraErr) IsOpen(context.Context, IssueKey) (bool, error) {
+	return false, errors.New("jira down")
+}
+
+func (fakeJiraErr) NoteRefire(context.Context, IssueKey, int) error {
+	return errors.New("jira down")
+}
+
 func TestPipelineJiraFailureStillNotifiesDiscord(t *testing.T) {
 	d := &fakeDiscord{}
 	p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: nil}, fakeJiraErr{}, &fakeGH{}, d, silentLogger())
@@ -141,6 +168,109 @@ func TestPipelineGithubFailureStillNotifiesDiscord(t *testing.T) {
 	}
 	if d.pr != nil {
 		t.Fatalf("PR link must be nil when github fails, got %v", d.pr)
+	}
+}
+
+// countingHolmes records how many investigations actually ran.
+type countingHolmes struct{ n int }
+
+func (c *countingHolmes) Investigate(context.Context, Alert) (Analysis, error) {
+	c.n++
+	return Analysis{RootCause: "x"}, nil
+}
+
+func repeatAlert() Alert {
+	return Alert{Fingerprint: "fp", StartsAt: "2026-07-28T03:02:59Z", Labels: map[string]string{"alertname": "TempoNoSpansReceived"}}
+}
+
+// The 4h repeat of a still-firing alert must not pay for a second
+// investigation; it lands on the existing ticket instead.
+func TestPipelineSkipsRepeatWithOpenTicket(t *testing.T) {
+	h := &countingHolmes{}
+	j := &fakeJira{key: "JDWLABS-229"}
+	p := NewPipeline(h, fakePatcher{p: nil}, j, &fakeGH{}, &fakeDiscord{}, silentLogger())
+
+	for range 3 {
+		if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if h.n != 1 {
+		t.Fatalf("investigations = %d, want 1", h.n)
+	}
+	if j.upserts != 1 {
+		t.Fatalf("jira upserts = %d, want 1", j.upserts)
+	}
+	// A skipped repeat is still recorded, and numbered.
+	if len(j.refires) != 2 || j.refires[0] != 1 || j.refires[1] != 2 {
+		t.Fatalf("refire notes = %v, want [1 2]", j.refires)
+	}
+	if got := p.Counters().repeatsSkipped.Load(); got != 2 {
+		t.Fatalf("repeatsSkipped = %d, want 2", got)
+	}
+	if got := p.Counters().investigationsRun.Load(); got != 1 {
+		t.Fatalf("investigationsRun = %d, want 1", got)
+	}
+}
+
+// A human closing the ticket means the next refire is new work again.
+func TestPipelineReinvestigatesAfterTicketClosed(t *testing.T) {
+	h := &countingHolmes{}
+	j := &fakeJira{key: "JDWLABS-229"}
+	p := NewPipeline(h, fakePatcher{p: nil}, j, &fakeGH{}, &fakeDiscord{}, silentLogger())
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	j.closed = true
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if h.n != 2 {
+		t.Fatalf("investigations = %d, want 2 (closed ticket must re-investigate)", h.n)
+	}
+	if len(j.refires) != 0 {
+		t.Fatalf("closed ticket must not get a refire note, got %v", j.refires)
+	}
+}
+
+// A new firing episode shares the fingerprint but not startsAt, so it is not a
+// repeat and must be investigated.
+func TestPipelineInvestigatesNewFiringEpisode(t *testing.T) {
+	h := &countingHolmes{}
+	j := &fakeJira{key: "JDWLABS-229"}
+	p := NewPipeline(h, fakePatcher{p: nil}, j, &fakeGH{}, &fakeDiscord{}, silentLogger())
+
+	first := repeatAlert()
+	if err := p.Handle(context.Background(), first); err != nil {
+		t.Fatal(err)
+	}
+	second := first
+	second.StartsAt = "2026-07-29T09:00:00Z"
+	if err := p.Handle(context.Background(), second); err != nil {
+		t.Fatal(err)
+	}
+	if h.n != 2 {
+		t.Fatalf("investigations = %d, want 2 (new episode must re-investigate)", h.n)
+	}
+}
+
+// An unreadable ticket state must fail toward doing the work, not toward
+// silently dropping the alert.
+func TestPipelineInvestigatesWhenTicketStateUnknown(t *testing.T) {
+	h := &countingHolmes{}
+	j := &fakeJira{key: "JDWLABS-229"}
+	p := NewPipeline(h, fakePatcher{p: nil}, j, &fakeGH{}, &fakeDiscord{}, silentLogger())
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	j.openErr = errors.New("jira unreachable")
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if h.n != 2 {
+		t.Fatalf("investigations = %d, want 2 (unknown state must re-investigate)", h.n)
 	}
 }
 
