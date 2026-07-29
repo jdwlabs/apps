@@ -1,3 +1,9 @@
+## 2.0.5 (2026-07-29)
+
+### 🧱 Updated Dependencies
+
+- Updated frontend-shared-util to 1.0.3
+
 ## 2.0.4 (2026-07-27)
 
 This was a version bump only for authui to align it with other projects, there were no code changes.
