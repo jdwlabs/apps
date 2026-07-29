@@ -4,6 +4,7 @@ import {
   GridReadyEvent,
   RowSelectionOptions,
 } from 'ag-grid-community';
+import { jdwGridTheme } from '@jdw/frontend-shared-ui';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   AbstractControl,
@@ -161,6 +162,7 @@ export class UserRoleAssignmentComponent implements OnInit {
   };
 
   gridOptions: GridOptions = {
+    theme: jdwGridTheme,
     columnDefs: this.colDefs,
     defaultColDef: this.defaultColDef,
     pagination: true,

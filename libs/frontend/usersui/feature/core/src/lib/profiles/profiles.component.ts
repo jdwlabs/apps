@@ -11,6 +11,7 @@ import {
   dateSortComparator,
 } from '@jdw/frontend-usersui-util';
 import { ColDef, GridOptions } from 'ag-grid-community';
+import { jdwGridTheme } from '@jdw/frontend-shared-ui';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ProfilesActionButtonCellRendererComponent } from '../profiles-action-button-cell-renderer/profiles-action-button-cell-renderer.component';
 import { Profile } from '@jdw/frontend-shared-util';
@@ -110,6 +111,7 @@ export class ProfilesComponent implements OnInit {
   };
 
   gridOptions: GridOptions = {
+    theme: jdwGridTheme,
     loading: this.loading,
     columnDefs: this.colDefs,
     defaultColDef: this.defaultColDef,

@@ -8,6 +8,7 @@ import {
 import { AgGridAngular } from 'ag-grid-angular';
 import { RolesService } from '@jdw/frontend-shared-data-access';
 import { ColDef, GridOptions } from 'ag-grid-community';
+import { jdwGridTheme } from '@jdw/frontend-shared-ui';
 import {
   dateFilterComparator,
   dateSortComparator,
@@ -94,6 +95,7 @@ export class RolesComponent implements OnInit {
   };
 
   gridOptions: GridOptions = {
+    theme: jdwGridTheme,
     loading: this.loading,
     columnDefs: this.colDefs,
     defaultColDef: this.defaultColDef,
