@@ -229,6 +229,27 @@ func (j *JiraClient) updateIssue(ctx context.Context, key IssueKey, an Analysis,
 	return j.commentOn(ctx, key, text)
 }
 
+// IsOpen reports whether an issue is still actionable. It reads the issue
+// directly by key, which is strongly consistent, so a human closing a ticket
+// takes effect on the very next refire.
+func (j *JiraClient) IsOpen(ctx context.Context, key IssueKey) (bool, error) {
+	done, err := j.isDone(ctx, key)
+	if err != nil {
+		return false, err
+	}
+	return !done, nil
+}
+
+// NoteRefire records a repeat notification that was deliberately not
+// investigated, so the skip is auditable from the ticket alone.
+func (j *JiraClient) NoteRefire(ctx context.Context, key IssueKey, count int) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	_, err := j.commentOn(ctx, key, fmt.Sprintf(
+		"🔁 Still firing — repeat notification %d. Investigation skipped: the alert has not resolved since the analysis above, so re-running it would restate the same root cause.", count))
+	return err
+}
+
 func (j *JiraClient) groupInto(ctx context.Context, key IssueKey, an Analysis) (IssueKey, error) {
 	return j.commentOn(ctx, key, "🔗 Same alert re-fired with a new fingerprint (different labelset); grouping into this open ticket.\n\n"+an.RootCause)
 }
