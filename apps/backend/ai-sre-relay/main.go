@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -26,6 +27,18 @@ func envInt(key string, fallback int) int {
 		}
 	}
 	return fallback
+}
+
+// splitList parses a comma-separated env var, dropping blanks so a trailing
+// comma or an all-whitespace value reads as "unset" rather than one empty item.
+func splitList(v string) []string {
+	var out []string
+	for _, part := range strings.Split(v, ",") {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
 }
 
 func mustEnv(key string) string {
@@ -65,7 +78,13 @@ func main() {
 	// "Task" not "Bug": the target project's type scheme has no Bug type and
 	// Jira rejects creates with an unknown type (400).
 	jira := NewJiraClient(jiraURL, mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), env("JIRA_ISSUE_TYPE", "Task"), hc)
-	github := NewGitHubClient(env("GITHUB_API", "https://api.github.com"), mustEnv("GITHUB_TOKEN"), hc)
+	// Bounds where a model-authored patch may be written. Unset disables the
+	// PR arm rather than trusting the repo the model names.
+	allowedRepos := splitList(os.Getenv("GITHUB_REPO_ALLOWLIST"))
+	if len(allowedRepos) == 0 {
+		log.Warn("GITHUB_REPO_ALLOWLIST unset; remediation PRs are disabled")
+	}
+	github := NewGitHubClient(env("GITHUB_API", "https://api.github.com"), mustEnv("GITHUB_TOKEN"), allowedRepos, hc)
 
 	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)
 
@@ -83,7 +102,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              ":" + env("PORT", "8080"),
-		Handler:           newRouter(disp, webhookToken),
+		Handler:           newRouter(disp, pipeline.Counters(), webhookToken),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
