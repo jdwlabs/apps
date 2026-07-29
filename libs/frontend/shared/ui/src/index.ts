@@ -6,3 +6,6 @@ export * from './lib/fallback/fallback.component';
 export * from './lib/navigation-tile/navigation-tile.component';
 export * from './lib/confirmation-dialog/confirmation-dialog.component';
 export * from './lib/ag-grid/ag-grid-theme';
+export * from './lib/env-badge/env-badge.component';
+export * from './lib/account-menu/account-menu.component';
+export * from './lib/account-menu/account-view';

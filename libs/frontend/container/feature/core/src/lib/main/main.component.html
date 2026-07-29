@@ -7,12 +7,16 @@
   [isXSmallScreen]="isXSmallScreen"
 >
   <div class="header-row">
-    <button mat-flat-button color="accent">
-      {{ currentVersion }}
-    </button>
-    <button mat-flat-button color="accent">
-      {{ currentEnv | uppercase }}
-    </button>
+    <jdw-env-badge [environment]="currentEnv" [version]="currentVersion" />
+    @let accountView = accountView$ | async;
+    <jdw-account-menu
+      (account)="goToAccount(accountView)"
+      (profile)="goToProfile(accountView)"
+      (signIn)="signIn()"
+      (signOut)="signOut()"
+      (signUp)="signUp()"
+      [view]="accountView"
+    />
   </div>
 </jdw-header>
 <jdw-navigation-layout
