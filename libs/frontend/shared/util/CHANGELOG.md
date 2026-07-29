@@ -1,3 +1,14 @@
+## 1.0.4 (2026-07-29)
+
+### 🚀 Features
+
+- **shared-data-access:** restore token stream, sign out and jwt helpers ([fafd054c](https://github.com/jdwlabs/apps/commit/fafd054c))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.3 (2026-07-29)
 
 ### 🚀 Features

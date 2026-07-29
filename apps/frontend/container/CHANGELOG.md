@@ -1,3 +1,9 @@
+## 2.1.1 (2026-07-29)
+
+### 🧱 Updated Dependencies
+
+- Updated frontend-shared-util to 1.0.4
+
 ## 2.1.0 (2026-07-29)
 
 ### 🧱 Updated Dependencies
