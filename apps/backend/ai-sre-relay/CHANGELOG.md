@@ -1,3 +1,18 @@
+## 1.1.0 (2026-07-29)
+
+### 🚀 Features
+
+- **ai-sre-relay:** skip re-investigating unchanged repeat alerts ([a217235f](https://github.com/jdwlabs/apps/commit/a217235f))
+
+### 🩹 Fixes
+
+- **ai-sre-relay:** bound remediation PRs to an allowlisted repo ([b6e10721](https://github.com/jdwlabs/apps/commit/b6e10721))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.4 (2026-07-28)
 
 This was a version bump only for ai-sre-relay to align it with other projects, there were no code changes.
