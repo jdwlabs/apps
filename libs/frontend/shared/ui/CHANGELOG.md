@@ -1,3 +1,14 @@
+## 1.1.5 (2026-07-30)
+
+### 🚀 Features
+
+- **shared-ui:** restore the account menu and add an environment badge ([68155638](https://github.com/jdwlabs/apps/commit/68155638))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.4 (2026-07-29)
 
 ### 🧱 Updated Dependencies

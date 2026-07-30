@@ -1,3 +1,7 @@
+## 2.1.2 (2026-07-30)
+
+This was a version bump only for container to align it with other projects, there were no code changes.
+
 ## 2.1.1 (2026-07-29)
 
 ### 🧱 Updated Dependencies
