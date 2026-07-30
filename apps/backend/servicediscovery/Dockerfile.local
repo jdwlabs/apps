@@ -1,12 +1,14 @@
 # Remember to check for updates to base images to incorporate security patches
-# Use a specific version of golang based on SHA256 digest for reproducibility and security
-FROM golang:1.23 AS builder-go
+# The build context is the repo root, so go runs in workspace mode: this tag must
+# be >= the go.work `go` directive as well as this module's, or the compile aborts
+# with "go.work requires go >= X" before any source is read.
+FROM golang:1.26 AS builder-go
 
 # Use a specific version of node base on SHA256 digest for reproducibility and security
 FROM node:lts-alpine AS builder
 WORKDIR /app
 
-ARG GOLANG_VERSION=1.23
+ARG GOLANG_VERSION=1.26
 COPY --from=builder-go /usr/local/go /usr/local/go
 ENV PATH=$PATH:/usr/local/go/bin
 
