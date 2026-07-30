@@ -1,3 +1,14 @@
+## 1.1.1 (2026-07-30)
+
+### 🩹 Fixes
+
+- **servicediscovery:** mark otel deps direct and raise local build image ([a6c2e0c2](https://github.com/jdwlabs/apps/commit/a6c2e0c2))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.0 (2026-07-28)
 
 ### 🚀 Features
