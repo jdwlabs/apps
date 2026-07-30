@@ -11,11 +11,23 @@
 // variants from the same value, so the two cannot drift apart.
 $theme-type: light;
 
+// The semantic roles are stated rather than defaulted. `theming.theme`'s
+// defaults are the M2 500-level hues (#4caf50, #2196f3, #ff9800), and the
+// snackbar variants use each role as *text* — on a light surface those measure
+// 2.1:1 to 3.1:1, so an alert rendered in them is unreadable. The 900-level
+// tones below clear 4.5:1 in all three snackbar variants (filled, 12% tint,
+// outlined) against this theme's surface. Re-measure if they change.
 html {
   @include theming.theme(
     $primary: mat.$azure-palette,
     $tertiary: mat.$rose-palette,
-    $theme-type: $theme-type
+    $theme-type: $theme-type,
+    $success: #1b5e20,
+    $on-success: white,
+    $info: #0d47a1,
+    $on-info: white,
+    $warn: #bf360c,
+    $on-warn: white
   );
 }
 

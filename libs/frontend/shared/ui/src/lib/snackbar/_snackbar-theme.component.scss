@@ -40,12 +40,20 @@
   }
 }
 
+// The tint is 12%, matching M3's state-layer opacity, because this variant
+// paints the role colour as text on a tint of itself: the two converge as the
+// tint rises. At the 25% this replaced, warn measured 3.7:1 and error 4.1:1
+// against a light surface. 12% is the strongest tint that keeps every role —
+// including `error`, which comes from the M3 palette and cannot be retuned
+// per theme — above 4.5:1.
+$_tint-opacity: 12%;
+
 @mixin _variant($type, $color, $color-contrast) {
   .#{$type}.mat-mdc-snack-bar-container {
     .mdc-snackbar__surface {
       --mat-snackbar-container-color: #{color-mix(
           in srgb,
-          $color 25%,
+          $color $_tint-opacity,
           transparent
         )};
       --mat-snackbar-supporting-text-color: #{$color};
