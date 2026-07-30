@@ -24,10 +24,13 @@
       color: var(--mat-sys-on-surface-variant) !important;
     }
 
-    &:hover {
-      background-color: var(--mat-sys-surface-container-high);
-    }
-
+    // Hover is deliberately not declared. Material already paints one through
+    // `.mat-mdc-list-item-interactive::before` — `on-surface` at the M3 hover
+    // opacity — and the opaque `surface-container-high` fill this replaced sat
+    // on top of it, so every hover rendered two layers deep and swapped the
+    // whole surface out instead of washing over it. The state layer also
+    // composites correctly over `.active` below, which is why that no longer
+    // needs a hand-mixed hover of its own.
     &.active {
       background-color: var(--mat-sys-tertiary-container);
 
@@ -43,18 +46,6 @@
       .icon {
         color: var(--mat-sys-on-tertiary-container) !important;
       }
-    }
-
-    // `.active` and `:hover` carry equal specificity and `.active` is emitted
-    // last, so without this the current item has no hover affordance at all.
-    // Blending keeps the pill's identity instead of swapping it for the plain
-    // hover surface.
-    &.active:hover {
-      background-color: color-mix(
-        in srgb,
-        var(--mat-sys-on-tertiary-container) 12%,
-        var(--mat-sys-tertiary-container)
-      );
     }
   }
 
@@ -78,18 +69,28 @@
     padding-left: 0;
   }
 
-  // The rail indicator is 56x32 rather than the item's full 56x56 box. Clipping
-  // the background to a content box inset top and bottom is what produces it:
-  // `corner-full` on a 56x56 item paints a circle, and on the 56x48 item this
-  // replaced it painted an oval. Neither is the M3 rail indicator.
+  // The rail indicator is a 40x40 circle inside the item's 56x56 box, not the
+  // item box itself. Clipping the background to a content box inset on all four
+  // sides is what produces it: `corner-full` resolves against whatever box it
+  // is given, so it painted a 56x32 stadium while the box stayed 56 wide.
   //
-  // The state layer needs the same inset. Material paints hover and focus
-  // through `.mat-mdc-list-item-interactive::before`, which is pinned to all
-  // four edges of the item, so without this a hover ghost the full height of the
-  // item appears behind the pill.
+  // The item is narrowed to the indicator instead of being padded to it, so the
+  // leading icon keeps its own start space rather than being pushed off centre
+  // by horizontal padding — see nav-geometry for the centring arithmetic.
+  //
+  // The state layer needs the same box. Material paints hover and focus through
+  // `.mat-mdc-list-item-interactive::before`, pinned to all four edges of the
+  // item, so without this a hover ghost the full height of the item appears
+  // behind the circle.
   mat-sidenav.rail .nav {
-    width: geometry.$rail-item-width;
-    margin-left: geometry.$item-inset;
+    --mat-list-list-item-leading-icon-start-space: #{geometry.$rail-icon-start-space};
+    // The label is not rendered in this state, so the icon's trailing margin
+    // has nothing to separate it from and only pushes the flex line past the
+    // narrowed item.
+    --mat-list-list-item-leading-icon-end-space: 0;
+
+    width: geometry.$rail-indicator-size;
+    margin-left: geometry.$rail-indicator-inset-x;
     margin-right: 0;
     padding: geometry.$rail-indicator-inset 0;
     background-clip: content-box;

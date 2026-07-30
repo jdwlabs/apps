@@ -2,6 +2,20 @@
 
 $avatar-size: 32px;
 
+// Material derives an icon button's padding from its icon size — (40 - 24) / 2
+// — leaving a 24px content box. A 32px avatar is a block-level box, so it does
+// not centre in that box the way an inline glyph would: it starts at the
+// content edge and overflows 8px past the right and bottom of the button.
+// Restating the token as the avatar's own size makes the content box fit it
+// exactly, which is also why the avatar's own `width` is not the whole fix.
+//
+// Scoped by `:has()` rather than set on the trigger outright: the signed-out
+// state projects a real 24px `mat-icon` glyph, which the same token would blow
+// up to 32px in a 40px button.
+.trigger:has(.avatar) {
+  --mat-icon-button-icon-size: #{$avatar-size};
+}
+
 .avatar {
   display: flex;
   align-items: center;
@@ -13,10 +27,15 @@ $avatar-size: 32px;
   object-fit: cover;
 }
 
+// `tertiary-container` rather than `primary-container`: a dark theme's toolbar
+// takes `primary-container` as its own fill (see styles/components/toolbar),
+// so the primary pair painted the avatar in the exact colour of the bar behind
+// it — an invisible chip with a letter floating on it. Tertiary is the one
+// container role no toolbar variant claims.
 .initials {
-  background-color: var(--mat-sys-primary-container);
-  color: var(--mat-sys-on-primary-container);
-  font: var(--mat-sys-label-medium);
+  background-color: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+  font: var(--mat-sys-label-large);
 }
 
 .identity {

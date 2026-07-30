@@ -14,6 +14,9 @@ $rail-width: 80px;
 $expanded-width: 240px;
 $rail-item-width: 56px;
 $item-inset: math.div($rail-width - $rail-item-width, 2);
+$icon-size: 24px;
+// Material's default leading-icon-start-space, which the expanded state keeps.
+$icon-start-space: 16px;
 
 // M3 sizes a navigation destination at 56px in both the drawer and the rail.
 // Material's list default is 48px and scales with the density setting, so the
@@ -21,9 +24,20 @@ $item-inset: math.div($rail-width - $rail-item-width, 2);
 // and a density change would otherwise silently reshape the pill.
 $item-height: 56px;
 
-// The rail indicator is 56x32, not the full item box. Deriving the inset from
-// the two heights keeps it centred if either changes, and clipping the item's
-// background to that inset is what turns the item's `corner-full` radius into a
-// 16px pill instead of an oval spanning the whole 56px item.
-$rail-indicator-height: 32px;
-$rail-indicator-inset: math.div($item-height - $rail-indicator-height, 2);
+// The collapsed rail's indicator is a circle around the icon, not the 56x32
+// pill M3 draws for a labelled rail destination: at icon-only width a stadium
+// twice as wide as it is tall reads as a rendering fault rather than a
+// selection. A square indicator box plus the item's `corner-full` radius is
+// what makes it a circle — the radius alone cannot, since it resolves against
+// whatever box it is given.
+$rail-indicator-size: 40px;
+$rail-indicator-inset: math.div($item-height - $rail-indicator-size, 2);
+
+// The indicator is narrower than the item, so the rail's own inset no longer
+// centres it — it needs its own, and the icon has to move with it. Both are
+// derived so the cross-state invariant above holds by construction: the icon's
+// centre sits at $rail-indicator-inset-x + $rail-icon-start-space + half an
+// icon = 20 + 8 + 12 = 40px, the same place the expanded state puts it
+// ($item-inset + $icon-start-space + half an icon = 12 + 16 + 12).
+$rail-indicator-inset-x: math.div($rail-width - $rail-indicator-size, 2);
+$rail-icon-start-space: math.div($rail-indicator-size - $icon-size, 2);
