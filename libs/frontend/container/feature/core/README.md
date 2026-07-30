@@ -21,7 +21,7 @@ libs/frontend/container/feature/core/
 │   └── test-setup.ts
 ├── cypress/               # Cypress component test config & support files
 ├── cypress.config.ts      # Cypress component test configuration
-├── jest.config.ts         # Jest unit test configuration
+├── vite.config.ts         # Vitest unit test configuration
 ├── tsconfig*.json         # TypeScript configuration
 └── README.md              # Project documentation
 ```
@@ -36,7 +36,7 @@ libs/frontend/container/feature/core/
 - Nx CLI (for managing the workspace and building projects)
 - Angular (for building components)
 - Cypress (for component testing)
-- Jest (for unit testing)
+- Vitest (for unit testing)
 
 ### Installation
 
@@ -54,7 +54,7 @@ This library contains core UI components and is part of a larger Angular applica
 
 ### Unit Tests
 
-To run unit tests with Jest:
+To run unit tests with Vitest:
 
 ```bash
 nx test angular-container-feature-core
@@ -72,7 +72,7 @@ nx run angular-container-feature-core:component-test
 
 ## 🧪 Testing
 
-- **Jest** is used for unit tests.
+- **Vitest** is used for unit tests.
 - **Cypress** is used for testing components in isolation.
 
 Both test runners are configured and can be executed via Nx.
@@ -114,5 +114,5 @@ The output will be generated in the `dist/` folder.
 ## 📌 Notes
 
 - This library is part of the modular monorepo managed by Nx.
-- All components are written in Angular and tested using Jest and Cypress.
+- All components are written in Angular and tested using Vitest and Cypress.
 - It adheres to a standalone and feature-first approach using modern Angular.

@@ -20,7 +20,7 @@ libs/frontend/container/util/
 │   │   └── routes.model.ts           # Common route-related models
 │   ├── index.ts                      # Library exports
 │   └── test-setup.ts
-├── jest.config.ts                    # Jest configuration
+├── vite.config.ts                    # Vitest configuration
 ├── tsconfig.json                     # TypeScript base config
 ├── tsconfig.lib.json                 # Library-specific TypeScript config
 ├── tsconfig.spec.json                # Spec-specific TypeScript config
@@ -38,7 +38,7 @@ libs/frontend/container/util/
 - Node.js (LTS version recommended)
 - Nx CLI (for workspace and project management)
 - Angular
-- Jest (for unit testing)
+- Vitest (for unit testing)
 - ESLint (for linting and code standards)
 
 ### Installation
@@ -53,7 +53,7 @@ npm install
 
 ## 🧪 Testing
 
-To run unit tests with Jest:
+To run unit tests with Vitest:
 
 ```bash
 nx test angular-container-util

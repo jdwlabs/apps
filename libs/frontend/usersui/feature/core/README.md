@@ -22,7 +22,7 @@ libs/frontend/usersui/feature/core/
 │   │   ├── account/                # Account management UI
 │   │   └── lib.routes.ts           # Route definitions for the feature
 │   └── test-setup.ts               # Test setup configuration
-├── jest.config.ts                  # Jest configuration for unit testing
+├── vite.config.ts                  # Vitest configuration for unit testing
 ├── cypress.config.ts               # Cypress configuration for component testing
 ├── tsconfig.json                   # Base TypeScript configuration
 ├── tsconfig.lib.json               # Library-specific TypeScript configuration

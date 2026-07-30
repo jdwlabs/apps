@@ -41,7 +41,7 @@ libs/frontend/shared/ui/
 │   ├── _custom-palettes.scss          # Generated M3 tonal palettes (schematic output)
 │   ├── _nav-geometry.scss             # Shared rail/drawer widths (see invariant within)
 │   └── _theming.scss                  # Theme mixin (mat.theme + extra semantic roles)
-├── jest.config.ts
+├── vite.config.ts
 ├── ng-package.json
 ├── tsconfig.*.json
 ├── cypress/                          # Cypress component test setup
@@ -134,7 +134,7 @@ are schematic output.
 
 ## 🧪 Testing
 
-### Unit Tests (Jest)
+### Unit Tests (Vitest)
 
 ```bash
 nx test angular-shared-ui

@@ -19,7 +19,7 @@ libs/frontend/usersui/util/
 │   │   ├── date.util.ts            # Utility functions for date manipulation
 │   │   └── date.util.spec.ts       # Unit tests for date utilities
 │   └── test-setup.ts               # Test setup configuration
-├── jest.config.ts                  # Jest configuration for unit testing
+├── vite.config.ts                  # Vitest configuration for unit testing
 ├── tsconfig.json                   # Base TypeScript configuration
 ├── tsconfig.lib.json               # Library-specific TypeScript configuration
 ├── tsconfig.spec.json              # Test-specific TypeScript configuration

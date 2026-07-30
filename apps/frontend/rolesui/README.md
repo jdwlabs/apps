@@ -22,14 +22,14 @@ apps/frontend/rolesui/
 │   ├── index.html               # Main HTML entry point
 │   ├── main.ts                  # Angular main entry
 │   ├── styles.scss              # Global styles
-│   └── test-setup.ts            # Jest test setup
+│   └── test-setup.ts            # Vitest test setup
 ├── Dockerfile                   # Docker configuration for containerized deployment
 ├── default.conf                 # Nginx config used in container
 ├── start-nginx.sh               # Entrypoint script for Nginx
 ├── module-federation.config.ts  # Module federation configuration
 ├── webpack.config.ts            # Webpack base configuration
 ├── webpack.prod.config.ts       # Webpack production configuration
-├── jest.config.ts               # Jest configuration
+├── vite.config.ts               # Vite build and Vitest configuration
 ├── tsconfig*.json               # TypeScript configuration files
 ├── project.json                 # Nx project configuration
 └── CHANGELOG.md                 # Release history

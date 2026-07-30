@@ -20,7 +20,7 @@ libs/frontend/authui/feature/core/
 │   │   ├── forbidden
 │   │   ├── sign-in
 │   │   └── sign-up
-├── jest.config.ts              # Jest configuration for unit tests
+├── vite.config.ts              # Vitest configuration for unit tests
 ├── tsconfig.json               # TypeScript configuration
 └── README.md                   # Project documentation
 ```

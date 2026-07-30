@@ -18,7 +18,7 @@ libs/frontend/container/data-access/
 │   │   ├── dynamic-route-loader       # Service for dynamic route loading
 │   │   ├── micro-frontend             # Service for managing micro frontends
 │   │   └── version                    # Service for version management
-├── jest.config.ts                     # Jest configuration for unit testing
+├── vite.config.ts                     # Vitest configuration for unit testing
 ├── tsconfig.json                      # TypeScript configuration
 └── README.md                          # Project documentation
 ```
@@ -32,7 +32,7 @@ libs/frontend/container/data-access/
 - Node.js (LTS version recommended)
 - Nx CLI (for managing the workspace and building projects)
 - Angular (for building the services)
-- Jest (for unit testing)
+- Vitest (for unit testing)
 
 ### Installation
 
@@ -64,7 +64,7 @@ To contribute to this library, you can use the following commands:
 
 ## 🧪 Testing
 
-This library uses **Jest** for unit testing. You can run the tests using the following command:
+This library uses **Vitest** for unit testing. You can run the tests using the following command:
 
 ```bash
 nx test angular-container-data-access
