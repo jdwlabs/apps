@@ -29,7 +29,7 @@ libs/frontend/shared/util/
 │   │   ├── *.util.ts                 # Utility functions (error handling, etc.)
 │   │   └── environment.token.ts      # DI token for runtime environment config
 │   └── index.ts
-├── jest.config.ts
+├── vite.config.ts
 ├── tsconfig.*.json
 └── README.md
 ```

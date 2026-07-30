@@ -20,7 +20,7 @@ libs/frontend/usersui/data-access/
 │   │       ├── profiles.service.ts    # Service for managing profile data
 │   │       └── profiles.service.spec.ts
 │   └── test-setup.ts                  # Test setup configuration
-├── jest.config.ts                     # Jest configuration for unit testing
+├── vite.config.ts                     # Vitest configuration for unit testing
 ├── tsconfig.json                      # Base TypeScript configuration
 ├── tsconfig.lib.json                  # Library-specific TypeScript configuration
 └── tsconfig.spec.json                 # Test-specific TypeScript configuration

@@ -15,7 +15,6 @@
     "**/*.cy.tsx",
     "cypress.config.ts",
     "cypress/**/*",
-    "jest.config.ts",
     "src/**/*.spec.ts",
     "src/**/*.test.ts",
     "src/test-setup.ts"

@@ -8,7 +8,7 @@
   },
   "files": ["src/main.ts", "src/app/remote-entry/entry.routes.ts"],
   "include": ["src/**/*.d.ts"],
-  "exclude": ["jest.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
   "angularCompilerOptions": {
     "extendedDiagnostics": {
       "checks": {

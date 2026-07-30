@@ -20,7 +20,7 @@ libs/frontend/shared/data-access/
 │   │   └── snackbar/                     # UI toast/snackbar notifications
 │   ├── index.ts                          # Public exports
 │   └── test-setup.ts
-├── jest.config.ts                        # Jest config
+├── vite.config.ts                        # Vitest config
 ├── tsconfig.json                         # Base TypeScript config
 ├── tsconfig.lib.json                     # Library-specific TypeScript config
 ├── tsconfig.spec.json                    # Spec/test TypeScript config
@@ -38,7 +38,7 @@ libs/frontend/shared/data-access/
 - Node.js (LTS)
 - Nx CLI
 - Angular
-- Jest & ESLint
+- Vitest & ESLint
 
 ### Install
 
@@ -52,7 +52,7 @@ npm install
 
 ## 🧪 Testing
 
-Run unit tests using Jest:
+Run unit tests using Vitest:
 
 ```bash
 nx test angular-shared-data-access
