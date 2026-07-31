@@ -158,7 +158,7 @@ func (fakeGHErr) OpenPR(context.Context, Patch, IssueKey) (PRLink, error) {
 
 func TestPipelineGithubFailureStillNotifiesDiscord(t *testing.T) {
 	d := &fakeDiscord{}
-	patch := &Patch{Repo: "a/b", FilePath: "f", NewContent: "c", Branch: "fix/x", Rationale: "r", Confidence: 0.9}
+	patch := &Patch{Repo: "a/b", FilePath: "f", NewContent: "c", Rationale: "r", Confidence: 0.9}
 	p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: patch}, &fakeJira{key: "JDWLABS-3"}, fakeGHErr{}, d, silentLogger())
 	if err := p.Handle(context.Background(), Alert{Fingerprint: "fp"}); err != nil {
 		t.Fatal(err)
