@@ -1,3 +1,15 @@
+## 1.1.1 (2026-07-31)
+
+### 🩹 Fixes
+
+- **ai-sre-relay:** derive the remediation branch instead of trusting the model ([3c2b3c50](https://github.com/jdwlabs/apps/commit/3c2b3c50))
+- **ai-sre-relay:** reject tool-call markup truncated at the start ([3fa17b90](https://github.com/jdwlabs/apps/commit/3fa17b90))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.0 (2026-07-29)
 
 ### 🚀 Features
