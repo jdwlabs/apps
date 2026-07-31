@@ -1,3 +1,18 @@
+## 1.2.0 (2026-07-31)
+
+### 🚀 Features
+
+- **servicediscovery:** set service.name on exported spans ([8601d068](https://github.com/jdwlabs/apps/commit/8601d068))
+
+### 🩹 Fixes
+
+- **servicediscovery:** reject OTLP endpoints with no URL scheme ([507e7337](https://github.com/jdwlabs/apps/commit/507e7337))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.1 (2026-07-30)
 
 ### 🩹 Fixes
