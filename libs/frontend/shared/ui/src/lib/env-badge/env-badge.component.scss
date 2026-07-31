@@ -1,5 +1,15 @@
 @use '../styles/shape';
 
+// Without this the host is a block box wrapping an inline-level badge, so the
+// badge sits on a line box and is placed by *baseline* against the inherited
+// toolbar strut (22px/28px Roboto). The host then measures 6px taller than the
+// badge, and a parent centring its flex items centres that taller box — which
+// left the badge 3px below the account button beside it. Making the host a flex
+// container removes the line box, so host and badge are the same box.
+:host {
+  display: inline-flex;
+}
+
 .badge {
   display: inline-flex;
   align-items: stretch;
