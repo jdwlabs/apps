@@ -73,6 +73,52 @@ func TestSanitizeAnalysisRejectsUnterminatedToolCall(t *testing.T) {
 	}
 }
 
+// Modeled on the payloads that reached an incident ticket as investigation
+// analysis: the block's opening tag was gone, leaving arguments plus a closing
+// tag that paired with nothing.
+const startTruncatedToolCall = `{"invocation": {"tool": "kubernetes_jq_query", ` +
+	`"params": {"query": ".items[].metadata.name"}}}` + "\n</tool_call>\n"
+
+func TestSanitizeAnalysisRejectsOrphanClosingTag(t *testing.T) {
+	for _, in := range []string{
+		"</tool_call>",
+		"</function>\n</tool_call>",
+		"\n</tool_call>\n",
+	} {
+		if _, err := sanitizeAnalysis(in); !errors.Is(err, errAnalysisToolCall) {
+			t.Fatalf("input %q: want errAnalysisToolCall, got %v", in, err)
+		}
+	}
+}
+
+func TestSanitizeAnalysisRejectsStartTruncatedToolCall(t *testing.T) {
+	if _, err := sanitizeAnalysis(startTruncatedToolCall); !errors.Is(err, errAnalysisToolCall) {
+		t.Fatalf("want errAnalysisToolCall, got %v", err)
+	}
+}
+
+func TestSanitizeAnalysisRejectsStartTruncatedParameterBlock(t *testing.T) {
+	in := "<parameter=query>\nprometheus_target_scrape_pool_target_health\n</parameter>\n</tool_call>\n"
+	if _, err := sanitizeAnalysis(in); !errors.Is(err, errAnalysisToolCall) {
+		t.Fatalf("want errAnalysisToolCall, got %v", err)
+	}
+}
+
+// A stray closing tag must cost the markup, not the analysis beside it.
+func TestSanitizeAnalysisKeepsProseBesideOrphanClosingTag(t *testing.T) {
+	in := "## Root Cause\n\nThe etcd member on 192.168.1.125 is wedged.\n\n</tool_call>"
+	got, err := sanitizeAnalysis(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(got, "tool_call") {
+		t.Fatalf("orphan markup leaked through: %q", got)
+	}
+	if !strings.Contains(got, "etcd member on 192.168.1.125") {
+		t.Fatalf("substantive content lost: %q", got)
+	}
+}
+
 func TestSanitizeAnalysisRejectsJSONToolCall(t *testing.T) {
 	in := `{"name":"execute_prometheus_instant_query","arguments":{"query":"up == 0"}}`
 	if _, err := sanitizeAnalysis(in); !errors.Is(err, errAnalysisToolCall) {

@@ -25,7 +25,7 @@ func NewPatchGenerator(baseURL, apiKey, model string, minConfidence float64, hc 
 }
 
 const patchSystemPrompt = `You are an SRE assistant. Given a root-cause analysis, propose AT MOST ONE single-file GitOps change that fixes it. Respond with ONLY a JSON object, no prose, matching:
-{"repo":"owner/name","file_path":"...","new_content":"<full file>","branch":"fix/...","rationale":"...","confidence":0.0-1.0}
+{"repo":"owner/name","file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}
 If no safe single-file change exists, respond with exactly: {"confidence":0}`
 
 type openAIRequest struct {

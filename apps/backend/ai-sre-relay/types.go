@@ -23,7 +23,6 @@ type Patch struct {
 	Repo       string  `json:"repo"`        // "owner/name"
 	FilePath   string  `json:"file_path"`   // path within repo
 	NewContent string  `json:"new_content"` // full new file contents
-	Branch     string  `json:"branch"`
 	Rationale  string  `json:"rationale"`
 	Confidence float64 `json:"confidence"` // 0..1
 }

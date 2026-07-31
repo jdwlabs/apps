@@ -3,14 +3,99 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
+	"unicode"
 )
+
+const (
+	// baseBranch is the only branch the arm reads a SHA from and targets with a
+	// PR. It is never written to; the patch always lands on a derived branch.
+	baseBranch = "main"
+
+	// branchPrefix namespaces every relay-authored branch, and doubles as the
+	// prefix the org's branch-naming rule requires.
+	branchPrefix = "fix/ai-sre/"
+
+	// maxPatchBytes caps a model-authored file body. A remediation is a small
+	// GitOps edit; anything larger is a runaway generation rather than a fix.
+	maxPatchBytes = 64 << 10
+
+	// maxRationaleRunes bounds the model text interpolated into a commit
+	// message and PR title, which are single-line by contract.
+	maxRationaleRunes = 120
+
+	// maxRationaleBodyRunes bounds the same text in the PR body, where more
+	// context is useful but unbounded model output still is not.
+	maxRationaleBodyRunes = 2000
+)
+
+// tagLike matches an HTML/XML-ish token, which is also the shape of the
+// tool-call markup a model emits as text. A non-space is required directly
+// after '<' so an ordinary comparison such as "memory < 512Mi" is left alone.
+var tagLike = regexp.MustCompile(`<[^\s<>][^<>]*>`)
+
+// remediationBranch derives the target branch from the patch rather than taking
+// the model's suggestion. Two properties matter: it can never name a branch a
+// human relies on — least of all baseBranch — and it is deterministic, so
+// re-running the same patch reuses one branch instead of littering the repo.
+func remediationBranch(p Patch, issue IssueKey) string {
+	if slug := branchSlug(string(issue)); slug != "" {
+		return branchPrefix + slug
+	}
+	// No issue key (the Jira arm failed): fall back to the patch's own identity
+	// so dedup still holds.
+	sum := sha256.Sum256([]byte(p.Repo + "\x00" + p.FilePath + "\x00" + p.NewContent))
+	return branchPrefix + hex.EncodeToString(sum[:6])
+}
+
+// branchSlug reduces an issue key to lowercase alphanumerics and dashes, so the
+// result is a valid git ref with no room for path or option injection.
+func branchSlug(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(strings.TrimSpace(s)) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-', r == '_', r == '.':
+			b.WriteRune('-')
+		}
+	}
+	return strings.Trim(b.String(), "-")
+}
+
+// safeSummary flattens model-authored text for embedding in a commit message,
+// PR title or PR body. The rationale is derived from alert annotations and
+// Holmes output, so it is untrusted: markup is dropped, newlines and control
+// characters collapse to spaces, and the result is length-capped so it cannot
+// reshape the message that carries it.
+func safeSummary(s string, maxRunes int) string {
+	s = tagLike.ReplaceAllString(s, " ")
+	var b strings.Builder
+	for _, r := range s {
+		if unicode.IsControl(r) {
+			b.WriteRune(' ')
+			continue
+		}
+		b.WriteRune(r)
+	}
+	out := strings.Join(strings.Fields(b.String()), " ")
+	if out == "" {
+		return "no rationale provided"
+	}
+	if rs := []rune(out); len(rs) > maxRunes {
+		return strings.TrimSpace(string(rs[:maxRunes])) + "…"
+	}
+	return out
+}
 
 type GitHubClient struct {
 	apiBase string // https://api.github.com (override in tests)
@@ -89,9 +174,10 @@ func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (
 	return g.hc.Do(req)
 }
 
-// OpenPR creates a branch off main, writes the single patched file, and opens a
-// PR for human review. The branch name comes from the patch so callers control
-// dedup (re-running the same patch lands on the same branch).
+// OpenPR creates a derived branch off baseBranch, writes the single patched
+// file to it, and opens a PR for human review. It never pushes to baseBranch,
+// never force-updates a ref, and never merges: every write is confined to the
+// branch remediationBranch derives, and the merge decision stays with a human.
 func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error) {
 	if err := g.checkRepo(p.Repo); err != nil {
 		return "", err
@@ -100,10 +186,21 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	if err != nil {
 		return "", err
 	}
+	if n := len(p.NewContent); n == 0 || n > maxPatchBytes {
+		return "", fmt.Errorf("github: patch body is %d bytes, want 1..%d", n, maxPatchBytes)
+	}
+	branch := remediationBranch(p, issue)
+	// An invariant, not a possibility. Asserted rather than assumed so that
+	// reintroducing a caller- or model-supplied branch cannot silently turn this
+	// back into a write primitive against a protected branch.
+	if branch == baseBranch || !strings.HasPrefix(branch, branchPrefix) {
+		return "", fmt.Errorf("github: refusing to write to branch %q", branch)
+	}
+	summary := safeSummary(p.Rationale, maxRationaleRunes)
 	repoPath := "/repos/" + p.Repo
 
 	// 1. base ref SHA
-	refResp, err := g.req(ctx, http.MethodGet, repoPath+"/git/ref/heads/main", nil)
+	refResp, err := g.req(ctx, http.MethodGet, repoPath+"/git/ref/heads/"+baseBranch, nil)
 	if err != nil {
 		return "", err
 	}
@@ -129,7 +226,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	// 2. create branch; 422 means the branch already exists and is fine (idempotent
 	// re-run of the same patch), other non-2xx statuses are real failures.
 	brResp, err := g.req(ctx, http.MethodPost, repoPath+"/git/refs", map[string]string{
-		"ref": "refs/heads/" + p.Branch, "sha": ref.Object.SHA,
+		"ref": "refs/heads/" + branch, "sha": ref.Object.SHA,
 	})
 	if err != nil {
 		return "", err
@@ -142,7 +239,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 
 	// 3. existing file SHA (needed to update; absent => new file)
 	var existingSHA string
-	fResp, err := g.req(ctx, http.MethodGet, repoPath+"/contents/"+filePath+"?ref="+url.QueryEscape(p.Branch), nil)
+	fResp, err := g.req(ctx, http.MethodGet, repoPath+"/contents/"+filePath+"?ref="+url.QueryEscape(branch), nil)
 	if err != nil {
 		return "", err
 	}
@@ -156,9 +253,9 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	fResp.Body.Close()
 
 	put := map[string]any{
-		"message": fmt.Sprintf("fix(ai-sre): %s (%s)", p.Rationale, issue),
+		"message": fmt.Sprintf("fix(ai-sre): %s (%s)", summary, issue),
 		"content": base64.StdEncoding.EncodeToString([]byte(p.NewContent)),
-		"branch":  p.Branch,
+		"branch":  branch,
 	}
 	if existingSHA != "" {
 		put["sha"] = existingSHA
@@ -173,11 +270,13 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	}
 
 	// 5. open PR
-	prBody := fmt.Sprintf("Automated AI-SRE remediation for %s.\n\n%s\n\n**Human review required — do not auto-merge.**", issue, p.Rationale)
+	prBody := fmt.Sprintf(
+		"Automated AI-SRE remediation for %s.\n\nSingle file changed: `%s`\n\n%s\n\n**Human review required — do not auto-merge.**",
+		issue, filePath, safeSummary(p.Rationale, maxRationaleBodyRunes))
 	prResp, err := g.req(ctx, http.MethodPost, repoPath+"/pulls", map[string]string{
-		"title": fmt.Sprintf("fix(ai-sre): %s [%s]", p.Rationale, issue),
-		"head":  p.Branch,
-		"base":  "main",
+		"title": fmt.Sprintf("fix(ai-sre): %s [%s]", summary, issue),
+		"head":  branch,
+		"base":  baseBranch,
 		"body":  prBody,
 	})
 	if err != nil {

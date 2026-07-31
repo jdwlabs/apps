@@ -36,7 +36,7 @@ func TestGitHubOpenPR(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "values.yaml", NewContent: "limits:\n  memory: 512Mi\n", Branch: "fix/oom", Rationale: "raise", Confidence: 0.9}
+	p := Patch{Repo: "jdwlabs/platform", FilePath: "values.yaml", NewContent: "limits:\n  memory: 512Mi\n", Rationale: "raise", Confidence: 0.9}
 	link, err := NewGitHubClient(srv.URL, "ghtok", []string{"jdwlabs/platform"}, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +64,7 @@ func TestGitHubOpenPRRejectsRepo(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			called = false
-			p := Patch{Repo: tc.repo, FilePath: "values.yaml", NewContent: "x", Branch: "fix/x"}
+			p := Patch{Repo: tc.repo, FilePath: "values.yaml", NewContent: "x"}
 			_, err := NewGitHubClient(srv.URL, "ghtok", tc.allowed, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 			if err == nil {
 				t.Fatal("expected rejection")
@@ -84,7 +84,7 @@ func TestGitHubOpenPRRejectsFilePath(t *testing.T) {
 	for _, bad := range []string{"", "/etc/passwd", "../../../etc/passwd", ".."} {
 		t.Run(bad, func(t *testing.T) {
 			called = false
-			p := Patch{Repo: "jdwlabs/platform", FilePath: bad, NewContent: "x", Branch: "fix/x"}
+			p := Patch{Repo: "jdwlabs/platform", FilePath: bad, NewContent: "x"}
 			_, err := NewGitHubClient(srv.URL, "ghtok", []string{"jdwlabs/platform"}, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 			if err == nil {
 				t.Fatalf("expected rejection for %q", bad)
@@ -105,7 +105,7 @@ func TestGitHubOpenPRSurfacesBaseRefStatus(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "values.yaml", NewContent: "x", Branch: "fix/x"}
+	p := Patch{Repo: "jdwlabs/platform", FilePath: "values.yaml", NewContent: "x"}
 	_, err := NewGitHubClient(srv.URL, "ghtok", []string{"jdwlabs/platform"}, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err == nil {
 		t.Fatal("expected an error")
