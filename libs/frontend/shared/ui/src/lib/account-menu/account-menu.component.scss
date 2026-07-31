@@ -2,6 +2,18 @@
 
 $avatar-size: 32px;
 
+// Material derives an icon button's padding from its icon size — (40 - 24) / 2
+// — leaving a 24px content box. A 32px avatar is a block-level box, so unlike
+// an inline glyph it does not centre in a box too small for it: it starts at
+// the content edge and hangs 8px past the button's right and bottom. Restating
+// the token as the avatar's own size makes the content box fit it exactly.
+//
+// Scoped by `:has()` rather than set on the trigger outright: the signed-out
+// state projects a real 24px `mat-icon`, which the same token would inflate.
+.trigger:has(.avatar) {
+  --mat-icon-button-icon-size: #{$avatar-size};
+}
+
 .avatar {
   display: flex;
   align-items: center;
@@ -13,9 +25,15 @@ $avatar-size: 32px;
   object-fit: cover;
 }
 
+// Secondary is the one container role no toolbar variant claims: `mat-primary`
+// takes primary, `mat-accent` tertiary, `mat-warn` the warn role, and a dark
+// theme's toolbar takes the *container* tone of whichever it is. Painting the
+// chip in `primary-container` therefore gave it the exact colour of the bar
+// behind it — measured 1.00:1, a letter floating on nothing — under every dark
+// theme, while looking correct under every light one.
 .initials {
-  background-color: var(--mat-sys-primary-container);
-  color: var(--mat-sys-on-primary-container);
+  background-color: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
   font: var(--mat-sys-label-medium);
 }
 
