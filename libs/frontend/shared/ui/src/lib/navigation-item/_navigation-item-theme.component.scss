@@ -78,25 +78,40 @@
     padding-left: 0;
   }
 
-  // The rail indicator is 56x32 rather than the item's full 56x56 box. Clipping
-  // the background to a content box inset top and bottom is what produces it:
-  // `corner-full` on a 56x56 item paints a circle, and on the 56x48 item this
-  // replaced it painted an oval. Neither is the M3 rail indicator.
+  // With no label to enclose, the collapsed item is itself the indicator: a
+  // square box whose `corner-full` radius therefore paints a circle around the
+  // icon. Nothing clips or insets the background, which is deliberate — an
+  // inset content box does not shorten the corner curves, it only clips them,
+  // and the lens that produces is what this replaced.
   //
-  // The state layer needs the same inset. Material paints hover and focus
-  // through `.mat-mdc-list-item-interactive::before`, which is pinned to all
-  // four edges of the item, so without this a hover ghost the full height of the
-  // item appears behind the pill.
+  // Leaving the box whole is also what keeps the state layer honest. Material
+  // paints hover and focus through `.mat-mdc-list-item-interactive::before`,
+  // pinned to all four edges of the item, so it now tracks the indicator by
+  // construction instead of needing a matching inset — and Material's focus
+  // rule re-pins its own top edge, which an inset here could not follow.
+  //
+  // The zero padding is load-bearing, not tidying: Material pads an item with a
+  // leading icon by 16px on each side, and that would move the icon's centre off
+  // the position the expanded state puts it at.
   mat-sidenav.rail .nav {
     width: geometry.$rail-item-width;
     margin-left: geometry.$item-inset;
     margin-right: 0;
-    padding: geometry.$rail-indicator-inset 0;
-    background-clip: content-box;
+    padding: 0;
+  }
 
-    &::before {
-      top: geometry.$rail-indicator-inset;
-      bottom: geometry.$rail-indicator-inset;
-    }
+  // Material's only focus affordance for a list item is that same state layer —
+  // `on-surface` at 12%. Over the active indicator's container fill that
+  // measured 1.3:1, and it occupies exactly the indicator's box, so where it is
+  // visible at all it reads as a smudge on the indicator rather than a separate
+  // ring. A drawn ring is independent of both: it is a shape the indicator never
+  // takes, and `on-surface` is the one role guaranteed to contrast with the
+  // drawer behind an inactive item.
+  //
+  // Drawn inside the edge rather than outside it because the nav list scrolls,
+  // and an outward offset would be clipped at the first and last destination.
+  mat-sidenav.rail .nav:focus-visible {
+    outline: 3px solid var(--mat-sys-on-surface);
+    outline-offset: -3px;
   }
 }
