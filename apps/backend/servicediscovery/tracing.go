@@ -15,12 +15,33 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
 const tracerServiceName = "servicediscovery"
 
 func noopShutdown(context.Context) error { return nil }
+
+// traceResource builds the resource attached to every exported span.
+//
+// service.name has to be set explicitly. It is the key Tempo's service graph
+// and Grafana's tracesToLogsV2 correlation both join on, yet nothing else here
+// supplies it: WithTelemetrySDK contributes only telemetry.sdk.*, and
+// sdktrace.WithResource merges against resource.Environment() rather than
+// resource.Default(), so the usual unknown_service fallback never applies
+// either. Spans would otherwise arrive in Tempo and be unusable.
+//
+// WithFromEnv is deliberately last: detectors merge in order with the later one
+// winning, so OTEL_SERVICE_NAME and OTEL_RESOURCE_ATTRIBUTES still override the
+// built-in name rather than being silently outranked by it.
+func traceResource(ctx context.Context) (*resource.Resource, error) {
+	return resource.New(ctx,
+		resource.WithTelemetrySDK(),
+		resource.WithAttributes(semconv.ServiceName(tracerServiceName)),
+		resource.WithFromEnv(),
+	)
+}
 
 // initTracing wires OTLP trace export and returns the provider's shutdown.
 //
@@ -55,14 +76,17 @@ func initTracing(ctx context.Context, env envGetter) (func(context.Context) erro
 		return noopShutdown, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
 
-	res, err := resource.New(ctx,
-		resource.WithFromEnv(),
-		resource.WithTelemetrySDK(),
-	)
+	res, err := traceResource(ctx)
 	if err != nil {
 		return noopShutdown, fmt.Errorf("building trace resource: %w", err)
 	}
 
+	// No WithSampler on purpose. The SDK reads OTEL_TRACES_SAMPLER and
+	// OTEL_TRACES_SAMPLER_ARG itself, and WithSampler would override them —
+	// hardcoding a rate here would take the only dial-down knob away from
+	// deployment config. Unset means ParentBased(AlwaysSample), i.e. every
+	// trace, which is the intended pilot default on a single low-traffic
+	// replica.
 	provider := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
