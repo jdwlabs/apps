@@ -4,8 +4,11 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
+	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
@@ -42,6 +45,57 @@ func TestInitTracingRejectsUnknownProtocol(t *testing.T) {
 	}
 	if err := shutdown(context.Background()); err != nil {
 		t.Errorf("fallback shutdown returned an error: %v", err)
+	}
+}
+
+// A scheme-less endpoint is the dangerous case: the exporters accept it, parse
+// the host as the scheme and then silently discard every span, so it has to be
+// rejected at startup rather than logged.
+func TestInitTracingRejectsEndpointWithoutScheme(t *testing.T) {
+	tests := []struct {
+		name       string
+		endpoint   string
+		wantReject bool
+	}{
+		{"bare host and port", "platform-tempo.monitoring.svc.cluster.local:4317", true},
+		{"bare ip and port", "127.0.0.1:4317", true},
+		{"scheme only, no host", "http://", true},
+		{"non-http scheme", "grpc://tempo:4317", true},
+		{"http endpoint", "http://platform-tempo.monitoring.svc.cluster.local:4317", false},
+		{"https endpoint", "https://platform-tempo.monitoring.svc.cluster.local:4317", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := mockEnvGetter{envs: map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": tt.endpoint}}
+
+			prev := otel.GetTracerProvider()
+			t.Cleanup(func() { otel.SetTracerProvider(prev) })
+
+			shutdown, err := initTracing(context.Background(), env)
+			// The caller defers shutdown before inspecting the error.
+			if shutdown == nil {
+				t.Fatal("initTracing returned a nil shutdown func")
+			}
+			t.Cleanup(func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				_ = shutdown(ctx)
+			})
+
+			if tt.wantReject {
+				if err == nil {
+					t.Fatalf("initTracing accepted %q", tt.endpoint)
+				}
+				if !strings.Contains(err.Error(), "OTEL_EXPORTER_OTLP_ENDPOINT") || !strings.Contains(err.Error(), tt.endpoint) {
+					t.Errorf("error %q names neither the variable nor the offending value", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("initTracing rejected %q: %v", tt.endpoint, err)
+			}
+		})
 	}
 }
 

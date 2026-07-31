@@ -56,7 +56,7 @@ func TestInitTracingHonoursEnvSampler(t *testing.T) {
 	t.Cleanup(func() { otel.SetTracerProvider(prev) })
 
 	t.Setenv("OTEL_TRACES_SAMPLER", "always_off")
-	env := mockEnvGetter{envs: map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": "127.0.0.1:4317"}}
+	env := mockEnvGetter{envs: map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4317"}}
 
 	shutdown, err := initTracing(context.Background(), env)
 	if err != nil {
