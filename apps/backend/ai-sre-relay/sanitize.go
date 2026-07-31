@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
@@ -22,8 +21,18 @@ var (
 
 // toolCallMarkup matches hermes-style tool-call blocks
 // (<tool_call>…</tool_call>, possibly left unterminated by a truncated
-// response) and bare <function=…> blocks some models emit without the wrapper.
-var toolCallMarkup = regexp.MustCompile(`(?s)<tool_call>.*?(?:</tool_call>|$)|<function=.*?(?:</function>|$)`)
+// response), bare <function=…> blocks some models emit without the wrapper, and
+// bare <parameter=…> blocks — the argument spans are matched on their own so a
+// block whose opening tags were cut off does not leave its argument values
+// behind masquerading as prose.
+var toolCallMarkup = regexp.MustCompile(`(?s)<tool_call>.*?(?:</tool_call>|$)|<function=.*?(?:</function>|$)|<parameter=.*?(?:</parameter>|$)`)
+
+// orphanToolCallMarkup matches scaffolding tags left with nothing to pair with
+// when a block is truncated at its START — the shape toolCallMarkup cannot see,
+// because every one of its alternations needs an opening tag. Only the tags are
+// removed, never a surrounding span: a stray closing tag must cost the markup
+// and not any real analysis emitted beside it.
+var orphanToolCallMarkup = regexp.MustCompile(`</?(?:tool_call|function|parameter)(?:=[^>]*)?>`)
 
 // leadingFiller marks first-person narration ("Now I have a complete picture.
 // Let me summarize…") that chat models prepend to an answer.
@@ -46,6 +55,10 @@ func sanitizeAnalysis(raw string) (string, error) {
 
 	hadToolCall := toolCallMarkup.MatchString(s)
 	s = strings.TrimSpace(toolCallMarkup.ReplaceAllString(s, ""))
+	if orphanToolCallMarkup.MatchString(s) {
+		hadToolCall = true
+		s = strings.TrimSpace(orphanToolCallMarkup.ReplaceAllString(s, ""))
+	}
 	if isJSONToolCall(s) {
 		hadToolCall = true
 		s = ""
@@ -73,17 +86,27 @@ func sanitizeAnalysis(raw string) (string, error) {
 }
 
 // isJSONToolCall reports whether s is a JSON payload shaped like a tool or
-// function call (OpenAI-style {"tool_calls": …} or a bare
-// {"name": …, "arguments"/"parameters": …}) rather than prose analysis.
+// function call (OpenAI-style {"tool_calls": …}, a bare
+// {"name": …, "arguments"/"parameters": …}, or an {"invocation": {"tool": …}}
+// envelope) rather than prose analysis.
+//
+// Parseability is deliberately not required. A block cut off mid-object is not
+// valid JSON, and gating on json.Valid let exactly those fragments through to
+// be published as analysis. Opening like an object and carrying a tool call's
+// key names is the signal; analysis prose is markdown and starts with neither.
 func isJSONToolCall(s string) bool {
-	if s == "" || (s[0] != '{' && s[0] != '[') || !json.Valid([]byte(s)) {
+	if s == "" || (s[0] != '{' && s[0] != '[') {
 		return false
 	}
-	if strings.Contains(s, `"tool_calls"`) || strings.Contains(s, `"tool_call"`) {
+	if strings.Contains(s, `"tool_calls"`) || strings.Contains(s, `"tool_call"`) ||
+		strings.Contains(s, `"invocation"`) {
 		return true
 	}
-	return strings.Contains(s, `"name"`) &&
-		(strings.Contains(s, `"arguments"`) || strings.Contains(s, `"parameters"`))
+	hasCallee := strings.Contains(s, `"name"`) || strings.Contains(s, `"tool"`)
+	hasArgs := strings.Contains(s, `"arguments"`) ||
+		strings.Contains(s, `"parameters"`) ||
+		strings.Contains(s, `"params"`)
+	return hasCallee && hasArgs
 }
 
 // isFillerParagraph is deliberately conservative: only short plain prose (no
