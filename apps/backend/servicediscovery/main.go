@@ -140,12 +140,14 @@ func registerRoutes(router *http.ServeMux, envGetter envGetter) {
 func main() {
 	loadConfig(realEnv{})
 
-	// Fail open: a missing or broken collector is an observability problem, and
-	// must not stop the service from serving traffic.
+	// Every error here is a bad OTEL_* value, not a collector that happens to be
+	// down: the exporters do not dial at construction time, so an unreachable
+	// collector still starts clean and stays a fail-open observability problem.
+	// Carrying on with a misconfigured value instead drops spans while every
+	// probe stays green, which is undebuggable from the outside.
 	shutdownTracing, err := initTracing(context.Background(), realEnv{})
 	if err != nil {
-		log.Printf("Tracing disabled: %+v", err)
-		shutdownTracing = noopShutdown
+		log.Fatalf("Tracing setup failed: %+v", err)
 	}
 
 	server := initServer(realEnv{})

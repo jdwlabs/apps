@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -43,6 +44,27 @@ func traceResource(ctx context.Context) (*resource.Resource, error) {
 	)
 }
 
+const otlpEndpointForm = "http://host:port or https://host:port"
+
+// validateOTLPEndpoint requires an explicit http or https scheme.
+//
+// A bare "host:port" parses with the host as the URL scheme, so the exporters
+// end up with an empty endpoint and TLS still on and drop every span while the
+// health probes stay green. Failing startup is the only way that surfaces.
+func validateOTLPEndpoint(endpoint string) error {
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("OTEL_EXPORTER_OTLP_ENDPOINT %q is not a valid URL (%w); it must be %s", endpoint, err, otlpEndpointForm)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("OTEL_EXPORTER_OTLP_ENDPOINT %q is missing an http or https scheme; it must be %s", endpoint, otlpEndpointForm)
+	}
+	if parsed.Host == "" {
+		return fmt.Errorf("OTEL_EXPORTER_OTLP_ENDPOINT %q has no host; it must be %s", endpoint, otlpEndpointForm)
+	}
+	return nil
+}
+
 // initTracing wires OTLP trace export and returns the provider's shutdown.
 //
 // Tracing stays off unless an endpoint is configured: the OTLP exporters
@@ -55,6 +77,9 @@ func initTracing(ctx context.Context, env envGetter) (func(context.Context) erro
 	if endpoint == "" {
 		slog.Info("Tracing disabled: OTEL_EXPORTER_OTLP_ENDPOINT is unset")
 		return noopShutdown, nil
+	}
+	if err := validateOTLPEndpoint(endpoint); err != nil {
+		return noopShutdown, err
 	}
 
 	var (
