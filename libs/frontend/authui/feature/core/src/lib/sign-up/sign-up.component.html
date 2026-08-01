@@ -114,8 +114,9 @@
         </ng-container>
         <button
           (click)="signUp()"
+          [disabled]="signUpForm.invalid"
           color="primary"
-          data-cy="sign-up-button"
+          data-cy="submit-button"
           mat-raised-button
           type="submit"
         >
