@@ -44,8 +44,7 @@
       "inputs": ["default", "^production"]
     },
     "e2e": {
-      "cache": true,
-      "inputs": ["default", "^production"]
+      "cache": false
     },
     "@nx/angular:webpack-browser": {
       "inputs": [
@@ -71,25 +70,84 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "install": {
-      "cache": true
-    },
     "e2e-ci--**/*": {
       "dependsOn": ["^build"]
     },
     "@nx-go/nx-go:build": {
-      "cache": true
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        {
+          "env": "GOOS"
+        },
+        {
+          "env": "GOARCH"
+        },
+        {
+          "env": "CGO_ENABLED"
+        }
+      ]
     },
     "@nx-go/nx-go:lint": {
-      "cache": true
+      "cache": true,
+      "inputs": ["default", "^default"]
     },
     "@nx-go/nx-go:test": {
-      "cache": true
+      "cache": true,
+      "inputs": ["default", "^default"]
+    },
+    "tidy": {
+      "cache": false
+    },
+    "jib": {
+      "cache": false
+    },
+    "jibDockerBuild": {
+      "cache": false
+    },
+    "jibBuildTar": {
+      "cache": false
+    },
+    "bootBuildImage": {
+      "cache": false
+    },
+    "publish": {
+      "cache": false
+    },
+    "clean": {
+      "cache": false
+    },
+    "wrapper": {
+      "cache": false
+    },
+    "updateDaemonJvm": {
+      "cache": false
+    },
+    "bootRun": {
+      "cache": false
+    },
+    "bootTestRun": {
+      "cache": false
+    },
+    "prepare-config": {
+      "cache": false
+    },
+    "restore-config": {
+      "cache": false
+    },
+    "update-app": {
+      "cache": false
+    },
+    "update-description": {
+      "cache": false
     },
     "build-image": {
+      "cache": false,
       "dependsOn": ["build", "^build"]
     },
     "local-build-image": {
+      "cache": false,
       "dependsOn": ["build", "^build"]
     }
   },
