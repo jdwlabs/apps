@@ -9,6 +9,7 @@ test.describe('Platform Shell', () => {
   test('loads dashboard', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL('/');
+    await expect(page.locator('jdw-header')).toBeVisible();
   });
 
   test('header renders with app title', async ({ page }) => {
