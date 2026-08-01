@@ -6,7 +6,9 @@
 /// M3 has no success / info / warn roles (M2's `warn` maps to M3 `error`),
 /// so each extra role is published as CSS custom properties that mirror the
 /// `--mat-sys-*` naming: `--jdw-sys-<role>` and `--jdw-sys-on-<role>`.
-/// Component styles consume them exactly like Material system tokens.
+/// Component styles consume them exactly like Material system tokens. The
+/// environment roles at the end of the mixin follow the same naming but take
+/// no parameter — see the comment there for why they are fixed.
 ///
 /// Include on the document root (`html`). Values may be plain colors or
 /// `var(...)` references — they pass straight through to CSS output, which
@@ -52,4 +54,33 @@
   --jdw-sys-on-info: #{$on-info};
   --jdw-sys-warn: #{$warn};
   --jdw-sys-on-warn: #{$on-warn};
+
+  // Deployment-environment identity. These are the one set of roles here that
+  // is deliberately hue-bearing and deliberately *not* a mixin parameter: the
+  // colour is the information, so which deploy target you are looking at
+  // cannot be allowed to change with the palette a theme picked. A monochrome
+  // palette is where that matters — its primary, secondary and tertiary
+  // families are one grey ramp, so a chip drawn from any palette role lands on
+  // the same tone as the neutral version chip beside it and the environment
+  // stops being visible at a glance.
+  //
+  // All three sit in the tone-80 band on purpose. Every toolbar in this design
+  // system fills from a tone-40 role (light themes) or a tone-30 one (dark),
+  // and HCT holds luminance near-constant across hues at a given tone, so one
+  // light band is the only family that clears 3:1 against both — a dark chip
+  // clears the light toolbars and vanishes on the dark ones, which is what a
+  // tone-30 `prod` chip did on a dark red bar at 1.00:1. Red, amber and blue
+  // then separate the three by hue at matched lightness, so they read as one
+  // control with only the meaning changing.
+  //
+  // Red and blue are tone 80 / tone 20 of the error and azure families. M3 has
+  // no amber family — orange tone 80 is peach and reads as a second red, yellow
+  // tone 80 is olive — so amber is picked by hand to the same luminance as the
+  // other two rather than taken from a palette.
+  --jdw-sys-env-prod: #ffb4ab;
+  --jdw-sys-on-env-prod: #690005;
+  --jdw-sys-env-non: #f5c518;
+  --jdw-sys-on-env-non: #301f00;
+  --jdw-sys-env-local: #abc7ff;
+  --jdw-sys-on-env-local: #002f65;
 }
