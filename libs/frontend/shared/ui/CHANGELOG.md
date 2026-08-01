@@ -1,3 +1,18 @@
+## 1.1.6 (2026-08-01)
+
+### 🩹 Fixes
+
+- **shared-ui:** give each environment its own semantic colour ([dd3b413d](https://github.com/jdwlabs/apps/commit/dd3b413d))
+- **shared-ui:** step the nav indicator to the saturated tertiary role ([bb648780](https://github.com/jdwlabs/apps/commit/bb648780))
+- **shared-ui:** centre the environment badge on its row ([3ea1cdcc](https://github.com/jdwlabs/apps/commit/3ea1cdcc))
+- **shared-ui:** stop the avatar chip painting in the toolbar fill ([27db408b](https://github.com/jdwlabs/apps/commit/27db408b))
+- **shared-ui:** make the compact rail indicator a circle ([63678a68](https://github.com/jdwlabs/apps/commit/63678a68))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.5 (2026-07-30)
 
 ### 🚀 Features

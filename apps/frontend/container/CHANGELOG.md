@@ -1,3 +1,14 @@
+## 2.1.3 (2026-08-01)
+
+### 🩹 Fixes
+
+- **container:** move the shell to the black-white theme ([f62b1d59](https://github.com/jdwlabs/apps/commit/f62b1d59))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 2.1.2 (2026-07-30)
 
 This was a version bump only for container to align it with other projects, there were no code changes.

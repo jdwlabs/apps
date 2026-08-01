@@ -1,3 +1,7 @@
+## 1.0.8 (2026-08-01)
+
+This was a version bump only for rolesui to align it with other projects, there were no code changes.
+
 ## 1.0.7 (2026-07-30)
 
 This was a version bump only for rolesui to align it with other projects, there were no code changes.
