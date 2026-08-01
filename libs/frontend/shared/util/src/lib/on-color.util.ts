@@ -1,3 +1,9 @@
+// Pinned exact (not ^0.3.0): 0.4.0 ships several scheme/*.js files that
+// import a sibling module without the .js extension, which Vite/Vitest's
+// strict ESM resolver cannot follow — importing anything from this package's
+// barrel throws "Cannot find module ...dynamiccolor/dynamic_scheme" at test
+// time. Re-verify the import extensions in a fresh 0.4.x tarball before
+// bumping past 0.3.0.
 import {
   Hct,
   argbFromHex,
