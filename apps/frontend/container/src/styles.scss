@@ -1,4 +1,14 @@
-@use 'themes/black-white';
+@use 'themes/blue-slate';
+@use 'themes/user-custom-light';
+@use 'themes/user-custom-dark';
+
+// The container is the only app that emits theme CSS. The remotes are
+// federated into this document, so a second stylesheet defining --mat-sys-*
+// would compete for the same custom properties on the root element and be
+// resolved by load order.
+@include blue-slate.emit("html[data-theme='blue-slate']");
+@include user-custom-light.emit("html[data-theme='user-custom-light']");
+@include user-custom-dark.emit("html[data-theme='user-custom-dark']");
 
 html,
 body {

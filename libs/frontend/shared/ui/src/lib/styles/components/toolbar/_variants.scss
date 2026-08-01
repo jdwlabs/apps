@@ -4,11 +4,11 @@
 // container tokens.
 //
 // Which role carries the fill flips with the theme type, because the tone the
-// roles resolve to flips. A dark theme's `primary` is tone 80 (red-teal:
-// #ffb4a8) and reads as a disabled bar, while its `primary-container` is tone
-// 30 (#930100) and reads as branded. A light theme is the other way round —
-// `primary` is tone 40 (indigo-pink: #005cbb) and `primary-container` tone 90
-// (#d7e3ff), a pale wash. Both branches therefore aim at the saturated tone.
+// roles resolve to flips. A dark theme's `primary` is tone 80 (user-custom:
+// #89dc37) and reads as a disabled bar, while its `primary-container` is tone
+// 30 (#2a5000) and reads as branded. A light theme is the other way round —
+// `primary` is tone 40 (blue-slate: #2d5ea6) and `primary-container` tone 90
+// (#d7e2ff), a pale wash. Both branches therefore aim at the saturated tone.
 // No default for $dark, for the same reason `all-component-themes` gave up
 // its own: it is load-bearing for colour here, so a caller that omits it
 // should fail rather than quietly emit the light-theme choice.

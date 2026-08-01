@@ -436,24 +436,26 @@ test.describe('Environment badge colour', () => {
 
   // These colours are fixed across every theme, so the check that matters is
   // the hostile one. A dark theme fills its toolbar from `primary-container`,
-  // and `red-teal`'s is a dark red — where a red `prod` chip is most at risk of
+  // and a dark red bar is where a red `prod` chip is most at risk of
   // disappearing, as it did at 1.00:1 when it was drawn from `error-container`.
-  // Each theme ships as its own stylesheet (`inject: false`), so layering one
-  // over the page swaps the token layer without a second app to build.
+  // Every theme lives in the container's one stylesheet keyed by the root
+  // `data-theme` attribute, so switching is an attribute write. The bar colour
+  // is then supplied the way the switcher supplies it at runtime — as the
+  // container custom properties a customisable theme reads — so the hostile
+  // case does not depend on some palette happening to be red.
   test('the chips survive a dark theme toolbar', async ({ page }) => {
     const bar = page.locator('[data-cy="navbar-header"]');
     const lightToolbar = await colourOf(bar, 'background-color');
 
-    await page.evaluate(async () => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = '/red-teal.css';
-      document.head.appendChild(link);
-      await new Promise((resolve) => (link.onload = resolve));
+    await page.evaluate(() => {
+      const root = document.documentElement;
+      root.dataset['theme'] = 'user-custom-dark';
+      root.style.setProperty('--primary-container-500', '#930100');
+      root.style.setProperty('--primary-container-contrast-500', '#ffffff');
     });
 
     const chip = page.locator('[data-cy="env-segment"]');
-    // The rest of this test is vacuous if the bundle silently failed to load.
+    // The rest of this test is vacuous if the theme silently failed to apply.
     expect(await colourOf(bar, 'background-color')).not.toBe(lightToolbar);
 
     for (const tone of ['prod', 'non', 'local']) {
