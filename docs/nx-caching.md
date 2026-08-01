@@ -53,6 +53,17 @@ Notes:
   `inputs` to a `targetDefaults` entry, remember it **replaces** the implicit
   `["default", "^default"]` rather than extending it — always restate the
   filesets alongside whatever env or runtime input prompted the override.
+- The same trap arrives from **plugin-inferred** targets, where no entry in this
+  repo declares the bad `inputs` at all. `@nx-go/nx-go` applies its flat
+  `GO_PROJECT_INPUTS` list — project-scoped globs with no `^` entry — to every
+  target it infers, so dependency sources never reach the hash. Auditing
+  `nx.json` alone will not show it; the offending config exists only in the
+  resolved graph. `workspace-checks:test` is the standing guard for this and
+  reads the graph rather than any file, so it catches both sources.
+- A cacheable target that declares **no `outputs`** is a green with nothing
+  behind it: the hit restores no artifact, so the cache is replaying only the
+  exit code. Prefer `cache: false` for such targets, and for any target that
+  writes tracked files back into the tree.
 - `pnpm exec nx reset` clears the cache.
 - CI keeps the same default `.nx/cache` path, which the `actions/cache` step
   in `ci.yml` persists across runs — nothing environment-specific to set.
