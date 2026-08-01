@@ -16,6 +16,7 @@ import {
   HeaderComponent,
   NavigationLayoutComponent,
   SIGNED_OUT_VIEW,
+  ThemeSwitcherComponent,
 } from '@jdw/frontend-shared-ui';
 import { Router, RouterOutlet } from '@angular/router';
 import { map, Observable, of, switchMap } from 'rxjs';
@@ -39,6 +40,7 @@ import {
     HeaderComponent,
     NavigationLayoutComponent,
     RouterOutlet,
+    ThemeSwitcherComponent,
   ],
   templateUrl: './main.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,

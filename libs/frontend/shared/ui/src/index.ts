@@ -9,3 +9,4 @@ export * from './lib/ag-grid/ag-grid-theme';
 export * from './lib/env-badge/env-badge.component';
 export * from './lib/account-menu/account-menu.component';
 export * from './lib/account-menu/account-view';
+export * from './lib/theme-switcher/theme-switcher.component';
