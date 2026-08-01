@@ -1,0 +1,19 @@
+@use '../all-themes';
+@use '../theming';
+@use '../custom-palettes';
+
+// The platform default. Emitted through a mixin rather than at the root
+// because every theme is scoped under an attribute selector on the document
+// element, and the component rules have to take that same ancestor or their
+// precedence relative to Material's own rules changes.
+@mixin emit($selector) {
+  #{$selector} {
+    @include theming.theme(
+      $primary: custom-palettes.$blue-slate-primary,
+      $tertiary: custom-palettes.$blue-slate-tertiary,
+      $theme-type: light
+    );
+
+    @include all-themes.all-component-themes(light);
+  }
+}
