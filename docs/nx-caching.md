@@ -43,9 +43,16 @@ Two consequences worth knowing before debugging a cache:
 
 Notes:
 
-- Cache entries are keyed by content hash (sources, deps, env inputs), so
-  sharing across branches, worktrees, and even repos is collision-safe. A
-  stale entry can never be "wrong", only unused.
+- Cache entries are keyed by content hash, so sharing across branches,
+  worktrees, and even repos is collision-safe — but only for the inputs a
+  target actually declares. A stale entry _can_ be served as a wrong one when
+  a target's `inputs` omit its own sources: the hash then cannot move when the
+  code moves. The module-federation build targets hit exactly that, hashing
+  two env vars and no fileset at all, so an edited `styles.scss` returned a
+  100% hit and re-emitted the previous theme byte-for-byte. When adding
+  `inputs` to a `targetDefaults` entry, remember it **replaces** the implicit
+  `["default", "^default"]` rather than extending it — always restate the
+  filesets alongside whatever env or runtime input prompted the override.
 - `pnpm exec nx reset` clears the cache.
 - CI keeps the same default `.nx/cache` path, which the `actions/cache` step
   in `ci.yml` persists across runs — nothing environment-specific to set.
