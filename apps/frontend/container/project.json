@@ -143,7 +143,8 @@
       "executor": "@nx/web:file-server",
       "options": {
         "buildTarget": "container:build",
-        "port": 4200
+        "port": 4200,
+        "proxyUrl": "http://localhost:4200?"
       }
     },
     "build-image": {
