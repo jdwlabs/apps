@@ -104,6 +104,22 @@ jobs:
         run: pnpm exec nx affected -t lint test
       - name: Run Build
         run: pnpm exec nx affected -t build
+      # The runner image ships no Playwright browsers and the e2e target sets
+      # skipInstall, so the suite would have nothing to launch. Only chromium is
+      # fetched because playwright.config.ts declares that single project.
+      # Installed unconditionally: deciding first whether the suite is affected
+      # means a shell step that can only fail one way — a broken check reads as
+      # "not affected" and the gate skips silently, which is the failure this
+      # gate exists to stop.
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+      # Runs the module-federation contract. The suite is the only surface
+      # covering it, and it has broken production twice with every probe green.
+      # `affected` keeps it off backend- and docs-only changes: platform-e2e
+      # declares the four frontends as implicit dependencies, so a Go-only diff
+      # resolves to the Go project alone.
+      - name: Run E2E
+        run: pnpm exec nx affected -t e2e
       - if: ${{ github.event_name == 'pull_request' }}
         name: Release Config Dry Run
         env:
