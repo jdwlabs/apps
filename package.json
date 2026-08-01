@@ -102,6 +102,7 @@
     "@angular/platform-browser": "22.0.7",
     "@angular/platform-browser-dynamic": "22.0.7",
     "@angular/router": "22.0.7",
+    "@material/material-color-utilities": "0.3.0",
     "ag-grid-angular": "^36.0.0",
     "ag-grid-community": "^36.0.0",
     "rxjs": "~7.8.1",
