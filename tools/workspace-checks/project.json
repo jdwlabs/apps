@@ -1,0 +1,15 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "workspace-checks",
+  "projectType": "library",
+  "sourceRoot": "tools/workspace-checks",
+  "tags": ["type:util", "scope:shared", "framework:node"],
+  "targets": {
+    "test": {
+      "executor": "@nx/vitest:test",
+      "outputs": ["{workspaceRoot}/coverage/tools/workspace-checks"],
+      "inputs": ["default", "^default", "{workspaceRoot}/nx.json"],
+      "options": { "configFile": "tools/workspace-checks/vite.config.ts" }
+    }
+  }
+}
