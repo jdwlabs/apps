@@ -39,14 +39,20 @@ test.describe('Auth', () => {
       await expect(page.locator('[data-cy="submit-button"]')).toBeDisabled();
     });
 
+    // Focused rather than clicked: an outline field's un-floated label sits over
+    // its own input and forwards the click through its `for`, but where the
+    // label is wider than half the input — as it is once a suffix button
+    // narrows the box — it covers the centre point a click is aimed at, and
+    // Playwright refuses the click. Touching the control is what these
+    // assertions are about, and focus is the direct way to say so.
     test('shows validation errors on blur', async ({ page }) => {
-      await page.locator('[data-cy="email-address-field"] input').click();
+      await page.locator('[data-cy="email-address-field"] input').focus();
       await page.locator('[data-cy="email-address-field"] input').blur();
       await expect(
         page.locator('[data-cy="email-address-field"]'),
       ).toContainText('Email is required');
 
-      await page.locator('[data-cy="password-field"] input').click();
+      await page.locator('[data-cy="password-field"] input').focus();
       await page.locator('[data-cy="password-field"] input').blur();
       await expect(page.locator('[data-cy="password-field"]')).toContainText(
         'Password is required',
