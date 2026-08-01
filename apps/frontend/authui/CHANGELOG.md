@@ -1,3 +1,7 @@
+## 2.0.10 (2026-08-01)
+
+This was a version bump only for authui to align it with other projects, there were no code changes.
+
 ## 2.0.9 (2026-08-01)
 
 ### 🧱 Updated Dependencies
