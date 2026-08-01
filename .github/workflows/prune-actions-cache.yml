@@ -128,7 +128,7 @@ jobs:
           {
             echo "### Actions cache prune"
             echo
-            echo "| | entries | bytes | GB |"
+            echo "| | entries | bytes | GiB |"
             echo "|---|---:|---:|---:|"
             awk -v c="$before_count" -v b="$before_bytes" 'BEGIN{printf "| before | %d | %d | %.2f |\n", c, b, b/1073741824}'
             awk -v c="$after_count" -v b="$after_bytes" 'BEGIN{printf "| after | %d | %d | %.2f |\n", c, b, b/1073741824}'
