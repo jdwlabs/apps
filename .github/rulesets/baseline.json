@@ -45,7 +45,11 @@
         "required_status_checks": [
           {
             "context": "main"
-          }
+          },
+          { "context": "scan / scan", "integration_id": 15368 },
+          { "context": "scan / gitleaks", "integration_id": 15368 },
+          { "context": "scan / binaries", "integration_id": 15368 },
+          { "context": "signatures / signatures", "integration_id": 15368 }
         ]
       }
     }
