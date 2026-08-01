@@ -33,7 +33,7 @@ describe('ThemeService', () => {
   });
 
   it('ignores a persisted value that is not a known theme', () => {
-    localStorage.setItem('jdw.theme', 'red-teal');
+    localStorage.setItem('jdw.theme', 'not-a-theme');
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({});
     expect(TestBed.inject(ThemeService).themeId()).toBe(DEFAULT_THEME_ID);

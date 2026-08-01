@@ -1,5 +1,5 @@
-@use 'themes/black-white';
-
+// Theme tokens come from the container, which owns them for the whole
+// federated document. This app defines layout and type only.
 html,
 body {
   height: 100%;

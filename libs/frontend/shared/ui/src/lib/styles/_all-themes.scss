@@ -13,9 +13,12 @@
 // for colour: the toolbar picks whichever role resolves to the saturated tone
 // for this type.
 //
-// This mixin must stay at the root, outside the `html` block the theme mixin
-// is applied in, or every component selector below gains an `html` ancestor
-// and the resulting specificity bump changes which rules win.
+// This mixin must be included inside the same block as `theming.theme`, under
+// the theme's own selector. Scoping gives every component selector below an
+// ancestor and bumps its specificity, which is safe only while the bump is
+// uniform — a theme that emitted these at the root instead would resolve
+// against Material's own rules differently from every other theme, and the
+// difference would only show as one component rendering wrong under one theme.
 @mixin all-component-themes($theme-type) {
   @if $theme-type != light and $theme-type != dark {
     @error 'all-component-themes expects light or dark, got #{$theme-type}. ' +

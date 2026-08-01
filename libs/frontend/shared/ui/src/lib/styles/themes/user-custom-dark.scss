@@ -3,42 +3,46 @@
 @use '../custom-palettes';
 
 // User-customizable theme (dark). See user-custom-light.scss for how the
-// runtime CSS-variable overrides compose with the compiled default seeds.
+// runtime CSS-variable overrides compose with the compiled default seeds, and
+// for why the theme is emitted through a mixin rather than at the root.
 
-// The theme type, stated once. The html block configures Material's system
-// tokens from it and the component themes below pick their compile-time
-// variants from the same value, so the two cannot drift apart.
+// The theme type, stated once. The emitted block configures Material's system
+// tokens from it and the component themes pick their compile-time variants
+// from the same value, so the two cannot drift apart.
 $theme-type: dark;
 
-html {
-  @include theming.theme(
-    $primary: custom-palettes.$user-custom-primary,
-    $tertiary: custom-palettes.$user-custom-tertiary,
-    $theme-type: $theme-type,
-    $success: var(--success-500, #4caf50),
-    $on-success: var(--success-contrast-500, white),
-    $info: var(--info-500, #2196f3),
-    $on-info: var(--info-contrast-500, white),
-    $warn: var(--warn-500, #ff9800),
-    $on-warn: var(--warn-contrast-500, rgba(0, 0, 0, 0.87))
-  );
+@mixin emit($selector) {
+  #{$selector} {
+    @include theming.theme(
+      $primary: custom-palettes.$user-custom-primary,
+      $tertiary: custom-palettes.$user-custom-tertiary,
+      $theme-type: $theme-type,
+      $success: var(--success-500, #4caf50),
+      $on-success: var(--success-contrast-500, white),
+      $info: var(--info-500, #2196f3),
+      $on-info: var(--info-contrast-500, white),
+      $warn: var(--warn-500, #ff9800),
+      $on-warn: var(--warn-contrast-500, rgba(0, 0, 0, 0.87))
+    );
 
-  --mat-sys-primary: var(--primary-500, #7dcf2a);
-  --mat-sys-on-primary: var(--primary-contrast-500, white);
-  --mat-sys-tertiary: var(--accent-500, #ed00db);
-  --mat-sys-on-tertiary: var(--accent-contrast-500, white);
-  --mat-sys-error: var(--error-500, #f44336);
-  --mat-sys-on-error: var(--error-contrast-500, white);
+    --mat-sys-primary: var(--primary-500, #7dcf2a);
+    --mat-sys-on-primary: var(--primary-contrast-500, white);
+    --mat-sys-tertiary: var(--accent-500, #ed00db);
+    --mat-sys-on-tertiary: var(--accent-contrast-500, white);
+    --mat-sys-error: var(--error-500, #f44336);
+    --mat-sys-on-error: var(--error-contrast-500, white);
 
-  // The container roles follow the same runtime variables. There is no
-  // container-tone variable for a user to set, and leaving these on the
-  // compiled seed would strand every surface that fills from a container role
-  // — the header bar among them — on the default colours while the buttons
-  // beside them track the user's choice.
-  --mat-sys-primary-container: var(--mat-sys-primary);
-  --mat-sys-on-primary-container: var(--mat-sys-on-primary);
-  --mat-sys-tertiary-container: var(--mat-sys-tertiary);
-  --mat-sys-on-tertiary-container: var(--mat-sys-on-tertiary);
+    // The container roles take their own runtime variables rather than
+    // aliasing the base ones. Aliasing flattened tone 90 and tone 30 onto the
+    // saturated tone, which left every surface filled from a container role
+    // sitting at the same value as the buttons beside it, and made the paired
+    // on-container role meaningless. The switcher derives these from the
+    // user's colour and guarantees the pairing clears the text floor.
+    --mat-sys-primary-container: var(--primary-container-500, #7dcf2a);
+    --mat-sys-on-primary-container: var(--primary-container-contrast-500, white);
+    --mat-sys-tertiary-container: var(--accent-container-500, #ed00db);
+    --mat-sys-on-tertiary-container: var(--accent-container-contrast-500, white);
+
+    @include all-themes.all-component-themes($theme-type);
+  }
 }
-
-@include all-themes.all-component-themes($theme-type);

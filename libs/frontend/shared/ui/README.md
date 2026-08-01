@@ -102,33 +102,35 @@ This library uses the Angular Material **M3 token-based theming system**
 libs/frontend/shared/ui/src/lib/styles/themes/
 ```
 
-A theme file applies `theming.theme()` on `html`, which emits the Material
-system tokens (`--mat-sys-*`) plus this design system's extra semantic roles
-(`--jdw-sys-success`, `--jdw-sys-info`, `--jdw-sys-warn` and their `on-`
-counterparts). Apps import exactly one theme in `styles.scss`; the container
-additionally compiles every theme as a lazy CSS bundle (`inject: false` in
-`project.json`), so a different theme can be activated at runtime by swapping
-the loaded stylesheet.
+A theme file exposes `@mixin emit($selector)`, which applies `theming.theme()`
+and the component themes under the selector it is given. That emits the
+Material system tokens (`--mat-sys-*`) plus this design system's extra semantic
+roles (`--jdw-sys-success`, `--jdw-sys-info`, `--jdw-sys-warn` and their `on-`
+counterparts).
+
+Only the container includes these mixins, once per theme, each under
+`html[data-theme='<id>']`. The remotes are federated into the container's
+document and define no theme tokens of their own — a second stylesheet
+defining `--mat-sys-*` would compete for the same custom properties on the
+root element and be resolved by load order. Switching themes at runtime is
+therefore a single attribute write on the document element.
+
+The selector has to wrap the component themes as well as the token block. If
+some rules were scoped and others were not, the specificity bump would apply
+unevenly and change which rules win against Material's own.
 
 Component styles should consume tokens (`var(--mat-sys-primary)`,
 `var(--jdw-sys-success)`, …) instead of Sass theme maps. The
 `user-custom-light` / `user-custom-dark` themes additionally re-point the key
 system tokens at runtime CSS variables (`--primary-500`, `--accent-500`,
-`--error-500`, `--success-500`, `--info-500`, `--warn-500` and matching
-`--*-contrast-500`), so user-supplied colors keep working without a rebuild.
+`--error-500`, `--success-500`, `--info-500`, `--warn-500`, the matching
+`--*-contrast-500`, and the `--*-container-500` / `--*-container-contrast-500`
+pairs), so user-supplied colors keep working without a rebuild.
 
-Custom tonal palettes (black-white, red-teal, user-custom defaults) are
-generated with `ng generate @angular/material:theme-color` from the original
-seed colors — see `styles/_custom-palettes.scss`.
-
-One exception: red-teal's supporting roles (secondary, neutral,
-neutral-variant) come from Angular's own `mat.$red-palette` rather than the
-schematic. The schematic derives neutrals from the seed's chroma, and
-red-teal's seed is fully saturated, so its generated neutrals tint every
-surface brown and every body text salmon. `mat.$red-palette` sits at the same
-hue but is generated at the M3 spec's supporting-role chroma. Regenerating
-red-teal must keep that substitution — only its primary and tertiary ramps
-are schematic output.
+Custom tonal palettes (blue-slate, user-custom defaults) are generated with
+`ng generate @angular/material:theme-color` from the seed colors recorded
+above each map — see `styles/_custom-palettes.scss`. Change the seed and
+regenerate rather than hand-editing tone values.
 
 ---
 
