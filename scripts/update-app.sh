@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Script: update-app.sh
-# Description: Opens an auto-merging pull request that bumps a Helm chart's appVersion
-#              in the deployments repo, then waits for that bump to reach main
-#              before reporting success.
+# Description: Opens a pull request that bumps a Helm chart's appVersion in the
+#              deployments repo, waits for its checks, merges it, and confirms
+#              the bump reached main before reporting success.
 # Usage: update-app.sh <chart_file_path> <version_number> <project_name>
 #
 # Auth (one of):
@@ -16,6 +16,9 @@
 # Optional env:
 #   DEPLOYMENTS_REPO   Target repo slug.  Default: jdwlabs/deployments
 #   DEPLOYMENTS_HOST   Git host.          Default: github.com
+#   UPDATE_APP_CHECKS_TIMEOUT
+#                      Seconds to wait for the pull request's checks to finish
+#                      before failing. Default: 900.
 #   UPDATE_APP_VERIFY_TIMEOUT
 #                      Seconds to wait for the bump to land on main before
 #                      failing. Default: 600. Set to 0 to skip the check.
@@ -72,17 +75,106 @@ require_tools() {
 
 # Point the branch at the current main tip, creating it if absent. Rebuilding
 # rather than appending keeps a rerun idempotent and the diff a single commit.
+# Block until every check on the pull request has finished, and fail if any did
+# not pass.
+#
+# The ruleset cannot do this for us. The App's bypass is bypass_mode:
+# pull_request, which exempts it from *every* rule on a pull request — required
+# status checks included, not only the review. So a merge performed by the App
+# would land the bump whatever the checks say, and waiting for them has to
+# happen here.
+#
+# An empty check list is treated as "not ready", never as "nothing to wait for":
+# checks take a moment to register after the pull request is opened, and reading
+# that gap as success would merge before anything had run.
+wait_for_checks() {
+  local branch="${1}" project_name="${2}"
+  local timeout interval waited checks pending failed total
+
+  timeout="${UPDATE_APP_CHECKS_TIMEOUT:-900}"
+  interval=15
+  waited=0
+
+  while [ "${waited}" -lt "${timeout}" ]; do
+    # A transient gh failure must read as "not ready yet", never as "no checks
+    # to wait for" — the timeout below is what bounds it. Every count is parsed
+    # defensively for the same reason: unparseable output must not become 0
+    # checks pending and merge the bump.
+    checks=$(gh pr checks "${branch}" -R "${deployments_repo}" --json bucket --jq '[.[].bucket]' 2>/dev/null || echo '[]')
+    total=$(printf '%s' "${checks}" | jq 'length' 2>/dev/null || echo 0)
+    pending=$(printf '%s' "${checks}" | jq '[.[]|select(.=="pending")]|length' 2>/dev/null || echo 0)
+    failed=$(printf '%s' "${checks}" | jq '[.[]|select(.=="fail")]|length' 2>/dev/null || echo 0)
+    if [ -z "${total}" ] || [ -z "${pending}" ] || [ -z "${failed}" ]; then
+      total=0; pending=0; failed=0
+    fi
+
+    if [ "${total}" -gt 0 ] && [ "${pending}" -eq 0 ]; then
+      if [ "${failed}" -gt 0 ]; then
+        echo "Error: ${failed} of ${total} checks failed on ${branch}; refusing to merge the bump." >&2
+        gh pr checks "${branch}" -R "${deployments_repo}" >&2 || true
+        return 1
+      fi
+      echo "[${project_name}]: ${total} checks passed on ${branch} after ${waited}s."
+      return 0
+    fi
+
+    sleep "${interval}"
+    waited=$((waited + interval))
+  done
+
+  if [ "${total:-0}" -eq 0 ]; then
+    echo "Error: no checks appeared on ${branch} within ${timeout}s; refusing to merge unverified." >&2
+  else
+    echo "Error: checks on ${branch} did not finish within ${timeout}s (${pending} of ${total} still pending)." >&2
+  fi
+  return 1
+}
+
+# Wait for the checks, then merge the pull request ourselves.
+#
+# --auto was the obvious choice and does not work here. Auto-merge only fires
+# once GitHub considers every branch-protection requirement satisfied, and it
+# does not count a bypass toward that: the App is exempt from the review
+# requirement at merge time, but auto-merge never reaches merge time, so the
+# pull request sits armed indefinitely while this script reports success.
+# Observed on five consecutive release pull requests, none of which merged
+# itself.
+#
+# Merging explicitly exercises the bypass at the moment it applies. The retries
+# cover a rebase losing a race against another project's bump landing first.
+merge_pr() {
+  local branch="${1}" project_name="${2}"
+  local attempt attempts
+
+  wait_for_checks "${branch}" "${project_name}"
+
+  attempts=3
+  attempt=1
+  while [ "${attempt}" -le "${attempts}" ]; do
+    if gh pr merge -R "${deployments_repo}" "${branch}" --rebase --delete-branch; then
+      echo "[${project_name}]: merged ${branch}."
+      return 0
+    fi
+    echo "[${project_name}]: merge attempt ${attempt}/${attempts} failed; retrying." >&2
+    attempt=$((attempt + 1))
+    sleep 10
+  done
+
+  echo "Error: could not merge ${branch} after ${attempts} attempts." >&2
+  return 1
+}
+
 # Block until the bump is actually on main, or fail.
 #
-# The pull request is opened with --auto, so this step returning success does
-# NOT mean the chart moved: auto-merge sits armed until every branch-protection
-# requirement is satisfied, and a requirement the App is only exempted from at
-# merge time is not one auto-merge counts as met. A release whose bump never
-# merges is otherwise indistinguishable from one that shipped, because every
-# job upstream of here has already reported success.
+# A successful merge call is not proof the chart moved, so this reads main back
+# rather than trusting the step above. It is deliberately kept independent of
+# how the merge happens: it caught the case where the merge never occurred at
+# all, and it stays useful for whatever the next cause turns out to be. A
+# release whose bump never lands is otherwise indistinguishable from one that
+# shipped, because every job upstream of here has already reported success.
 #
 # Set UPDATE_APP_VERIFY_TIMEOUT=0 to skip the wait — the bump is then unverified
-# and this script's success means only that a pull request exists.
+# and this script's success means only that a merge was requested.
 verify_landed() {
   local file_path="${1}" new_version="${2}" project_name="${3}" branch="${4}"
   local timeout interval waited landed pr_url
@@ -193,7 +285,7 @@ update_file() {
 This pull request changes **only** the \`appVersion\` line in \`${file_path}\`.
 Merging it causes ArgoCD to sync the non environment to the new version."
 
-  gh pr merge -R "${deployments_repo}" "${branch}" --auto --rebase --delete-branch
+  merge_pr "${branch}" "${project_name}"
 
   echo "[${project_name}]: appVersion in ${file_path} set to ${new_version} via pull request on ${branch}."
   verify_landed "${file_path}" "${new_version}" "${project_name}" "${branch}"
