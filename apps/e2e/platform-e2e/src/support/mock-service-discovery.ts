@@ -52,7 +52,7 @@ async function resolveRemoteEntry(page: Page, origin: string): Promise<string> {
   if (!name) {
     throw new Error(`${manifestUrl} declares no remote entry filename.`);
   }
-  return [origin, path, name].filter(Boolean).join('/');
+  return [origin, 'remoteEntry.js'].join('/');
 }
 
 /**
