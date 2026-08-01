@@ -10,3 +10,4 @@ export * from './lib/role.model';
 export * from './lib/validator.constant';
 export * from './lib/date.util';
 export * from './lib/auth.model';
+export * from './lib/on-color.util';
