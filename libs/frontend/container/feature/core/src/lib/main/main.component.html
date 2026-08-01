@@ -7,6 +7,7 @@
   [isXSmallScreen]="isXSmallScreen"
 >
   <div class="header-row">
+    <jdw-theme-switcher />
     <jdw-env-badge [environment]="currentEnv" [version]="currentVersion" />
     @let accountView = accountView$ | async;
     <jdw-account-menu
