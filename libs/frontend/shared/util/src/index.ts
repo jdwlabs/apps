@@ -11,3 +11,5 @@ export * from './lib/validator.constant';
 export * from './lib/date.util';
 export * from './lib/auth.model';
 export * from './lib/on-color.util';
+export * from './lib/theme.model';
+export * from './lib/theme.service';
