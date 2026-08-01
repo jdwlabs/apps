@@ -7,6 +7,8 @@ on:
         default: 'ubuntu-jdwlabs'
         description: 'Target ARC name used for `runs-on` in job'
         required: true
+permissions:
+  contents: read
 jobs:
   arc-runner-job:
     strategy:

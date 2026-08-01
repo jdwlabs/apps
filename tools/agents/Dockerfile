@@ -18,7 +18,7 @@ RUN curl -fsSL https://cdn.azul.com/zulu/bin/zulu21.36.17-ca-jdk21.0.4-linux_x64
 
 # Install Node.js 24 LTS and pnpm
 RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y nodejs \
+    && apt-get install -y --no-install-recommends nodejs \
     && corepack enable \
     && corepack prepare pnpm@latest --activate \
     && rm -rf /var/lib/apt/lists/*
