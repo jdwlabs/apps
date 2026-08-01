@@ -1,0 +1,148 @@
+name: Prune Actions Cache
+
+# CodeQL's Java dependency cache is written with a content-derived key that is
+# not reproducible between runs: the packed archive differs by a few hundred
+# bytes every time, so the key never repeats, every analysis job misses, and
+# each one leaves behind another ~348 MB entry that nothing will ever restore.
+# Nothing in the repo controls that key -- code scanning runs as a dynamic
+# workflow -- so the only lever available here is to evict the dead entries
+# before they push the repository past the 10 GB cap and GitHub starts
+# LRU-evicting the pnpm, Gradle and Trivy caches that do get hits.
+
+on:
+  schedule:
+    - cron: '25 * * * *'
+  workflow_dispatch:
+    inputs:
+      retain:
+        description: 'CodeQL entries to keep per ref and key family'
+        type: number
+        default: 1
+      dry_run:
+        description: 'Report what would be deleted without deleting it'
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+  pull-requests: read
+
+concurrency:
+  group: prune-actions-cache
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Prune stale caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RETAIN: ${{ inputs.retain || 1 }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+
+          # Totals come from the listing rather than from actions/cache/usage:
+          # that endpoint is eventually consistent and was observed still
+          # reporting the pre-purge figure long after 40 deletes had landed,
+          # which would make every run report a bogus "after".
+          list_caches() {
+            local page=1 resp
+            : > "$1"
+            while :; do
+              resp=$(gh api "repos/$REPO/actions/caches?per_page=100&page=$page")
+              jq -c '.actions_caches[]' <<<"$resp" >> "$1"
+              if [ "$(jq '.actions_caches | length' <<<"$resp")" -lt 100 ]; then
+                break
+              fi
+              page=$((page + 1))
+            done
+          }
+
+          list_caches caches.ndjson
+          before_bytes=$(jq -s 'map(.size_in_bytes) | add // 0' caches.ndjson)
+          before_count=$(wc -l < caches.ndjson)
+
+          # A closed pull request can never restore its own caches again, so
+          # every entry on its ref is dead regardless of which tool wrote it.
+          : > closed.txt
+          jq -r 'select(.ref | test("^refs/pull/[0-9]+/")) | .ref | capture("^refs/pull/(?<n>[0-9]+)/").n' \
+            caches.ndjson | sort -u > pr-numbers.txt
+          while read -r n; do
+            [ -n "$n" ] || continue
+            state=$(gh api "repos/$REPO/pulls/$n" --jq '.state' 2>/dev/null || echo unknown)
+            if [ "$state" = "closed" ]; then
+              printf '%s\n' "$n" >> closed.txt
+            fi
+          done < pr-numbers.txt
+          closed_json=$(jq -Rs 'split("\n") | map(select(length > 0))' closed.txt)
+
+          jq -r --argjson closed "$closed_json" '
+            select(.ref | test("^refs/pull/[0-9]+/"))
+            | (.ref | capture("^refs/pull/(?<n>[0-9]+)/").n) as $n
+            | select($closed | index($n))
+            | [.id, .size_in_bytes, "closed-pr", .ref, .key] | @tsv
+          ' caches.ndjson > candidates.tsv
+
+          # Group by ref plus a key family with the volatile segments -- content
+          # hashes, commit SHAs and run ids -- normalised away, then keep only
+          # the newest few per family. Restores match by prefix, so the newest
+          # entry is the only one with any chance of being useful.
+          jq -s -r --argjson retain "$RETAIN" '
+            map(select(.key | startswith("codeql-")))
+            | group_by(.ref + " " + (.key | gsub("-[0-9a-f]{8,}"; "") | gsub("-[0-9]{6,}"; "")))
+            | map(sort_by(.created_at) | reverse | .[$retain:])
+            | flatten
+            | .[] | [.id, .size_in_bytes, "codeql-retention", .ref, .key] | @tsv
+          ' caches.ndjson >> candidates.tsv
+
+          sort -u -k1,1n candidates.tsv > delete.tsv
+
+          deleted=0
+          freed=0
+          failed=0
+          while IFS=$'\t' read -r id size reason ref key; do
+            [ -n "${id:-}" ] || continue
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete $id ($size bytes, $reason) $ref $key"
+            elif gh api -X DELETE "repos/$REPO/actions/caches/$id" --silent 2>/dev/null; then
+              echo "deleted $id ($size bytes, $reason) $ref $key"
+              freed=$((freed + size))
+            else
+              # A concurrent job can evict an entry between listing and delete.
+              echo "skipped $id (already gone or not deletable) $ref $key"
+              failed=$((failed + 1))
+              continue
+            fi
+            deleted=$((deleted + 1))
+          done < delete.tsv
+
+          list_caches after.ndjson
+          after_bytes=$(jq -s 'map(.size_in_bytes) | add // 0' after.ndjson)
+          after_count=$(wc -l < after.ndjson)
+          selected=$(wc -l < delete.tsv)
+
+          {
+            echo "### Actions cache prune"
+            echo
+            echo "| | entries | bytes | GB |"
+            echo "|---|---:|---:|---:|"
+            awk -v c="$before_count" -v b="$before_bytes" 'BEGIN{printf "| before | %d | %d | %.2f |\n", c, b, b/1073741824}'
+            awk -v c="$after_count" -v b="$after_bytes" 'BEGIN{printf "| after | %d | %d | %.2f |\n", c, b, b/1073741824}'
+            echo
+            echo "dry_run=\`$DRY_RUN\` retain=\`$RETAIN\` selected=\`$selected\` deleted=\`$deleted\` skipped=\`$failed\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "prune complete: selected=$selected deleted=$deleted skipped=$failed freed=$freed bytes"
+          echo "listed total: $before_bytes -> $after_bytes bytes ($before_count -> $after_count entries)"
+
+          # The cap is the reason this workflow exists, so a run that finishes
+          # still above it has not done its job and should be visible as a
+          # failure rather than a green run with a large number in the summary.
+          if [ "$DRY_RUN" != "true" ] && [ "$after_bytes" -gt 10737418240 ]; then
+            echo "::error::cache still above the 10 GB cap after pruning ($after_bytes bytes)"
+            exit 1
+          fi
