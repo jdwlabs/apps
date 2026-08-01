@@ -2,7 +2,7 @@
 // `getComputedStyle`, so the parser has to accept whatever the browser chose to
 // serialise — `rgb()`, `rgba()` and the `color(srgb ...)` form Chromium emits
 // for anything that went through `color-mix`.
-type Rgb = [number, number, number];
+export type Rgb = [number, number, number];
 
 export type Colour = { rgb: Rgb; alpha: number };
 
@@ -34,6 +34,16 @@ export function flatten(colour: Colour, backdrop: Rgb): Rgb {
   return colour.rgb.map(
     (channel, i) => channel * colour.alpha + backdrop[i] * (1 - colour.alpha),
   ) as Rgb;
+}
+
+/**
+ * Gap between the strongest and weakest channel — zero for any grey, and the
+ * only property some of these assertions need. Contrast alone cannot express
+ * "this segment carries a hue": in a palette whose families are one grey ramp,
+ * two roles can be equally legible and still be the same colour.
+ */
+export function channelSpread(rgb: Rgb): number {
+  return Math.max(...rgb) - Math.min(...rgb);
 }
 
 export function contrastRatio(a: Rgb, b: Rgb): number {

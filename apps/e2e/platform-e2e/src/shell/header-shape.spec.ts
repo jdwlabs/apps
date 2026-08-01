@@ -1,7 +1,12 @@
-import { test, expect, Locator } from '@playwright/test';
+import { test, expect, Locator, Page } from '@playwright/test';
 import { mockServiceDiscovery } from '../support/mock-service-discovery';
 import { ONE_PIXEL_PNG, signInAs } from '../support/sign-in-as';
-import { contrastRatio, flatten, parseColour } from '../support/contrast';
+import {
+  channelSpread,
+  contrastRatio,
+  flatten,
+  parseColour,
+} from '../support/contrast';
 
 const boxOf = async (locator: Locator) => {
   const box = await locator.boundingBox();
@@ -16,6 +21,30 @@ const colourOf = (locator: Locator, property: string) =>
     (el, name) => getComputedStyle(el).getPropertyValue(name),
     property,
   );
+
+/** Contrast of one computed colour over another, compositing any alpha first. */
+const ratioOf = async (
+  foreground: Locator,
+  foregroundProperty: string,
+  background: Locator,
+  backgroundProperty = 'background-color',
+) => {
+  const back = parseColour(await colourOf(background, backgroundProperty));
+  const front = parseColour(await colourOf(foreground, foregroundProperty));
+  return contrastRatio(flatten(front, back.rgb), back.rgb);
+};
+
+// Selecting a destination is a real navigation — `routerLinkActive` is what
+// adds the class the indicator hangs off, and only a route change sets it.
+const selectFirstDestination = async (page: Page) => {
+  const item = page.locator('[data-cy="navigation-link"]').first();
+  await item.click();
+  await expect(item).toHaveClass(/(^|\s)active(\s|$)/);
+  // The pointer is left sitting on the item by the click, and `.active:hover`
+  // blends the hover layer into the fill these assertions measure.
+  await page.mouse.move(600, 700);
+  return item;
+};
 
 // Nothing else in CI catches a shape or token regression: lint, unit tests and
 // build all pass on a header whose radii are wrong, which is how three M3
@@ -250,5 +279,189 @@ test.describe('Navigation rail indicator', () => {
     expect(
       contrastRatio(flatten(ring, drawer.rgb), drawer.rgb),
     ).toBeGreaterThanOrEqual(3);
+  });
+
+  // The indicator is a non-text UI component, so WCAG 2.1 SC 1.4.11 puts it at
+  // 3:1 against what is behind it, and its icon at 4.5:1 as text. A container
+  // role cannot reach either in a palette whose primary, secondary and tertiary
+  // families are one grey ramp: every `*-container` lands on the same tone as
+  // the drawer, which measured 1.23:1.
+  test('the active indicator separates from the drawer behind it', async ({
+    page,
+  }) => {
+    const item = await selectFirstDestination(page);
+    const drawer = page.locator('[data-cy="sidenav"]');
+
+    expect(
+      await ratioOf(item, 'background-color', drawer),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      await ratioOf(item.locator('[data-cy="navigation-icon"]'), 'color', item),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // Which destination is selected has to survive being read, not just being
+  // looked for. With both icons drawn from near-neighbour neutral roles they
+  // measured 1.01:1 apart — legible individually, identical to each other.
+  test('the selected destination is told apart from an unselected one', async ({
+    page,
+  }) => {
+    const items = page.locator('[data-cy="navigation-link"]');
+    await selectFirstDestination(page);
+
+    const active = parseColour(
+      await colourOf(
+        items.first().locator('[data-cy="navigation-icon"]'),
+        'color',
+      ),
+    );
+    const inactive = parseColour(
+      await colourOf(
+        items.nth(1).locator('[data-cy="navigation-icon"]'),
+        'color',
+      ),
+    );
+    expect(contrastRatio(active.rgb, inactive.rgb)).toBeGreaterThanOrEqual(3);
+  });
+
+  // The ring is drawn inside the item, so on a selected destination it lies
+  // wholly on the indicator rather than on the drawer — and the colour that
+  // contrasts with the drawer is not the one that contrasts with a saturated
+  // fill.
+  test('keyboard focus stays visible on the selected destination', async ({
+    page,
+  }) => {
+    const item = await selectFirstDestination(page);
+    await item.focus();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+
+    expect(await ratioOf(item, 'outline-color', item)).toBeGreaterThanOrEqual(
+      3,
+    );
+  });
+});
+
+// The expanded pill takes the same fill as the rail circle and has a label as
+// well as an icon, so it needs the same two thresholds — the fill is a
+// non-text component at 3:1, the label is text at 4.5:1.
+test.describe('Navigation drawer indicator', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockServiceDiscovery(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await page.locator('[data-cy="expand-toggle-button"]').click();
+    await expect(
+      page.locator('[data-cy="navigation-title"]').first(),
+    ).toBeVisible();
+  });
+
+  test('the expanded pill separates from the drawer and carries a legible label', async ({
+    page,
+  }) => {
+    const item = await selectFirstDestination(page);
+    const drawer = page.locator('[data-cy="sidenav"]');
+
+    expect(
+      await ratioOf(item, 'background-color', drawer),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      await ratioOf(
+        item.locator('[data-cy="navigation-title"]'),
+        'color',
+        item,
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// The environment segment is the one place in this design system where colour
+// carries meaning rather than decoration, so it is the one place a monochrome
+// palette cannot be allowed to flatten. `prod` survived on the error family;
+// `non` and `local` were drawn from container roles that resolve to the same
+// tone as the neutral version segment beside them, and merged into it.
+test.describe('Environment badge colour', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockServiceDiscovery(page);
+    await page.goto('/');
+    await expect(page.locator('[data-cy="env-badge"]')).toBeVisible();
+  });
+
+  // The app renders one environment at a time, so the tone class is set
+  // directly: the subject here is the rule each class selects, not the mapping
+  // from an environment string to a class, which the component's own unit tests
+  // already cover.
+  const showTone = (page: Page, tone: string) =>
+    page
+      .locator('[data-cy="env-badge"]')
+      .evaluate((el, name) => (el.className = `badge ${name}`), tone);
+
+  for (const tone of ['prod', 'non', 'local']) {
+    test(`the ${tone} chip is legible on the toolbar behind it`, async ({
+      page,
+    }) => {
+      await showTone(page, tone);
+      const chip = page.locator('[data-cy="env-segment"]');
+      const bar = page.locator('[data-cy="navbar-header"]');
+
+      expect(
+        await ratioOf(chip, 'background-color', bar),
+      ).toBeGreaterThanOrEqual(3);
+      expect(await ratioOf(chip, 'color', chip)).toBeGreaterThanOrEqual(4.5);
+    });
+
+    test(`the ${tone} chip does not read as another neutral segment`, async ({
+      page,
+    }) => {
+      await showTone(page, tone);
+      const chip = parseColour(
+        await colourOf(
+          page.locator('[data-cy="env-segment"]'),
+          'background-color',
+        ),
+      );
+      const version = parseColour(
+        await colourOf(
+          page.locator('[data-cy="version-segment"]'),
+          'background-color',
+        ),
+      );
+
+      // The environment half carries a hue and the version half deliberately
+      // does not, which is what keeps "quiet grey" from being an accident.
+      expect(channelSpread(chip.rgb)).toBeGreaterThanOrEqual(40);
+      expect(channelSpread(version.rgb)).toBeLessThanOrEqual(4);
+    });
+  }
+
+  // These colours are fixed across every theme, so the check that matters is
+  // the hostile one. A dark theme fills its toolbar from `primary-container`,
+  // and `red-teal`'s is a dark red — where a red `prod` chip is most at risk of
+  // disappearing, as it did at 1.00:1 when it was drawn from `error-container`.
+  // Each theme ships as its own stylesheet (`inject: false`), so layering one
+  // over the page swaps the token layer without a second app to build.
+  test('the chips survive a dark theme toolbar', async ({ page }) => {
+    const bar = page.locator('[data-cy="navbar-header"]');
+    const lightToolbar = await colourOf(bar, 'background-color');
+
+    await page.evaluate(async () => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/red-teal.css';
+      document.head.appendChild(link);
+      await new Promise((resolve) => (link.onload = resolve));
+    });
+
+    const chip = page.locator('[data-cy="env-segment"]');
+    // The rest of this test is vacuous if the bundle silently failed to load.
+    expect(await colourOf(bar, 'background-color')).not.toBe(lightToolbar);
+
+    for (const tone of ['prod', 'non', 'local']) {
+      await showTone(page, tone);
+      expect(
+        await ratioOf(chip, 'background-color', bar),
+      ).toBeGreaterThanOrEqual(3);
+      expect(await ratioOf(chip, 'color', chip)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
