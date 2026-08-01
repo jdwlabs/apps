@@ -2,7 +2,8 @@
 
 # Script: update-app.sh
 # Description: Opens an auto-merging pull request that bumps a Helm chart's appVersion
-#              in the deployments repo.
+#              in the deployments repo, then waits for that bump to reach main
+#              before reporting success.
 # Usage: update-app.sh <chart_file_path> <version_number> <project_name>
 #
 # Auth (one of):
@@ -15,6 +16,9 @@
 # Optional env:
 #   DEPLOYMENTS_REPO   Target repo slug.  Default: jdwlabs/deployments
 #   DEPLOYMENTS_HOST   Git host.          Default: github.com
+#   UPDATE_APP_VERIFY_TIMEOUT
+#                      Seconds to wait for the bump to land on main before
+#                      failing. Default: 600. Set to 0 to skip the check.
 #
 # Requires gh and jq. Every mutation goes through the API rather than a clone:
 # the commit is then minted server-side under the App's own identity, and the
@@ -68,6 +72,47 @@ require_tools() {
 
 # Point the branch at the current main tip, creating it if absent. Rebuilding
 # rather than appending keeps a rerun idempotent and the diff a single commit.
+# Block until the bump is actually on main, or fail.
+#
+# The pull request is opened with --auto, so this step returning success does
+# NOT mean the chart moved: auto-merge sits armed until every branch-protection
+# requirement is satisfied, and a requirement the App is only exempted from at
+# merge time is not one auto-merge counts as met. A release whose bump never
+# merges is otherwise indistinguishable from one that shipped, because every
+# job upstream of here has already reported success.
+#
+# Set UPDATE_APP_VERIFY_TIMEOUT=0 to skip the wait — the bump is then unverified
+# and this script's success means only that a pull request exists.
+verify_landed() {
+  local file_path="${1}" new_version="${2}" project_name="${3}" branch="${4}"
+  local timeout interval waited landed pr_url
+
+  timeout="${UPDATE_APP_VERIFY_TIMEOUT:-600}"
+  if [ "${timeout}" -eq 0 ]; then
+    echo "[${project_name}]: verification disabled; not confirming ${new_version} reached main."
+    return 0
+  fi
+
+  interval=15
+  waited=0
+  while [ "${waited}" -lt "${timeout}" ]; do
+    landed=$(gh api "repos/${deployments_repo}/contents/${file_path}?ref=main" --jq .content 2>/dev/null \
+      | tr -d '\r' | base64 -d 2>/dev/null \
+      | sed -n 's/^appVersion:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' | head -1)
+    if [ "${landed}" = "${new_version}" ]; then
+      echo "[${project_name}]: confirmed ${file_path} on main is ${new_version} after ${waited}s."
+      return 0
+    fi
+    sleep "${interval}"
+    waited=$((waited + interval))
+  done
+
+  pr_url=$(gh pr list -R "${deployments_repo}" --head "${branch}" --state open --json url --jq '.[0].url // empty')
+  echo "Error: ${file_path} on main is still '${landed:-unknown}', not ${new_version}, after ${timeout}s." >&2
+  echo "       The image was published but nothing deploys it. Merge ${pr_url:-the open pull request on ${branch}} to complete the release." >&2
+  return 1
+}
+
 reset_branch_to_main() {
   local branch="${1}" main_sha="${2}"
 
@@ -132,7 +177,8 @@ update_file() {
   open_prs=$(gh pr list -R "${deployments_repo}" --head "${branch}" --state open --json number --jq length)
   if [ "${open_prs}" -gt 0 ]; then
     echo "[${project_name}]: pull request already open for ${branch}; branch updated in place."
-    return 0
+    verify_landed "${file_path}" "${new_version}" "${project_name}" "${branch}"
+    return
   fi
 
   gh pr create -R "${deployments_repo}" --base main --head "${branch}" \
@@ -150,6 +196,7 @@ Merging it causes ArgoCD to sync the non environment to the new version."
   gh pr merge -R "${deployments_repo}" "${branch}" --auto --rebase --delete-branch
 
   echo "[${project_name}]: appVersion in ${file_path} set to ${new_version} via pull request on ${branch}."
+  verify_landed "${file_path}" "${new_version}" "${project_name}" "${branch}"
 }
 
 require_tools
