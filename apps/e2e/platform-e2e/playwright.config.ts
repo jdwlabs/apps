@@ -11,6 +11,12 @@ const useDeployedEnvironment = !!process.env['BASE_URL'];
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
+  // The remotes are served by four single-process static servers, and every
+  // navigation pulls a remote entry plus its chunks through them. Playwright's
+  // local default of one worker per two cores saturates them: connections are
+  // reset mid-navigation and the route renders empty. One worker per server
+  // holds. CI already pins a single worker, so this only bounds local runs.
+  workers: process.env['CI'] ? 1 : 4,
   use: {
     baseURL,
     trace: 'on-first-retry',

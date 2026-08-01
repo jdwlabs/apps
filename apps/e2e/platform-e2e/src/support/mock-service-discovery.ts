@@ -55,6 +55,29 @@ async function resolveRemoteEntry(page: Page, origin: string): Promise<string> {
   return [origin, path, name].filter(Boolean).join('/');
 }
 
+/**
+ * One resolution per origin for the life of a worker, sharing the in-flight
+ * promise so parallel tests do not each issue their own request.
+ *
+ * The filename cannot change mid-run, and re-reading it put three manifest
+ * fetches on the hot path of every test — enough concurrent requests across
+ * workers for the static server to start resetting connections. A rejection is
+ * evicted so one failed read does not poison the rest of the worker's tests.
+ */
+const remoteEntryUrls = new Map<string, Promise<string>>();
+
+function remoteEntryUrl(page: Page, origin: string): Promise<string> {
+  let pending = remoteEntryUrls.get(origin);
+  if (!pending) {
+    pending = resolveRemoteEntry(page, origin).catch((error) => {
+      remoteEntryUrls.delete(origin);
+      throw error;
+    });
+    remoteEntryUrls.set(origin, pending);
+  }
+  return pending;
+}
+
 export async function mockServiceDiscovery(page: Page): Promise<void> {
   // BASE_URL targets a deployed environment whose real service-discovery
   // backend serves /api/micro-frontends — mocking it there would hide the
@@ -66,7 +89,7 @@ export async function mockServiceDiscovery(page: Page): Promise<void> {
   const routes = await Promise.all(
     MOCK_ROUTES.map(async ({ origin, ...route }) => ({
       ...route,
-      url: await resolveRemoteEntry(page, origin),
+      url: await remoteEntryUrl(page, origin),
     })),
   );
 
