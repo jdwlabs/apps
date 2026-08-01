@@ -28,23 +28,33 @@
     letter-spacing: 0.6px;
   }
 
+  // The quiet half of the pair, and the only half that follows the palette.
+  // Version is reference information, not a signal, so it stays neutral and
+  // lets the environment segment carry the colour.
   .version {
     background-color: var(--mat-sys-surface-container-highest);
     color: var(--mat-sys-on-surface-variant);
   }
 
+  // Each environment names its own role rather than borrowing a palette one.
+  // Borrowing was the fault: `tertiary-container` and `secondary-container`
+  // resolve to the same tone as the neutral version chip in a monochrome
+  // palette, so two of the three environments merged into it and only `prod`,
+  // on the error family, kept a hue of its own. These roles are defined once in
+  // the theming partial, deliberately outside the palette, with the reasoning
+  // for the specific values.
   &.prod .env {
-    background-color: var(--mat-sys-error-container);
-    color: var(--mat-sys-on-error-container);
+    background-color: var(--jdw-sys-env-prod);
+    color: var(--jdw-sys-on-env-prod);
   }
 
   &.non .env {
-    background-color: var(--mat-sys-tertiary-container);
-    color: var(--mat-sys-on-tertiary-container);
+    background-color: var(--jdw-sys-env-non);
+    color: var(--jdw-sys-on-env-non);
   }
 
   &.local .env {
-    background-color: var(--mat-sys-secondary-container);
-    color: var(--mat-sys-on-secondary-container);
+    background-color: var(--jdw-sys-env-local);
+    color: var(--jdw-sys-on-env-local);
   }
 }
