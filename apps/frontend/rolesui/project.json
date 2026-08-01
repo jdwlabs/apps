@@ -159,6 +159,14 @@
         }
       }
     },
+    "serve-built": {
+      "executor": "@nx/web:file-server",
+      "options": {
+        "staticFilePath": "dist/apps/frontend/rolesui",
+        "port": 4203,
+        "watch": false
+      }
+    },
     "build-image": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build", "prepare-config", "build"],

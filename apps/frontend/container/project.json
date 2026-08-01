@@ -147,6 +147,15 @@
         "proxyUrl": "http://localhost:4200?"
       }
     },
+    "serve-built": {
+      "executor": "@nx/web:file-server",
+      "options": {
+        "staticFilePath": "dist/apps/frontend/container",
+        "port": 4200,
+        "proxyUrl": "http://localhost:4200?",
+        "watch": false
+      }
+    },
     "build-image": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build", "prepare-config", "build"],
