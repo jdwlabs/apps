@@ -43,7 +43,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      # actions/cache's save step (post-job) needs this to write the cache entry.
+      # setup-node's pnpm-store cache writes its entry in a post-job step, and
+      # that save needs write access even though nothing here reads it directly.
       actions: write
     steps:
       - name: Checkout Codebase
@@ -77,18 +78,14 @@ jobs:
           cache: pnpm
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-      # Persist Nx's task cache across runs via the GitHub Actions cache. The
-      # run_id suffix always writes a fresh entry; restore-keys pull the most
-      # recent prior cache. GitHub scopes caches per branch, so a PR can't poison
-      # main's cache (the CREEP class of issue with shared remote caches).
-      - name: Restore Nx cache
-        uses: actions/cache@v6.1.0
+      # Pinned from go.work rather than inherited from the runner image, which
+      # drifts in both directions without a commit here: a downgrade breaks the
+      # build and blames our code, an upgrade silently absorbs a language bump
+      # that should have been a decision.
+      - name: Setup Go
+        uses: actions/setup-go@v7.0.0
         with:
-          path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}
-          restore-keys: |
-            nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
-            nx-${{ runner.os }}-
+          go-version-file: go.work
       - name: Setup Base and SHAs for 'nx affected'
         uses: nrwl/nx-set-shas@v5.0.1
       - if: ${{ github.event_name == 'pull_request' }}
@@ -305,6 +302,13 @@ jobs:
           cache: pnpm
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+      # build-image dependsOn build, so this job compiles Go as well as the main
+      # job does. Same pin, same reason.
+      - if: ${{ matrix['build-image'] == true }}
+        name: Setup Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.work
       # Delivery targets (build-image/update-app/update-description) were
       # already detected once in the release job and embedded in this matrix
       # entry (matrix.build-image etc) — no need for every matrix job here to
