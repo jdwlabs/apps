@@ -1,6 +1,6 @@
 {
   "name": "@jdw/frontend-shared-util",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "dependencies": {
     "tslib": "^2.8.1",

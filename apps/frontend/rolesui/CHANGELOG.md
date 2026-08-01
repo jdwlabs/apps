@@ -1,3 +1,9 @@
+## 1.0.9 (2026-08-01)
+
+### 🧱 Updated Dependencies
+
+- Updated frontend-shared-util to 1.0.5
+
 ## 1.0.8 (2026-08-01)
 
 This was a version bump only for rolesui to align it with other projects, there were no code changes.

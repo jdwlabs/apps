@@ -1,3 +1,7 @@
+## 1.1.2 (2026-08-01)
+
+This was a version bump only for ai-sre-relay to align it with other projects, there were no code changes.
+
 ## 1.1.1 (2026-07-31)
 
 ### 🩹 Fixes
