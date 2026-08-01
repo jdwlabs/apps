@@ -1,3 +1,7 @@
+## 1.0.6 (2026-08-01)
+
+This was a version bump only for frontend-shared-util to align it with other projects, there were no code changes.
+
 ## 1.0.5 (2026-08-01)
 
 This was a version bump only for frontend-shared-util to align it with other projects, there were no code changes.
