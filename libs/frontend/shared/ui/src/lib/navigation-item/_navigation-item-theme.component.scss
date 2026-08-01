@@ -28,20 +28,38 @@
       background-color: var(--mat-sys-surface-container-high);
     }
 
+    // The saturated tertiary role, not its container tone. A container role is
+    // tone 90 in a light theme and tone 30 in a dark one, which is close to the
+    // surface it sits on by design — M3 relies on *hue* to separate the two. A
+    // palette whose primary, secondary and tertiary families share one ramp
+    // has no hue to spend, so every container role resolves to the drawer's own
+    // grey: measured 1.23:1 behind the indicator, with an active icon 1.01:1
+    // from an inactive one. Only lightness is left, and stepping to the
+    // saturated tone is what buys it. `on-tertiary` is the foreground M3 pairs
+    // with this role, so icon and label stay legible in every theme without
+    // naming a colour here.
     &.active {
-      background-color: var(--mat-sys-tertiary-container);
+      background-color: var(--mat-sys-tertiary);
 
       // The label carries its own colour declaration
       // (`.mdc-list-item__primary-text`), which an inherited value cannot beat
       // however important it is, so it needs the token rather than `color`.
       // Without this the pill renders a contrast-coloured icon beside an
       // on-surface label.
-      --mat-list-list-item-label-text-color: var(
-        --mat-sys-on-tertiary-container
-      );
+      //
+      // All three states, because Material gives hover and focus their own
+      // label tokens on more specific selectors, each falling back to
+      // `on-surface`. Setting only the base token leaves the label reverting to
+      // the drawer's text colour for as long as the pointer rests on the
+      // current destination or the keyboard has focus in it — which is exactly
+      // when it is being read. That was survivable while the indicator was a
+      // pale wash and is not now.
+      --mat-list-list-item-label-text-color: var(--mat-sys-on-tertiary);
+      --mat-list-list-item-hover-label-text-color: var(--mat-sys-on-tertiary);
+      --mat-list-list-item-focus-label-text-color: var(--mat-sys-on-tertiary);
 
       .icon {
-        color: var(--mat-sys-on-tertiary-container) !important;
+        color: var(--mat-sys-on-tertiary) !important;
       }
     }
 
@@ -52,8 +70,8 @@
     &.active:hover {
       background-color: color-mix(
         in srgb,
-        var(--mat-sys-on-tertiary-container) 12%,
-        var(--mat-sys-tertiary-container)
+        var(--mat-sys-on-tertiary) 12%,
+        var(--mat-sys-tertiary)
       );
     }
   }
@@ -113,5 +131,15 @@
   mat-sidenav.rail .nav:focus-visible {
     outline: 3px solid var(--mat-sys-on-surface);
     outline-offset: -3px;
+  }
+
+  // The ring is drawn inside the item, so on a selected destination it lies
+  // wholly on the indicator rather than on the drawer, and `on-surface` is
+  // picked to contrast with the drawer. That was harmless while the indicator
+  // was a near-surface wash; against a saturated fill it is not, so the active
+  // ring switches to the fill's own paired foreground — the one role M3
+  // guarantees against it in every theme.
+  mat-sidenav.rail .nav.active:focus-visible {
+    outline-color: var(--mat-sys-on-tertiary);
   }
 }
