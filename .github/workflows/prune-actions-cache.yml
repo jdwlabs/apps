@@ -1,13 +1,22 @@
 name: Prune Actions Cache
 
-# CodeQL's Java dependency cache is written with a content-derived key that is
-# not reproducible between runs: the packed archive differs by a few hundred
-# bytes every time, so the key never repeats, every analysis job misses, and
-# each one leaves behind another ~348 MB entry that nothing will ever restore.
+# CodeQL writes its dependency cache under a content-derived key that never
+# repeats: the packed archive differs by a few hundred bytes every run, so each
+# run adds another ~332 MiB entry instead of replacing one, and the total climbs
+# until it passes the cap and GitHub starts LRU-evicting the pnpm, Gradle and
+# Trivy caches that this repository actually depends on.
+#
+# These entries are NOT dead. An exact-key hit is impossible, but CodeQL falls
+# back to a restore-keys PREFIX match and picks up the most recent entry sharing
+# that prefix, so the accumulated entries are observably read back -- some of
+# them days after they were written. Retention must therefore stay >= 1: the
+# newest entry per prefix is precisely the one the next run's prefix restore
+# will select, and dropping to 0 would cost every Java and Go analysis a full
+# dependency re-resolve. Everything behind the newest is what this job reclaims,
+# because a prefix restore can never reach past the most recent match.
+#
 # Nothing in the repo controls that key -- code scanning runs as a dynamic
-# workflow -- so the only lever available here is to evict the dead entries
-# before they push the repository past the 10 GB cap and GitHub starts
-# LRU-evicting the pnpm, Gradle and Trivy caches that do get hits.
+# default-setup workflow -- so eviction is the only lever available here.
 
 on:
   schedule:
@@ -106,18 +115,23 @@ jobs:
           failed=0
           while IFS=$'\t' read -r id size reason ref key; do
             [ -n "${id:-}" ] || continue
-            if [ "$DRY_RUN" = "true" ]; then
+            # Only an exact "false" arms the destructive branch, so a malformed
+            # or unset value reports instead of deleting. The counters stay on
+            # the branch that actually performed the work -- a dry run that
+            # reports deletions it did not make is worse than no rehearsal.
+            if [ "$DRY_RUN" != "false" ]; then
               echo "would delete $id ($size bytes, $reason) $ref $key"
-            elif gh api -X DELETE "repos/$REPO/actions/caches/$id" --silent 2>/dev/null; then
+              continue
+            fi
+            if gh api -X DELETE "repos/$REPO/actions/caches/$id" --silent 2>/dev/null; then
               echo "deleted $id ($size bytes, $reason) $ref $key"
               freed=$((freed + size))
+              deleted=$((deleted + 1))
             else
               # A concurrent job can evict an entry between listing and delete.
               echo "skipped $id (already gone or not deletable) $ref $key"
               failed=$((failed + 1))
-              continue
             fi
-            deleted=$((deleted + 1))
           done < delete.tsv
 
           list_caches after.ndjson
@@ -139,10 +153,14 @@ jobs:
           echo "prune complete: selected=$selected deleted=$deleted skipped=$failed freed=$freed bytes"
           echo "listed total: $before_bytes -> $after_bytes bytes ($before_count -> $after_count entries)"
 
-          # The cap is the reason this workflow exists, so a run that finishes
-          # still above it has not done its job and should be visible as a
-          # failure rather than a green run with a large number in the summary.
-          if [ "$DRY_RUN" != "true" ] && [ "$after_bytes" -gt 10737418240 ]; then
-            echo "::error::cache still above the 10 GB cap after pruning ($after_bytes bytes)"
+          # Alert below the cap rather than at it. GitHub holds total usage under
+          # the limit on its own, by evicting least-recently-accessed entries as
+          # new ones are written, so a post-prune total measured against the cap
+          # is close to unreachable -- and in the window where it could trip,
+          # GitHub has already evicted the pnpm, Gradle and Trivy caches this job
+          # exists to protect. Firing while headroom remains is what makes this a
+          # warning instead of a post-mortem.
+          if [ "$DRY_RUN" = "false" ] && [ "$after_bytes" -gt 8589934592 ]; then
+            echo "::error::cache above the 8 GiB alert threshold after pruning ($after_bytes bytes); the prune is not keeping up with the write rate"
             exit 1
           fi
