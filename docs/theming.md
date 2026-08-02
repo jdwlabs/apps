@@ -13,17 +13,17 @@ bundle lists, and doing them separately means doing that cutover twice.
 primary, secondary and tertiary generate the same grey ramp and every
 `*-container` role resolves to the same tone. M3 relies on hue to separate a
 container role from the surface it sits on — a container is tone 90 in a light
-theme and tone 30 in a dark one, close to surface *by design*. With no hue to
+theme and tone 30 in a dark one, close to surface _by design_. With no hue to
 spend, only lightness is left.
 
 Measured consequences:
 
-| Element | Measured | Required |
-| --- | --- | --- |
-| Nav active indicator vs surface | 1.23:1 | 3:1 |
-| Version chip vs `surface-container-highest` (dark) | 1.32:1 | 4.5:1 |
-| Env chips vs a user-supplied toolbar colour | 1.14:1 | 3:1 |
-| Env badge segments vs each other | indistinguishable | distinguishable |
+| Element                                            | Measured          | Required        |
+| -------------------------------------------------- | ----------------- | --------------- |
+| Nav active indicator vs surface                    | 1.23:1            | 3:1             |
+| Version chip vs `surface-container-highest` (dark) | 1.32:1            | 4.5:1           |
+| Env chips vs a user-supplied toolbar colour        | 1.14:1            | 3:1             |
+| Env badge segments vs each other                   | indistinguishable | distinguishable |
 
 Two component-level workarounds already exist to compensate. The ticket's own
 argument stands: accumulating exceptions is the palette telling us it is the
@@ -42,11 +42,11 @@ Generated with `ng generate @angular/material:theme-color` from these seeds;
 tone values are never hand-edited, matching the existing rule in
 `_custom-palettes.scss`.
 
-| Seed | Value | Why |
-| --- | --- | --- |
-| primary | `#2f5fa8` | Mid blue. Tone 40 lands saturated enough for a toolbar fill and dark enough to clear light surfaces |
+| Seed     | Value     | Why                                                                                                                        |
+| -------- | --------- | -------------------------------------------------------------------------------------------------------------------------- |
+| primary  | `#2f5fa8` | Mid blue. Tone 40 lands saturated enough for a toolbar fill and dark enough to clear light surfaces                        |
 | tertiary | `#a8622f` | Warm copper, roughly opposite the primary hue, so `tertiary-container` separates from surface by hue rather than lightness |
-| neutral | `#5a6472` | Slate rather than pure grey, so surfaces read as deliberate instead of undertoned |
+| neutral  | `#5a6472` | Slate rather than pure grey, so surfaces read as deliberate instead of undertoned                                          |
 
 The seeds are the input to the verification gate below, not the conclusion. If
 a generated tone fails a floor, the seed is adjusted and the palette
@@ -112,8 +112,17 @@ stylesheet. Switching writes one attribute:
 document.documentElement.dataset.theme = next;
 ```
 
-No network round-trip, no flash, and no load-order race between the container
-and its remotes — the race being the mechanism that produced the drift.
+No network round-trip and no load-order race between the container and its
+remotes — the race being the mechanism that produced the drift.
+
+Nor a flash, but only because the container's `index.html` carries an inline
+script that reads the saved id and writes the attribute before the stylesheet
+link. The switcher service runs in an app initializer, which cannot execute
+until the federated bundle has loaded — by then the first paint has already
+happened in whichever theme the markup declared. The inline script is the only
+code that runs early enough, so it restates the theme ids and the storage key;
+the e2e shell suite asserts the attribute with scripts blocked so that
+restatement cannot drift unnoticed.
 
 `_all-themes.scss` warns that moving the component mixin inside an `html` block
 gives every component selector an extra ancestor and changes which rules win.
@@ -131,18 +140,31 @@ blocks are emitted per theme rather than once.
 The four frontends are federated into one DOM. If remotes keep shipping theme
 CSS they compete for `--mat-sys-*` on `html`, resolved by load order.
 
-The container emits the theme stylesheet. `authui`, `usersui` and `rolesui`
-ship none, and consume the tokens from the host document.
+The container emits all three themes and owns the `data-theme` attribute.
+
+The remotes are not styleless, though, because each is also deployed behind a
+public ingress of its own (`authui.prd`, `usersui.prd`, `rolesui.prd`), and a
+remote that ships no theme serves an unthemed page there — every `--mat-sys-*`
+unresolved, transparent background, untokenised components. Each remote
+therefore emits `blue-slate` alone and declares it in its own `index.html`.
+
+That is not the competition this decision removes. What competed was
+root-level token definitions, resolved by load order. These blocks are scoped
+to `html[data-theme='blue-slate']`, and federation loads a remote's modules
+rather than its global stylesheet, so the block never enters the container's
+document at all — and if it did, the container owns the attribute: under any
+other theme it does not match, and under `blue-slate` it carries identical
+values. The remotes ship no user-custom theme; those belong to the switcher.
 
 ## Architecture
 
-| Piece | Location | Responsibility |
-| --- | --- | --- |
-| `on-color` | `libs/frontend/shared/ui/…/theming` | Given a background, return a foreground meeting the contrast floor. Pure, framework-free, unit-tested |
-| Theme registry | `libs/frontend/shared/ui/…/theming` | The three themes as data (id, label, type). One source for both the switcher and the `[data-theme]` blocks |
-| Switcher service | `libs/frontend/shared/ui/…/theming` | Writes `data-theme`, persists the choice, recomputes user-custom tones through `on-color` |
-| Theme stylesheet | container | All three themes under `html[data-theme=…]`, component blocks scoped uniformly |
-| Remote styles | authui, usersui, rolesui | Layout and font only |
+| Piece            | Location                            | Responsibility                                                                                             |
+| ---------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `on-color`       | `libs/frontend/shared/ui/…/theming` | Given a background, return a foreground meeting the contrast floor. Pure, framework-free, unit-tested      |
+| Theme registry   | `libs/frontend/shared/ui/…/theming` | The three themes as data (id, label, type). One source for both the switcher and the `[data-theme]` blocks |
+| Switcher service | `libs/frontend/shared/ui/…/theming` | Writes `data-theme`, persists the choice, recomputes user-custom tones through `on-color`                  |
+| Theme stylesheet | container                           | All three themes under `html[data-theme=…]`, component blocks scoped uniformly                             |
+| Remote styles    | authui, usersui, rolesui            | Layout, font, and `blue-slate` alone — for the app's own public host, inert inside the container           |
 
 The registry is the seam that keeps the switcher from knowing about Sass and
 the stylesheet from knowing about Angular. Adding a theme means adding a
@@ -157,7 +179,8 @@ One PR:
 2. Add the theming lib (`on-color`, registry, switcher) with unit tests.
 3. Rewrite the container stylesheet to emit all three themes under
    `[data-theme]`, component blocks included.
-4. Strip the theme `@use` from the three remotes' `styles.scss`.
+4. Repoint the three remotes' `styles.scss` at `blue-slate` alone, scoped
+   through the same mixin.
 5. Delete the five legacy palette files and the twenty corresponding
    `inject: false` bundle entries across the four `project.json` files.
 6. Add the switcher control to the container's header.
@@ -166,13 +189,13 @@ One PR:
 
 Measured against the roles that actually failed, not eyeballed:
 
-| Check | Floor |
-| --- | --- |
-| `tertiary-container` vs `surface` | 3:1 |
-| Env chips vs toolbar, light and dark | 3:1 |
-| Version chip vs `surface-container-highest` | 4.5:1 |
-| Env chips vs six sampled user-supplied colours | 3:1 |
-| Nav active indicator vs surface | 3:1 |
+| Check                                          | Floor | Outcome                                            |
+| ---------------------------------------------- | ----- | -------------------------------------------------- |
+| `tertiary-container` vs `surface`              | 3:1   | **Fails at 1.23:1** — override retained, see below |
+| Env chips vs toolbar, light and dark           | 3:1   | Passes                                             |
+| Version chip vs `surface-container-highest`    | 4.5:1 | Passes                                             |
+| Env chips vs six sampled user-supplied colours | 3:1   | Passes                                             |
+| Nav active indicator vs surface                | 3:1   | Passes, via the retained override                  |
 
 The first check decides whether the nav-indicator override is removed. It
 exists because a shared grey ramp left `tertiary-container` at 1.23:1 against
