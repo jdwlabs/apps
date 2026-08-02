@@ -48,9 +48,15 @@ $theme-type: light;
     // on-container role meaningless. The switcher derives these from the
     // user's colour and guarantees the pairing clears the text floor.
     --mat-sys-primary-container: var(--primary-container-500, #7dcf2a);
-    --mat-sys-on-primary-container: var(--primary-container-contrast-500, white);
+    --mat-sys-on-primary-container: var(
+      --primary-container-contrast-500,
+      white
+    );
     --mat-sys-tertiary-container: var(--accent-container-500, #ed00db);
-    --mat-sys-on-tertiary-container: var(--accent-container-contrast-500, white);
+    --mat-sys-on-tertiary-container: var(
+      --accent-container-contrast-500,
+      white
+    );
 
     @include all-themes.all-component-themes($theme-type);
   }

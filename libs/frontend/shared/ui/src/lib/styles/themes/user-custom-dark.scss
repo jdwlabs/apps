@@ -43,9 +43,15 @@ $theme-type: dark;
     // values the light theme falls back to would put white text on a pale
     // ground here.
     --mat-sys-primary-container: var(--primary-container-500, #2a5000);
-    --mat-sys-on-primary-container: var(--primary-container-contrast-500, white);
+    --mat-sys-on-primary-container: var(
+      --primary-container-contrast-500,
+      white
+    );
     --mat-sys-tertiary-container: var(--accent-container-500, #830079);
-    --mat-sys-on-tertiary-container: var(--accent-container-contrast-500, white);
+    --mat-sys-on-tertiary-container: var(
+      --accent-container-contrast-500,
+      white
+    );
 
     @include all-themes.all-component-themes($theme-type);
   }
