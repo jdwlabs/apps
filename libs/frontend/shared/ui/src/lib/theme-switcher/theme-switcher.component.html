@@ -3,38 +3,7 @@
   data-cy="theme-trigger"
   matTooltip="Change theme"
   aria-label="Change theme"
-  [matMenuTriggerFor]="menu"
+  (click)="open()"
 >
   <mat-icon>palette</mat-icon>
 </button>
-
-<mat-menu #menu="matMenu">
-  @for (theme of options; track theme.id) {
-    <button
-      mat-menu-item
-      data-cy="theme-option"
-      [attr.aria-current]="theme.id === current() ? 'true' : null"
-      (click)="choose(theme.id)"
-    >
-      {{ theme.label }}
-    </button>
-  }
-
-  @if (customisable()) {
-    <!-- Stops the menu closing on the click that opens the colour picker,
-         which would tear down the input before it can produce a value. This
-         wrapper only captures the click for its children; the input itself
-         remains the focusable, keyboard-operable control. -->
-    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-    <div class="picker" (click)="$event.stopPropagation()">
-      <label for="theme-colour">Brand colour</label>
-      <input
-        id="theme-colour"
-        type="color"
-        data-cy="theme-colour"
-        [value]="colour()"
-        (change)="recolour($any($event.target).value)"
-      />
-    </div>
-  }
-</mat-menu>
