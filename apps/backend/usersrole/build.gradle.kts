@@ -15,8 +15,14 @@ group = "com.jdw"
 version = file("VERSION").readText().trim()
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	// A toolchain rather than source/targetCompatibility: those two only assert
+	// the language level, leaving Gradle to compile with whatever JVM happened to
+	// launch it. Two machines on different JDKs then produce different bytecode
+	// from identical sources, which a build cache keyed on sources alone will
+	// happily treat as interchangeable.
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 configurations {
