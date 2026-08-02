@@ -34,6 +34,18 @@ const applyTheme = async (page: Page, theme: string, colour?: string) => {
   await page.reload();
   await expect(page.locator('[data-cy="env-badge"]')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+
+  // The seed reaches the page as published custom properties, so this is the
+  // only observable proof it was read back at all. A customisable theme that
+  // published nothing would leave every role on its compiled fallback and still
+  // render a perfectly legible page.
+  const published = await page.evaluate(() =>
+    document.documentElement.style.getPropertyValue('--primary-500'),
+  );
+  if (colour) {
+    expect(published).toMatch(/^#[0-9a-f]{6}$/i);
+  }
+  return published;
 };
 
 const read = (page: Page, selector: string, property: string) =>
@@ -133,6 +145,20 @@ test.describe('Theme contrast floors', () => {
       ).toBeGreaterThanOrEqual(3);
     });
   }
+
+  // Six seeds are only a matrix if they produce six themes. Should the stored
+  // colour stop reaching the service — a renamed key, a rejected value, a
+  // publish that no longer writes — every case below silently collapses into
+  // six readings of the default seed and stays green. The seed moves the chip
+  // pairing by about 1%, far too little for anyone to notice that by eye, so
+  // the distinctness has to be asserted rather than inferred.
+  test('each user colour publishes a palette of its own', async ({ page }) => {
+    const published = new Set<string>();
+    for (const colour of USER_COLOURS) {
+      published.add(await applyTheme(page, 'user-custom-light', colour));
+    }
+    expect(published.size).toBe(USER_COLOURS.length);
+  });
 
   // The customisable themes recolour the toolbar from the user's seed while the
   // environment chips keep the fixed roles that carry their meaning, so every
