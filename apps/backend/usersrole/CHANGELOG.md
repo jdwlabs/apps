@@ -1,3 +1,7 @@
+## 1.0.5 (2026-08-02)
+
+This was a version bump only for usersrole to align it with other projects, there were no code changes.
+
 ## 1.0.4 (2026-08-01)
 
 This was a version bump only for usersrole to align it with other projects, there were no code changes.

@@ -1,3 +1,22 @@
+## 2.0.12 (2026-08-02)
+
+### 🚀 Features
+
+- **theming:** make themes switchable and give the container sole ownership ([39bfa11f](https://github.com/jdwlabs/apps/commit/39bfa11f))
+
+### 🩹 Fixes
+
+- **theming:** ship the default theme on each remote ([a3d65212](https://github.com/jdwlabs/apps/commit/a3d65212))
+
+### 🧱 Updated Dependencies
+
+- Updated frontend-shared-util to 1.0.7
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 2.0.11 (2026-08-02)
 
 ### 🩹 Fixes

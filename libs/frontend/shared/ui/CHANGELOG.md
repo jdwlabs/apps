@@ -1,3 +1,25 @@
+## 1.1.9 (2026-08-02)
+
+### 🚀 Features
+
+- **theming:** add the theme switcher to the container header ([ec1a6550](https://github.com/jdwlabs/apps/commit/ec1a6550))
+- **theming:** make themes switchable and give the container sole ownership ([39bfa11f](https://github.com/jdwlabs/apps/commit/39bfa11f))
+- **theming:** generate the blue-slate palette from chosen seeds ([2c54a3ba](https://github.com/jdwlabs/apps/commit/2c54a3ba))
+
+### 🩹 Fixes
+
+- **theming:** name the theme dialog's radio group ([da18eca1](https://github.com/jdwlabs/apps/commit/da18eca1))
+- **theming:** replace theme menu with a dialog for keyboard reachability ([8dfc45b9](https://github.com/jdwlabs/apps/commit/8dfc45b9))
+
+### 🧱 Updated Dependencies
+
+- Updated frontend-shared-util to 1.0.7
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.8 (2026-08-01)
 
 ### 🧱 Updated Dependencies

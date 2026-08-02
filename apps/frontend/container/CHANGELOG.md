@@ -1,3 +1,23 @@
+## 2.1.7 (2026-08-02)
+
+### 🚀 Features
+
+- **theming:** make themes switchable and give the container sole ownership ([39bfa11f](https://github.com/jdwlabs/apps/commit/39bfa11f))
+
+### 🩹 Fixes
+
+- **theming:** apply the persisted theme before the first paint ([5d05a894](https://github.com/jdwlabs/apps/commit/5d05a894))
+- **theming:** apply the stored theme at boot ([0e0a6bfd](https://github.com/jdwlabs/apps/commit/0e0a6bfd))
+
+### 🧱 Updated Dependencies
+
+- Updated frontend-shared-util to 1.0.7
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 2.1.6 (2026-08-02)
 
 ### 🩹 Fixes
