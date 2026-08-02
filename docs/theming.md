@@ -181,6 +181,11 @@ separation the role was designed to have. If the measurement clears 3:1 the
 override is deleted; if it does not, the override stays and its comment is
 updated to say why it survived a palette that was supposed to remove it.
 
+Measured: 1.23:1 under blue-slate and 1.98:1 under the dark theme, against
+6.14:1 and 10.88:1 for the saturated tone. The override stays. Hue was not the
+missing ingredient — a container role is a tone-90 fill on a tone-98 surface,
+and no choice of hue turns that into a 3:1 luminance ratio.
+
 The env-badge treatment is retained either way. It is not a workaround: the
 badge carries `PROD` / `NON` / `LOCAL` as text plus an `aria-label`, so colour
 is redundant reinforcement rather than the sole carrier, and it is there for
