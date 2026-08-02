@@ -30,14 +30,15 @@
 
     // The saturated tertiary role, not its container tone. A container role is
     // tone 90 in a light theme and tone 30 in a dark one, which is close to the
-    // surface it sits on by design — M3 relies on *hue* to separate the two. A
-    // palette whose primary, secondary and tertiary families share one ramp
-    // has no hue to spend, so every container role resolves to the drawer's own
-    // grey: measured 1.23:1 behind the indicator, with an active icon 1.01:1
-    // from an inactive one. Only lightness is left, and stepping to the
-    // saturated tone is what buys it. `on-tertiary` is the foreground M3 pairs
-    // with this role, so icon and label stay legible in every theme without
-    // naming a colour here.
+    // surface it sits on by design — M3 relies on *hue* to separate the two,
+    // and a 3:1 non-text floor is a luminance ratio that hue cannot supply.
+    // Re-measured against a palette whose tertiary family is a genuinely
+    // different hue from its primary, `tertiary-container` still sits 1.23:1
+    // from `surface` in the light theme and 1.98:1 in the dark one, while the
+    // saturated tone measures 6.14:1 and 10.88:1. Hue was never the missing
+    // ingredient, so the step to the saturated tone stays. `on-tertiary` is the
+    // foreground M3 pairs with this role, so icon and label stay legible in
+    // every theme without naming a colour here.
     &.active {
       background-color: var(--mat-sys-tertiary);
 
@@ -119,8 +120,8 @@
   }
 
   // Material's only focus affordance for a list item is that same state layer —
-  // `on-surface` at 12%. Over the active indicator's container fill that
-  // measured 1.3:1, and it occupies exactly the indicator's box, so where it is
+  // `on-surface` at 12%. Over an active indicator it measured 1.3:1, and it
+  // occupies exactly the indicator's box, so where it is
   // visible at all it reads as a smudge on the indicator rather than a separate
   // ring. A drawn ring is independent of both: it is a shape the indicator never
   // takes, and `on-surface` is the one role guaranteed to contrast with the
