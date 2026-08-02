@@ -70,6 +70,18 @@ export function onColor(background: string, floor = 4.5): string {
     : '#000000';
 }
 
+// Rotates hue while holding chroma and tone, so the returned colour is as
+// saturated and as light as the seed and sits opposite it on the hue circle.
+// A seed with no chroma has no hue to rotate and comes back unchanged: grey
+// has no complement, and manufacturing one by shifting tone or inventing
+// chroma would hand a user who picked grey a theme they did not choose.
+export function complementOf(hex: string): string {
+  const src = Hct.fromInt(argbFromHex(hex));
+  return hexFromArgb(
+    Hct.from((src.hue + 180) % 360, src.chroma, src.tone).toInt(),
+  );
+}
+
 export function toneSetFrom(seed: string, type: ThemeType): ToneSet {
   const source = Hct.fromInt(argbFromHex(seed));
   const base = atTone(source, BASE_TONE[type]);

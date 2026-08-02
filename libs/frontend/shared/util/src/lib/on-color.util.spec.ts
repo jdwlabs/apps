@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, onColor, toneSetFrom } from './on-color.util';
+import { Hct, argbFromHex } from '@material/material-color-utilities';
+import {
+  complementOf,
+  contrastRatio,
+  onColor,
+  toneSetFrom,
+} from './on-color.util';
 
 // Sampled across the hue circle plus the two cases the design measured:
 // the legacy user-custom green, and a mid-grey, which is the worst case for
@@ -43,6 +49,47 @@ describe('onColor', () => {
     expect(
       contrastRatio(onColor(background, 3), background),
     ).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('complementOf', () => {
+  const hctOf = (hex: string) => Hct.fromInt(argbFromHex(hex));
+  const hueGap = (a: number, b: number) => {
+    const raw = Math.abs(a - b) % 360;
+    return raw > 180 ? 360 - raw : raw;
+  };
+
+  // A byte rotation of the RGB channels looks like a complement and is not: it
+  // moves a saturated hue about 120 degrees and leaves any grey exactly where
+  // it started. Measured in HCT so the assertion is about hue rather than about
+  // whichever sRGB triple happens to encode it.
+  it.each(['#7dcf2a', '#2f5fa8', '#a8622f', '#c2185b', '#00897b'])(
+    'sits opposite %s on the hue circle',
+    (seed) => {
+      const source = hctOf(seed);
+      const rotated = hctOf(complementOf(seed));
+      expect(hueGap(source.hue, rotated.hue)).toBeCloseTo(180, 0);
+    },
+  );
+
+  it.each(['#7dcf2a', '#2f5fa8', '#c2185b'])(
+    'holds the tone of %s so the pairing stays usable at the same lightness',
+    (seed) => {
+      expect(hctOf(complementOf(seed)).tone).toBeCloseTo(hctOf(seed).tone, 0);
+    },
+  );
+
+  // Documented property, not an oversight: a colour with no chroma has no hue
+  // to rotate, so it is its own complement. A user who picks grey gets a grey
+  // theme, which is the honest answer rather than a hue invented for them.
+  it.each(['#ffffff', '#000000'])('returns %s unchanged', (grey) => {
+    expect(complementOf(grey)).toBe(grey);
+  });
+
+  it('leaves a mid grey visually where it was', () => {
+    const rotated = complementOf('#808080');
+    expect(hctOf(rotated).chroma).toBeLessThan(3);
+    expect(contrastRatio(rotated, '#808080')).toBeCloseTo(1, 1);
   });
 });
 
