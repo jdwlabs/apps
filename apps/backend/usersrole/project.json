@@ -13,10 +13,10 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "bash gradlew build"
+        "command": "bash gradlew assemble"
       },
       "cache": true,
-      "outputs": ["{projectRoot}/build"]
+      "outputs": ["{projectRoot}/build/libs"]
     },
     "lint": {
       "cache": true,
