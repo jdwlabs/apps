@@ -1,3 +1,13 @@
+## 1.0.11 (2026-08-02)
+
+### 🩹 Fixes
+
+- **frontend:** serve the four UIs as a non-root user on 8080 ([110ffbd7](https://github.com/jdwlabs/apps/commit/110ffbd7))
+
+### ❤️ Thank You
+
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.10 (2026-08-01)
 
 ### 🧱 Updated Dependencies
