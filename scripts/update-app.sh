@@ -103,14 +103,20 @@ wait_for_checks() {
     checks=$(gh pr checks "${branch}" -R "${deployments_repo}" --json bucket --jq '[.[].bucket]' 2>/dev/null || echo '[]')
     total=$(printf '%s' "${checks}" | jq 'length' 2>/dev/null || echo 0)
     pending=$(printf '%s' "${checks}" | jq '[.[]|select(.=="pending")]|length' 2>/dev/null || echo 0)
-    failed=$(printf '%s' "${checks}" | jq '[.[]|select(.=="fail")]|length' 2>/dev/null || echo 0)
+    # "cancel" counts as a failure, not as a pass. gh sorts checks into
+    # pass/fail/pending/skipping/cancel, and a cancelled check means nobody
+    # knows whether the code is good — merging on one deploys an unknown.
+    # "skipping" stays a pass: several jobs here skip on every pull request by
+    # design, so the two cannot share a classification despite both meaning
+    # "did not run".
+    failed=$(printf '%s' "${checks}" | jq '[.[]|select(.=="fail" or .=="cancel")]|length' 2>/dev/null || echo 0)
     if [ -z "${total}" ] || [ -z "${pending}" ] || [ -z "${failed}" ]; then
       total=0; pending=0; failed=0
     fi
 
     if [ "${total}" -gt 0 ] && [ "${pending}" -eq 0 ]; then
       if [ "${failed}" -gt 0 ]; then
-        echo "Error: ${failed} of ${total} checks failed on ${branch}; refusing to merge the bump." >&2
+        echo "Error: ${failed} of ${total} checks did not pass on ${branch}; refusing to merge the bump." >&2
         gh pr checks "${branch}" -R "${deployments_repo}" >&2 || true
         return 1
       fi
