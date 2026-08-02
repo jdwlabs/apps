@@ -11,8 +11,8 @@
 // from the same value, so the two cannot drift apart.
 $theme-type: dark;
 
-@mixin emit($selector) {
-  #{$selector} {
+@mixin emit($id) {
+  html[data-theme='#{$id}'] {
     @include theming.theme(
       $primary: custom-palettes.$user-custom-primary,
       $tertiary: custom-palettes.$user-custom-tertiary,
@@ -37,10 +37,14 @@ $theme-type: dark;
     // saturated tone, which left every surface filled from a container role
     // sitting at the same value as the buttons beside it, and made the paired
     // on-container role meaningless. The switcher derives these from the
-    // user's colour and guarantees the pairing clears the text floor.
-    --mat-sys-primary-container: var(--primary-container-500, #7dcf2a);
+    // user's colour and guarantees the pairing clears the text floor. The
+    // fallbacks are the tone-30 forms of the same seeds, because a dark
+    // theme's container is a dark fill under a light foreground — the tone-90
+    // values the light theme falls back to would put white text on a pale
+    // ground here.
+    --mat-sys-primary-container: var(--primary-container-500, #2a5000);
     --mat-sys-on-primary-container: var(--primary-container-contrast-500, white);
-    --mat-sys-tertiary-container: var(--accent-container-500, #ed00db);
+    --mat-sys-tertiary-container: var(--accent-container-500, #830079);
     --mat-sys-on-tertiary-container: var(--accent-container-contrast-500, white);
 
     @include all-themes.all-component-themes($theme-type);
