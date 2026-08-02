@@ -1,6 +1,10 @@
-<h2 mat-dialog-title>Change theme</h2>
+<h2 mat-dialog-title id="theme-dialog-title">Change theme</h2>
 <mat-dialog-content>
-  <mat-radio-group [value]="current()" (change)="choose($event.value)">
+  <mat-radio-group
+    aria-labelledby="theme-dialog-title"
+    [value]="current()"
+    (change)="choose($event.value)"
+  >
     @for (theme of options; track theme.id) {
       <mat-radio-button [value]="theme.id" data-cy="theme-option">
         {{ theme.label }}

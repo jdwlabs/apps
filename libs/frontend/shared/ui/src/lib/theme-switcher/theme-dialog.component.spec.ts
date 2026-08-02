@@ -25,6 +25,18 @@ describe('ThemeDialogComponent', () => {
     expect(options.length).toBe(service.themes.length);
   });
 
+  // A radiogroup with no accessible name is announced as an unlabelled group,
+  // so a screen reader user hears three theme names with nothing saying what
+  // the choice is for.
+  it('names the radio group after the dialog title', () => {
+    const group = fixture.nativeElement.querySelector('mat-radio-group');
+    const labelledBy = group.getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelector(`#${labelledBy}`).textContent,
+    ).toContain('Change theme');
+  });
+
   it('marks the currently selected theme as the checked radio', () => {
     fixture.componentInstance.choose('user-custom-dark');
     fixture.detectChanges();
