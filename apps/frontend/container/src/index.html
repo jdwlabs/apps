@@ -4,6 +4,29 @@
     <meta charset="utf-8" />
     <title>Container</title>
     <base href="/" />
+    <!--
+      Applies the saved theme before the render-blocking stylesheet is fetched.
+      Not redundant with the app initializer: that cannot run until the
+      federated bundle has downloaded and executed, by which time the browser
+      has already painted the theme this element declares, so a user on any
+      non-default theme sees a full-page flash of the default on every load.
+      The theme ids and the storage key are repeated from the registry because
+      nothing bundled is available this early; the e2e shell suite asserts the
+      attribute is correct with scripts blocked, which fails if they drift.
+    -->
+    <script>
+      try {
+        var t = localStorage.getItem('jdw.theme');
+        if (
+          t &&
+          ['blue-slate', 'user-custom-light', 'user-custom-dark'].indexOf(t) >=
+            0
+        )
+          document.documentElement.dataset.theme = t;
+      } catch (e) {
+        /* a locked-down profile throws on storage; the declared default stands */
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link
