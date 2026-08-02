@@ -220,7 +220,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 4202:80 jdwlabs/usersui:latest",
+            "command": "docker run --rm -p 4202:8080 jdwlabs/usersui:latest",
             "forwardAllArgs": false
           }
         ],

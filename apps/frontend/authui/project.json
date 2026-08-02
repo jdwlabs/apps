@@ -220,7 +220,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker run --rm -p 4201:80 jdwlabs/authui:latest",
+            "command": "docker run --rm -p 4201:8080 jdwlabs/authui:latest",
             "forwardAllArgs": false
           }
         ],
