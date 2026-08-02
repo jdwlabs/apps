@@ -7,7 +7,7 @@ every `nx connect` prompt. Caching is self-hosted at these levels:
 | Level                           | Mechanism                                         | Status              |
 | ------------------------------- | ------------------------------------------------- | ------------------- |
 | Shared local cache (worktrees)  | `.nx/workspace-data` db at the main worktree root | Always on           |
-| CI cache                        | `actions/cache` on `.nx/cache` (branch-scoped)    | Always on in CI     |
+| CI cache                        | none — every task runs cold                       | Removed, see below  |
 | LAN remote cache (MinIO-backed) | Nx OpenAPI cache server                           | Planned — see below |
 
 ## Shared local cache (dev machines, worktrees)
@@ -65,31 +65,37 @@ Notes:
   exit code. Prefer `cache: false` for such targets, and for any target that
   writes tracked files back into the tree.
 - `pnpm exec nx reset` clears the cache.
-- CI keeps the same default `.nx/cache` path, which the `actions/cache` step
-  in `ci.yml` persists across runs — nothing environment-specific to set.
-  Whether persisting that path is still sufficient on Nx 23 is an open
-  question; see the CI section.
+- CI does not cache Nx at all — see the CI section. The cache described here
+  is local-only.
 - A committed absolute `cacheDirectory` would not survive CI anyway:
   `path.posix.isAbsolute('F:/Dev/.nx-cache')` is `false`, so a Linux runner
   resolves it _relative to the workspace_ and caches nothing.
 
 ## CI cache (GitHub-hosted runners)
 
-CI restores/saves `.nx/cache` via `actions/cache` (see `ci.yml`). GitHub
-scopes cache entries per branch, so a PR cannot poison main's cache — this is
-the same class of protection the deprecated Nx S3 plugins lacked
-(CVE-2025-36852, "CREEP"). This _is_ the self-hosted CI cache; it needs no
-credentials and degrades to a plain build on a cache miss.
+**There is no Nx cache in CI.** No workflow references `.nx/cache`,
+`.nx/workspace-data` or `NX_CACHE_DIRECTORY`; the only `cache:` keys in
+`ci.yml` are `setup-node`'s pnpm store. Every Nx task on every run executes
+cold, and a cache hit is impossible by construction rather than by miss.
 
-**Open question: whether that path still restores anything.** The cached path
-is `.nx/cache`, but the section above establishes that on Nx 23 the artifacts
-are in `.nx/workspace-data/<uuid>-v3.db`, which the step does not cache. If
-that holds on a Linux runner too, CI is persisting terminal outputs and run
-metadata while re-running every task — which would match the 0% cache-hit
-rates seen on local cold runs. This has **not** been confirmed against a real
-CI run; confirm before changing the path, because adding `.nx/workspace-data`
-naively would also cache the project graph and file map, which are not safe to
-carry across differing checkouts.
+That is deliberate. The step was removed in `316f61b47` ("drop the unreadable
+Nx cache") once it was established that the artifacts live in
+`.nx/workspace-data/<uuid>-v3.db` on Nx 23 while the step persisted only
+`.nx/cache` — so it was writing over a gigabyte per run of terminal output and
+run metadata that Nx never read back, and evicting the pnpm, Trivy and gradle
+caches that do work.
+
+Restoring an Nx cache here is therefore a design question, not a path fix.
+Persisting `.nx/workspace-data` naively would also carry the project graph and
+file map, which are not safe across differing checkouts. Two properties have to
+hold first: every verification target must be `cache: false`, since a cache
+artifact replays a stored exit code rather than re-deriving a verdict; and
+every cacheable target must declare its own filesets, or the hash cannot move
+when the code moves. Until both hold, a CI cache converts gates into replays.
+
+Note what the absent cache has been masking: the inputs defects described above
+never reached production precisely because CI's hit rate is zero. Fixing the
+cache without fixing the inputs first would remove that accidental protection.
 
 The homelab MinIO (`https://192.168.1.205:9000`) is a private LAN address.
 GitHub-hosted runners cannot reach it, so a MinIO-backed remote cache
