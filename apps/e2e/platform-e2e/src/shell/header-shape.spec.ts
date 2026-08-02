@@ -427,8 +427,9 @@ test.describe('Environment badge colour', () => {
         ),
       );
 
-      // The environment half carries a hue and the version half deliberately
-      // does not, which is what keeps "quiet grey" from being an accident.
+      // The environment half carries a saturated hue and the version half is
+      // the quiet neutral beside it, which is what keeps the two from reading
+      // as the same segment.
       //
       // Stated as a comparison rather than against a literal grey: M3 tints
       // every neutral surface toward the palette's *neutral* seed, so the tonal
