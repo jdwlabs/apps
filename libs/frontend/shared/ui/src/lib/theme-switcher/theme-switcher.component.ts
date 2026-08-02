@@ -1,47 +1,24 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
-import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatTooltip } from '@angular/material/tooltip';
-import { ThemeId, ThemeService } from '@jdw/frontend-shared-util';
+import { ThemeDialogComponent } from './theme-dialog.component';
 
 @Component({
   selector: 'jdw-theme-switcher',
-  imports: [
-    MatIconButton,
-    MatIcon,
-    MatMenu,
-    MatMenuItem,
-    MatMenuTrigger,
-    MatTooltip,
-  ],
+  imports: [MatIconButton, MatIcon, MatTooltip],
   templateUrl: './theme-switcher.component.html',
-  styleUrl: './theme-switcher.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ThemeSwitcherComponent {
-  private readonly themes = inject(ThemeService);
+  private readonly dialog = inject(MatDialog);
 
-  readonly options = this.themes.themes;
-  readonly current = this.themes.themeId;
-  readonly colour = this.themes.customColour;
-
-  readonly customisable = computed(
-    () =>
-      this.options.find((theme) => theme.id === this.current())?.customisable ??
-      false,
-  );
-
-  choose(id: ThemeId): void {
-    this.themes.select(id);
-  }
-
-  recolour(hex: string): void {
-    this.themes.setCustomColour(hex);
+  // A dialog rather than a menu: MatMenu only registers MatMenuItem elements
+  // with its FocusKeyManager, so a raw colour <input> inside it is unreachable
+  // by keyboard, and Tab on a menu item closes the menu before the input can
+  // be tabbed to. A dialog traps focus natively, so every control is reachable.
+  open(): void {
+    this.dialog.open(ThemeDialogComponent);
   }
 }
