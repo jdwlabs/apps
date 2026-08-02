@@ -48,6 +48,21 @@ const applyTheme = async (page: Page, theme: string, colour?: string) => {
   return published;
 };
 
+// The switcher publishes these; the theme's Sass reads them. Neither side can
+// see the other — the service builds the names by template literal and the
+// stylesheet types them out as literals — so the pairing is the one contract
+// on this branch that no compiler, linter or unit test covers.
+const TOKEN_BINDINGS: ReadonlyArray<[published: string, token: string]> = [
+  ['--primary-500', '--mat-sys-primary'],
+  ['--primary-contrast-500', '--mat-sys-on-primary'],
+  ['--primary-container-500', '--mat-sys-primary-container'],
+  ['--primary-container-contrast-500', '--mat-sys-on-primary-container'],
+  ['--accent-500', '--mat-sys-tertiary'],
+  ['--accent-contrast-500', '--mat-sys-on-tertiary'],
+  ['--accent-container-500', '--mat-sys-tertiary-container'],
+  ['--accent-container-contrast-500', '--mat-sys-on-tertiary-container'],
+];
+
 const read = (page: Page, selector: string, property: string) =>
   page
     .locator(selector)
@@ -160,6 +175,38 @@ test.describe('Theme contrast floors', () => {
     expect(published.size).toBe(USER_COLOURS.length);
   });
 
+  // Rename either side of a binding and every other test here still passes:
+  // the Material token silently keeps its compiled fallback, which is a legible
+  // colour that clears all the same floors. This is the only assertion that
+  // fails when the two halves of the contract stop naming the same thing.
+  for (const theme of ['user-custom-light', 'user-custom-dark']) {
+    test(`${theme}: every published variable reaches its Material token`, async ({
+      page,
+    }) => {
+      await applyTheme(page, theme, '#2f5fa8');
+
+      for (const [published, token] of TOKEN_BINDINGS) {
+        const [source, resolved] = await page.evaluate(
+          ([from, to]) => {
+            const root = document.documentElement;
+            return [
+              root.style.getPropertyValue(from),
+              getComputedStyle(root).getPropertyValue(to),
+            ];
+          },
+          [published, token],
+        );
+
+        expect(source.trim(), `${published} was never published`).toMatch(
+          /^#[0-9a-f]{6}$/i,
+        );
+        expect(resolved.trim(), `${token} does not read ${published}`).toBe(
+          source.trim(),
+        );
+      }
+    });
+  }
+
   // The customisable themes recolour the toolbar from the user's seed while the
   // environment chips keep the fixed roles that carry their meaning, so every
   // seed is a fresh pairing rather than a variation on one.
@@ -173,4 +220,24 @@ test.describe('Theme contrast floors', () => {
       );
     });
   }
+
+  // The app initializer restores the theme too late to matter: it cannot run
+  // before the federated bundle has executed, and the stylesheet has painted by
+  // then. Blocking every script leaves only the inline bootstrap in index.html,
+  // so the attribute below can have come from nothing else — an assertion taken
+  // after bootstrap would pass with the bootstrap deleted and the flash back.
+  test('a persisted theme is on the root element without the bundle', async ({
+    page,
+  }) => {
+    await page.evaluate(() =>
+      localStorage.setItem('jdw.theme', 'user-custom-dark'),
+    );
+    await page.route('**/*.js', (route) => route.abort());
+    await page.goto('/');
+
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-theme',
+      'user-custom-dark',
+    );
+  });
 });
