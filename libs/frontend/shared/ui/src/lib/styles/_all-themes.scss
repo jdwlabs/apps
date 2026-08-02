@@ -19,6 +19,12 @@
 // uniform — a theme that emitted these at the root instead would resolve
 // against Material's own rules differently from every other theme, and the
 // difference would only show as one component rendering wrong under one theme.
+//
+// The bump is not confined to comparisons between themes. Every rule below now
+// carries one attribute selector more than it did when themes were emitted at
+// the root, so each one also outranks Material's own component rules by a
+// margin it did not previously have. Where a rule below and a Material rule
+// were previously a tie broken by source order, this one wins outright.
 @mixin all-component-themes($theme-type) {
   @if $theme-type != light and $theme-type != dark {
     @error 'all-component-themes expects light or dark, got #{$theme-type}. ' +

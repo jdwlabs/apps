@@ -6,9 +6,11 @@
 // federated into this document, so a second stylesheet defining --mat-sys-*
 // would compete for the same custom properties on the root element and be
 // resolved by load order.
-@include blue-slate.emit("html[data-theme='blue-slate']");
-@include user-custom-light.emit("html[data-theme='user-custom-light']");
-@include user-custom-dark.emit("html[data-theme='user-custom-dark']");
+// Each mixin takes only the theme id and derives its own `html[data-theme=…]`
+// selector, so the three blocks are identical in specificity by construction.
+@include blue-slate.emit('blue-slate');
+@include user-custom-light.emit('user-custom-light');
+@include user-custom-dark.emit('user-custom-dark');
 
 html,
 body {

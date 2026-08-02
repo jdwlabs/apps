@@ -6,14 +6,23 @@
 // because every theme is scoped under an attribute selector on the document
 // element, and the component rules have to take that same ancestor or their
 // precedence relative to Material's own rules changes.
-@mixin emit($selector) {
-  #{$selector} {
+
+// The theme type, stated once. The emitted block configures Material's system
+// tokens from it and the component themes pick their compile-time variants
+// from the same value, so the two cannot drift apart.
+$theme-type: light;
+
+// Takes the theme id and builds its own selector, so every theme is emitted at
+// exactly one attribute selector deep and no caller can hand one a shape that
+// makes its specificity differ from its siblings'.
+@mixin emit($id) {
+  html[data-theme='#{$id}'] {
     @include theming.theme(
       $primary: custom-palettes.$blue-slate-primary,
       $tertiary: custom-palettes.$blue-slate-tertiary,
-      $theme-type: light
+      $theme-type: $theme-type
     );
 
-    @include all-themes.all-component-themes(light);
+    @include all-themes.all-component-themes($theme-type);
   }
 }

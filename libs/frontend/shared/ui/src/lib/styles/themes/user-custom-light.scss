@@ -11,15 +11,17 @@
 // Emitted through a mixin rather than at the root because every theme is
 // scoped under an attribute selector on the document element, and the
 // component rules have to take that same ancestor or their precedence
-// relative to Material's own rules changes.
+// relative to Material's own rules changes. The mixin takes the theme id and
+// builds that selector itself, so a caller cannot give one theme a different
+// shape from its siblings.
 
 // The theme type, stated once. The emitted block configures Material's system
 // tokens from it and the component themes pick their compile-time variants
 // from the same value, so the two cannot drift apart.
 $theme-type: light;
 
-@mixin emit($selector) {
-  #{$selector} {
+@mixin emit($id) {
+  html[data-theme='#{$id}'] {
     @include theming.theme(
       $primary: custom-palettes.$user-custom-primary,
       $tertiary: custom-palettes.$user-custom-tertiary,

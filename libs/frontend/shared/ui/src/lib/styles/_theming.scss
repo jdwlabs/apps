@@ -10,7 +10,9 @@
 /// environment roles at the end of the mixin follow the same naming but take
 /// no parameter — see the comment there for why they are fixed.
 ///
-/// Include on the document root (`html`). Values may be plain colors or
+/// Include under the document root, inside the theme's own
+/// `html[data-theme=…]` block — every theme is attribute-scoped so that a
+/// switch is one attribute write. Values may be plain colors or
 /// `var(...)` references — they pass straight through to CSS output, which
 /// is what allows the user-custom themes to stay runtime-overridable.
 ///
