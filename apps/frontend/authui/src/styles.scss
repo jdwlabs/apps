@@ -1,5 +1,24 @@
-// Theme tokens come from the container, which owns them for the whole
-// federated document. This app defines layout and type only.
+@use 'themes/blue-slate';
+
+// The remote ships the platform default so it renders correctly when served at
+// its own host, which it is: each remote has a public ingress of its own and
+// before this arrangement served an unthemed page there, every `--mat-sys-*`
+// unresolved.
+//
+// It cannot compete with the container in the federated document. Federation
+// pulls in this app's modules, not its global stylesheet — that is served only
+// with the index.html above — and even loaded side by side the block could not
+// fight, because it is scoped to `html[data-theme='blue-slate']` rather than
+// defined at the root. The container owns the attribute: under any other theme
+// this block does not match at all, and under blue-slate both blocks match and
+// carry identical values. Unscoped root-level token definitions competing for
+// the same custom properties are what load order used to decide; a scoped block
+// gives it nothing to decide.
+//
+// Only the default is emitted. The user-custom themes are driven by the
+// switcher, which lives in the container.
+@include blue-slate.emit('blue-slate');
+
 html,
 body {
   height: 100%;
