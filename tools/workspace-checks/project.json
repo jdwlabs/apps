@@ -8,7 +8,12 @@
     "test": {
       "executor": "@nx/vitest:test",
       "outputs": ["{workspaceRoot}/coverage/tools/workspace-checks"],
-      "inputs": ["default", "^default", "{workspaceRoot}/nx.json"],
+      // This check asserts over the resolved project graph, whose real inputs
+      // include every installed plugin under node_modules. No fileset can
+      // express that, so any declared inputs leave it able to hit cache while
+      // the graph it polices has changed underneath — replaying the pass it
+      // exists to withhold.
+      "cache": false,
       "options": { "configFile": "tools/workspace-checks/vite.config.ts" }
     }
   }
