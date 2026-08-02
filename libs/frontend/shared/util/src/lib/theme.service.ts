@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, inject, signal } from '@angular/core';
-import { ToneSet, toneSetFrom } from './on-color.util';
+import { ToneSet, complementOf, toneSetFrom } from './on-color.util';
 import {
   DEFAULT_CUSTOM_COLOUR,
   DEFAULT_THEME_ID,
@@ -66,10 +66,12 @@ export class ThemeService {
     }
 
     const primary = toneSetFrom(this.colour(), theme.type);
-    // The accent is the seed's complement, which keeps a user-picked colour
+    // The accent is the seed's hue complement, which keeps a user-picked colour
     // from producing a theme whose tertiary role is indistinguishable from its
-    // primary — the failure the monochrome default made unavoidable.
-    const accent = toneSetFrom(this.complementOf(this.colour()), theme.type);
+    // primary — the failure the monochrome default made unavoidable. A seed
+    // with no chroma is the one case that still collapses, because grey has no
+    // hue to rotate; see `complementOf`.
+    const accent = toneSetFrom(complementOf(this.colour()), theme.type);
 
     this.publish('primary', primary);
     this.publish('accent', accent);
@@ -89,12 +91,6 @@ export class ThemeService {
     style.removeProperty(`--${role}-contrast-500`);
     style.removeProperty(`--${role}-container-500`);
     style.removeProperty(`--${role}-container-contrast-500`);
-  }
-
-  private complementOf(hex: string): string {
-    const parsed = parseInt(hex.replace('#', ''), 16);
-    const rotated = ((parsed >> 8) | ((parsed & 0xff) << 16)) & 0xffffff;
-    return `#${rotated.toString(16).padStart(6, '0')}`;
   }
 
   private restoreTheme(): ThemeId {

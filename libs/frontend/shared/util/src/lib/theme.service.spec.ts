@@ -3,7 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ThemeService } from './theme.service';
 import { DEFAULT_CUSTOM_COLOUR, DEFAULT_THEME_ID } from './theme.model';
-import { contrastRatio } from './on-color.util';
+import { complementOf, contrastRatio, toneSetFrom } from './on-color.util';
 
 describe('ThemeService', () => {
   let service: ThemeService;
@@ -67,6 +67,20 @@ describe('ThemeService', () => {
         read('--primary-container-500'),
       ),
     ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // The accent is derived rather than published from a second user input, so
+  // nothing on screen distinguishes "no accent was written" from "the accent
+  // happens to resemble the primary" — the tertiary roles would just fall back
+  // to the compiled palette and still look deliberate.
+  it('publishes an accent derived from the seed', () => {
+    service.select('user-custom-light');
+    service.setCustomColour('#2f5fa8');
+    const read = (name: string) => root.style.getPropertyValue(name).trim();
+    expect(read('--accent-500')).toBe(
+      toneSetFrom(complementOf('#2f5fa8'), 'light').base,
+    );
+    expect(read('--accent-500')).not.toBe(read('--primary-500'));
   });
 
   it('publishes nothing for a theme that is not customisable', () => {
