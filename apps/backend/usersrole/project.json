@@ -5,7 +5,7 @@
   "tags": ["type:app", "scope:usersrole", "framework:springboot"],
   "release": {
     "version": {
-      "versionActions": "./tools/release/text-file-version-actions.ts"
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
   "targets": {
@@ -23,7 +23,7 @@
       "command": "echo Ignored in project configuration"
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml \"$(tr -d '[:space:]' < apps/backend/usersrole/VERSION)\" {projectName}"
+      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml \"$(bash scripts/resolve-version.sh usersrole)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/usersrole {projectRoot}/README.docker.md"
@@ -46,7 +46,7 @@
         "cwd": "{projectRoot}",
         "commands": [
           {
-            "command": "bash gradlew jib",
+            "command": "bash gradlew jib -PreleaseVersion=\"$(bash ../../../scripts/resolve-version.sh usersrole)\"",
             "forwardAllArgs": false
           }
         ],

@@ -7,8 +7,7 @@
   "tags": ["type:app", "scope:container", "framework:angular"],
   "release": {
     "version": {
-      "versionActions": "./tools/release/text-file-version-actions.ts",
-      "manifestRootsToUpdate": ["{projectRoot}/public"]
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
   "targets": {
@@ -124,11 +123,19 @@
             "forwardAllArgs": false
           },
           {
+            "command": "bash scripts/prepare-version.sh apps/frontend/container/public/VERSION \"$(bash scripts/resolve-version.sh container)\"",
+            "forwardAllArgs": false
+          },
+          {
             "command": "nx run container:build --skip-nx-cache",
             "forwardAllArgs": false
           },
           {
-            "command": "bash scripts/build-image.sh container \"$(tr -d '[:space:]' < apps/frontend/container/public/VERSION)\" {projectRoot}/Dockerfile \"Angular module-federation host shell for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh container \"$(bash scripts/resolve-version.sh container)\" {projectRoot}/Dockerfile \"Angular module-federation host shell for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "bash scripts/restore-version.sh apps/frontend/container/public/VERSION",
             "forwardAllArgs": false
           },
           {
@@ -157,7 +164,7 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/container/Chart.yaml \"$(tr -d '[:space:]' < apps/frontend/container/public/VERSION)\" {projectName}"
+      "command": "bash scripts/update-app.sh charts/container/Chart.yaml \"$(bash scripts/resolve-version.sh container)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/container {projectRoot}/README.docker.md"

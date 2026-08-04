@@ -7,8 +7,7 @@
   "tags": ["type:app", "scope:usersui", "framework:angular"],
   "release": {
     "version": {
-      "versionActions": "./tools/release/text-file-version-actions.ts",
-      "manifestRootsToUpdate": ["{projectRoot}/public"]
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
   "targets": {
@@ -135,11 +134,19 @@
             "forwardAllArgs": false
           },
           {
+            "command": "bash scripts/prepare-version.sh apps/frontend/usersui/public/VERSION \"$(bash scripts/resolve-version.sh usersui)\"",
+            "forwardAllArgs": false
+          },
+          {
             "command": "nx run usersui:build --skip-nx-cache",
             "forwardAllArgs": false
           },
           {
-            "command": "bash scripts/build-image.sh usersui \"$(tr -d '[:space:]' < apps/frontend/usersui/public/VERSION)\" {projectRoot}/Dockerfile \"Users management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh usersui \"$(bash scripts/resolve-version.sh usersui)\" {projectRoot}/Dockerfile \"Users management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "bash scripts/restore-version.sh apps/frontend/usersui/public/VERSION",
             "forwardAllArgs": false
           },
           {
@@ -168,7 +175,7 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/usersui/Chart.yaml \"$(tr -d '[:space:]' < apps/frontend/usersui/public/VERSION)\" {projectName}"
+      "command": "bash scripts/update-app.sh charts/usersui/Chart.yaml \"$(bash scripts/resolve-version.sh usersui)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/usersui {projectRoot}/README.docker.md"

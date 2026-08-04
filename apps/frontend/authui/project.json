@@ -7,8 +7,7 @@
   "tags": ["type:app", "scope:authui", "framework:angular"],
   "release": {
     "version": {
-      "versionActions": "./tools/release/text-file-version-actions.ts",
-      "manifestRootsToUpdate": ["{projectRoot}/public"]
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
   "targets": {
@@ -135,11 +134,19 @@
             "forwardAllArgs": false
           },
           {
+            "command": "bash scripts/prepare-version.sh apps/frontend/authui/public/VERSION \"$(bash scripts/resolve-version.sh authui)\"",
+            "forwardAllArgs": false
+          },
+          {
             "command": "nx run authui:build --skip-nx-cache",
             "forwardAllArgs": false
           },
           {
-            "command": "bash scripts/build-image.sh authui \"$(tr -d '[:space:]' < apps/frontend/authui/public/VERSION)\" {projectRoot}/Dockerfile \"Auth micro-frontend (sign in / sign up) for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh authui \"$(bash scripts/resolve-version.sh authui)\" {projectRoot}/Dockerfile \"Auth micro-frontend (sign in / sign up) for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "bash scripts/restore-version.sh apps/frontend/authui/public/VERSION",
             "forwardAllArgs": false
           },
           {
@@ -168,7 +175,7 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/authui/Chart.yaml \"$(tr -d '[:space:]' < apps/frontend/authui/public/VERSION)\" {projectName}"
+      "command": "bash scripts/update-app.sh charts/authui/Chart.yaml \"$(bash scripts/resolve-version.sh authui)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/authui {projectRoot}/README.docker.md"

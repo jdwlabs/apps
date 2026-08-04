@@ -14,7 +14,7 @@
 
 ```
 apps/frontend/rolesui/
-├── public/                      # Static assets (e.g., VERSION file, favicon)
+├── public/                      # Static assets (VERSION placeholder, favicon)
 ├── src/                         # Application source code
 │   ├── app/                     # App-specific configuration and routes
 │   ├── bootstrap.ts             # Angular bootstrap logic
@@ -31,8 +31,7 @@ apps/frontend/rolesui/
 ├── webpack.prod.config.ts       # Webpack production configuration
 ├── vite.config.ts               # Vite build and Vitest configuration
 ├── tsconfig*.json               # TypeScript configuration files
-├── project.json                 # Nx project configuration
-└── CHANGELOG.md                 # Release history
+└── project.json                 # Nx project configuration
 ```
 
 ---

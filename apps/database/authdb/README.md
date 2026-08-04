@@ -18,7 +18,6 @@ This project is managed using [Nx](https://nx.dev) and includes preconfigured Do
 ```
 database/authdb/
 ├── Dockerfile           # Defines the Postgres container
-├── CHANGELOG.md         # Logs schema/data changes
 ├── project.json         # Nx project definition and targets
 └── src/
     ├── 00_schema.sql    # SQL schema definitions (tables, relations, constraints)

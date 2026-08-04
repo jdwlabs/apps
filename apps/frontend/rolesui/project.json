@@ -7,8 +7,7 @@
   "tags": ["type:app", "scope:rolesui", "framework:angular"],
   "release": {
     "version": {
-      "versionActions": "./tools/release/text-file-version-actions.ts",
-      "manifestRootsToUpdate": ["{projectRoot}/public"]
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
   "targets": {
@@ -135,11 +134,19 @@
             "forwardAllArgs": false
           },
           {
+            "command": "bash scripts/prepare-version.sh apps/frontend/rolesui/public/VERSION \"$(bash scripts/resolve-version.sh rolesui)\"",
+            "forwardAllArgs": false
+          },
+          {
             "command": "nx run rolesui:build --skip-nx-cache",
             "forwardAllArgs": false
           },
           {
-            "command": "bash scripts/build-image.sh rolesui \"$(tr -d '[:space:]' < apps/frontend/rolesui/public/VERSION)\" {projectRoot}/Dockerfile \"Roles management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "command": "bash scripts/build-image.sh rolesui \"$(bash scripts/resolve-version.sh rolesui)\" {projectRoot}/Dockerfile \"Roles management micro-frontend for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "bash scripts/restore-version.sh apps/frontend/rolesui/public/VERSION",
             "forwardAllArgs": false
           },
           {
@@ -168,7 +175,7 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/rolesui/Chart.yaml \"$(tr -d '[:space:]' < apps/frontend/rolesui/public/VERSION)\" {projectName}"
+      "command": "bash scripts/update-app.sh charts/rolesui/Chart.yaml \"$(bash scripts/resolve-version.sh rolesui)\" {projectName}"
     },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/rolesui {projectRoot}/README.docker.md"

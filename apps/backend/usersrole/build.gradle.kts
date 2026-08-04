@@ -12,7 +12,13 @@ plugins {
 }
 
 group = "com.jdw"
-version = file("VERSION").readText().trim()
+// The released version comes from the git tag, which only exists after the
+// commit being built — so no file in the tree can carry it. The image build
+// passes it in; anything else is a local build and says so in the tag.
+version =
+	(findProperty("releaseVersion") as String?)
+		?: System.getenv("RELEASE_VERSION")
+		?: "0.0.0-dev"
 
 java {
 	// A toolchain rather than source/targetCompatibility: those two only assert
