@@ -26,6 +26,14 @@ dockerfile="${3}"
 description="${4}"
 shift 4
 
+# The version arrives through command substitution, and a substitution that fails
+# still leaves a well-formed call with an empty argument. Without this the build
+# publishes jdwlabs/<image>: with an empty tag rather than stopping.
+if [ -z "${version//[[:space:]]/}" ]; then
+  echo "${0}: refusing to build ${image} with an empty version" >&2
+  exit 1
+fi
+
 # revision/created are resolved here rather than passed in so every call site gets
 # them for free. A missing git context is non-fatal: an image is still worth building
 # without a traceable SHA, so fall back rather than abort.
