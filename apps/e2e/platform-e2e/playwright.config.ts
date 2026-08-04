@@ -11,12 +11,11 @@ const useDeployedEnvironment = !!process.env['BASE_URL'];
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
-  // One worker per static server. Each is a single process, and every
-  // navigation pulls a remote entry plus its chunks through one of them;
-  // Playwright's local default of one worker per two cores was enough to have
-  // them reset connections outright. CI already pins a single worker, so this
-  // only bounds local runs.
-  workers: process.env['CI'] ? 1 : 4,
+  // Bounded by the browsers, not by the servers: every worker is a Chromium
+  // instance, and past the core count they contend for CPU rather than finish
+  // sooner. Hosted runners are far smaller than a workstation, so the two are
+  // measured separately.
+  workers: process.env['CI'] ? 4 : 8,
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -24,44 +23,33 @@ export default defineConfig({
   ...(useDeployedEnvironment
     ? {}
     : {
-        // `serve-built` rather than `serve-static`: the latter kicks off its own
-        // build, and the Angular builder empties the output directory before
-        // rewriting it. The server is already accepting connections by then, so
-        // Playwright's readiness probe passes against the *previous* build and
-        // tests then run against a directory being deleted underneath them —
-        // measured as index.html vanishing for ~15s mid-run. The e2e target
-        // already depends on its dependencies' builds, so the output is present
-        // and current before any of this starts.
-        webServer: [
-          {
-            command: 'pnpm exec nx run container:serve-built',
-            url: 'http://localhost:4200',
-            reuseExistingServer: !process.env['CI'],
-            cwd: workspaceRoot,
-            timeout: 180_000,
-          },
-          {
-            command: 'pnpm exec nx run authui:serve-built',
-            url: 'http://localhost:4201',
-            reuseExistingServer: !process.env['CI'],
-            cwd: workspaceRoot,
-            timeout: 180_000,
-          },
-          {
-            command: 'pnpm exec nx run usersui:serve-built',
-            url: 'http://localhost:4202',
-            reuseExistingServer: !process.env['CI'],
-            cwd: workspaceRoot,
-            timeout: 180_000,
-          },
-          {
-            command: 'pnpm exec nx run rolesui:serve-built',
-            url: 'http://localhost:4203',
-            reuseExistingServer: !process.env['CI'],
-            cwd: workspaceRoot,
-            timeout: 180_000,
-          },
-        ],
+        // One process serving the four build outputs on the four origins the
+        // suite addresses, rather than a static-server task per app.
+        //
+        // Running them as Nx tasks put two failure modes on every run. The
+        // executor resolves a *free* port instead of the configured one, so a
+        // lingering listener silently moved a remote to a neighbouring port and
+        // the tests addressed an origin nothing served. And the tasks are not
+        // continuous, so Nx reported them successful and tore the servers down
+        // partway through the suite — measured as three of the four exiting
+        // ~40s in, with every test after that failing to connect.
+        //
+        // Serving the built output rather than a `serve-static`-style target is
+        // deliberate: that kicks off its own build, and the Angular builder
+        // empties the output directory before rewriting it. The server is
+        // already accepting connections by then, so the readiness probe passes
+        // against the *previous* build and tests run against a directory being
+        // deleted underneath them — measured as index.html vanishing for ~15s
+        // mid-run. The e2e target already depends on its dependencies' builds,
+        // so the output is present and current before any of this starts.
+        webServer: {
+          command: 'node apps/e2e/platform-e2e/static-server.mjs',
+          // The host is bound last, so this one probe covers all four origins.
+          url: 'http://localhost:4200',
+          reuseExistingServer: !process.env['CI'],
+          cwd: workspaceRoot,
+          timeout: 180_000,
+        },
       }),
   projects: [
     {
