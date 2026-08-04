@@ -1,0 +1,50 @@
+// An anchor that names no colour is not unstyled — it is styled by the user
+// agent, which paints it a fixed saturated blue that knows nothing about the
+// surface beneath it. That is legible on the light themes by luck and reaches
+// roughly 2:1 on a dark card, so the defect stayed invisible for as long as no
+// dark theme could be selected at runtime.
+//
+// Bound here rather than in the two auth components that first showed it,
+// because the gap is the absence of a rule rather than a mistake in one: every
+// bare anchor in the app inherits the same user-agent colour, and a fix applied
+// per component leaves the next one to be written with the same defect. This
+// rule is what makes "an anchor resolves a theme role" true by default.
+//
+// `primary` is the role M3 assigns to a link on a surface, and the tonal
+// mapping is what makes it safe on both: `toneSetFrom` places the base at tone
+// 40 in a light theme and tone 80 in a dark one, so the customisable themes
+// clear the text floor against their own surfaces for any seed a user picks
+// rather than for the particular seeds that happen to ship. A container role
+// would not — it sits deliberately close to the surface it fills and separates
+// by hue, which a luminance ratio cannot read.
+//
+// Emitted through `all-themes`, so these rules are global and reach anchors
+// rendered by a federated remote. A remote's own component styles are
+// encapsulated and cannot be what carries this: the composed app paints from
+// the container's stylesheet.
+@mixin theme {
+  // Every state, because the user-agent stylesheet gives `:visited` its own
+  // colour on a separate rule. Setting only the base leaves a link the reader
+  // has already followed reverting to user-agent purple — which on the sign-in
+  // card is the state most readers arrive in, having been to the sign-up page
+  // once already.
+  //
+  // Scoped to anchors with an `href` or a router binding so it describes links
+  // rather than every `<a>`: a bare anchor used as a named target is not a
+  // link, takes no pointer, and giving it a link's colour would be a lie about
+  // what it does.
+  // Material's own anchor-shaped components — `a mat-button`, `a mat-list-item`
+  // and friends — are excluded rather than reset afterwards. Every rule in this
+  // mixin is emitted under the theme's attribute selector, so it outranks
+  // Material's own component rules; a trailing `color: inherit` to undo this
+  // one would not restore Material's token, it would beat that token too and
+  // leave a filled anchor-button painting whatever it happened to inherit.
+  // Not matching them in the first place is the only version that leaves their
+  // colour where it belongs. No such component exists in the app today, which
+  // is exactly why the guard has to be written now rather than after one is
+  // added and renders wrong.
+  a:link:not([class*='mat-']),
+  a:visited:not([class*='mat-']) {
+    color: var(--mat-sys-primary);
+  }
+}
