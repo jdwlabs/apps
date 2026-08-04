@@ -14,7 +14,7 @@
 
 ```
 apps/frontend/container/
-├── public/                      # Static assets (e.g., VERSION file, favicon)
+├── public/                      # Static assets (VERSION placeholder, favicon)
 ├── src/                         # Application source code
 │   ├── app/                     # Shell layout, application config, and routing
 │   ├── bootstrap.ts             # Angular bootstrap logic
@@ -31,8 +31,7 @@ apps/frontend/container/
 ├── webpack.config.ts            # Webpack base configuration
 ├── vite.config.ts               # Vite build and Vitest configuration
 ├── tsconfig*.json               # TypeScript configuration files
-├── project.json                 # Nx project configuration
-└── CHANGELOG.md                 # Release history
+└── project.json                 # Nx project configuration
 ```
 
 ---

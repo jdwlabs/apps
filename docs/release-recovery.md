@@ -2,22 +2,27 @@
 
 The CI `release` job (`.github/workflows/ci.yml`) runs `nx release --skip-publish`
 against the live `main` tip, then the `deliver` matrix builds/publishes each
-released project. Because this spans a git push, tag push, GitHub Release
-creation, and a Docker Hub matrix, a mid-run failure can leave state partially
-applied. This runbook covers recovery for each failure point.
+released project. Because this spans a tag push, GitHub Release creation, and a
+Docker Hub matrix, a mid-run failure can leave state partially applied. This
+runbook covers recovery for each failure point.
 
-## (a) Commit pushed, tags missing
+A release writes nothing to `main` — the tag is the only record it creates — so
+`main` is never left in a half-released state and there is no version-bump
+commit to reconcile.
 
-**Symptom:** `Run Nx Release` step fails after `nx release` pushed the version
-bump commit to `main` but before (or during) tag creation/push.
+## (a) Tags missing
+
+**Symptom:** `Run Nx Release` step fails before (or during) tag creation/push.
 
 **Recovery:** Re-run the `release` job. `nx release` computes versions from
-conventional commits since the last matching tag; since the version-bump
-commit is already on `main` and unversioned (no tag points at it yet), the
-re-run recomputes the _same_ version for each affected project and pushes the
-missing tags. No manual tag creation should be necessary — only reach for a
-manual `git tag` + push if the re-run computes a different version than
-expected (e.g. an intervening commit landed on `main` first).
+conventional commits since the last matching tag, and nothing about the failed
+attempt persists, so the re-run recomputes the _same_ version for each affected
+project and pushes the missing tags — provided `main` has not moved. If an
+intervening commit landed first, the re-run tags that newer tip instead; reach
+for a manual `git tag` + push against the intended commit only in that case.
+
+**Partial tag pushes are not possible.** The push is `--atomic`, so either
+every tag in the release lands or none does.
 
 ## (b) Tags pushed, GitHub Release missing
 
@@ -34,9 +39,9 @@ gh release create <project>-<version> --title "<project> <version>" --generate-n
 
 ## (c) Deliver failure
 
-**Symptom:** `release` job succeeded (commit + tags + GitHub Release all
-landed) but one or more `deliver` matrix jobs failed (Docker build, Helm chart
-update, or Docker Hub description push).
+**Symptom:** `release` job succeeded (tags + GitHub Release both landed) but
+one or more `deliver` matrix jobs failed (Docker build, Helm chart update, or
+Docker Hub description push).
 
 **Recovery:** Idempotent — re-run only the failed matrix job(s) from the
 Actions UI ("Re-run failed jobs"). `deliver` reads `needs.release.outputs.sha`

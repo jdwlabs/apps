@@ -17,7 +17,6 @@ an Angular frontend and various shared libraries for components and utilities.
 ```
 apps/backend/usersrole/
 ├── build.gradle.kts                                   # Gradle build configuration
-├── CHANGELOG.md                                       # Change log history
 ├── .gitignore                                         # Git ignore rules
 ├── gradle/                                            # Gradle wrapper files
 ├── gradlew                                            # Unix Gradle wrapper script

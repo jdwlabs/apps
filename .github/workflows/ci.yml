@@ -31,12 +31,13 @@ env:
 
 jobs:
   main:
-    # Release postTargets push chore commits back to main authenticated as the
-    # release App — those pushes DO trigger workflows (App tokens bypass the
-    # GITHUB_TOKEN recursion suppression). Without this guard the pipeline
-    # re-versions the just-released projects forever: the conventionalcommits
-    # preset patch-bumps on any commit, including the release's own chore
-    # commits — producing an endless ~5-minute release loop.
+    # Kept as a backstop against the release loop that a bot commit on main
+    # would restart: an App-token push DOES trigger workflows (App tokens
+    # bypass the GITHUB_TOKEN recursion suppression), and the
+    # conventionalcommits preset patch-bumps on any commit including the
+    # release's own. The release now only pushes tags, which trigger nothing
+    # here, so nothing should reach this guard — remove it only alongside
+    # whatever reintroduces a bot-authored commit on main.
     if: ${{ github.event_name != 'push' || github.triggering_actor != 'jdwlabs-release-bot[bot]' }}
     runs-on: ubuntu-latest
     # Fail fast: cap runtime so a stuck/looping job can't burn the Actions budget.
@@ -338,7 +339,7 @@ jobs:
     if: ${{ github.event_name == 'push' && github.triggering_actor != 'jdwlabs-release-bot[bot]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Serialize racing merges: nx release must never push onto a moved main tip.
+    # Serialize racing merges: nx release must never tag a moved main tip.
     concurrency:
       group: release-main
       cancel-in-progress: false
@@ -549,15 +550,21 @@ jobs:
         with:
           driver: 'docker-container'
           platforms: 'linux/amd64,linux/arm64'
+      # RELEASE_VERSION carries the version the release job read back off the
+      # pushed tag. This checkout is a single commit with no tags, so
+      # resolve-version.sh cannot find it locally and would abort rather than
+      # guess — which is the behaviour that keeps a wrong version off an image.
       - if: ${{ matrix['build-image'] == true }}
         name: Build and Push Image
         env:
           PROJECT: ${{ matrix.project }}
+          RELEASE_VERSION: ${{ matrix.version }}
         run: pnpm exec nx run "$PROJECT":build-image
       - if: ${{ matrix['update-app'] == true }}
         name: Update Deployments Chart
         env:
           PROJECT: ${{ matrix.project }}
+          RELEASE_VERSION: ${{ matrix.version }}
           GH_APP_ID: ${{ secrets.RELEASE_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
         run: pnpm exec nx run "$PROJECT":update-app

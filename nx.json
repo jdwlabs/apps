@@ -172,17 +172,17 @@
       "frontend-shared-util"
     ],
     "git": {
-      "commitMessage": "chore(release): publish [skip ci]",
-      "push": true
+      "commit": false,
+      "tag": true
     },
     "version": {
-      "conventionalCommits": true,
-      "fallbackCurrentVersionResolver": "disk"
+      "conventionalCommits": true
     },
     "changelog": {
       "workspaceChangelog": false,
       "automaticFromRef": true,
       "projectChangelogs": {
+        "file": false,
         "createRelease": "github"
       }
     },

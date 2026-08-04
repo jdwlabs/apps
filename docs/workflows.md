@@ -99,55 +99,62 @@ ever adds or updates.
 Versioning runs in CI on push to `main`. Do not run `nx release` locally without `--dry-run`.
 After merging, CI will:
 
-1. Run `nx release` job: bump versions, generate per-project CHANGELOGs, create tags, publish GitHub Releases
+1. Run `nx release` job: work out each project's next version, create tags, publish GitHub Releases
 2. Run per-project deliver matrix: Docker image build/push, update Helm chart appVersion, update Docker Hub description
 3. Dispatch E2E tests
 
-### Why the release App bypasses the `Baseline` ruleset
+### The git tag is the only record of a version
 
-The release GitHub App holds `bypass_mode: always` on `Baseline`, the ruleset
-protecting `main`. That is an exception to "main is a merge target only", and it
-is load-bearing rather than an oversight.
-
-`nx release` runs with `git.push: true`. It rewrites each project's version
-manifest, writes the changelogs, commits `chore(release): publish [skip ci]`, and
-pushes that commit **and** its tags onto `main` directly. `Baseline` requires a
-pull request with one approving review, linear history, and the `main`, `e2e`,
-`scan / *` and `signatures / signatures` status checks, so without the bypass the
-release cannot land.
-
-The narrower `bypass_mode: pull_request` does not help here. It permits an actor
-to bypass rules _on a pull request_ while still blocking a direct push — and a
-direct push is exactly what this job does. Narrowing the mode without first
-changing the release flow stops publishing outright.
-
-Moving the release onto a pull request is not a configuration change either,
-because the tree is the source of truth for versions. Eight projects resolve
-their version by reading a manifest out of the working tree at delivery time:
+Nothing in the working tree carries a released version. `nx release` runs with
+`git.commit: false`, so a release creates tags and pushes those tags — it never
+writes a commit, and therefore never writes to `main`. Every project resolves
+its current version from the tag matching `releaseTag.pattern`
+(`{projectName}-{version}`), and every delivery target resolves the version it
+is shipping the same way:
 
 ```
-"$(tr -d '[:space:]' < apps/backend/servicediscovery/VERSION)"
+"$(bash scripts/resolve-version.sh servicediscovery)"
 ```
 
-That expression backs both `build-image` and `update-app`. Releasing therefore
-_means_ writing to the tree, and writing to the tree means writing to `main`.
-Removing the bypass requires first re-sourcing versions from the git tag for
-every one of those projects, plus the custom version actions in `tools/release/`
-— a change to the pipeline that publishes production images, not a flag flip.
+That expression backs both `build-image` and `update-app`. In CI the deliver
+matrix passes `RELEASE_VERSION` instead, because that job checks out a single
+commit with no tags fetched; `resolve-version.sh` prefers it and falls back to
+the tags for a local or manual run. It aborts rather than guessing — an image
+or a chart bump carrying an invented version is worse than a build that stops.
 
-What bounds the exception in the meantime:
+Consequences worth knowing before changing any of this:
 
-- The job runs only on a push to `main`, so it cannot be triggered from a branch
-- It is guarded against its own commits (`github.triggering_actor` check), which
-  is what stops an endless re-version loop
-- `concurrency: release-main` serializes racing merges, so it never pushes onto a
-  moved tip
-- The commit it writes is generated, single-purpose, and recorded in the
-  changelogs and GitHub Releases it creates alongside
+- **A new project needs an initial tag.** There is no manifest to fall back to,
+  so `nx release` has nothing to compute a first version from. Create
+  `<project>-0.0.0` on a relevant commit, or run the first release with
+  `--first-release`.
+- **Release notes live in GitHub Releases only.** In-tree `CHANGELOG.md` files
+  would need a commit on `main` to stay current, so they are not generated
+  (`changelog.projectChangelogs.file: false`).
+- **Angular apps still serve `/VERSION`.** The tracked `public/VERSION` holds
+  `0.0.0-dev`; `prepare-version.sh` stamps the resolved version into it before
+  the image build and `restore-version.sh` puts the placeholder back. A local
+  build or dev server therefore reports `0.0.0-dev`, which is true.
+- **`usersrole` takes its version from Gradle.** `build.gradle.kts` reads
+  `-PreleaseVersion`, then `RELEASE_VERSION`, then falls back to `0.0.0-dev`.
+- **The two shared libs keep a version in `package.json`.** Nx still writes it
+  during a release and the write is discarded with everything else, so the
+  committed number freezes. Both are `private: true` and never published; their
+  tag is the real version.
 
-Revisit if the version source ever moves off the tree, or if the App starts
-pushing anything other than the generated release commit. Until then the honest
-description is a bounded, recorded exception — not a closed hole.
+### Why the release App holds no `Baseline` bypass
+
+It does not need one. Tag creation is governed by the `Release Tag Protection`
+ruleset over `refs/tags/**`, which restricts only deletion and non-fast-forward
+— the App has never held a bypass there and has been pushing release tags all
+along. `Baseline` covers `refs/heads/main`, and a release sends no update to
+that ref, so its rules are never evaluated.
+
+`OrganizationAdmin` keeps `bypass_mode: always` on `Baseline`. That is the
+deliberate break-glass path and a separate risk, not this one.
+
+Revisit if a release ever starts writing to the tree again: the moment it does,
+it needs somewhere to commit that write, and `main` is the only branch it is on.
 
 ## Resetting After a Failed Nx Operation
 

@@ -21,7 +21,6 @@ CI/CD pipelines.
 apps/backend/servicediscovery/
 ├── Dockerfile              # Defines the Go-based container for the service
 ├── Dockerfile.local        # Local development Dockerfile
-├── CHANGELOG.md            # Logs changes to the service
 ├── project.json            # Nx project definition and targets
 ├── config.json             # Configuration file for remotes and micro frontends
 ├── main.go                 # Main Go application entry point

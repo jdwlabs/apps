@@ -6,7 +6,7 @@
   "tags": ["type:app", "scope:ai-sre-relay", "framework:go"],
   "release": {
     "version": {
-      "versionActions": "./tools/release/text-file-version-actions.ts"
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
   "targets": {
@@ -37,7 +37,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:\"$(tr -d '[:space:]' < apps/backend/ai-sre-relay/VERSION)\" --push .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:\"$(bash scripts/resolve-version.sh ai-sre-relay)\" --push .",
             "forwardAllArgs": false
           }
         ],
