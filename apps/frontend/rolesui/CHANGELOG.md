@@ -1,3 +1,14 @@
+## 1.0.13 (2026-08-04)
+
+### 🩹 Fixes
+
+- **frontend:** revalidate module federation entrypoints ([0da94cf9](https://github.com/jdwlabs/apps/commit/0da94cf9))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.0.12 (2026-08-02)
 
 ### 🚀 Features

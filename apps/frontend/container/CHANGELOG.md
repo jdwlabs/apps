@@ -1,3 +1,14 @@
+## 2.1.9 (2026-08-04)
+
+### 🩹 Fixes
+
+- **frontend:** revalidate module federation entrypoints ([0da94cf9](https://github.com/jdwlabs/apps/commit/0da94cf9))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 2.1.8 (2026-08-04)
 
 This was a version bump only for container to align it with other projects, there were no code changes.
