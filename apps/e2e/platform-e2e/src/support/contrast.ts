@@ -7,6 +7,25 @@ export type Rgb = [number, number, number];
 export type Colour = { rgb: Rgb; alpha: number };
 
 export function parseColour(value: string): Colour {
+  // A custom property keeps whatever notation it was authored in — the theme
+  // seeds are hex — while `color` and `background-color` are always serialised
+  // as a colour function. Comparing a resolved role against a computed colour
+  // means both notations arrive at this parser.
+  const hex = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const digits =
+      hex[1].length === 3
+        ? hex[1].replace(/./g, (digit) => digit + digit)
+        : hex[1];
+    return {
+      rgb: [
+        parseInt(digits.slice(0, 2), 16),
+        parseInt(digits.slice(2, 4), 16),
+        parseInt(digits.slice(4, 6), 16),
+      ],
+      alpha: 1,
+    };
+  }
   const srgb = value.match(/^color\(srgb\s+([^)]+)\)$/);
   if (srgb) {
     const parts = srgb[1]
