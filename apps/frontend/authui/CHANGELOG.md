@@ -1,3 +1,7 @@
+## 2.0.15 (2026-08-04)
+
+This was a version bump only for authui to align it with other projects, there were no code changes.
+
 ## 2.0.14 (2026-08-04)
 
 ### 🩹 Fixes

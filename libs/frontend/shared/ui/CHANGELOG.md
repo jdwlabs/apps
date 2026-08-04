@@ -1,3 +1,14 @@
+## 1.1.10 (2026-08-04)
+
+### 🩹 Fixes
+
+- **theming:** give links a theme role instead of the user-agent blue ([6759fc4b](https://github.com/jdwlabs/apps/commit/6759fc4b))
+
+### ❤️ Thank You
+
+- Claude Opus 5
+- Jake Willmsen @jdwillmsen
+
 ## 1.1.9 (2026-08-02)
 
 ### 🚀 Features
