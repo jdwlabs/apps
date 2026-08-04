@@ -1,7 +1,9 @@
 // WCAG 2.1 relative luminance and contrast ratio. Colours arrive from
 // `getComputedStyle`, so the parser has to accept whatever the browser chose to
 // serialise — `rgb()`, `rgba()` and the `color(srgb ...)` form Chromium emits
-// for anything that went through `color-mix`.
+// for anything that went through `color-mix`. Custom properties are read back
+// as their authored text rather than a serialised colour, so a theme token
+// compared against a resolved one arrives as the hex it was written as.
 export type Rgb = [number, number, number];
 
 export type Colour = { rgb: Rgb; alpha: number };
@@ -11,19 +13,18 @@ export function parseColour(value: string): Colour {
   // seeds are hex — while `color` and `background-color` are always serialised
   // as a colour function. Comparing a resolved role against a computed colour
   // means both notations arrive at this parser.
-  const hex = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  const hex = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
   if (hex) {
     const digits =
       hex[1].length === 3
-        ? hex[1].replace(/./g, (digit) => digit + digit)
+        ? [...hex[1]].map((digit) => digit + digit).join('')
         : hex[1];
+    const channels = (digits.match(/../g) as string[]).map((pair) =>
+      parseInt(pair, 16),
+    );
     return {
-      rgb: [
-        parseInt(digits.slice(0, 2), 16),
-        parseInt(digits.slice(2, 4), 16),
-        parseInt(digits.slice(4, 6), 16),
-      ],
-      alpha: 1,
+      rgb: [channels[0], channels[1], channels[2]],
+      alpha: channels[3] === undefined ? 1 : channels[3] / 255,
     };
   }
   const srgb = value.match(/^color\(srgb\s+([^)]+)\)$/);

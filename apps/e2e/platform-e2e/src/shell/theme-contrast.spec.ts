@@ -102,6 +102,14 @@ const TOOLBAR_FILL: [string, string] = [
   '[data-cy="navbar-header"]',
   'background-color',
 ];
+const LINK: [string, string] = ['[data-cy="sign-up-link"]', 'color'];
+const CARD: [string, string] = ['mat-card', 'background-color'];
+
+const openSignIn = async (page: Page, theme: string, colour?: string) => {
+  await page.goto('/auth/sign-in');
+  await applyTheme(page, theme, colour);
+  await expect(page.locator('[data-cy="sign-up-link"]')).toBeVisible();
+};
 
 test.describe('Theme contrast floors', () => {
   test.beforeEach(async ({ page }) => {
@@ -304,4 +312,29 @@ test.describe('Theme contrast floors', () => {
       'user-custom-dark',
     );
   });
+
+  // The binding above is proven for one seed, and primary is seeded — so the
+  // floor it clears is a property of that seed rather than of the role. Only
+  // the tonal mapping makes it hold generally: the base is pinned to a fixed
+  // tone, so a seed's own lightness never reaches the card and a near-black
+  // pick cannot darken the link into its own backdrop. Sweeping the same
+  // colours the chips use is what puts that mapping under test rather than
+  // assumed, and asserting the binding beside the ratio keeps a later swap to
+  // a role that merely happens to be legible from passing.
+  for (const colour of USER_COLOURS) {
+    test(`a user colour of ${colour} leaves the sign-up link legible`, async ({
+      page,
+    }) => {
+      await openSignIn(page, 'user-custom-dark', colour);
+
+      const link = await read(page, ...LINK);
+      const role = await read(page, LINK[0], '--mat-sys-primary');
+
+      expect(parseColour(link).rgb).toEqual(parseColour(role).rgb);
+      expect(
+        await ratio(page, LINK, CARD),
+        `${link} on the auth card`,
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  }
 });
