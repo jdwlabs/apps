@@ -1,3 +1,7 @@
+## 2.1.8 (2026-08-04)
+
+This was a version bump only for container to align it with other projects, there were no code changes.
+
 ## 2.1.7 (2026-08-02)
 
 ### 🚀 Features
