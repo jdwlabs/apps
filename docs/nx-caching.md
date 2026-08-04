@@ -4,11 +4,11 @@ This repo deliberately runs **zero Nx Cloud**: no `nx-cloud` package, no
 `nxCloudAccessToken`, and `neverConnectToCloud: true` in `nx.json` suppresses
 every `nx connect` prompt. Caching is self-hosted at these levels:
 
-| Level                           | Mechanism                                         | Status              |
-| ------------------------------- | ------------------------------------------------- | ------------------- |
-| Shared local cache (worktrees)  | `.nx/workspace-data` db at the main worktree root | Always on           |
-| CI cache                        | none — every task runs cold                       | Removed, see below  |
-| LAN remote cache (MinIO-backed) | Nx OpenAPI cache server                           | Planned — see below |
+| Level                           | Mechanism                                         | Status                    |
+| ------------------------------- | ------------------------------------------------- | ------------------------- |
+| Shared local cache (worktrees)  | `.nx/workspace-data` db at the main worktree root | Always on                 |
+| CI cache                        | none — every task runs cold                       | Removed, see below        |
+| LAN remote cache (MinIO-backed) | Nx OpenAPI cache server                           | **Not built** — see below |
 
 ## Shared local cache (dev machines, worktrees)
 
@@ -100,14 +100,59 @@ cache without fixing the inputs first would remove that accidental protection.
 The homelab MinIO (`https://192.168.1.205:9000`) is a private LAN address.
 GitHub-hosted runners cannot reach it, so a MinIO-backed remote cache
 currently applies only to machines on the LAN (dev boxes, any future
-self-hosted/ARC runners). To extend it to hosted runners later, one of:
+self-hosted/ARC runners). Reachability could be bought with Tailscale on the
+runner (`tailscale/github-action` + an auth-key secret) or a public TLS
+endpoint in front of the cache server — but neither would produce a single
+cache hit, for the reason below.
 
-- Tailscale on the runner (`tailscale/github-action` + an auth-key secret),
-  keeping MinIO off the public internet; or
-- a public TLS endpoint in front of the cache server with read-scoped tokens
-  for PR builds.
+### A Windows checkout and a Linux runner cannot share a task hash
 
-Both are follow-up infrastructure work, not apps-repo changes.
+**Decision: no remote cache for GitHub-hosted runners. This is not a
+reachability problem and buying reachability does not fix it.**
+
+`.gitattributes` pins `eol=lf` for `js/ts/html/css/json/md/sh/yml/yaml` only.
+Everything else falls through to `* text=auto`, which with `core.autocrlf=true`
+checks out **CRLF on Windows** and LF on a Linux runner. That is 210 of 678
+tracked files — every `.scss` (49), every `.go` (30), every `.java` (83), plus
+the Dockerfiles and `VERSION` manifests:
+
+```
+$ git ls-files --eol | awk '{print $2}' | sort | uniq -c
+    458 w/lf
+    210 w/crlf
+```
+
+Nx hashes file contents as they sit on disk and performs **no EOL
+normalization**. Its native hasher, on the same logical file:
+
+```
+$ node -e "const n=require('nx/dist/src/native');
+           console.log(n.hashFile('lf.scss'), n.hashFile('crlf.scss'))"
+15293204973246296553   102058601192357194
+```
+
+Every project in the workspace contains at least one CRLF file in its own
+root, and `libs/frontend/shared` contributes 22 of them to every frontend
+through `^production`. So no cacheable target anywhere in this repo can
+compute the same hash on a dev box and on `ubuntu-latest` — the hit rate
+across that boundary is **0% by construction**, not by tuning.
+
+Two consequences worth keeping straight:
+
+- **Dev↔CI reuse is dead** until the checkout is normalized. Pinning the
+  remaining text types to `eol=lf` and renormalizing would lift the blocker,
+  but it rewrites ~210 files across every project and has to be verified
+  against the Gradle and Go builds (`gradlew` wants LF, `*.bat` wants CRLF) —
+  its own change, not a line edit here.
+- **LAN dev↔dev reuse is unaffected**, since those machines are all Windows
+  and agree on CRLF. That is the only sharing a MinIO-backed cache could
+  actually serve today, and it is also the tier that already works locally.
+
+This also bounds the prize. Recent `ci.yml` runs sit at a median of ~3m18s,
+of which the Nx-cacheable portion is a few minutes; `apps` is a public repo,
+so Actions minutes are free. A permanent read-write network service is not a
+proportionate trade for that, which is the other half of why this stays
+unbuilt.
 
 ## Remote cache: chosen protocol and why
 
@@ -159,15 +204,59 @@ server or a CA that the OS trust store already carries — turning verification
 off wholesale is not an acceptable substitute on a read-write cache.
 
 If the variables are unset, Nx uses local cache only — remote caching is
-strictly opt-in and additive. Degradation is graceful (verified on Nx 23.1
-against an unreachable endpoint): the task runs locally, Nx logs a non-fatal
-`Failed to send request` for the `/v1/cache/{hash}` call, and exits 0.
+strictly opt-in and additive.
 
-## Provisioning the MinIO-backed cache server (follow-up)
+**Degradation is graceful only for connection-refused.** Verified on Nx 23.1
+against an unreachable endpoint: the task runs locally, Nx logs a non-fatal
+`Failed to send request` for the `/v1/cache/{hash}` call, and exits 0. A
+server that _answers_ with a **5xx** does not behave that way — Nx exits `1`
+with every task reported successful. That distinction decides the deployment
+topology: a cache behind a gateway that returns 502 when its backend has no
+ready endpoints turns every pod rollout, node drain or upgrade into red builds
+for every developer and every CI job, whereas a cache that is simply down is
+harmless. "Unreachable endpoint still builds" is therefore the wrong
+acceptance test — it passes in the scenario that was never the risk.
+
+## Provisioning the MinIO-backed cache server (not started, gated)
 
 MinIO itself does not speak the Nx OpenAPI protocol, so a thin cache server
-sits between Nx and the bucket. Plan (lands in the platform/infrastructure
-repos, not here):
+would sit between Nx and the bucket. **Nothing below is built**, and two gates
+have to clear before any of it should be.
+
+### Gate 1 — every gate target must stop being cacheable
+
+A cache artifact stores `(hash, terminalOutput, outputs, code)`. The **exit
+code travels inside the artifact** and is replayed on a hit with convincing
+green output, so a target satisfiable from a shared cache is a replay and not
+a gate. Under a local-only cache a bad entry costs one machine and dies at the
+next `nx reset`; under a shared one, whoever can write a hash decides whether
+`lint` and `test` passed for everyone.
+
+`nx.json` today still marks the verification targets cacheable:
+
+```
+@nx/eslint:lint              cache: true
+@analogjs/vitest-angular:test cache: true
+@nx/vitest:test              cache: true
+@nx-go/nx-go:lint            cache: true
+@nx-go/nx-go:test            cache: true
+```
+
+That is correct for a local cache and unsafe for a shared one. Flipping them
+to `cache: false` costs real local iteration speed, so it should happen as
+part of introducing a shared cache — not speculatively before one exists.
+
+### Gate 2 — the build→image path must not be cache-fed
+
+`build-image` is `cache: false`, but it `dependsOn: ["build", "^build"]` and
+`build` is cacheable. `apps` is a **public** repo, so task hashes are
+computable by anyone. A remote **hit** on `build` therefore means the shipped
+image is packaged from cache contents that were never compiled — and the
+delivery path runs on to Docker Hub and ArgoCD apps with prune + selfHeal,
+with no commit, PR or diff anywhere in it. Any shared cache needs `deliver` to
+run `--skip-nx-cache`, and needs that property tested rather than assumed.
+
+If both gates clear, the provisioning sketch is:
 
 1. Create a `nx-cache` bucket on the MinIO instance with a dedicated scoped
    access key — do not reuse the Terraform-state credentials. MinIO serves
