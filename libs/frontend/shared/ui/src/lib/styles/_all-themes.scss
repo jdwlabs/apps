@@ -1,4 +1,5 @@
 @use './components/button/variants' as button-variants;
+@use './components/link/variants' as link-variants;
 @use './components/toolbar/variants' as toolbar-variants;
 @use '../navigation-item/navigation-item-theme.component' as navigation-item;
 @use '../snackbar/snackbar-theme.component' as snackbar;
@@ -35,6 +36,7 @@
   $dark: $theme-type == dark;
 
   @include button-variants.theme;
+  @include link-variants.theme;
   @include toolbar-variants.theme($dark);
   @include navigation-item.theme;
   @include snackbar.theme;

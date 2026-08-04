@@ -221,6 +221,70 @@ test.describe('Theme contrast floors', () => {
     });
   }
 
+  // An anchor that names no colour takes the user agent's, which is a fixed
+  // blue chosen without reference to the surface under it. On the two light
+  // themes that lands somewhere legible by luck, which is why this went
+  // unnoticed until a dark theme became selectable at runtime.
+  //
+  // The backdrop is walked rather than named. `mat-card-actions` paints
+  // nothing, so the colour behind the link belongs to an ancestor, and which
+  // ancestor is a Material implementation detail that a selector written here
+  // would pin. Measuring against a layer the reader cannot see is the failure
+  // mode this suite already warns about for the badge halves.
+  for (const theme of THEMES) {
+    test(`${theme}: the sign-up link clears the text floor on its card`, async ({
+      page,
+    }) => {
+      await page.goto('/auth/sign-in');
+      await applyTheme(page, theme);
+
+      const link = page.locator('[data-cy="sign-up-link"]');
+      await expect(link).toBeVisible();
+
+      const [colour, backdrop] = await link.evaluate((el) => {
+        const front = getComputedStyle(el).color;
+        for (let node = el.parentElement; node; node = node.parentElement) {
+          const fill = getComputedStyle(node).backgroundColor;
+          const alpha = fill.match(/^rgba\([^)]*,\s*([\d.]+)\)$/);
+          if (fill && fill !== 'transparent' && (!alpha || +alpha[1] > 0)) {
+            return [front, fill];
+          }
+        }
+        // No opaque ancestor means the page's own canvas, and a ratio against
+        // a colour that was never established is not a measurement.
+        throw new Error('no painted backdrop found above the sign-up link');
+      });
+
+      const back = parseColour(backdrop);
+      const front = parseColour(colour);
+      expect(
+        contrastRatio(flatten(front, back.rgb), back.rgb),
+        `${colour} on ${backdrop}`,
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  // The floor above is necessary and not sufficient: the user-agent blue clears
+  // 4.5:1 on a white card, so a theme that lost the binding entirely would keep
+  // passing on the light themes and fail only on the dark one. Reading the
+  // token directly is what makes the assertion about the binding rather than
+  // about a colour that happens to be legible.
+  test('the sign-up link resolves the primary role, not a user-agent default', async ({
+    page,
+  }) => {
+    await page.goto('/auth/sign-in');
+    await applyTheme(page, 'user-custom-dark', '#2f5fa8');
+
+    const [colour, role] = await page
+      .locator('[data-cy="sign-up-link"]')
+      .evaluate((el) => [
+        getComputedStyle(el).color,
+        getComputedStyle(el).getPropertyValue('--mat-sys-primary'),
+      ]);
+
+    expect(parseColour(colour).rgb).toEqual(parseColour(role).rgb);
+  });
+
   // The app initializer restores the theme too late to matter: it cannot run
   // before the federated bundle has executed, and the stylesheet has painted by
   // then. Blocking every script leaves only the inline bootstrap in index.html,
