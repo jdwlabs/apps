@@ -304,6 +304,14 @@ if [ "${#}" -lt 3 ]; then
   exit 1
 fi
 
+# The version arrives through command substitution, and a substitution that fails
+# still leaves a well-formed call with an empty argument. Without this the chart
+# gets an empty appVersion and the pull request looks like any other bump.
+if [ -z "${2//[[:space:]]/}" ]; then
+  echo "Error: refusing to set an empty appVersion in ${1}." >&2
+  exit 1
+fi
+
 if [ -n "${DEPLOYMENTS_TOKEN:-}" ]; then
   deployments_token="${DEPLOYMENTS_TOKEN}"
 elif [ -n "${GH_APP_ID:-}" ] && [ -n "${GH_APP_PRIVATE_KEY:-}" ]; then

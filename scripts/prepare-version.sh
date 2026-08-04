@@ -22,6 +22,14 @@ version_file="${1}"
 version="${2}"
 backup_file="${version_file}.bak"
 
+# Callers pass the version through command substitution, and a substitution that
+# fails still leaves a well-formed call with an empty argument. Refusing it here
+# is what stops a blank /VERSION shipping in an image.
+if [ -z "${version//[[:space:]]/}" ]; then
+  echo "${0}: refusing to stamp an empty version into ${version_file}" >&2
+  exit 1
+fi
+
 if [ ! -f "${backup_file}" ]; then
   cp "${version_file}" "${backup_file}"
 fi
