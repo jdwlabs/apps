@@ -58,6 +58,42 @@ pnpm run commit
 git commit -m "feat(container): add dark mode toggle"
 ```
 
+## What CI Runs on a Pull Request
+
+`.github/workflows/ci.yml` opens with four jobs that all start at once:
+
+| job          | what it does                                                               | required check |
+| ------------ | -------------------------------------------------------------------------- | -------------- |
+| `main`       | format, commitlint, affected lint/test, affected build, release dry-run    | yes            |
+| `e2e-shard`  | N runners, each `nx affected -t e2e --shard=<i>/<N>`, one blob report each | no             |
+| `e2e`        | reads the matrix outcome and nothing else — the suite's one verdict        | yes            |
+| `e2e-report` | merges the shard blobs into one `platform-e2e-report` artifact             | no             |
+
+The shards are deliberately **not** required checks: a required context is
+matched by name, so requiring `e2e-shard (1)`…`(N)` would pin branch protection
+to the matrix size and strand a context that never reports again the moment N
+changes. `e2e` is required instead, and it runs under `!cancelled()` so it always
+reports — a required check that never reports blocks the branch forever.
+
+`e2e-report` never decides anything. It exists to explain a result, so a flake in
+the artifact download costs a reviewer nothing.
+
+### Why a CI change re-runs everything
+
+`nx.json` lists `.github/workflows/ci.yml` under `namedInputs.sharedGlobals`, so
+editing this workflow marks every project affected. Without it `nx affected`
+resolves a CI-only diff to zero projects, and the pipeline a change is trying to
+alter never actually runs against it — every job reports green having done
+nothing. The cost is a full lint/test/build on workflow edits, which is the point.
+
+### Changing the required checks
+
+Branch protection is managed as code in `.github/rulesets/`. Adding or renaming a
+required check means editing `baseline.json` in the same PR as the workflow
+change, then a repo admin running `.github/rulesets/apply.sh` to push it live —
+nothing applies it automatically, and the script has no delete path, so it only
+ever adds or updates.
+
 ## Releasing a New Version
 
 Versioning runs in CI on push to `main`. Do not run `nx release` locally without `--dry-run`.
@@ -76,8 +112,9 @@ is load-bearing rather than an oversight.
 `nx release` runs with `git.push: true`. It rewrites each project's version
 manifest, writes the changelogs, commits `chore(release): publish [skip ci]`, and
 pushes that commit **and** its tags onto `main` directly. `Baseline` requires a
-pull request with one approving review, linear history, and the `main` status
-check, so without the bypass the release cannot land.
+pull request with one approving review, linear history, and the `main`, `e2e`,
+`scan / *` and `signatures / signatures` status checks, so without the bypass the
+release cannot land.
 
 The narrower `bypass_mode: pull_request` does not help here. It permits an actor
 to bypass rules _on a pull request_ while still blocking a direct push — and a
