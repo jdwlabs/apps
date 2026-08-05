@@ -1,7 +1,14 @@
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { realpath, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import {
+  extname,
+  isAbsolute,
+  join,
+  normalize,
+  relative,
+  resolve,
+} from 'node:path';
 
 /**
  * Origins the suite addresses. The host is listed last on purpose: the servers
@@ -38,20 +45,44 @@ const CONTENT_TYPES = new Map([
 ]);
 
 /**
- * Resolves a request path inside `root`, or null if it escapes.
+ * Absolute candidate path for a request, or null if it cannot be decoded.
+ *
+ * Containment is deliberately *not* decided here. The check is spelled out at
+ * each filesystem call instead, because a containment test is only worth
+ * something where it dominates the call it protects — reading it three lines
+ * above a `stat` says more, to a reader and to static analysis both, than
+ * reading it as the return value of a function defined elsewhere.
  */
-function resolveWithin(root, urlPath) {
-  const decoded = decodeURIComponent(urlPath.split('?')[0]);
-  const candidate = resolve(join(root, normalize(decoded)));
-  return candidate === root || candidate.startsWith(root + sep)
-    ? candidate
-    : null;
+function candidatePath(root, urlPath) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(urlPath.split('?')[0]);
+  } catch {
+    // A stray `%` is a client mistake, not a server one. Left to propagate it
+    // rejects out of an async handler, which has terminated the process since
+    // Node 15 and would take every origin down mid-run.
+    return null;
+  }
+  return resolve(join(root, normalize(decoded)));
 }
 
-async function fileAt(path) {
+async function fileAt(root, path) {
+  const escapes = relative(root, path);
+  if (escapes.startsWith('..') || isAbsolute(escapes)) {
+    return null;
+  }
   try {
     const stats = await stat(path);
-    return stats.isFile() ? stats : null;
+    if (!stats.isFile()) {
+      return null;
+    }
+    // Containment of the requested path says nothing about where a symlink
+    // inside the tree points, so the resolved target has to satisfy it too.
+    const linked = relative(root, await realpath(path));
+    if (linked.startsWith('..') || isAbsolute(linked)) {
+      return null;
+    }
+    return stats;
   } catch {
     return null;
   }
@@ -76,17 +107,16 @@ function handler(root) {
       return;
     }
 
-    const requested = resolveWithin(root, request.url ?? '/');
-    if (!requested) {
-      send(response, 403, { 'content-type': 'text/plain' }, 'Forbidden\n');
+    const requested = candidatePath(root, request.url ?? '/');
+    if (requested === null) {
+      send(response, 400, { 'content-type': 'text/plain' }, 'Bad request\n');
       return;
     }
-
     let target = requested;
-    let stats = await fileAt(target);
+    let stats = await fileAt(root, target);
     if (!stats) {
       target = join(requested, 'index.html');
-      stats = await fileAt(target);
+      stats = await fileAt(root, target);
     }
     // Client-side routes carry no extension, so they fall back to the shell.
     // Anything that names a file does not: a missing bundle or manifest has to
@@ -94,7 +124,7 @@ function handler(root) {
     // somewhere further downstream.
     if (!stats && !extname(requested)) {
       target = join(root, 'index.html');
-      stats = await fileAt(target);
+      stats = await fileAt(root, target);
     }
     if (!stats) {
       send(response, 404, { 'content-type': 'text/plain' }, 'Not found\n');
@@ -117,6 +147,15 @@ function handler(root) {
       send(response, 200, headers);
       return;
     }
+    // Nothing that reaches here should be able to fail this — every path above
+    // was contained before it was stat'd. It is restated at the point the file
+    // is actually opened because that is the call that hands bytes back to the
+    // caller, and it costs a string compare to say so at the call itself.
+    const escapes = relative(root, target);
+    if (escapes.startsWith('..') || isAbsolute(escapes)) {
+      send(response, 403, { 'content-type': 'text/plain' }, 'Forbidden\n');
+      return;
+    }
     send(response, 200, headers, createReadStream(target));
   };
 }
@@ -127,11 +166,29 @@ function listen(port, root) {
     // A client that navigates away mid-download resets its socket; that is
     // routine under a parallel test run and must not take the server with it.
     server.on('clientError', (_error, socket) => socket.destroy());
-    server.once('error', reject);
+    // Node closes an idle keep-alive socket after 5s, which is short enough to
+    // land on a client writing its next request onto that socket — exactly the
+    // ECONNRESET this server exists to avoid. The header timeout has to stay
+    // above the keep-alive one, or a socket is torn down while the headers it
+    // was reopened for are still arriving.
+    server.keepAliveTimeout = 65_000;
+    server.headersTimeout = 70_000;
+    const rejectOnStartupError = (error) => reject(error);
+    server.once('error', rejectOnStartupError);
     // Bound without a host so both loopback families answer — callers reach
     // these by name, and `localhost` resolves to ::1 first on some platforms
     // and 127.0.0.1 first on others.
     server.listen(port, () => {
+      // Past this point the promise is settled, so an error routed to `reject`
+      // would be discarded in silence and leave the suite talking to an origin
+      // that has stopped answering.
+      server.off('error', rejectOnStartupError);
+      server.on('error', (error) => {
+        process.stderr.write(
+          `server for ${root} on port ${port} failed: ${error.stack ?? error.message}\n`,
+        );
+        process.exit(1);
+      });
       process.stdout.write(`serving ${root} on http://localhost:${port}\n`);
       resolvePort(server);
     });
