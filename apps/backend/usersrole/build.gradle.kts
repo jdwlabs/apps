@@ -15,9 +15,19 @@ group = "com.jdw"
 // The released version comes from the git tag, which only exists after the
 // commit being built — so no file in the tree can carry it. The image build
 // passes it in; anything else is a local build and says so in the tag.
+//
+// A property that is present but empty is a failed version lookup upstream, not
+// a request for the development default: the caller substitutes the version into
+// -PreleaseVersion, and a substitution that fails still produces a well-formed
+// flag. Falling back would publish the placeholder tag to Docker Hub, so refuse
+// instead. An absent property means no caller tried, which is a local build.
+val releaseVersionProperty = findProperty("releaseVersion") as String?
+require(releaseVersionProperty == null || releaseVersionProperty.isNotBlank()) {
+	"-PreleaseVersion was passed but is empty — the version lookup that supplies it failed"
+}
 version =
-	(findProperty("releaseVersion") as String?)
-		?: System.getenv("RELEASE_VERSION")
+	releaseVersionProperty
+		?: System.getenv("RELEASE_VERSION")?.ifBlank { null }
 		?: "0.0.0-dev"
 
 java {

@@ -63,4 +63,9 @@ kubeconfig*
 # the repo root, where nothing else would catch it.
 *.exe
 
+# Backups an image build parks while it stamps a release version into the tree.
+# The restore that removes them is the last step of the chain, so a build that
+# fails part-way leaves one behind.
+*.bak
+
 .superpowers/
