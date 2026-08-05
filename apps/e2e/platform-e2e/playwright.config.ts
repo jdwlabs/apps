@@ -11,11 +11,12 @@ const useDeployedEnvironment = !!process.env['BASE_URL'];
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
-  // Bounded by the browsers, not by the servers: every worker is a Chromium
-  // instance, and past the core count they contend for CPU rather than finish
-  // sooner. Hosted runners are far smaller than a workstation, so the two are
-  // measured separately.
-  workers: process.env['CI'] ? 4 : 8,
+  // Local is set from a full-suite sweep on a 24-core workstation: green and
+  // connection-error-free through 16, falling off at 24 on browser CPU
+  // contention rather than on the server. CI stays where the previous
+  // four-server layout left it — a hosted runner is a different machine and
+  // that sweep says nothing about it, so raising it is its own measurement.
+  workers: process.env['CI'] ? 1 : 8,
   use: {
     baseURL,
     trace: 'on-first-retry',
