@@ -133,6 +133,11 @@ jobs:
       # setup-node's pnpm-store cache writes its entry in a post-job step, and
       # that save needs write access even though nothing here reads it directly.
       actions: write
+    outputs:
+      # Published so the report job can check the blob count it downloaded
+      # against the number of shards that could have written one. Every shard
+      # resolves the same value, so last-writer-wins across the matrix is fine.
+      shard-total: ${{ strategy.job-total }}
     strategy:
       # Every shard reports its own failures. Stopping the siblings on the first
       # red would hide the rest of the suite behind whichever shard lost the
@@ -169,6 +174,14 @@ jobs:
           cache: pnpm
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+      # Same pin, same reason as the main job: @nx-go/nx-go is a graph plugin, so
+      # every nx command here builds the project graph through the Go toolchain
+      # and would otherwise read whatever version the runner image happens to
+      # ship that week.
+      - name: Setup Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.work
       - name: Setup Base and SHAs for 'nx affected'
         uses: nrwl/nx-set-shas@v5.0.1
       - if: ${{ github.event_name == 'pull_request' }}
@@ -279,13 +292,36 @@ jobs:
           merge-multiple: true
           path: blob-reports
       - name: Merge Shard Reports
+        env:
+          SHARD_TOTAL: ${{ needs.e2e-shard.outputs.shard-total }}
+          SHARD_OUTCOME: ${{ needs.e2e-shard.result }}
         run: |
           set -euo pipefail
           shopt -s nullglob
           blobs=(blob-reports/*.zip)
-          echo "shards reporting: ${#blobs[@]}"
+          echo "shards reporting: ${#blobs[@]} of ${SHARD_TOTAL:-unknown}"
+          echo "files downloaded:"
+          find blob-reports -type f -printf '  %p\n' 2>/dev/null || true
+          # Two counts are legitimate: none at all, and exactly one per shard.
+          # Anything between them is a partial suite dressed up as a whole one —
+          # the merged report would look coherent while silently missing slices.
+          # Only the shards' own verdict can excuse a short count, so this is
+          # asserted just when every shard reported success.
+          if [ "$SHARD_OUTCOME" = "success" ] &&
+            [ "${#blobs[@]}" -ne 0 ] &&
+            [ "${#blobs[@]}" -ne "${SHARD_TOTAL:-0}" ]; then
+            echo "::error::expected ${SHARD_TOTAL:-?} blob reports or none, found ${#blobs[@]}"
+            exit 1
+          fi
           if [ "${#blobs[@]}" -eq 0 ]; then
-            echo "No blob reports were produced; the suite was not affected by this change."
+            # Artifacts that arrived but did not match the glob mean the upload
+            # or download path moved, not that the suite was skipped. Left
+            # unchecked that reads as "nothing to report" and exits green.
+            if [ -n "$(find blob-reports -type f 2>/dev/null)" ]; then
+              echo "::error::artifacts were downloaded but none matched blob-reports/*.zip; the blob report path is wrong"
+              exit 1
+            fi
+            echo "No shard uploaded a blob report, which is the expected shape when nx affected selected no e2e target for this change."
             exit 0
           fi
           pnpm exec playwright merge-reports --reporter=html blob-reports
