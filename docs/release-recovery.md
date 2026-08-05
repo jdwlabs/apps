@@ -29,13 +29,27 @@ every tag in the release lands or none does.
 **Symptom:** Tags exist on the released commit, but no GitHub Release was
 created (e.g. the job died between tag push and Release API call).
 
-**Recovery:** Re-running the `release` job no-ops — `nx release` sees the tag
-already points at the target commit and won't re-version or re-push. Recover
-manually per project:
+**Recovery:** Recover manually per project:
 
 ```bash
 gh release create <project>-<version> --title "<project> <version>" --generate-notes
 ```
+
+**Do not re-run the `release` job for this.** Only `nx release` no-ops — it sees
+the tag already points at the target commit and won't re-version or re-push.
+The step after it detects what was released with `git tag --points-at HEAD`,
+which reads tags on the commit and cannot tell this run's tags from a previous
+run's. On an unmoved `main` it therefore finds the _existing_ tags, reports
+`released=true`, and re-runs the whole `deliver` matrix: every image rebuilt and
+re-pushed, every chart bump PR re-opened. Nothing is corrupted — the targets are
+idempotent against the same version — but it is a full redelivery, not a no-op,
+and it creates no GitHub Release either way.
+
+That same behaviour is the only way to redeliver from the `release` job, so it
+is deliberate rather than a latent bug. When the goal really is "tagged but no
+image", use the targeted tool instead of a blanket re-run:
+`.github/workflows/deliver-backfill.yml`, which takes an explicit
+`project:version` list and refuses any pair without an existing release tag.
 
 ## (c) Deliver failure
 

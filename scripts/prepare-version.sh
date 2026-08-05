@@ -20,7 +20,12 @@ fi
 
 version_file="${1}"
 version="${2}"
-backup_file="${version_file}.bak"
+# The backup deliberately does not sit beside the file it backs up. public/ is
+# the Angular asset root: the build copies everything under it into dist/, and
+# the Dockerfile copies dist/ into the image web root, so a sibling backup would
+# be served at /VERSION.bak carrying the placeholder. One level up is inside the
+# project but outside every asset glob.
+backup_file="$(cd "$(dirname "${version_file}")/.." && pwd)/$(basename "${version_file}").bak"
 
 # Callers pass the version through command substitution, and a substitution that
 # fails still leaves a well-formed call with an empty argument. Refusing it here

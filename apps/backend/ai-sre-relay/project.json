@@ -37,7 +37,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/ai-sre-relay:latest -t jdwlabs/ai-sre-relay:\"$(bash scripts/resolve-version.sh ai-sre-relay)\" --push .",
+            "command": "bash scripts/build-image.sh ai-sre-relay \"$(bash scripts/resolve-version.sh ai-sre-relay)\" {projectRoot}/Dockerfile \"Alert relay service for the jdwlabs AI-SRE stack\" --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           }
         ],

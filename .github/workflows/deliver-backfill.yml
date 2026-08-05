@@ -137,11 +137,19 @@ jobs:
           root=$(pnpm --silent exec nx show project "$PROJECT" --json | jq -r '.root')
           # Tags cut before versions moved into git carry a VERSION manifest —
           # Angular apps under public/, backend and database apps at the project
-          # root. Where one exists it must still agree with the tag, or the
-          # published image would carry a version the tag does not describe.
-          # Tags cut since then have no manifest to disagree with: the tag being
-          # checked out is itself the version, and RELEASE_VERSION below carries
-          # it into the targets.
+          # root. Where one records a released version it must still agree with
+          # the tag, or the published image would carry a version the tag does
+          # not describe.
+          #
+          # Since the move there is nothing to disagree with. Backend and
+          # database apps have no manifest at all. The Angular apps still track
+          # public/VERSION, but it holds a development placeholder that only an
+          # image build ever stamps, so at any tag it reads the placeholder and
+          # records no version. Rejecting that would break backfill for exactly
+          # the projects it exists to recover. Either way the tag being checked
+          # out is itself the version, and RELEASE_VERSION below carries it into
+          # the targets.
+          placeholder=0.0.0-dev
           file=""
           for candidate in "$root/public/VERSION" "$root/VERSION"; do
             [ -f "$candidate" ] && file="$candidate" && break
@@ -151,6 +159,10 @@ jobs:
             exit 0
           fi
           actual=$(tr -d '[:space:]' < "$file")
+          if [ "$actual" = "$placeholder" ]; then
+            echo "$file holds the $placeholder placeholder; $TAG is the version."
+            exit 0
+          fi
           if [ "$actual" != "$EXPECTED" ]; then
             echo "::error::$file reads $actual at tag $TAG, expected $EXPECTED"
             exit 1
