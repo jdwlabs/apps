@@ -19,7 +19,7 @@ export default defineConfig({
   // runner — the workstation numbers above don't transfer, since the four
   // single-threaded static-server processes the CI value used to assume
   // became one single-threaded process. Placeholder during measurement.
-  workers: process.env['CI'] ? 2 : 8,
+  workers: process.env['CI'] ? 4 : 8,
   use: {
     baseURL,
     trace: 'on-first-retry',
