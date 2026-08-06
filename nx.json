@@ -184,7 +184,8 @@
       "automaticFromRef": true,
       "projectChangelogs": {
         "file": false,
-        "createRelease": "github"
+        "createRelease": "github",
+        "renderer": "{workspaceRoot}/tools/release/changelog-renderer.ts"
       }
     },
     "releaseTag": {
