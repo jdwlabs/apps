@@ -18,6 +18,7 @@
     ],
     "sharedGlobals": [
       "{workspaceRoot}/go.work",
+      "{workspaceRoot}/tsconfig.base.json",
       "{workspaceRoot}/.github/workflows/ci.yml"
     ]
   },
