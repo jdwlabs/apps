@@ -13,10 +13,13 @@ export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
   // Local is set from a full-suite sweep on a 24-core workstation: green and
   // connection-error-free through 16, falling off at 24 on browser CPU
-  // contention rather than on the server. CI stays where the previous
-  // four-server layout left it — a hosted runner is a different machine and
-  // that sweep says nothing about it, so raising it is its own measurement.
-  workers: process.env['CI'] ? 1 : 8,
+  // contention rather than on the server.
+  //
+  // CI is being raised incrementally and measured on the actual 4-vCPU hosted
+  // runner — the workstation numbers above don't transfer, since the four
+  // single-threaded static-server processes the CI value used to assume
+  // became one single-threaded process. Placeholder during measurement.
+  workers: process.env['CI'] ? 2 : 8,
   use: {
     baseURL,
     trace: 'on-first-retry',
