@@ -105,6 +105,14 @@ const TOOLBAR_FILL: [string, string] = [
 const LINK: [string, string] = ['[data-cy="sign-up-link"]', 'color'];
 const CARD: [string, string] = ['mat-card', 'background-color'];
 
+// The mocked dashboard always seeds an Auth tile, and the shared component is
+// byte-identical across container, usersui and rolesui, so exercising it once
+// here covers all three.
+const TILE_LINK: [string, string] = [
+  '[data-cy="auth-tile"] [data-cy="tile-link"]',
+  'color',
+];
+
 const openSignIn = async (page: Page, theme: string, colour?: string) => {
   await page.goto('/auth/sign-in');
   await applyTheme(page, theme, colour);
@@ -226,6 +234,34 @@ test.describe('Theme contrast floors', () => {
       expect(await ratio(page, ENV_FILL, TOOLBAR_FILL)).toBeGreaterThanOrEqual(
         3,
       );
+    });
+  }
+
+  // The theme layer's global anchor rule (`html[data-theme=x]
+  // a:link:not([class*=mat-])`, specificity 0,3,2) genuinely matches the tile
+  // title's anchor. It loses only because `navigation-tile.component.scss`
+  // nests `.link { color: inherit }` inside `.tile`, which Angular's
+  // ShadowCss compiles to a (0,4,0) selector — a one-step margin that nothing
+  // else here asserts. Un-nesting `.link` from `.tile`, or dropping view
+  // encapsulation on the component, would repaint every dashboard tile title
+  // with no build or test failure today. Reading the resolved colour rather
+  // than the stylesheet source is the point: it is the cascade outcome that
+  // would silently flip, not the rule text.
+  for (const theme of THEMES) {
+    test(`${theme}: the dashboard tile link inherits on-surface, not the anchor role`, async ({
+      page,
+    }) => {
+      await applyTheme(page, theme);
+
+      const link = page.locator(TILE_LINK[0]);
+      await expect(link).toBeVisible();
+
+      const [colour, role] = await Promise.all([
+        read(page, ...TILE_LINK),
+        read(page, TILE_LINK[0], '--mat-sys-on-surface'),
+      ]);
+
+      expect(parseColour(colour).rgb).toEqual(parseColour(role).rgb);
     });
   }
 
