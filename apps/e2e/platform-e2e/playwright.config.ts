@@ -15,10 +15,18 @@ export default defineConfig({
   // connection-error-free through 16, falling off at 24 on browser CPU
   // contention rather than on the server.
   //
-  // CI is being raised incrementally and measured on the actual 4-vCPU hosted
-  // runner — the workstation numbers above don't transfer, since the four
-  // single-threaded static-server processes the CI value used to assume
-  // became one single-threaded process. Placeholder during measurement.
+  // CI was swept on the actual ubuntu-latest (4-vCPU) hosted runner rather
+  // than reusing the workstation numbers, since those speak to a different
+  // machine and the four-process layout this replaced would not have
+  // transferred either. 1/2/4/6/8 all ran green with no connection resets or
+  // navigation timeouts. No failure threshold was reached: fullyParallel is
+  // off (Playwright default, unset by both this config and the nx preset),
+  // so within a shard tests in the same file run serially and real
+  // concurrency against the server is bounded by the file count in that
+  // shard — 3, with the suite's current 6 spec files over 2 shards — not by
+  // this number. 8 is set to match the proven local value and give the
+  // suite headroom to grow before the next file-count/shard-count change
+  // makes this worth re-sweeping.
   workers: process.env['CI'] ? 8 : 8,
   use: {
     baseURL,
