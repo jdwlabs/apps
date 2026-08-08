@@ -1,5 +1,5 @@
 # Ensure all text files use LF line endings in the repository
-* text=auto
+* text=auto eol=lf
 
 # Enforce LF for specific file types (common text-based file types)
 *.js   text eol=lf
@@ -11,6 +11,10 @@
 *.sh   text eol=lf
 *.yml  text eol=lf
 *.yaml text eol=lf
+
+# Windows batch scripts require CRLF
+*.bat        text eol=crlf
+gradlew.bat  text eol=crlf
 
 # Treat binary files as-is (no line ending conversions)
 *.png  binary
