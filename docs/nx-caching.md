@@ -105,54 +105,43 @@ runner (`tailscale/github-action` + an auth-key secret) or a public TLS
 endpoint in front of the cache server — but neither would produce a single
 cache hit, for the reason below.
 
-### A Windows checkout and a Linux runner cannot share a task hash
+### A Windows checkout and a Linux runner used to disagree on content — closed (JDWLABS-279)
 
 **Decision: no remote cache for GitHub-hosted runners. This is not a
 reachability problem and buying reachability does not fix it.**
 
-`.gitattributes` pins `eol=lf` for `js/ts/html/css/json/md/sh/yml/yaml` only.
-Everything else falls through to `* text=auto`, which with `core.autocrlf=true`
-checks out **CRLF on Windows** and LF on a Linux runner. That is 210 of 678
-tracked files — every `.scss` (49), every `.go` (30), every `.java` (83), plus
-the Dockerfiles and `VERSION` manifests:
+`.gitattributes` now pins `* text=auto eol=lf` for the whole tree, with an
+explicit `text eol=crlf` carve-out for `*.bat`/`gradlew.bat` (Gradle's own
+requirement). A Windows checkout and a Linux checkout of the same commit are
+therefore byte-identical outside that one intentional exception:
 
 ```
 $ git ls-files --eol | awk '{print $2}' | sort | uniq -c
-    458 w/lf
-    210 w/crlf
+    662 w/lf
+      1 w/crlf   # gradlew.bat only
 ```
 
 Nx hashes file contents as they sit on disk and performs **no EOL
-normalization**. Its native hasher, on the same logical file:
+normalization** — that fact hasn't changed, and is exactly why fixing the
+checkout (not teaching Nx to normalize) was the correct fix. With both
+platforms now materializing the same bytes for the same blob, cross-platform
+hash equality is a structural consequence, not something that needs
+re-deriving per file.
 
-```
-$ node -e "const n=require('nx/dist/src/native');
-           console.log(n.hashFile('lf.scss'), n.hashFile('crlf.scss'))"
-15293204973246296553   102058601192357194
-```
+Two things worth keeping straight now that the divergence is closed:
 
-Every project in the workspace contains at least one CRLF file in its own
-root, and `libs/frontend/shared` contributes 22 of them to every frontend
-through `^production`. So no cacheable target anywhere in this repo can
-compute the same hash on a dev box and on `ubuntu-latest` — the hit rate
-across that boundary is **0% by construction**, not by tuning.
+- **Dev↔CI reuse is no longer blocked by content mismatch.** The prior ~210
+  CRLF-vs-LF files (Go, `.scss`, `.java`, Dockerfiles, `VERSION` manifests)
+  now check out identically on both platforms.
+- **LAN dev↔dev reuse was always unaffected** — those machines were already
+  all Windows and agreed on CRLF before this fix.
 
-Two consequences worth keeping straight:
-
-- **Dev↔CI reuse is dead** until the checkout is normalized. Pinning the
-  remaining text types to `eol=lf` and renormalizing would lift the blocker,
-  but it rewrites ~210 files across every project and has to be verified
-  against the Gradle and Go builds (`gradlew` wants LF, `*.bat` wants CRLF) —
-  its own change, not a line edit here.
-- **LAN dev↔dev reuse is unaffected**, since those machines are all Windows
-  and agree on CRLF. That is the only sharing a MinIO-backed cache could
-  actually serve today, and it is also the tier that already works locally.
-
-This also bounds the prize. Recent `ci.yml` runs sit at a median of ~3m18s,
-of which the Nx-cacheable portion is a few minutes; `apps` is a public repo,
-so Actions minutes are free. A permanent read-write network service is not a
-proportionate trade for that, which is the other half of why this stays
-unbuilt.
+**The decision not to build the cache stands anyway**, now purely on the
+proportionality argument: recent `ci.yml` runs sit at a median of ~3m18s, of
+which the Nx-cacheable portion is a few minutes; `apps` is a public repo, so
+Actions minutes are free. A permanent read-write network service is not a
+proportionate trade for that saving, independent of whether the hashes would
+now collide.
 
 ## Remote cache: chosen protocol and why
 
