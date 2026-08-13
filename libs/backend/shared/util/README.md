@@ -97,5 +97,5 @@ nx tidy go-shared-util
 
 ## 📚 Related Packages
 
-- [`go-users-service`](../../users/service): A microservice that can leverage utilities from this package.
-- [`angular-usersui-util`](../../../angular/usersui/util): Utility library for the Angular Users UI.
+- [`servicediscovery`](../../../../apps/backend/servicediscovery): The Go service currently importing this package.
+- [`angular-usersui-util`](../../../frontend/usersui/util): Utility library for the Angular Users UI.
