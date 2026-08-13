@@ -109,5 +109,5 @@ nx lint angular-usersui-feature-core
 
 ## 📚 Related Packages
 
-- [`@jdw/angular-usersui-data-access`](../data-access): Handles user and profile API communication.
-- [`@jdw/angular-usersui-util`](../util): Shared utilities and models used across Users UI.
+- [`@jdw/angular-usersui-data-access`](../../data-access): Handles user and profile API communication.
+- [`@jdw/angular-usersui-util`](../../util): Shared utilities and models used across Users UI.
