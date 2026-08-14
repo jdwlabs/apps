@@ -197,8 +197,8 @@ jobs:
           GH_APP_ID: ${{ secrets.RELEASE_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "github-actions[bot]"
+          git config --global user.email "294056722+jdwlabs-release-bot[bot]@users.noreply.github.com"
+          git config --global user.name "jdwlabs-release-bot[bot]"
           pnpm exec nx run "$PROJECT":update-app
       - if: ${{ steps.targets.outputs.update_description == 'true' }}
         name: Update Docker Hub Description
