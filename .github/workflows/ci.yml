@@ -358,6 +358,12 @@ jobs:
         with:
           app-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          # The App is installed org-wide, so omitting owner/repositories would
+          # mint a token valid across every repo in the org. Scope it to this
+          # repo and to the one permission the push and the GitHub Release need.
+          owner: ${{ github.repository_owner }}
+          repositories: apps
+          permission-contents: write
       - name: Checkout Codebase
         uses: actions/checkout@v7.0.1
         with:
@@ -432,8 +438,8 @@ jobs:
           # Nx creates the GitHub Releases via this token after pushing tags.
           GITHUB_TOKEN: ${{ steps.release-token.outputs.token }}
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "github-actions[bot]"
+          git config --global user.email "294056722+jdwlabs-release-bot[bot]@users.noreply.github.com"
+          git config --global user.name "jdwlabs-release-bot[bot]"
           # Version against the live remote tip so tags always land on the
           # commit that becomes main (same rationale as the previous pipeline).
           git fetch origin main --tags --prune --force

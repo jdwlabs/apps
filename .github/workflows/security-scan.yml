@@ -4,6 +4,17 @@ on:
   pull_request:
   push:
     branches: [main]
+    # Code-scanning alerts track the default branch, so the main-branch run has
+    # to stay; docs-only pushes cannot change what the scanners find.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+# Superseded PR pushes are cancelled; main runs queue so every default-branch
+# commit still uploads its SARIF.
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
