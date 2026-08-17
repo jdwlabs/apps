@@ -73,8 +73,7 @@ export class RoleUserAssignmentComponent implements OnInit {
   private noUserChangeValidator: ValidatorFn = (control: AbstractControl) => {
     const toAdd = control.get('usersToAdd')?.value as number[] | undefined;
     const toRemove = control.get('usersToRemove')?.value as
-      | number[]
-      | undefined;
+      number[] | undefined;
 
     if (!toAdd || !toRemove) return null;
 

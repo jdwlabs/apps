@@ -1,7 +1,2 @@
 export type PaletteColors =
-  | 'info'
-  | 'error'
-  | 'warn'
-  | 'success'
-  | 'primary'
-  | 'accent';
+  'info' | 'error' | 'warn' | 'success' | 'primary' | 'accent';

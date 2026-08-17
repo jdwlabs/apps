@@ -19,9 +19,9 @@ export class MicroFrontendService {
 
   getRoutes(): Observable<MicroFrontendRoute[]> {
     return this.http
-      .get<
-        MicroFrontendRoute[]
-      >(`${this.environment.SERVICE_DISCOVERY_BASE_URL}/api/micro-frontends`)
+      .get<MicroFrontendRoute[]>(
+        `${this.environment.SERVICE_DISCOVERY_BASE_URL}/api/micro-frontends`,
+      )
       .pipe(catchError((error) => this.handleError(error)));
   }
 
