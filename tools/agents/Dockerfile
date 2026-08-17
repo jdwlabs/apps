@@ -1,4 +1,4 @@
-FROM ghcr.io/actions/actions-runner:2.334.0
+FROM ghcr.io/actions/actions-runner:2.336.0
 
 # Update package list and install required dependencies
 USER root

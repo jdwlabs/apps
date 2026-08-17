@@ -1,4 +1,4 @@
-FROM postgres:18.4
+FROM postgres:18.6
 
 ENV POSTGRES_USER=default_user
 ENV POSTGRES_PASSWORD=default_password

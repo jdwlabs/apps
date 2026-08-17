@@ -1,7 +1,7 @@
 # nginx-unprivileged rather than nginx: the upstream image runs as root and
 # binds :80, neither of which survives runAsNonRoot with all capabilities
 # dropped. Same Debian lineage and shell, so the entrypoint is unchanged.
-FROM nginxinc/nginx-unprivileged:1.27 AS run
+FROM nginxinc/nginx-unprivileged:1.31 AS run
 
 ENV JSFOLDER=/usr/share/nginx/html/*.js
 

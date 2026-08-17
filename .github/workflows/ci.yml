@@ -58,12 +58,12 @@ jobs:
       # Java 21. Without this, gradle stalls provisioning a toolchain — the cause
       # of the ~11-min "Failed to process project graph" hang.
       - name: Setup Java
-        uses: actions/setup-java@v5.2.0
+        uses: actions/setup-java@v5.7.0
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.2.0
+        uses: gradle/actions/setup-gradle@v6.3.0
       # Pre-warm gradle (download dist + resolve deps) so the later @nx/gradle
       # graph generation is ~1s instead of timing out cold. Seeds the gradle
       # cache; near-instant once the cache is warm.
@@ -71,7 +71,7 @@ jobs:
         working-directory: apps/backend/usersrole
         run: ./gradlew help -q
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: pnpm/action-setup@v6.0.10
       - name: Setup Node
         uses: actions/setup-node@v7.0.0
         with:
@@ -157,17 +157,17 @@ jobs:
       # Java 21. Without this, gradle stalls provisioning a toolchain — the cause
       # of the ~11-min "Failed to process project graph" hang.
       - name: Setup Java
-        uses: actions/setup-java@v5.2.0
+        uses: actions/setup-java@v5.7.0
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.2.0
+        uses: gradle/actions/setup-gradle@v6.3.0
       - name: Warm Gradle
         working-directory: apps/backend/usersrole
         run: ./gradlew help -q
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: pnpm/action-setup@v6.0.10
       - name: Setup Node
         uses: actions/setup-node@v7.0.0
         with:
@@ -278,7 +278,7 @@ jobs:
         with:
           token: ${{ github.token }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: pnpm/action-setup@v6.0.10
       - name: Setup Node
         uses: actions/setup-node@v7.0.0
         with:
@@ -375,17 +375,17 @@ jobs:
           # step that actually needs to push.
           persist-credentials: false
       - name: Setup Java
-        uses: actions/setup-java@v5.2.0
+        uses: actions/setup-java@v5.7.0
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.2.0
+        uses: gradle/actions/setup-gradle@v6.3.0
       - name: Warm Gradle
         working-directory: apps/backend/usersrole
         run: ./gradlew help -q
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: pnpm/action-setup@v6.0.10
       - name: Setup Node
         uses: actions/setup-node@v7.0.0
         with:
@@ -512,17 +512,17 @@ jobs:
         with:
           ref: ${{ needs.release.outputs.sha }}
       - name: Setup Java
-        uses: actions/setup-java@v5.2.0
+        uses: actions/setup-java@v5.7.0
         with:
           distribution: temurin
           java-version: '21'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.2.0
+        uses: gradle/actions/setup-gradle@v6.3.0
       - name: Warm Gradle
         working-directory: apps/backend/usersrole
         run: ./gradlew help -q
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: pnpm/action-setup@v6.0.10
       - name: Setup Node
         uses: actions/setup-node@v7.0.0
         with:
@@ -543,16 +543,16 @@ jobs:
       # redo the same `nx show project` lookup.
       - if: ${{ matrix['build-image'] == true }}
         name: Login to Docker Hub
-        uses: docker/login-action@v4.2.0
+        uses: docker/login-action@v4.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - if: ${{ matrix['build-image'] == true }}
         name: Set up QEMU
-        uses: docker/setup-qemu-action@v4.1.0
+        uses: docker/setup-qemu-action@v4.2.0
       - if: ${{ matrix['build-image'] == true }}
         name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4.1.0
+        uses: docker/setup-buildx-action@v4.2.0
         with:
           driver: 'docker-container'
           platforms: 'linux/amd64,linux/arm64'
