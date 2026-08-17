@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 )
 
@@ -271,6 +274,50 @@ func TestPipelineInvestigatesWhenTicketStateUnknown(t *testing.T) {
 	}
 	if h.n != 2 {
 		t.Fatalf("investigations = %d, want 2 (unknown state must re-investigate)", h.n)
+	}
+}
+
+type repoRejectingGH struct{}
+
+func (repoRejectingGH) OpenPR(_ context.Context, p Patch, _ IssueKey) (PRLink, error) {
+	return "", fmt.Errorf("%w: proposed %q, allowed [jdwlabs/platform]", ErrRepoNotAllowed, p.Repo)
+}
+
+// A remediation dropped at the allowlist is a produced-then-discarded fix, not
+// a flaky API call. It must be attributable in the log and countable in the
+// metrics, or a systematic run of them looks the same as no alerts at all.
+func TestPipelineRepoRejectionIsLoudAndCounted(t *testing.T) {
+	var buf bytes.Buffer
+	log := slog.New(slog.NewJSONHandler(&buf, nil))
+	patch := &Patch{Repo: "example/gitops", FilePath: "values.yaml", NewContent: "c", Confidence: 0.9}
+	d := &fakeDiscord{}
+	p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: patch},
+		&fakeJira{key: "JDWLABS-312"}, repoRejectingGH{}, d, log)
+
+	if err := p.Handle(context.Background(), Alert{Fingerprint: "fp"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Counters().reposRejected.Load(); got != 1 {
+		t.Fatalf("reposRejected = %d, want 1", got)
+	}
+	out := buf.String()
+	for _, want := range []string{"not allowlisted", "example/gitops", "jdwlabs/platform"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("rejection log omits %q:\n%s", want, out)
+		}
+	}
+	if d.pr != nil {
+		t.Fatal("no PR link may be reported for a discarded remediation")
+	}
+}
+
+func TestCountersExposeRepoRejections(t *testing.T) {
+	var c counters
+	c.reposRejected.Add(3)
+	var buf bytes.Buffer
+	c.writeTo(&buf)
+	if !strings.Contains(buf.String(), "ai_sre_relay_repo_rejections_total 3") {
+		t.Fatalf("counter not exposed:\n%s", buf.String())
 	}
 }
 

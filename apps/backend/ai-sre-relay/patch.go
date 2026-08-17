@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -14,19 +16,61 @@ type PatchGenerator struct {
 	apiKey        string
 	model         string
 	minConfidence float64
-	hc            *http.Client
+	// targets are the repositories a remediation may land in, in the order the
+	// prompt presents them. Which repository an alert remediates is a
+	// deployment fact the relay already holds, so the single-target case is
+	// injected rather than asked for: a model told to fill in "owner/name" from
+	// alert text answers with a plausible invention, and the boundary check
+	// then throws the whole proposal away.
+	targets []string
+	hc      *http.Client
+	log     *slog.Logger
 }
 
-func NewPatchGenerator(baseURL, apiKey, model string, minConfidence float64, hc *http.Client) *PatchGenerator {
+func NewPatchGenerator(baseURL, apiKey, model string, minConfidence float64, targets []string, log *slog.Logger, hc *http.Client) *PatchGenerator {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
-	return &PatchGenerator{baseURL: baseURL, apiKey: apiKey, model: model, minConfidence: minConfidence, hc: hc}
+	if log == nil {
+		log = slog.Default()
+	}
+	return &PatchGenerator{
+		baseURL: baseURL, apiKey: apiKey, model: model,
+		minConfidence: minConfidence, targets: slices.Clone(targets), log: log, hc: hc,
+	}
 }
 
-const patchSystemPrompt = `You are an SRE assistant. Given a root-cause analysis, propose AT MOST ONE single-file GitOps change that fixes it. Respond with ONLY a JSON object, no prose, matching:
-{"repo":"owner/name","file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}
+const (
+	patchPromptHead = `You are an SRE assistant. Given a root-cause analysis, propose AT MOST ONE single-file GitOps change that fixes it. Respond with ONLY a JSON object, no prose, matching:
+`
+	patchPromptTail = `
 If no safe single-file change exists, respond with exactly: {"confidence":0}`
+)
+
+// patchSystemPrompt renders the instruction for one configured target set. The
+// destination is never left to the model to infer from alert text: with a
+// single target it is stated as a fact and omitted from the response contract
+// entirely, and only a real choice between several is put to the model — as a
+// closed enumeration, never as free text.
+func patchSystemPrompt(targets []string) string {
+	if len(targets) > 1 {
+		return patchPromptHead +
+			`{"repo":"...","file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}` + "\n" +
+			`"repo" MUST be copied verbatim from this list and may be nothing else: ` + strings.Join(targets, ", ") + ".\n" +
+			`"file_path" is relative to the root of that repository.` +
+			patchPromptTail
+	}
+	// Zero targets means the PR arm is switched off, so a repository name would
+	// be noise the boundary refuses anyway — the shape is the same either way.
+	where := "the target repository"
+	if len(targets) == 1 {
+		where = "the " + targets[0] + " repository"
+	}
+	return patchPromptHead +
+		`{"file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}` + "\n" +
+		"The change will be applied to " + where + `. Do not name a repository; "file_path" is relative to its root.` +
+		patchPromptTail
+}
 
 type openAIRequest struct {
 	Model    string          `json:"model"`
@@ -48,7 +92,7 @@ func (g *PatchGenerator) Generate(ctx context.Context, an Analysis) (*Patch, err
 	reqBody, _ := json.Marshal(openAIRequest{
 		Model: g.model,
 		Messages: []openAIMessage{
-			{Role: "system", Content: patchSystemPrompt},
+			{Role: "system", Content: patchSystemPrompt(g.targets)},
 			{Role: "user", Content: an.RootCause},
 		},
 	})
@@ -80,8 +124,44 @@ func (g *PatchGenerator) Generate(ctx context.Context, an Analysis) (*Patch, err
 	if err := json.Unmarshal([]byte(content), &p); err != nil {
 		return nil, nil
 	}
-	if p.Confidence < g.minConfidence || strings.TrimSpace(p.Repo) == "" || strings.TrimSpace(p.FilePath) == "" || strings.TrimSpace(p.NewContent) == "" {
+	// Repo is deliberately absent from this gate: it is the relay's to set, not
+	// the model's to supply.
+	if p.Confidence < g.minConfidence || strings.TrimSpace(p.FilePath) == "" || strings.TrimSpace(p.NewContent) == "" {
+		return nil, nil
+	}
+	if !g.resolveRepo(&p) {
 		return nil, nil
 	}
 	return &p, nil
+}
+
+// resolveRepo sets the destination on a proposal and reports whether it is
+// still usable. With one configured target the model's answer is overwritten
+// rather than checked, so a repository it named unasked costs a log line
+// instead of the entire remediation; with several, naming one outside the set
+// is fatal to the proposal and says so loudly enough to alert on.
+func (g *PatchGenerator) resolveRepo(p *Patch) bool {
+	named := strings.TrimSpace(p.Repo)
+	if len(g.targets) > 1 {
+		if !slices.Contains(g.targets, named) {
+			g.log.Error("discarding remediation: proposed repository is outside the configured target set",
+				"proposed_repo", named, "allowed_repos", strings.Join(g.targets, ","),
+				"file_path", p.FilePath)
+			return false
+		}
+		p.Repo = named
+		return true
+	}
+	if len(g.targets) == 1 {
+		if named != "" && named != g.targets[0] {
+			g.log.Warn("model named a repository it was not asked for; overriding with the configured target",
+				"proposed_repo", named, "target_repo", g.targets[0], "file_path", p.FilePath)
+		}
+		p.Repo = g.targets[0]
+		return true
+	}
+	// No target configured: the PR arm is off. The proposal still reaches
+	// Discord, and the boundary check refuses to write it anywhere.
+	p.Repo = named
+	return true
 }
