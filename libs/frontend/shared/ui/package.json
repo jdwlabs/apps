@@ -3,10 +3,10 @@
   "version": "1.1.10",
   "private": true,
   "peerDependencies": {
-    "@angular/common": "22.0.7",
-    "@angular/core": "22.0.7",
-    "@angular/material": "22.0.5",
-    "@angular/router": "22.0.7",
+    "@angular/common": "22.1.2",
+    "@angular/core": "22.1.2",
+    "@angular/material": "22.1.2",
+    "@angular/router": "22.1.2",
     "@jdw/frontend-shared-util": "1.0.7",
     "ag-grid-community": "^36.0.0"
   },

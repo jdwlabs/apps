@@ -7,7 +7,7 @@ plugins {
 	id("org.springframework.boot") version "4.1.0"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("maven-publish")
-	id("com.google.cloud.tools.jib") version "3.4.5"
+	id("com.google.cloud.tools.jib") version "3.5.4"
 	id("dev.nx.gradle.project-graph") version "0.1.24"
 }
 
@@ -58,10 +58,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-aspectj")
-	implementation("io.jsonwebtoken:jjwt-api:0.12.5")
-	implementation("io.jsonwebtoken:jjwt-impl:0.12.5")
-	implementation("io.jsonwebtoken:jjwt-jackson:0.12.5")
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+	implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+	implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
+	implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
 	annotationProcessor("org.projectlombok:lombok")
