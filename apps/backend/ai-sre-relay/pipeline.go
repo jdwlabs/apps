@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
 	"time"
@@ -178,10 +179,20 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 
 	var prLink *PRLink
 	if patch != nil {
-		if link, gerr := p.github.OpenPR(ctx, *patch, issue); gerr != nil {
-			log.Error("github pr failed", "err", gerr)
-		} else {
+		switch link, gerr := p.github.OpenPR(ctx, *patch, issue); {
+		case gerr == nil:
 			prLink = &link
+		case errors.Is(gerr, ErrRepoNotAllowed):
+			// Not a transport hiccup: a complete remediation was produced and
+			// then thrown away because it addressed the wrong repository. It
+			// gets its own message and the proposed repo as a field so a run of
+			// them is greppable and countable, rather than reading as one more
+			// flaky GitHub call.
+			p.counters.reposRejected.Add(1)
+			log.Error("remediation discarded: proposed repository is not allowlisted",
+				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
+		default:
+			log.Error("github pr failed", "err", gerr)
 		}
 	}
 

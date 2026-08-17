@@ -7,11 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 )
@@ -121,14 +123,33 @@ func NewGitHubClient(apiBase, token string, allowedRepos []string, hc *http.Clie
 	return &GitHubClient{apiBase: apiBase, token: token, allowed: allowed, hc: hc}
 }
 
+// ErrRepoNotAllowed marks the allowlist refusal specifically, so callers can
+// report a discarded remediation as its own outcome instead of folding it into
+// the generic "GitHub call failed" bucket where it reads as transient.
+var ErrRepoNotAllowed = errors.New("github: repo is not allowlisted")
+
+// allowedList renders the allowed set for an operator-facing message. Sorted,
+// because a map's order would make the same refusal look different each time.
+func (g *GitHubClient) allowedList() string {
+	names := make([]string, 0, len(g.allowed))
+	for r := range g.allowed {
+		names = append(names, r)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ",")
+}
+
 // checkRepo fails closed: an empty allowlist disables the PR arm entirely
-// rather than falling back to whatever the model named.
+// rather than falling back to whatever the model named. The refusal names both
+// sides — what was proposed and what was permitted — because the difference is
+// the whole diagnosis, and without it a systematic mismatch is indistinguishable
+// from a pipeline that simply never had work to do.
 func (g *GitHubClient) checkRepo(repo string) error {
 	if len(g.allowed) == 0 {
 		return fmt.Errorf("github: no repo allowlist configured; refusing to open a PR")
 	}
 	if _, ok := g.allowed[repo]; !ok {
-		return fmt.Errorf("github: repo %q is not allowlisted", repo)
+		return fmt.Errorf("%w: proposed %q, allowed [%s]", ErrRepoNotAllowed, repo, g.allowedList())
 	}
 	return nil
 }

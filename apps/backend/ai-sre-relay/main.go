@@ -67,23 +67,25 @@ func main() {
 		env("LITELLM_MODEL", "claude-sonnet"),
 		llmc,
 	)
+	// Names the repositories a remediation may target and bounds where it may
+	// land — the same list drives both, so the model is told the destination
+	// instead of guessing it and the boundary check still refuses anything
+	// else. Unset disables the PR arm rather than trusting a model-named repo.
+	allowedRepos := splitList(os.Getenv("GITHUB_REPO_ALLOWLIST"))
+	if len(allowedRepos) == 0 {
+		log.Warn("GITHUB_REPO_ALLOWLIST unset; remediation PRs are disabled")
+	}
 	patchGen := NewPatchGenerator(
 		env("LITELLM_URL", "http://platform-litellm.ai-sre.svc.cluster.local:4000/v1"),
 		mustEnv("LITELLM_KEY"),
 		env("LITELLM_MODEL", "claude-sonnet"),
-		0.75, llmc,
+		0.75, allowedRepos, log, llmc,
 	)
 	jiraURL := mustEnv("JIRA_URL")
 	discord := NewDiscordNotifier(mustEnv("DISCORD_WEBHOOK_URL"), jiraURL, hc)
 	// "Task" not "Bug": the target project's type scheme has no Bug type and
 	// Jira rejects creates with an unknown type (400).
 	jira := NewJiraClient(jiraURL, mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), env("JIRA_ISSUE_TYPE", "Task"), hc)
-	// Bounds where a model-authored patch may be written. Unset disables the
-	// PR arm rather than trusting the repo the model names.
-	allowedRepos := splitList(os.Getenv("GITHUB_REPO_ALLOWLIST"))
-	if len(allowedRepos) == 0 {
-		log.Warn("GITHUB_REPO_ALLOWLIST unset; remediation PRs are disabled")
-	}
 	github := NewGitHubClient(env("GITHUB_API", "https://api.github.com"), mustEnv("GITHUB_TOKEN"), allowedRepos, hc)
 
 	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)

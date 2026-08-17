@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -73,6 +74,33 @@ func TestGitHubOpenPRRejectsRepo(t *testing.T) {
 				t.Fatal("rejected patch still reached the GitHub API")
 			}
 		})
+	}
+}
+
+// A refusal that names only one side of the mismatch leaves an operator unable
+// to tell a hallucinated target from a misconfigured allowlist.
+func TestGitHubRepoRefusalNamesBothSides(t *testing.T) {
+	g := NewGitHubClient("http://unused", "ghtok", []string{"jdwlabs/platform", "jdwlabs/deployments"}, nil)
+	err := g.checkRepo("example/gitops")
+	if !errors.Is(err, ErrRepoNotAllowed) {
+		t.Fatalf("refusal is not identifiable as an allowlist rejection: %v", err)
+	}
+	for _, want := range []string{"example/gitops", "jdwlabs/platform", "jdwlabs/deployments"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("refusal omits %q: %v", want, err)
+		}
+	}
+}
+
+// An empty allowlist is a configuration state, not a bad proposal, so it must
+// not masquerade as one.
+func TestGitHubEmptyAllowlistIsNotARepoRejection(t *testing.T) {
+	err := NewGitHubClient("http://unused", "ghtok", nil, nil).checkRepo("jdwlabs/platform")
+	if err == nil {
+		t.Fatal("expected the arm to be disabled")
+	}
+	if errors.Is(err, ErrRepoNotAllowed) {
+		t.Fatalf("unconfigured allowlist reported as a rejected proposal: %v", err)
 	}
 }
 
