@@ -91,9 +91,16 @@ func main() {
 	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)
 
 	workers := envInt("MAX_CONCURRENT", 4)
-	queueSize := envInt("QUEUE_SIZE", 64)
+	// The queue only has to keep workers fed between HTTP accept and pickup;
+	// it cannot buy freshness, because depth costs latency at the drain rate
+	// (workers divided by investigation time, which runs into minutes). Depth
+	// beyond a couple of worker-rounds just converts a refusal the sender
+	// would retry into an investigation delivered long after the incident it
+	// describes. Overflow is held by the sender instead, which is durable and
+	// bounded; this buffer is not.
+	queueSize := envInt("QUEUE_SIZE", 2*workers)
 	perAlertTO := time.Duration(envInt("INVESTIGATION_TIMEOUT_SECONDS", 240)) * time.Second
-	disp := newDispatcher(pipeline, workers, queueSize, perAlertTO, log)
+	disp := newDispatcher(pipeline, workers, queueSize, perAlertTO, pipeline.Counters(), log)
 
 	webhookToken := os.Getenv("WEBHOOK_TOKEN")
 	if webhookToken == "" {

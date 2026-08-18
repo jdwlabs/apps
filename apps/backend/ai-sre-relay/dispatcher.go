@@ -21,6 +21,7 @@ type dispatcher struct {
 	handler    handler
 	queue      chan Alert
 	perAlertTO time.Duration
+	counters   *counters
 	log        *slog.Logger
 	wg         sync.WaitGroup
 
@@ -33,11 +34,12 @@ type dispatcher struct {
 	inflight map[string]struct{}
 }
 
-func newDispatcher(h handler, workers, queueSize int, perAlertTO time.Duration, log *slog.Logger) *dispatcher {
+func newDispatcher(h handler, workers, queueSize int, perAlertTO time.Duration, c *counters, log *slog.Logger) *dispatcher {
 	d := &dispatcher{
 		handler:    h,
 		queue:      make(chan Alert, queueSize),
 		perAlertTO: perAlertTO,
+		counters:   c,
 		log:        log,
 		inflight:   map[string]struct{}{},
 	}
@@ -78,9 +80,13 @@ func (d *dispatcher) process(a Alert) {
 
 // enqueue submits an alert without blocking the HTTP response. A fingerprint
 // already queued or under investigation is coalesced (accepted but not
-// re-queued). It returns false (and logs) when the queue is saturated;
-// Alertmanager re-sends on repeat_interval and Jira dedup absorbs the repeat,
-// so a drop is recoverable, not silent.
+// re-queued).
+//
+// It returns false when the queue is saturated. Nothing in this process holds
+// a rejected alert, so the caller must turn false into a non-2xx: only the
+// sender still has a copy, and only a failed delivery makes it re-send. The
+// newest alert is the one refused rather than an older queued one, because the
+// queued alerts were already acknowledged and no longer exist anywhere else.
 func (d *dispatcher) enqueue(a Alert) bool {
 	if a.Fingerprint != "" {
 		d.mu.Lock()
@@ -98,8 +104,10 @@ func (d *dispatcher) enqueue(a Alert) bool {
 		return true
 	default:
 		d.release(a)
-		d.log.Error("investigation queue full; dropping alert (alertmanager will retry)",
-			"fingerprint", a.Fingerprint, "alert", a.Name())
+		d.counters.alertsRejected.Add(1)
+		d.log.Error("investigation queue full; refusing alert so the sender retries",
+			"fingerprint", a.Fingerprint, "alert", a.Name(),
+			"queue_size", cap(d.queue))
 		return false
 	}
 }
