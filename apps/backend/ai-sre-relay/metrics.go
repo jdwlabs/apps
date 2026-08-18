@@ -8,11 +8,11 @@ import (
 
 // counters is the relay's own operational signal. Skipping a repeat is
 // indistinguishable from a stalled pipeline unless both outcomes are counted,
-// so the ratio between these two is the thing worth alerting on.
+// so the ratio between the run and skip counts is the thing worth alerting on.
 //
 // Written by hand in the Prometheus text exposition format: the relay carries
-// no metrics dependency today, and two counters do not justify adding one to a
-// 32Mi replica.
+// no metrics dependency today, and this handful of counters does not justify
+// adding one to a 32Mi replica.
 type counters struct {
 	investigationsRun atomic.Int64
 	repeatsSkipped    atomic.Int64
@@ -21,6 +21,12 @@ type counters struct {
 	// and "every PR this arm proposed was aimed somewhere it may not write" —
 	// two states that look identical from the outside as a PR count of zero.
 	reposRejected atomic.Int64
+	// alertsRejected counts alerts refused at the door because the queue was
+	// full. Every other counter here is incremented from inside the pipeline,
+	// which a rejected alert never reaches, so without this one an overflow is
+	// invisible to Prometheus and only a burst of unread ERROR lines marks the
+	// coverage gap.
+	alertsRejected atomic.Int64
 }
 
 func (c *counters) writeTo(w io.Writer) {
@@ -33,4 +39,7 @@ func (c *counters) writeTo(w io.Writer) {
 	fmt.Fprint(w, "# HELP ai_sre_relay_repo_rejections_total Remediations discarded because the proposed repository was not allowlisted.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_repo_rejections_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_repo_rejections_total %d\n", c.reposRejected.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_alerts_rejected_total Firing alerts refused because the investigation queue was full; the webhook answered 503 so the sender retries.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_alerts_rejected_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_alerts_rejected_total %d\n", c.alertsRejected.Load())
 }

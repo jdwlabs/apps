@@ -1,20 +1,37 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
-type fakeEnqueuer struct{ got []Alert }
+// capacity is the number of alerts this enqueuer accepts before refusing, so a
+// test can drive the overflow branch without standing up a worker pool.
+// A negative capacity accepts everything.
+type fakeEnqueuer struct {
+	got      []Alert
+	capacity int
+}
 
-func (f *fakeEnqueuer) enqueue(a Alert) bool { f.got = append(f.got, a); return true }
+func (f *fakeEnqueuer) enqueue(a Alert) bool {
+	if f.capacity >= 0 && len(f.got) >= f.capacity {
+		return false
+	}
+	f.got = append(f.got, a)
+	return true
+}
+
+func acceptAll() *fakeEnqueuer { return &fakeEnqueuer{capacity: -1} }
 
 func TestHealthz(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
-	newRouter(&fakeEnqueuer{}, &counters{}, "").ServeHTTP(rr, req)
+	newRouter(acceptAll(), &counters{}, "").ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("healthz = %d, want 200", rr.Code)
 	}
@@ -24,7 +41,7 @@ func TestHealthz(t *testing.T) {
 }
 
 func TestWebhookEnqueuesOnlyFiringAlerts(t *testing.T) {
-	e := &fakeEnqueuer{}
+	e := acceptAll()
 	const payload = `{"alerts":[
 	  {"status":"firing","fingerprint":"f1","labels":{"alertname":"A"}},
 	  {"status":"resolved","fingerprint":"f2","labels":{"alertname":"B"}}
@@ -44,7 +61,7 @@ func TestWebhookEnqueuesOnlyFiringAlerts(t *testing.T) {
 func TestWebhookBadPayload(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader("{not json"))
-	newRouter(&fakeEnqueuer{}, &counters{}, "").ServeHTTP(rr, req)
+	newRouter(acceptAll(), &counters{}, "").ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("code = %d, want 400", rr.Code)
 	}
@@ -55,7 +72,7 @@ func TestWebhookAuth(t *testing.T) {
 	const payload = `{"alerts":[{"status":"firing","fingerprint":"f1","labels":{"alertname":"A"}}]}`
 
 	// Missing token -> 401, nothing enqueued.
-	e := &fakeEnqueuer{}
+	e := acceptAll()
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(payload))
 	newRouter(e, &counters{}, token).ServeHTTP(rr, req)
@@ -67,7 +84,7 @@ func TestWebhookAuth(t *testing.T) {
 	}
 
 	// Correct token -> 202, enqueued.
-	e2 := &fakeEnqueuer{}
+	e2 := acceptAll()
 	rr2 := httptest.NewRecorder()
 	req2 := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(payload))
 	req2.Header.Set("Authorization", "Bearer "+token)
@@ -113,5 +130,94 @@ func TestMetricsExposesBothCounters(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("metrics missing %q in:\n%s", want, body)
 		}
+	}
+}
+
+// A full queue must be reported to the sender as a failed delivery. Answering
+// 202 while discarding the alert retires the sender's only copy, which is how
+// an overflow turns into permanently lost coverage rather than a retry.
+func TestWebhookRefusesBatchWhenQueueFull(t *testing.T) {
+	e := &fakeEnqueuer{capacity: 2}
+	const payload = `{"alerts":[
+	  {"status":"firing","fingerprint":"f1","labels":{"alertname":"A"}},
+	  {"status":"firing","fingerprint":"f2","labels":{"alertname":"B"}},
+	  {"status":"firing","fingerprint":"f3","labels":{"alertname":"C"}}
+	]}`
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(payload))
+	newRouter(e, &counters{}, "").ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("code = %d, want 503 so the sender retries the batch", rr.Code)
+	}
+	if got := rr.Header().Get("Retry-After"); got == "" {
+		t.Error("503 must carry Retry-After")
+	}
+	// Capacity that existed when the batch arrived should still be used; a
+	// rejection late in the batch must not discard the alerts that did fit.
+	if len(e.got) != 2 {
+		t.Fatalf("enqueued %d alerts, want the 2 that fit", len(e.got))
+	}
+}
+
+func TestWebhookAcceptsWhenQueueHasRoom(t *testing.T) {
+	e := &fakeEnqueuer{capacity: 2}
+	const payload = `{"alerts":[
+	  {"status":"firing","fingerprint":"f1","labels":{"alertname":"A"}},
+	  {"status":"resolved","fingerprint":"f2","labels":{"alertname":"B"}}
+	]}`
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(payload))
+	newRouter(e, &counters{}, "").ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("code = %d, want 202", rr.Code)
+	}
+}
+
+// End-to-end over the real dispatcher: the bug this guards against was not a
+// wrong queue size but a return value nobody read, so the assertion has to run
+// through the same wiring production uses — full queue, real refusal, HTTP
+// status, and the counter that makes it visible.
+func TestWebhookOverflowIsRefusedAndCounted(t *testing.T) {
+	release := make(chan struct{})
+	h := handlerFunc(func(_ context.Context, _ Alert) error {
+		<-release // occupy the only worker for the whole test
+		return nil
+	})
+	c := &counters{}
+	d := newDispatcher(h, 1, 1, time.Second, c, silentLogger())
+	// Deferred LIFO: the worker must be released before shutdown waits on it.
+	defer d.shutdown(context.Background())
+	defer close(release)
+	router := newRouter(d, c, "")
+
+	post := func(fingerprint string) int {
+		body := fmt.Sprintf(`{"alerts":[{"status":"firing","fingerprint":%q,"labels":{"alertname":"Storm"}}]}`, fingerprint)
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(body)))
+		return rr.Code
+	}
+
+	if code := post("f1"); code != http.StatusAccepted { // picked up by the worker
+		t.Fatalf("first post = %d, want 202", code)
+	}
+	time.Sleep(20 * time.Millisecond)
+	if code := post("f2"); code != http.StatusAccepted { // fills the size-1 queue
+		t.Fatalf("second post = %d, want 202", code)
+	}
+	if code := post("f3"); code != http.StatusServiceUnavailable {
+		t.Fatalf("overflowing post = %d, want 503", code)
+	}
+
+	if got := c.alertsRejected.Load(); got != 1 {
+		t.Fatalf("alertsRejected = %d, want 1", got)
+	}
+	// The refusal must also be legible in the exposition output, since that is
+	// the only surface Prometheus reads.
+	var buf strings.Builder
+	c.writeTo(&buf)
+	if !strings.Contains(buf.String(), "ai_sre_relay_alerts_rejected_total 1") {
+		t.Fatalf("rejection counter missing from /metrics output:\n%s", buf.String())
 	}
 }
