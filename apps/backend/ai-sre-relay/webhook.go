@@ -4,11 +4,20 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 // maxWebhookBytes caps the request body. Alertmanager batches are small; the
 // cap guards the memory-capped replica against an oversized/malicious payload.
 const maxWebhookBytes = 1 << 20 // 1 MiB
+
+// retryAfterSeconds advertises roughly one worker-slot turnover, so a sender
+// that honours the hint returns when capacity plausibly exists rather than
+// hammering a queue that frees a slot only every couple of minutes. It is
+// advisory only: Alertmanager ignores the header entirely and applies its own
+// exponential backoff, so nothing here may depend on it being read. It still
+// earns its place for the plain-curl caller, whose retry flag does honour it.
+const retryAfterSeconds = 120
 
 // enqueuer is the seam to the worker pool; the HTTP layer depends only on this.
 type enqueuer interface {
@@ -34,12 +43,29 @@ func newRouter(e enqueuer, c *counters, webhookToken string) http.Handler {
 			http.Error(w, "bad payload", http.StatusBadRequest)
 			return
 		}
-		// Return 202 fast so Alertmanager is not held open for the full
+		// Answer fast so the sender is not held open for the full
 		// investigation; the worker pool does the slow work asynchronously.
+		// The rest of the batch is still offered after a rejection — capacity
+		// freed mid-loop should be used rather than wasted.
+		accepted := true
 		for _, a := range payload.Alerts {
-			if a.Status == "firing" {
-				e.enqueue(a)
+			if a.Status == "firing" && !e.enqueue(a) {
+				accepted = false
 			}
+		}
+		// A 2xx tells the sender the batch is handled and retires its only
+		// copy; answering 503 is what converts a rejection into a redelivery.
+		// It must be 5xx specifically — Alertmanager's webhook receiver retries
+		// 5xx but treats 429 as a permanent failure, so the intuitive
+		// "too many requests" reply would discard the alert outright.
+		// Re-sending the whole batch is safe because both dedup layers treat a
+		// redelivered alert as a repeat: fingerprints still queued or
+		// investigating are coalesced, and completed ones are matched to their
+		// open ticket.
+		if !accepted {
+			w.Header().Set("Retry-After", strconv.Itoa(retryAfterSeconds))
+			http.Error(w, "investigation queue full", http.StatusServiceUnavailable)
+			return
 		}
 		w.WriteHeader(http.StatusAccepted)
 	})
