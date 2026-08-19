@@ -16,9 +16,17 @@ import (
 type fakeEnqueuer struct {
 	got      []Alert
 	capacity int
+	// refuse names fingerprints rejected regardless of capacity. The capacity
+	// model alone is monotonic — once full it never accepts again — so it can
+	// only ever refuse a suffix of a batch and cannot express a slot freeing
+	// mid-loop.
+	refuse map[string]bool
 }
 
 func (f *fakeEnqueuer) enqueue(a Alert) bool {
+	if f.refuse[a.Fingerprint] {
+		return false
+	}
 	if f.capacity >= 0 && len(f.got) >= f.capacity {
 		return false
 	}
@@ -157,6 +165,34 @@ func TestWebhookRefusesBatchWhenQueueFull(t *testing.T) {
 	// rejection late in the batch must not discard the alerts that did fit.
 	if len(e.got) != 2 {
 		t.Fatalf("enqueued %d alerts, want the 2 that fit", len(e.got))
+	}
+}
+
+// A refusal must not abandon the rest of the batch. A worker finishing
+// mid-loop frees a slot the later alerts can still take, and stopping at the
+// first refusal would discard that capacity and enlarge the retry the sender
+// has to make. The refused fingerprint sits in the middle so that accepting
+// what follows it cannot be explained by capacity ordering alone.
+func TestWebhookOffersRestOfBatchAfterRefusal(t *testing.T) {
+	e := &fakeEnqueuer{capacity: -1, refuse: map[string]bool{"f2": true}}
+	const payload = `{"alerts":[
+	  {"status":"firing","fingerprint":"f1","labels":{"alertname":"A"}},
+	  {"status":"firing","fingerprint":"f2","labels":{"alertname":"B"}},
+	  {"status":"firing","fingerprint":"f3","labels":{"alertname":"C"}}
+	]}`
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(payload))
+	newRouter(e, &counters{}, "").ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("code = %d, want 503 because one alert was refused", rr.Code)
+	}
+	var seen []string
+	for _, a := range e.got {
+		seen = append(seen, a.Fingerprint)
+	}
+	if len(seen) != 2 || seen[0] != "f1" || seen[1] != "f3" {
+		t.Fatalf("enqueued %v, want [f1 f3] — f3 trails the refused f2", seen)
 	}
 }
 

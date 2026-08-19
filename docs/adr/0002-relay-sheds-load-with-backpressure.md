@@ -149,6 +149,14 @@ not from instrumentation. Backpressure is what makes it safe not to know.
   digest bumped. `QUEUE_SIZE` is unset in the manifest, so the code default
   governs and no manifest env var is needed; the deployment carries a pinned
   digest, so nothing changes until that is rolled forward.
+- A refused batch is retried whole, and an accepted alert is only coalesced
+  while it is still queued or in flight. Alertmanager's ~5 minutes of retries
+  against 433–600s investigations means a retry can land after one completes,
+  so the alert is re-investigated and caught by Jira dedup rather than the
+  cheap in-flight check — a duplicated LLM call, not a duplicated ticket. That
+  is accepted deliberately: the wasted spend is bounded by the retry budget and
+  falls on the batch that overflowed, which is a better failure than the silent
+  202 it replaces.
 - Throughput is untouched, and remains the real ceiling. If storm coverage is
   still inadequate once refusals are visible, the lever is `MAX_CONCURRENT`
   (bounded by the 32Mi limit) or investigation latency — not capacity.
