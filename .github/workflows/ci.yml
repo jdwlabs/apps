@@ -191,8 +191,41 @@ jobs:
       # The runner image ships no Playwright browsers and the e2e target sets
       # skipInstall, so the suite would have nothing to launch. Only chromium is
       # fetched because playwright.config.ts declares that single project.
+      #
+      # No `--with-deps`: on this image every library it checks already reports
+      # "already the newest version" — the image ships Chrome, so chromium's
+      # shared-library set comes with it — and the only thing it actually
+      # installs is a 21 MB CJK/Cyrillic/bitmap font block that a Latin-only UI
+      # never renders. Fetching that block cost 7m22s at 47 kB/s on a *green*
+      # run, and when the mirror stalled outright it ran to the job cap, so the
+      # suite never started and the required aggregate gate went red on PRs and
+      # on main alike. Playwright still validates its library set at launch, so
+      # an image that later drops one fails loudly naming the library rather
+      # than silently mis-rendering.
+      #
+      # The CDN fetch that remains takes ~15s, so it is downloaded fresh rather
+      # than cached — a cache entry would cost more to restore and invalidate
+      # than it saves. It is retried under its own wall clock so a hung
+      # connection is killed and re-dialled in minutes instead of consuming the
+      # job budget; a genuine failure exhausts the attempts and exits non-zero
+      # carrying playwright's own error.
       - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            status=0
+            timeout --kill-after=30s 3m pnpm exec playwright install chromium || status=$?
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::playwright install failed on all $attempt attempts (exit $status)"
+              exit "$status"
+            fi
+            echo "::warning::playwright install attempt $attempt failed (exit $status); retrying"
+            sleep $((attempt * 15))
+          done
       # `affected` keeps this off backend- and docs-only changes: platform-e2e
       # declares the four frontends as implicit dependencies, so a Go-only diff
       # resolves to the Go project alone and no shard runs a test.
