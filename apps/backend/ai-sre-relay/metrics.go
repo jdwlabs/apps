@@ -21,11 +21,14 @@ type counters struct {
 	// and "every PR this arm proposed was aimed somewhere it may not write" —
 	// two states that look identical from the outside as a PR count of zero.
 	reposRejected atomic.Int64
-	// alertsRejected counts alerts refused at the door because the queue was
-	// full. Every other counter here is incremented from inside the pipeline,
-	// which a rejected alert never reaches, so without this one an overflow is
-	// invisible to Prometheus and only a burst of unread ERROR lines marks the
-	// coverage gap.
+	// alertsRejected counts refusal responses, not distinct alerts: a sender
+	// retrying one alert increments it once per attempt, so during a storm it
+	// runs an order of magnitude above the number of alerts actually affected.
+	// Read it as refusal pressure and alert on its rate, never as a count of
+	// lost coverage. It is still the only signal there is — every other counter
+	// here is incremented from inside the pipeline, which a refused alert never
+	// reaches, so without it an overflow is invisible to Prometheus and only a
+	// burst of unread ERROR lines marks the gap.
 	alertsRejected atomic.Int64
 }
 
@@ -39,7 +42,7 @@ func (c *counters) writeTo(w io.Writer) {
 	fmt.Fprint(w, "# HELP ai_sre_relay_repo_rejections_total Remediations discarded because the proposed repository was not allowlisted.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_repo_rejections_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_repo_rejections_total %d\n", c.reposRejected.Load())
-	fmt.Fprint(w, "# HELP ai_sre_relay_alerts_rejected_total Firing alerts refused because the investigation queue was full; the webhook answered 503 so the sender retries.\n")
+	fmt.Fprint(w, "# HELP ai_sre_relay_alerts_rejected_total Refusal responses returned because the investigation queue was full, including repeated sender retries of the same alert; not a count of distinct alerts.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_alerts_rejected_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_alerts_rejected_total %d\n", c.alertsRejected.Load())
 }

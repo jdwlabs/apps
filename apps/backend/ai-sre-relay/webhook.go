@@ -11,13 +11,14 @@ import (
 // cap guards the memory-capped replica against an oversized/malicious payload.
 const maxWebhookBytes = 1 << 20 // 1 MiB
 
-// retryAfterSeconds advertises roughly one worker-slot turnover, so a sender
-// that honours the hint returns when capacity plausibly exists rather than
-// hammering a queue that frees a slot only every couple of minutes. It is
+// retryAfterSeconds is a floor, not an estimate: the earliest a worker slot
+// can plausibly free, taken from the low end of the 433-600s investigation
+// latency recorded in docs/adr/0002. Returning sooner cannot find capacity, so
+// the hint spends a limited retry budget where it might actually land. It is
 // advisory only: Alertmanager ignores the header entirely and applies its own
 // exponential backoff, so nothing here may depend on it being read. It still
 // earns its place for the plain-curl caller, whose retry flag does honour it.
-const retryAfterSeconds = 120
+const retryAfterSeconds = 450
 
 // enqueuer is the seam to the worker pool; the HTTP layer depends only on this.
 type enqueuer interface {
