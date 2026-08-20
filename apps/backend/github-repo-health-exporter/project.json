@@ -1,0 +1,63 @@
+{
+  "name": "github-repo-health-exporter",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/backend/github-repo-health-exporter",
+  "tags": ["type:app", "scope:github-repo-health-exporter", "framework:go"],
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
+    }
+  },
+  "targets": {
+    "build": {
+      "executor": "@nx-go/nx-go:build",
+      "options": {
+        "main": ".",
+        "outputPath": "../../../dist/apps/backend/github-repo-health-exporter/github-repo-health-exporter"
+      }
+    },
+    "serve": {
+      "executor": "@nx-go/nx-go:serve",
+      "options": {
+        "main": "."
+      }
+    },
+    "test": {
+      "executor": "@nx-go/nx-go:test"
+    },
+    "lint": {
+      "executor": "@nx-go/nx-go:lint"
+    },
+    "tidy": {
+      "executor": "@nx-go/nx-go:tidy"
+    },
+    "build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "bash scripts/build-image.sh github-repo-health-exporter \"$(bash scripts/resolve-version.sh github-repo-health-exporter)\" {projectRoot}/Dockerfile \"Cross-repo CI health exporter for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "local-build-image": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker buildx build -f {projectRoot}/Dockerfile.local -t jdwlabs/github-repo-health-exporter:latest --load .",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "download": {
+      "command": "go mod download"
+    }
+  }
+}
