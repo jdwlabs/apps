@@ -9,7 +9,7 @@ package main
 // failed over two weeks with nobody alerted). The remaining metrics in the
 // originating investigation's proposed surface — PR review bypass, ruleset
 // drift, missing required checks, open security alerts, release staleness —
-// are a separate slice; see the exporter's README.
+// are a separate slice, deferred out of this first cut.
 
 // ciStat is one (repo, workflow) pair's computed CI health.
 type ciStat struct {

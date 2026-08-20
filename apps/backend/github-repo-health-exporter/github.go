@@ -67,11 +67,10 @@ func b64url(b []byte) string {
 }
 
 // signAppJWT builds the RS256 App-authentication JWT GitHub's App API
-// requires (https://docs.github.com/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app).
-// Signed with crypto/rsa directly rather than a JWT library: three stdlib
-// packages (crypto/rsa, crypto/x509, encoding/pem) already cover parsing the
-// key and PKCS#1v1.5-signing the token, and this is the only JWT this binary
-// ever produces.
+// requires. Signed with crypto/rsa directly rather than a JWT library: three
+// stdlib packages (crypto/rsa, crypto/x509, encoding/pem) already cover
+// parsing the key and PKCS#1v1.5-signing the token, and this is the only JWT
+// this binary ever produces.
 func signAppJWT(appID string, key *rsa.PrivateKey, now time.Time) (string, error) {
 	iat := now.Add(-appJWTClockSkew)
 	header := `{"alg":"RS256","typ":"JWT"}`
