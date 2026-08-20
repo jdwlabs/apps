@@ -5,5 +5,6 @@ FROM gcr.io/distroless/base-debian12:nonroot AS runner
 WORKDIR /app
 COPY ./dist/apps/backend/github-repo-health-exporter/github-repo-health-exporter .
 
+USER nonroot:nonroot
 EXPOSE 9090
 ENTRYPOINT ["/app/github-repo-health-exporter"]
