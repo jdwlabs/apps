@@ -99,9 +99,24 @@ func safeSummary(s string, maxRunes int) string {
 	return out
 }
 
+// GitHubTokenSource supplies the bearer token GitHubClient presents on every
+// request. It is consulted per-request rather than fixed at construction, so
+// an installation token can be minted fresh as it nears expiry instead of
+// being read once at startup and going stale under the client's feet.
+type GitHubTokenSource interface {
+	Token(ctx context.Context) (string, error)
+}
+
+// StaticGitHubToken is a GitHubTokenSource that always returns the same
+// value. It is what the tests use, and the fallback for running against a
+// plain PAT when no GitHub App identity is configured.
+type StaticGitHubToken string
+
+func (s StaticGitHubToken) Token(context.Context) (string, error) { return string(s), nil }
+
 type GitHubClient struct {
 	apiBase string // https://api.github.com (override in tests)
-	token   string
+	tokens  GitHubTokenSource
 	// allowed bounds which repositories a patch may target. Repo, file path,
 	// and file body all originate from a model prompted with alert
 	// annotations and Holmes output — untrusted text — so without this the
@@ -110,7 +125,7 @@ type GitHubClient struct {
 	hc      *http.Client
 }
 
-func NewGitHubClient(apiBase, token string, allowedRepos []string, hc *http.Client) *GitHubClient {
+func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos []string, hc *http.Client) *GitHubClient {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
@@ -120,7 +135,7 @@ func NewGitHubClient(apiBase, token string, allowedRepos []string, hc *http.Clie
 			allowed[r] = struct{}{}
 		}
 	}
-	return &GitHubClient{apiBase: apiBase, token: token, allowed: allowed, hc: hc}
+	return &GitHubClient{apiBase: apiBase, tokens: tokens, allowed: allowed, hc: hc}
 }
 
 // ErrRepoNotAllowed marks the allowlist refusal specifically, so callers can
@@ -190,7 +205,11 @@ func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+g.token)
+	token, err := g.tokens.Token(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("github: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	return g.hc.Do(req)
 }
