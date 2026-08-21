@@ -184,6 +184,30 @@ GitHub Actions on `ubuntu-latest` (GitHub-hosted):
 
 Target resolution deliberately precedes `nx release` because tagging is irreversible and graph resolution is not. Once tags exist, the job must fail rather than produce an empty matrix — a skipped `deliver` reads as benign on the run summary while leaving versions tagged with no image behind them. `deliver` and `dispatch-e2e` gate on the `released` output, so "nothing to release" and "detection broke" are distinguishable.
 
+## Concurrency: one worktree, one branch, one agent invocation
+
+Multiple AI agents may operate against this repo at the same time. Never
+work on `main`/`master`, and create a worktree before touching code. For
+humans this is standing practice; for agents it is a **hard invariant,
+not a convention they can relax**:
+
+- Every agent invocation gets its own worktree and its own branch. Never
+  share a worktree across two concurrent agent sessions, and never reuse
+  one worktree for a second, unrelated task after the first is done —
+  create a fresh one instead.
+- Before rebasing or pushing, re-fetch `origin/main` rather than trusting
+  the worktree's cached view of it. A worktree that looks up to date can
+  be stale by the time a concurrent session has pushed.
+- Never assume you are the only agent with a checkout of this repo. Two
+  sessions sharing state is how an unpushed local commit has landed on
+  `main` minutes after a second, unrelated session already pushed — the
+  failure is silent until the histories are compared.
+
+A shared mutable resource (a worktree, or a branch) needs exclusive
+ownership per in-flight task, or concurrent writers eventually race. See
+`platform/docs/adr/0015-agentic-contribution-identity-and-review-gates.md`
+("Concurrency and isolation") for the fuller rationale.
+
 ## Autonomy Boundaries
 
 Safe to run autonomously: any `pnpm exec nx ...` build/lint/test/format target, `docker compose -f scripts/docker/compose.yaml up -d`.
