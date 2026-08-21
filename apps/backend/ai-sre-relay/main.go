@@ -86,7 +86,13 @@ func main() {
 	// "Task" not "Bug": the target project's type scheme has no Bug type and
 	// Jira rejects creates with an unknown type (400).
 	jira := NewJiraClient(jiraURL, mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), env("JIRA_ISSUE_TYPE", "Task"), hc)
-	github := NewGitHubClient(env("GITHUB_API", "https://api.github.com"), mustEnv("GITHUB_TOKEN"), allowedRepos, hc)
+	githubAPI := env("GITHUB_API", "https://api.github.com")
+	githubTokens, err := newGitHubTokenSource(githubAPI, hc)
+	if err != nil {
+		log.Error("github token source", "err", err)
+		os.Exit(1)
+	}
+	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, hc)
 
 	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)
 

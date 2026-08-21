@@ -49,7 +49,7 @@ func recordingGitHub(t *testing.T) (*httptest.Server, *[]ghCall) {
 }
 
 func constrainedClient(srv *httptest.Server) *GitHubClient {
-	return NewGitHubClient(srv.URL, "ghtok", []string{"jdwlabs/platform"}, srv.Client())
+	return NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, srv.Client())
 }
 
 // The arm must never write to the branch it bases the PR on. The model supplies
