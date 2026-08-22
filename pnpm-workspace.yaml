@@ -22,7 +22,7 @@ overrides:
   # below a parent range, and its consumers share the 5.x API.
   'brace-expansion@>=3.0.0': '^5.0.8'
   'esbuild@<0.28.1': '^0.28.1'
-  'fast-uri@<3.1.5': '^3.1.5'
+  'fast-uri@<3.1.5': '^4.0.0'
   'form-data@<4.0.6': '^4.0.6'
   'hono@<4.12.34': '^4.12.34'
   'http-proxy-middleware@2': '^2.0.10'
