@@ -1,5 +1,6 @@
 package com.jdw.usersrole.services;
 
+import com.jdw.usersrole.daos.ProfileIconDao;
 import com.jdw.usersrole.dtos.AddressRequestDTO;
 import com.jdw.usersrole.dtos.ProfileCreateRequestDTO;
 import com.jdw.usersrole.dtos.ProfileUpdateRequestDTO;
@@ -34,6 +35,7 @@ public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
+    private final ProfileIconDao profileIconDao;
 
     private static void logError(IOException e) {
         log.error("Could not update icon: error={}", e.toString());
@@ -191,12 +193,8 @@ public class ProfileService {
     @ExecutionTimeLogger
     public byte[] getIcon(@NotNull Long profileId) {
         log.info("Getting profile icon with profile id {}", profileId);
-        Profile currentProfile = profileRepository.findById(profileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile not found with id " + profileId));
-        ProfileIcon currentIcon = currentProfile.icon();
-        if (currentIcon == null) {
-            throw new ResourceNotFoundException("Profile icon not found with id " + profileId);
-        }
+        ProfileIcon currentIcon = profileIconDao.findByProfileId(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile icon not found with id " + profileId));
         return currentIcon.icon();
     }
 
