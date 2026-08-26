@@ -1,5 +1,6 @@
 package com.jdw.usersrole.services;
 
+import com.jdw.usersrole.daos.ProfileIconDao;
 import com.jdw.usersrole.dtos.AddressRequestDTO;
 import com.jdw.usersrole.dtos.ProfileCreateRequestDTO;
 import com.jdw.usersrole.dtos.ProfileUpdateRequestDTO;
@@ -40,6 +41,8 @@ class ProfileServiceTests {
     private ProfileRepository profileRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private ProfileIconDao profileIconDao;
     @Mock
     private MultipartFile multipartFile;
     @InjectMocks
@@ -294,34 +297,24 @@ class ProfileServiceTests {
 
     @Test
     void getIcon_shouldReturnIcon_whenProfileAndIconExist() {
-        profile = Profile.builder()
-                .id(1L)
-                .icon(profileIcon)
-                .build();
-
-        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
+        when(profileIconDao.findByProfileId(1L)).thenReturn(Optional.of(profileIcon));
 
         byte[] iconData = profileService.getIcon(1L);
 
         assertNotNull(iconData);
-        verify(profileRepository, times(1)).findById(1L);
+        verify(profileIconDao, times(1)).findByProfileId(1L);
     }
 
     @Test
     void getIcon_shouldThrowResourceNotFoundException_whenProfileDoesNotExist() {
-        when(profileRepository.findById(1L)).thenReturn(Optional.empty());
+        when(profileIconDao.findByProfileId(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> profileService.getIcon(1L));
     }
 
     @Test
     void getIcon_shouldThrowResourceNotFoundException_whenIconDoesNotExist() {
-        profile = Profile.builder()
-                .id(1L)
-                .icon(null)
-                .build();
-
-        when(profileRepository.findById(1L)).thenReturn(Optional.of(profile));
+        when(profileIconDao.findByProfileId(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> profileService.getIcon(1L));
     }
