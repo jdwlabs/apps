@@ -109,12 +109,39 @@ class ProfileServiceTests {
 
     @Test
     void getProfiles_shouldReturnAllProfiles() {
-        when(profileRepository.findAll()).thenReturn(List.of(profile));
+        when(profileRepository.findAll(0, 100)).thenReturn(List.of(profile));
 
-        List<Profile> profiles = profileService.getProfiles();
+        List<Profile> profiles = profileService.getProfiles(0, 100);
 
         assertEquals(1, profiles.size());
-        verify(profileRepository, times(1)).findAll();
+        verify(profileRepository, times(1)).findAll(0, 100);
+    }
+
+    @Test
+    void getProfiles_shouldClampNegativePageToZero() {
+        when(profileRepository.findAll(0, 100)).thenReturn(List.of());
+
+        profileService.getProfiles(-5, 100);
+
+        verify(profileRepository).findAll(0, 100);
+    }
+
+    @Test
+    void getProfiles_shouldCapSizeAtMaxPageSize() {
+        when(profileRepository.findAll(0, 500)).thenReturn(List.of());
+
+        profileService.getProfiles(0, 10_000);
+
+        verify(profileRepository).findAll(0, 500);
+    }
+
+    @Test
+    void getProfiles_shouldFloorNonPositiveSizeToOne() {
+        when(profileRepository.findAll(0, 1)).thenReturn(List.of());
+
+        profileService.getProfiles(0, 0);
+
+        verify(profileRepository).findAll(0, 1);
     }
 
     @Test

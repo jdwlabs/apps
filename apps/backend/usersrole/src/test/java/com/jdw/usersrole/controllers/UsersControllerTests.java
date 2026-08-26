@@ -55,14 +55,27 @@ class UsersControllerTests {
     @Test
     void getAllUsers_shouldReturnListOfUsers() {
         User mockUser = buildMockUser();
-        when(userService.getAllUsers()).thenReturn(List.of(mockUser));
+        when(userService.getAllUsers(0, 100)).thenReturn(List.of(mockUser));
 
-        ResponseEntity<List<User>> response = usersController.getAllUsers();
+        ResponseEntity<List<User>> response = usersController.getAllUsers(0, 100);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
         assertEquals(mockUser, response.getBody().getFirst());
+    }
+
+    @Test
+    void getAllUsers_shouldPassThroughCustomPageAndSize() {
+        User mockUser = buildMockUser();
+        when(userService.getAllUsers(2, 25)).thenReturn(List.of(mockUser));
+
+        ResponseEntity<List<User>> response = usersController.getAllUsers(2, 25);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        verify(userService).getAllUsers(2, 25);
     }
 
     @Test

@@ -175,18 +175,18 @@ class UserRepositoryImplTests {
     void findAll_shouldReturnAllUsersWithProfiles() {
         User mockUser = buildMockUser();
 
-        when(userDao.findAll()).thenReturn(List.of(mockUser));
+        when(userDao.findAll(0, 100)).thenReturn(List.of(mockUser));
         when(userRoleDao.findByUserId(1L)).thenReturn(List.of());
         when(profileDao.findByUserId(1L)).thenReturn(Optional.of(mockUser.profile()));
         when(addressDao.findByProfileId(1L)).thenReturn(mockUser.profile().addresses().stream().toList());
         when(profileIconDao.findByProfileId(1L)).thenReturn(Optional.of(mockUser.profile().icon()));
 
-        List<User> result = userRepository.findAll();
+        List<User> result = userRepository.findAll(0, 100);
 
         assertEquals(1, result.size());
         assertEquals(mockUser.emailAddress(), result.getFirst().emailAddress());
         assertEquals(mockUser.profile(), result.getFirst().profile());
-        verify(userDao, times(1)).findAll();
+        verify(userDao, times(1)).findAll(0, 100);
         verify(userRoleDao, times(1)).findByUserId(1L);
         verify(profileDao, times(1)).findByUserId(1L);
         verify(addressDao, times(1)).findByProfileId(1L);

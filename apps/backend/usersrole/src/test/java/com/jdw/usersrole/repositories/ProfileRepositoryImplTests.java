@@ -128,17 +128,17 @@ class ProfileRepositoryImplTests {
         Address mockAddress = buildMockAddress();
         ProfileIcon mockProfileIcon = buildMockProfileIcon();
 
-        when(profileDao.findAll()).thenReturn(List.of(mockProfile));
+        when(profileDao.findAll(0, 100)).thenReturn(List.of(mockProfile));
         when(addressDao.findByProfileId(1L)).thenReturn(List.of(mockAddress));
         when(profileIconDao.findByProfileId(1L)).thenReturn(Optional.of(mockProfileIcon));
 
-        List<Profile> result = profileRepository.findAll();
+        List<Profile> result = profileRepository.findAll(0, 100);
 
         assertEquals(1, result.size());
         assertEquals(mockProfile.firstName(), result.getFirst().firstName());
         assertEquals(1, result.getFirst().addresses().size());
         assertEquals(mockProfileIcon, result.getFirst().icon());
-        verify(profileDao, times(1)).findAll();
+        verify(profileDao, times(1)).findAll(0, 100);
         verify(addressDao, times(1)).findByProfileId(1L);
         verify(profileIconDao, times(1)).findByProfileId(1L);
     }

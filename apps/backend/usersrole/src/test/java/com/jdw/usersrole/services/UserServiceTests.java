@@ -44,13 +44,41 @@ class UserServiceTests {
                 .emailAddress("user@jdw.com")
                 .status(Status.ACTIVE.name())
                 .build();
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        when(userRepository.findAll(0, 100)).thenReturn(List.of(user));
 
-        List<User> users = userService.getAllUsers();
+        List<User> users = userService.getAllUsers(0, 100);
 
         assertNotNull(users);
         assertEquals(1, users.size());
         assertEquals("user@jdw.com", users.getFirst().emailAddress());
+        verify(userRepository).findAll(0, 100);
+    }
+
+    @Test
+    void getAllUsers_ShouldClampNegativePageToZero() {
+        when(userRepository.findAll(0, 100)).thenReturn(List.of());
+
+        userService.getAllUsers(-5, 100);
+
+        verify(userRepository).findAll(0, 100);
+    }
+
+    @Test
+    void getAllUsers_ShouldCapSizeAtMaxPageSize() {
+        when(userRepository.findAll(0, 500)).thenReturn(List.of());
+
+        userService.getAllUsers(0, 10_000);
+
+        verify(userRepository).findAll(0, 500);
+    }
+
+    @Test
+    void getAllUsers_ShouldFloorNonPositiveSizeToOne() {
+        when(userRepository.findAll(0, 1)).thenReturn(List.of());
+
+        userService.getAllUsers(0, 0);
+
+        verify(userRepository).findAll(0, 1);
     }
 
     @Test

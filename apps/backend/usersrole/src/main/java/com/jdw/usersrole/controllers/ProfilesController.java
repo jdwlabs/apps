@@ -28,9 +28,11 @@ public class ProfilesController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
-    public ResponseEntity<List<Profile>> getProfiles() {
-        log.trace("Getting all profiles");
-        return ResponseEntity.ok(profileService.getProfiles());
+    public ResponseEntity<List<Profile>> getProfiles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+        log.trace("Getting all profiles: page={}, size={}", page, size);
+        return ResponseEntity.ok(profileService.getProfiles(page, size));
     }
 
     @PreAuthorize("hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()")

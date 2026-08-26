@@ -66,10 +66,14 @@ public class UserDaoPostgres implements UserDao {
     }
 
     @Override
-    public List<User> findAll() {
-        log.debug("Find all users");
-        String sql = "SELECT * FROM auth.users";
+    public List<User> findAll(int page, int size) {
+        log.debug("Find all users: page={}, size={}", page, size);
+        // ORDER BY makes LIMIT/OFFSET deterministic across pages — Postgres gives no
+        // ordering guarantee otherwise.
+        String sql = "SELECT * FROM auth.users ORDER BY user_id LIMIT :limit OFFSET :offset";
         return jdbcClient.sql(sql)
+                .param("limit", size)
+                .param("offset", page * size)
                 .query(this::userRowMapper)
                 .list();
     }

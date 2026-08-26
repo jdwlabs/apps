@@ -11,7 +11,7 @@ public interface UserRepository {
 
     Optional<User> findByEmailAddress(String emailAddress);
 
-    List<User> findAll();
+    List<User> findAll(int page, int size);
 
     User save(User user);
 

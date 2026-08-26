@@ -69,10 +69,14 @@ public class ProfileDaoPostgres implements ProfileDao {
     }
 
     @Override
-    public List<Profile> findAll() {
-        log.debug("Find all profiles");
-        String sql = "SELECT * FROM auth.profiles";
+    public List<Profile> findAll(int page, int size) {
+        log.debug("Find all profiles: page={}, size={}", page, size);
+        // ORDER BY makes LIMIT/OFFSET deterministic across pages — Postgres gives no
+        // ordering guarantee otherwise.
+        String sql = "SELECT * FROM auth.profiles ORDER BY profile_id LIMIT :limit OFFSET :offset";
         return jdbcClient.sql(sql)
+                .param("limit", size)
+                .param("offset", page * size)
                 .query(this::profileRowMapper)
                 .list();
     }

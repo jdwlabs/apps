@@ -42,9 +42,9 @@ public class ProfileRepositoryImpl implements ProfileRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Profile> findAll() {
-        log.debug("Finding all profiles");
-        List<Profile> profiles = profileDao.findAll();
+    public List<Profile> findAll(int page, int size) {
+        log.debug("Finding all profiles: page={}, size={}", page, size);
+        List<Profile> profiles = profileDao.findAll(page, size);
         return profiles.stream().map(this::getProfile).toList();
     }
 
