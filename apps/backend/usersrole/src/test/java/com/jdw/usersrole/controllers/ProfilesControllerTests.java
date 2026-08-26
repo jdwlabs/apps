@@ -84,14 +84,27 @@ class ProfilesControllerTests {
     @Test
     void getProfiles_shouldReturnProfilesList() {
         Profile mockProfile = buildMockProfile();
-        when(profileService.getProfiles()).thenReturn(List.of(mockProfile));
+        when(profileService.getProfiles(0, 100)).thenReturn(List.of(mockProfile));
 
-        ResponseEntity<List<Profile>> response = profilesController.getProfiles();
+        ResponseEntity<List<Profile>> response = profilesController.getProfiles(0, 100);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
         assertEquals(mockProfile, response.getBody().getFirst());
+    }
+
+    @Test
+    void getProfiles_shouldPassThroughCustomPageAndSize() {
+        Profile mockProfile = buildMockProfile();
+        when(profileService.getProfiles(2, 25)).thenReturn(List.of(mockProfile));
+
+        ResponseEntity<List<Profile>> response = profilesController.getProfiles(2, 25);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        verify(profileService).getProfiles(2, 25);
     }
 
     @Test

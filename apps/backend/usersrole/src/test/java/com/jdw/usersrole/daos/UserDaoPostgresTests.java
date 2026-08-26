@@ -110,13 +110,32 @@ class UserDaoPostgresTests {
         JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
         JdbcClient.MappedQuerySpec<User> userMappedQuerySpec = mock(String.valueOf(JdbcClient.MappedQuerySpec.class));
         when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
+        when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
         when(statementSpec.query(Mockito.<RowMapper<User>>any())).thenReturn(userMappedQuerySpec);
         when(userMappedQuerySpec.list()).thenReturn(mockUsers);
 
-        List<User> result = userDaoPostgres.findAll();
+        List<User> result = userDaoPostgres.findAll(0, 100);
 
         assertEquals(1, result.size());
         assertEquals(mockUsers.getFirst(), result.getFirst());
+        verify(statementSpec).param("limit", 100);
+        verify(statementSpec).param("offset", 0);
+    }
+
+    @Test
+    void findAll_shouldComputeOffsetFromPage() {
+        List<User> mockUsers = List.of(buildMockUser());
+        JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
+        JdbcClient.MappedQuerySpec<User> userMappedQuerySpec = mock(String.valueOf(JdbcClient.MappedQuerySpec.class));
+        when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
+        when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
+        when(statementSpec.query(Mockito.<RowMapper<User>>any())).thenReturn(userMappedQuerySpec);
+        when(userMappedQuerySpec.list()).thenReturn(mockUsers);
+
+        userDaoPostgres.findAll(2, 50);
+
+        verify(statementSpec).param("limit", 50);
+        verify(statementSpec).param("offset", 100);
     }
 
     @Test

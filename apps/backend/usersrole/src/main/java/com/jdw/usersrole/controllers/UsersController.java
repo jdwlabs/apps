@@ -25,9 +25,11 @@ public class UsersController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        log.trace("Getting all users");
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<User>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+        log.trace("Getting all users: page={}, size={}", page, size);
+        return ResponseEntity.ok(userService.getAllUsers(page, size));
     }
 
     @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()")

@@ -12,7 +12,7 @@ public interface UserDao {
 
     Optional<User> findByEmailAddress(String emailAddress);
 
-    List<User> findAll();
+    List<User> findAll(int page, int size);
 
     User update(User user);
 

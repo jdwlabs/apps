@@ -12,7 +12,7 @@ public interface ProfileDao {
 
     Optional<Profile> findByUserId(Long id);
 
-    List<Profile> findAll();
+    List<Profile> findAll(int page, int size);
 
     Profile update(Profile profile);
 

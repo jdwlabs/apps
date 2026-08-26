@@ -28,6 +28,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class ProfileService {
+    // Hard upper bound on page size, independent of what a caller requests, so the
+    // list endpoint always issues a bounded query regardless of client input.
+    private static final int MAX_PAGE_SIZE = 500;
+
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
 
@@ -36,9 +40,11 @@ public class ProfileService {
     }
 
     @ExecutionTimeLogger
-    public List<Profile> getProfiles() {
-        log.info("Getting all profiles");
-        return profileRepository.findAll();
+    public List<Profile> getProfiles(int page, int size) {
+        log.info("Getting all profiles: page={}, size={}", page, size);
+        int resolvedPage = Math.max(page, 0);
+        int resolvedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        return profileRepository.findAll(resolvedPage, resolvedSize);
     }
 
     @ExecutionTimeLogger

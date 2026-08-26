@@ -40,9 +40,9 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public List<User> findAll() {
-        log.debug("Finding all users");
-        List<User> users = userDao.findAll();
+    public List<User> findAll(int page, int size) {
+        log.debug("Finding all users: page={}, size={}", page, size);
+        List<User> users = userDao.findAll(page, size);
         return users.stream().map(this::getUser).toList();
     }
 
