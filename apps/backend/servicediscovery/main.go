@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"syscall"
 	"time"
 )
@@ -161,6 +162,7 @@ func main() {
 	}()
 
 	stopChan := make(chan os.Signal, syscall.SIGTERM)
+	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
 	<-stopChan
 	slog.Info("Shutting down server...")
 
