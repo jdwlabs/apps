@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -285,5 +286,47 @@ func TestJiraUpsertDedupSurvivesSearchIndexLag(t *testing.T) {
 	}
 	if comments != 2 {
 		t.Fatalf("expected both refires to comment (2), got %d", comments)
+	}
+}
+
+// TestJiraKnownMapIsBounded mirrors pipeline.go's maxTrackedFirings discipline
+// for the active map: known must stop growing once it hits its cap rather
+// than track every dedup key ever seen for the life of the process.
+func TestJiraKnownMapIsBounded(t *testing.T) {
+	created := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []any{}})
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/api/3/issue":
+			created++
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]string{"key": fmt.Sprintf("JDWLABS-%d", 9000+created)})
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	j := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client())
+	// Pre-fill known to the cap so the next Upsert's writes exercise the
+	// bound, without paying for maxTrackedDedupKeys real HTTP round trips.
+	for i := 0; i < maxTrackedDedupKeys; i++ {
+		j.known[fmt.Sprintf("preexisting-%d", i)] = IssueKey("JDWLABS-0")
+	}
+
+	a := Alert{Fingerprint: "new-fp", Labels: map[string]string{"alertname": "New"}}
+	if _, err := j.Upsert(context.Background(), a, Analysis{RootCause: "y"}); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(j.known) != maxTrackedDedupKeys {
+		t.Fatalf("known map grew past the cap: len=%d, want %d", len(j.known), maxTrackedDedupKeys)
+	}
+	if _, ok := j.known[j.label(a)]; ok {
+		t.Fatal("a new dedup key must not be tracked once the cap is hit")
+	}
+	if _, ok := j.known[j.alertLabel(a)]; ok {
+		t.Fatal("a new alertname dedup key must not be tracked once the cap is hit")
 	}
 }
