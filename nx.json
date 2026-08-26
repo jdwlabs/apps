@@ -171,7 +171,8 @@
       "authdb",
       "ai-sre-relay",
       "frontend-shared-ui",
-      "frontend-shared-util"
+      "frontend-shared-util",
+      "github-repo-health-exporter"
     ],
     "git": {
       "commit": false,
