@@ -11,6 +11,12 @@ import (
 	"sync"
 )
 
+// maxTrackedDedupKeys bounds known the same way pipeline.go's maxTrackedFirings
+// bounds active. Beyond it, new dedup keys are simply not remembered
+// in-process and fall back to the label search below on the next Upsert —
+// the memory ceiling matters more than caching every possible dedup key.
+const maxTrackedDedupKeys = 1024
+
 type JiraClient struct {
 	baseURL    string
 	email      string
@@ -40,6 +46,17 @@ func NewJiraClient(baseURL, email, token, projectKey, issueType string, hc *http
 }
 
 func (j *JiraClient) label(a Alert) string { return "amfp-" + a.Fingerprint }
+
+// rememberKnown records a dedup key -> issue mapping, bounded like
+// Pipeline.remember: once the cap is hit, new keys are simply not tracked.
+// Callers always hold mu already (Upsert holds it for its whole body), so
+// this does not lock itself.
+func (j *JiraClient) rememberKnown(key string, issue IssueKey) {
+	if _, known := j.known[key]; !known && len(j.known) >= maxTrackedDedupKeys {
+		return
+	}
+	j.known[key] = issue
+}
 
 // alertLabel keys dedup at alert-name granularity. Alertmanager fingerprints
 // hash the full labelset, so one incident commonly fans out into several
@@ -106,7 +123,7 @@ func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey
 	}
 	if hit != nil {
 		key := IssueKey(hit.Key)
-		j.known[j.label(a)] = key
+		j.rememberKnown(j.label(a), key)
 		return j.updateIssue(ctx, key, an, hit.done())
 	}
 
@@ -129,7 +146,7 @@ func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey
 		}
 		if hit != nil {
 			key := IssueKey(hit.Key)
-			j.known[al] = key
+			j.rememberKnown(al, key)
 			return j.groupInto(ctx, key, an)
 		}
 	}
@@ -138,9 +155,9 @@ func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey
 	if err != nil {
 		return "", err
 	}
-	j.known[j.label(a)] = key
+	j.rememberKnown(j.label(a), key)
 	if al := j.alertLabel(a); al != "" {
-		j.known[al] = key
+		j.rememberKnown(al, key)
 	}
 	return key, nil
 }
