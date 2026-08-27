@@ -184,6 +184,15 @@ GitHub Actions on `ubuntu-latest` (GitHub-hosted):
 
 Target resolution deliberately precedes `nx release` because tagging is irreversible and graph resolution is not. Once tags exist, the job must fail rather than produce an empty matrix — a skipped `deliver` reads as benign on the run summary while leaving versions tagged with no image behind them. `deliver` and `dispatch-e2e` gate on the `released` output, so "nothing to release" and "detection broke" are distinguishable.
 
+### Branch protection / required checks
+
+Branch rulesets (required status checks, review rules) are managed as code
+in [`.github/rulesets/`](.github/rulesets/) and applied to GitHub manually
+via `apply.sh` after merge — see that script's header comment before
+renaming, merging, or removing any of the CI job contexts above; doing it
+in the wrong order can make a PR permanently unmergeable or block every
+open PR.
+
 ## Concurrency: one worktree, one branch, one agent invocation
 
 Multiple AI agents may operate against this repo at the same time. Never
