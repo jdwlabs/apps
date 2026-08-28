@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   scan:
-    uses: jdwlabs/.github/.github/workflows/security-scan.yml@main
+    uses: jdwlabs/.github/.github/workflows/security-scan.yml@b827924589b7e129a81762131b9d451121718bdc  # main as of 2026-08-26 (jdwlabs/.github has no tagged releases)
     # Trivy findings are non-blocking: they surface in the Security tab
     # without gating merges. Flip fail-on-findings to true once the finding
     # volume across all repos has been triaged as real signal, not noise.
