@@ -17,6 +17,16 @@
       ],
       "matchPackageNames": ["@jdw/**"],
       "enabled": false
+    },
+    {
+      "description": [
+        "@material/material-color-utilities is pinned exact at 0.3.0 (not a caret range) in package.json and libs/frontend/shared/util/package.json — see the comment above the import in libs/frontend/shared/util/src/lib/on-color.util.ts.",
+        "0.4.0 ships nine scheme/*.js files (scheme_content, scheme_expressive, scheme_fidelity, scheme_fruit_salad, scheme_monochrome, scheme_neutral, scheme_rainbow, scheme_tonal_spot, scheme_vibrant) whose import of '../dynamiccolor/dynamic_scheme' is missing the .js extension. The package's own exports map only publishes the '.' barrel, so every consumer loads that broken chain through it.",
+        "Node's strict ESM resolver (used by pnpm's isolated node_modules linking and by Vitest/Vite) cannot fall back to extension-probing for that specifier, so importing anything from the package barrel throws Cannot find module '.../dynamiccolor/dynamic_scheme' at test time — reproduced by unpacking the published 0.4.0 tarball directly; 0.3.0 has no such imports.",
+        "Disabled rather than pinned-only because Renovate proposes replacing an exact pin same as a range; re-enable once a release newer than 0.4.0 ships with the extensions fixed upstream — verify a fresh tarball's scheme/*.js imports before removing this rule."
+      ],
+      "matchPackageNames": ["@material/material-color-utilities"],
+      "enabled": false
     }
   ]
 }
