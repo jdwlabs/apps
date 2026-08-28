@@ -2,7 +2,7 @@
 # The build context is the repo root, so go runs in workspace mode: this tag must
 # be >= the go.work `go` directive as well as this module's, or the compile aborts
 # with "go.work requires go >= X" before any source is read.
-FROM golang:1.26 AS builder-go
+FROM golang:1.27 AS builder-go
 
 # Use a specific version of node base on SHA256 digest for reproducibility and security
 FROM node:lts-alpine AS builder
