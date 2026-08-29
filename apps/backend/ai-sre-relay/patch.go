@@ -43,6 +43,17 @@ func NewPatchGenerator(baseURL, apiKey, model string, minConfidence float64, tar
 const (
 	patchPromptHead = `You are an SRE assistant. Given a root-cause analysis, propose AT MOST ONE single-file GitOps change that fixes it. Respond with ONLY a JSON object, no prose, matching:
 `
+	// patchPromptLayout tells the model what the repository actually looks
+	// like. Without it the model has no view of the tree and answers with a
+	// layout it has seen elsewhere (manifests/, cluster/, clusters/…), which
+	// ArgoCD never reads. The relay re-checks the path against the same
+	// layout before writing, so this is guidance, not the boundary.
+	patchPromptLayout = `
+The repository is an ArgoCD GitOps tree. The ONLY files that are reconciled are:
+- tenants/<tenant>/tenant.yaml — the tenant's service list (each entry is a Helm release);
+- tenants/<tenant>/services/<release>/values.yaml — that release's Helm values;
+- tenants/<tenant>/services/<release>/postInstall/<name>.yaml — raw manifests applied after the release.
+"file_path" MUST be one of those existing files, edited in place with its full new contents. NEVER invent another layout, NEVER create a new file or a new top-level directory: a file anywhere else is not watched and changes nothing. Find the release that owns the failing resource from the tenant.yaml service names and the namespace in the analysis. If you are not certain which existing file owns the resource, respond with {"confidence":0} instead of guessing.`
 	patchPromptTail = `
 If no safe single-file change exists, respond with exactly: {"confidence":0}`
 )
@@ -58,6 +69,7 @@ func patchSystemPrompt(targets []string) string {
 			`{"repo":"...","file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}` + "\n" +
 			`"repo" MUST be copied verbatim from this list and may be nothing else: ` + strings.Join(targets, ", ") + ".\n" +
 			`"file_path" is relative to the root of that repository.` +
+			patchPromptLayout +
 			patchPromptTail
 	}
 	// Zero targets means the PR arm is switched off, so a repository name would
@@ -69,6 +81,7 @@ func patchSystemPrompt(targets []string) string {
 	return patchPromptHead +
 		`{"file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}` + "\n" +
 		"The change will be applied to " + where + `. Do not name a repository; "file_path" is relative to its root.` +
+		patchPromptLayout +
 		patchPromptTail
 }
 

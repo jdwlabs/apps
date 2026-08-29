@@ -92,7 +92,16 @@ func main() {
 		log.Error("github token source", "err", err)
 		os.Exit(1)
 	}
-	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, hc)
+	// Bounds which files inside an allowed repository a patch may touch, as
+	// path.Match globs. The model is told the layout, but it has no view of
+	// the tree and has invented directories that nothing reconciles; the
+	// write is refused unless the path is watched and already exists. Unset
+	// disables the PR arm like the repo allowlist does.
+	allowedPaths := splitList(os.Getenv("GITHUB_PATH_ALLOWLIST"))
+	if len(allowedRepos) > 0 && len(allowedPaths) == 0 {
+		log.Warn("GITHUB_PATH_ALLOWLIST unset; remediation PRs are disabled")
+	}
+	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, allowedPaths, hc)
 
 	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)
 
