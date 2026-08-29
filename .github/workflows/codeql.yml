@@ -67,9 +67,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix['build-mode'] }}
-          # Both kinds ran as separate default-setup workflows; one job per
-          # language now produces both.
-          analysis-kinds: code-scanning,code-quality
           # Never turn this on: the content-hash keys it writes are what the
           # retired prune workflow existed to clean up.
           dependency-caching: false
