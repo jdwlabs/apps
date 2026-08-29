@@ -128,10 +128,20 @@ type GitHubClient struct {
 	// repository tree and invents directories that look like GitOps but that
 	// no Application reads; the patterns pin writes to the paths that are.
 	allowedPaths []string
-	hc           *http.Client
+	// deniedPaths are checked before allowedPaths and win on a match even
+	// though the path also satisfies an allow glob. allowedPaths is
+	// necessarily coarser than "actually reconciled" — a wildcard glob like
+	// tenants/*/services/*/values.yaml also matches a dormant release's
+	// values.yaml, which exists on main and looks watched but is never
+	// rendered into an Application. The denylist carries those known
+	// exceptions (kept in step with tools/orphaned-manifest-allowlist.yaml in
+	// the platform repo by a CI assertion there) so a plausible, allow-glob-
+	// passing patch to one of them is still refused.
+	deniedPaths []string
+	hc          *http.Client
 }
 
-func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos, allowedPaths []string, hc *http.Client) *GitHubClient {
+func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos, allowedPaths, deniedPaths []string, hc *http.Client) *GitHubClient {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
@@ -147,7 +157,13 @@ func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos, all
 			paths = append(paths, p)
 		}
 	}
-	return &GitHubClient{apiBase: apiBase, tokens: tokens, allowed: allowed, allowedPaths: paths, hc: hc}
+	var denied []string
+	for _, p := range deniedPaths {
+		if p = strings.TrimSpace(p); p != "" {
+			denied = append(denied, p)
+		}
+	}
+	return &GitHubClient{apiBase: apiBase, tokens: tokens, allowed: allowed, allowedPaths: paths, deniedPaths: denied, hc: hc}
 }
 
 // ErrRepoNotAllowed marks the allowlist refusal specifically, so callers can
@@ -161,10 +177,25 @@ var ErrRepoNotAllowed = errors.New("github: repo is not allowlisted")
 // under a top-level directory nothing watches, so it could never take effect.
 var ErrPathNotAllowed = errors.New("github: file path is not a watched, existing manifest")
 
+// ErrPathDenied marks a proposal whose file matches an allow glob but is also
+// on the denylist: a path that looks watched but is a known exception (a
+// dormant release, typically). Distinct from ErrPathNotAllowed because the
+// diagnosis differs — the allowlist needs narrowing there, not the denylist.
+var ErrPathDenied = errors.New("github: file path is on the denylist")
+
 // ErrBranchExists marks a refusal to write onto a remediation branch that a
-// previous run already created. Whatever is on that branch is under human
-// review; a second proposal for the same ticket must not land on top of it.
+// previous run already created and already opened a PR from. Whatever is on
+// that branch is under human review; a second proposal for the same ticket
+// must not land on top of it.
 var ErrBranchExists = errors.New("github: remediation branch already exists")
+
+// ErrBranchOrphaned marks a remediation branch that already exists but has no
+// pull request in any state — the remnant of a run that failed after
+// creating the branch (context deadline, a GitHub 5xx on the PUT or the
+// pulls create) and never opened one. Distinct from ErrBranchExists: nothing
+// is under review here, so this must not read as "the ticket is already
+// covered."
+var ErrBranchOrphaned = errors.New("github: remediation branch exists with no pull request; a previous run likely failed after creating it")
 
 // allowedList renders the allowed set for an operator-facing message. Sorted,
 // because a map's order would make the same refusal look different each time.
@@ -195,10 +226,16 @@ func (g *GitHubClient) checkRepo(repo string) error {
 // checkPath fails closed like checkRepo: with no patterns configured the arm
 // writes nowhere. The path is matched after cleaning so "./tenants/x" and
 // "tenants/x" are one case, and the refusal names the patterns because the
-// gap between what was proposed and what is watched is the diagnosis.
+// gap between what was proposed and what is watched is the diagnosis. The
+// denylist is checked first and wins even over a matching allow glob.
 func (g *GitHubClient) checkPath(clean string) error {
 	if len(g.allowedPaths) == 0 {
 		return fmt.Errorf("github: no path allowlist configured; refusing to open a PR")
+	}
+	for _, pat := range g.deniedPaths {
+		if ok, err := filepath.Match(pat, clean); err == nil && ok {
+			return fmt.Errorf("%w: proposed %q, denied by [%s]", ErrPathDenied, clean, strings.Join(g.deniedPaths, ","))
+		}
 	}
 	for _, pat := range g.allowedPaths {
 		if ok, err := filepath.Match(pat, clean); err == nil && ok {
@@ -228,6 +265,34 @@ func safeFilePath(p string) (clean, escaped string, err error) {
 		segs[i] = url.PathEscape(s)
 	}
 	return clean, strings.Join(segs, "/"), nil
+}
+
+// branchHasPR reports whether any pull request, in any state, already has
+// this branch as its head. state=all rather than state=open: a merged or
+// closed PR still means a human looked at this branch, so a second, unrelated
+// proposal must not be appended to it either — only "no PR was ever opened"
+// distinguishes an orphaned branch from one that is or was under review.
+func (g *GitHubClient) branchHasPR(ctx context.Context, repo, branch string) (bool, error) {
+	owner, _, ok := strings.Cut(repo, "/")
+	if !ok {
+		return false, fmt.Errorf("github: malformed repo %q", repo)
+	}
+	q := url.Values{"head": {owner + ":" + branch}, "state": {"all"}}
+	resp, err := g.req(ctx, http.MethodGet, "/repos/"+repo+"/pulls?"+q.Encode(), nil)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("github: list pulls for branch %s: status %d", branch, resp.StatusCode)
+	}
+	var prs []struct {
+		Number int `json:"number"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&prs); err != nil {
+		return false, fmt.Errorf("github: decode pulls for branch %s: %w", branch, err)
+	}
+	return len(prs) > 0, nil
 }
 
 func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (*http.Response, error) {
@@ -329,10 +394,16 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 		return "", fmt.Errorf("%w: %q is not an existing file on %s (status %d)", ErrPathNotAllowed, cleanPath, baseBranch, fResp.StatusCode)
 	}
 
-	// 3. create branch. 422 means it already exists: a previous run's PR is
-	// (or was) open from it, and this proposal is a separate, unrelated
-	// patch that must not be appended to it. Refusing here is what keeps one
-	// PR to one commit.
+	// 3. create branch. 422 means it already exists, which is one of two
+	// things: a previous run's PR is (or was) open from it, in which case
+	// this proposal is a separate, unrelated patch that must not be appended
+	// to it (ErrBranchExists); or no PR was ever opened from it, because an
+	// earlier run failed after creating the branch — the per-alert context is
+	// often already dead by the time OpenPR is called (see pipeline.go), so a
+	// deadline or a GitHub 5xx on the PUT or the pulls create below can strand
+	// a branch with a real, unseen commit on it (ErrBranchOrphaned). The two
+	// must not share a code path: the first is an expected, quiet skip, and
+	// the second is a commit nobody has been asked to look at.
 	brResp, err := g.req(ctx, http.MethodPost, repoPath+"/git/refs", map[string]string{
 		"ref": "refs/heads/" + branch, "sha": ref.Object.SHA,
 	})
@@ -341,7 +412,14 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	}
 	brResp.Body.Close()
 	if brResp.StatusCode == http.StatusUnprocessableEntity {
-		return "", fmt.Errorf("%w: %s (repo %s)", ErrBranchExists, branch, p.Repo)
+		hasPR, perr := g.branchHasPR(ctx, p.Repo, branch)
+		if perr != nil {
+			return "", fmt.Errorf("github: branch %s already exists, and checking for its pull request failed: %w", branch, perr)
+		}
+		if hasPR {
+			return "", fmt.Errorf("%w: %s (repo %s)", ErrBranchExists, branch, p.Repo)
+		}
+		return "", fmt.Errorf("%w: %s (repo %s)", ErrBranchOrphaned, branch, p.Repo)
 	}
 	if brResp.StatusCode >= 300 {
 		return "", fmt.Errorf("github create branch: status %d", brResp.StatusCode)

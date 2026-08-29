@@ -191,11 +191,15 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 			p.counters.reposRejected.Add(1)
 			log.Error("remediation discarded: proposed repository is not allowlisted",
 				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
-		case errors.Is(gerr, ErrPathNotAllowed):
+		case errors.Is(gerr, ErrPathNotAllowed), errors.Is(gerr, ErrPathDenied):
 			// Same shape as the repo refusal: a complete patch aimed at a
-			// file the GitOps controller does not read, or that does not
-			// exist. Counted separately so a model that keeps inventing
-			// layouts shows up as a trend rather than as flaky GitHub calls.
+			// file the GitOps controller does not read, does not exist, or is
+			// a known exception to the allowlist (a dormant release that an
+			// allow glob matches anyway). Counted together — both mean the
+			// same thing to an operator, a proposal that could never take
+			// effect — separately from repo rejections and flaky GitHub
+			// calls, so a model that keeps inventing layouts shows up as a
+			// trend.
 			p.counters.pathsRejected.Add(1)
 			log.Error("remediation discarded: proposed file is not a watched, existing manifest",
 				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
@@ -206,6 +210,16 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 			p.counters.branchesSkipped.Add(1)
 			log.Info("remediation skipped: a PR branch for this ticket already exists",
 				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue)
+		case errors.Is(gerr, ErrBranchOrphaned):
+			// The branch exists but no PR was ever opened from it: an earlier
+			// run's commit, if the PUT got that far, is sitting on a branch
+			// nobody has been asked to review. This is not the quiet "already
+			// in review" skip above — it needs a human to go look, so it gets
+			// its own counter rather than branchesSkipped, which is expected
+			// to tick on ordinary refires and would hide this.
+			p.counters.branchesOrphaned.Add(1)
+			log.Error("remediation branch exists with no pull request; a previous run likely failed after creating it",
+				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
 		default:
 			log.Error("github pr failed", "err", gerr)
 		}

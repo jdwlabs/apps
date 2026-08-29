@@ -101,7 +101,13 @@ func main() {
 	if len(allowedRepos) > 0 && len(allowedPaths) == 0 {
 		log.Warn("GITHUB_PATH_ALLOWLIST unset; remediation PRs are disabled")
 	}
-	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, allowedPaths, hc)
+	// Known exceptions to the allowlist above: a path an allow glob matches
+	// but that is not actually reconciled (a dormant release, typically).
+	// Kept in step with the platform repo's tools/orphaned-manifest-
+	// allowlist.yaml by a CI assertion there; empty is fine, it just means no
+	// exceptions are known yet.
+	deniedPaths := splitList(os.Getenv("GITHUB_PATH_DENYLIST"))
+	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, allowedPaths, deniedPaths, hc)
 
 	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)
 
