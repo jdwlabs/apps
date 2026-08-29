@@ -1,0 +1,79 @@
+name: CodeQL
+
+# Checked-in replacement for GitHub's default-setup CodeQL. Default setup
+# turns dependency caching on unconditionally and writes each Java/Go
+# dependency archive under a content-derived key that never repeats, so every
+# analysis added another ~250-300 MiB Actions cache entry and the repository
+# needed an hourly prune job to keep pnpm/Gradle/Trivy caches from being
+# evicted. Advanced setup leaves dependency-caching off unless asked, which
+# removes the write at its source. Languages, query suite, threat model and
+# weekly schedule mirror the default-setup configuration this replaces, and
+# the analysis category is kept at /language:<name> so alerts keep the same
+# analysis origin across the switch.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+# Superseded PR pushes are cancelled; main and schedule runs queue so every
+# default-branch commit still uploads its results.
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    # A single default-setup language job peaks around 2.5 minutes; anything
+    # past this is a hung extractor, not a slow one.
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: go
+            build-mode: autobuild
+          # Default setup analyses Java without a build; the extractor
+          # resolves Gradle dependencies itself, so no JDK or Gradle setup is
+          # needed here.
+          - language: java-kotlin
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v7.0.1
+      # autobuild compiles the go.work modules, so the toolchain must match
+      # the one the workspace declares rather than whatever the runner ships.
+      - if: ${{ matrix.language == 'go' }}
+        name: Setup Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.work
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4.37.9
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix['build-mode'] }}
+          # Both kinds ran as separate default-setup workflows; one job per
+          # language now produces both.
+          analysis-kinds: code-scanning,code-quality
+          # Never turn this on: the content-hash keys it writes are what the
+          # retired prune workflow existed to clean up.
+          dependency-caching: false
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4.37.9
+        with:
+          category: '/language:${{ matrix.language }}'
