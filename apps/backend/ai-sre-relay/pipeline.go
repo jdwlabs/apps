@@ -191,6 +191,21 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 			p.counters.reposRejected.Add(1)
 			log.Error("remediation discarded: proposed repository is not allowlisted",
 				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
+		case errors.Is(gerr, ErrPathNotAllowed):
+			// Same shape as the repo refusal: a complete patch aimed at a
+			// file the GitOps controller does not read, or that does not
+			// exist. Counted separately so a model that keeps inventing
+			// layouts shows up as a trend rather than as flaky GitHub calls.
+			p.counters.pathsRejected.Add(1)
+			log.Error("remediation discarded: proposed file is not a watched, existing manifest",
+				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
+		case errors.Is(gerr, ErrBranchExists):
+			// A PR for this ticket already carries an earlier proposal; this
+			// one is dropped rather than pushed onto it. Not an error state:
+			// the ticket is already in review.
+			p.counters.branchesSkipped.Add(1)
+			log.Info("remediation skipped: a PR branch for this ticket already exists",
+				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue)
 		default:
 			log.Error("github pr failed", "err", gerr)
 		}

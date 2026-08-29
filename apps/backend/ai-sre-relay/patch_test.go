@@ -153,7 +153,7 @@ func TestPatchGenerateMultiTargetAcceptsListedRepo(t *testing.T) {
 // repository that does not exist now reaches the GitHub arm as the configured
 // target, and a PR is opened instead of the proposal being thrown away.
 func TestHallucinatedRepoStillOpensPRAgainstConfiguredTarget(t *testing.T) {
-	llm := fakeLiteLLM(t, `{"repo":"example/gitops","file_path":"tenants/platform/values.yaml","new_content":"limits:\n  memory: 512Mi\n","rationale":"raise limit","confidence":0.9}`)
+	llm := fakeLiteLLM(t, `{"repo":"example/gitops","file_path":"tenants/platform/services/vault/values.yaml","new_content":"limits:\n  memory: 512Mi\n","rationale":"raise limit","confidence":0.9}`)
 	defer llm.Close()
 
 	var pullPath string
@@ -164,7 +164,8 @@ func TestHallucinatedRepoStillOpensPRAgainstConfiguredTarget(t *testing.T) {
 		case strings.HasSuffix(r.URL.Path, "/git/refs"):
 			w.WriteHeader(http.StatusCreated)
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/contents/"):
-			w.WriteHeader(http.StatusNotFound)
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"sha": "filesha", "type": "file"})
 		case r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/contents/"):
 			w.WriteHeader(http.StatusCreated)
 		case strings.HasSuffix(r.URL.Path, "/pulls"):
@@ -182,7 +183,7 @@ func TestHallucinatedRepoStillOpensPRAgainstConfiguredTarget(t *testing.T) {
 	if err != nil || patch == nil {
 		t.Fatalf("no patch produced: (%+v, %v)", patch, err)
 	}
-	link, err := NewGitHubClient(gh.URL, StaticGitHubToken("ghtok"), targets, gh.Client()).
+	link, err := NewGitHubClient(gh.URL, StaticGitHubToken("ghtok"), targets, testPathGlobs, gh.Client()).
 		OpenPR(context.Background(), *patch, "JDWLABS-312")
 	if err != nil {
 		t.Fatalf("PR refused after injection: %v", err)

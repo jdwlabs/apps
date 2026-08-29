@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -122,10 +123,15 @@ type GitHubClient struct {
 	// annotations and Holmes output — untrusted text — so without this the
 	// only limit on where the relay writes is the token's own scope.
 	allowed map[string]struct{}
-	hc      *http.Client
+	// allowedPaths are the glob patterns (path.Match syntax, one segment per
+	// star) a patched file must match. The model has no view of the
+	// repository tree and invents directories that look like GitOps but that
+	// no Application reads; the patterns pin writes to the paths that are.
+	allowedPaths []string
+	hc           *http.Client
 }
 
-func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos []string, hc *http.Client) *GitHubClient {
+func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos, allowedPaths []string, hc *http.Client) *GitHubClient {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
@@ -135,13 +141,30 @@ func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos []st
 			allowed[r] = struct{}{}
 		}
 	}
-	return &GitHubClient{apiBase: apiBase, tokens: tokens, allowed: allowed, hc: hc}
+	var paths []string
+	for _, p := range allowedPaths {
+		if p = strings.TrimSpace(p); p != "" {
+			paths = append(paths, p)
+		}
+	}
+	return &GitHubClient{apiBase: apiBase, tokens: tokens, allowed: allowed, allowedPaths: paths, hc: hc}
 }
 
 // ErrRepoNotAllowed marks the allowlist refusal specifically, so callers can
 // report a discarded remediation as its own outcome instead of folding it into
 // the generic "GitHub call failed" bucket where it reads as transient.
 var ErrRepoNotAllowed = errors.New("github: repo is not allowlisted")
+
+// ErrPathNotAllowed marks a proposal whose file is outside the paths the
+// GitOps controller reads, or that does not exist on the base branch. Every
+// unusable remediation so far was one of these: a plausible-looking manifest
+// under a top-level directory nothing watches, so it could never take effect.
+var ErrPathNotAllowed = errors.New("github: file path is not a watched, existing manifest")
+
+// ErrBranchExists marks a refusal to write onto a remediation branch that a
+// previous run already created. Whatever is on that branch is under human
+// review; a second proposal for the same ticket must not land on top of it.
+var ErrBranchExists = errors.New("github: remediation branch already exists")
 
 // allowedList renders the allowed set for an operator-facing message. Sorted,
 // because a map's order would make the same refusal look different each time.
@@ -169,25 +192,42 @@ func (g *GitHubClient) checkRepo(repo string) error {
 	return nil
 }
 
+// checkPath fails closed like checkRepo: with no patterns configured the arm
+// writes nowhere. The path is matched after cleaning so "./tenants/x" and
+// "tenants/x" are one case, and the refusal names the patterns because the
+// gap between what was proposed and what is watched is the diagnosis.
+func (g *GitHubClient) checkPath(clean string) error {
+	if len(g.allowedPaths) == 0 {
+		return fmt.Errorf("github: no path allowlist configured; refusing to open a PR")
+	}
+	for _, pat := range g.allowedPaths {
+		if ok, err := filepath.Match(pat, clean); err == nil && ok {
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: proposed %q, allowed [%s]", ErrPathNotAllowed, clean, strings.Join(g.allowedPaths, ","))
+}
+
 // safeFilePath rejects a model-supplied path that is absolute or climbs out of
-// the repository root, and escapes each segment so it cannot inject further
-// path or query structure into the Contents API URL.
-func safeFilePath(p string) (string, error) {
+// the repository root, and returns the cleaned path alongside a URL-safe form
+// whose segments are escaped so they cannot inject further path or query
+// structure into the Contents API URL.
+func safeFilePath(p string) (clean, escaped string, err error) {
 	if strings.TrimSpace(p) == "" {
-		return "", fmt.Errorf("github: empty file path")
+		return "", "", fmt.Errorf("github: empty file path")
 	}
 	if strings.HasPrefix(p, "/") {
-		return "", fmt.Errorf("github: absolute file path %q", p)
+		return "", "", fmt.Errorf("github: absolute file path %q", p)
 	}
-	clean := path.Clean(p)
+	clean = path.Clean(p)
 	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
-		return "", fmt.Errorf("github: file path %q escapes the repository root", p)
+		return "", "", fmt.Errorf("github: file path %q escapes the repository root", p)
 	}
 	segs := strings.Split(clean, "/")
 	for i, s := range segs {
 		segs[i] = url.PathEscape(s)
 	}
-	return strings.Join(segs, "/"), nil
+	return clean, strings.Join(segs, "/"), nil
 }
 
 func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (*http.Response, error) {
@@ -216,14 +256,21 @@ func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (
 
 // OpenPR creates a derived branch off baseBranch, writes the single patched
 // file to it, and opens a PR for human review. It never pushes to baseBranch,
-// never force-updates a ref, and never merges: every write is confined to the
-// branch remediationBranch derives, and the merge decision stays with a human.
+// never force-updates a ref, never writes to a branch it did not just create,
+// and never merges: every write is confined to the branch remediationBranch
+// derives, and the merge decision stays with a human. The arm edits files
+// that already exist on baseBranch and matches the path allowlist; it never
+// creates one, because a new file is exactly what a model with no view of
+// the tree produces when it guesses.
 func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error) {
 	if err := g.checkRepo(p.Repo); err != nil {
 		return "", err
 	}
-	filePath, err := safeFilePath(p.FilePath)
+	cleanPath, filePath, err := safeFilePath(p.FilePath)
 	if err != nil {
+		return "", err
+	}
+	if err := g.checkPath(cleanPath); err != nil {
 		return "", err
 	}
 	if n := len(p.NewContent); n == 0 || n > maxPatchBytes {
@@ -263,42 +310,48 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 		return "", fmt.Errorf("github: empty base sha (repo %s)", p.Repo)
 	}
 
-	// 2. create branch; 422 means the branch already exists and is fine (idempotent
-	// re-run of the same patch), other non-2xx statuses are real failures.
+	// 2. the file must already exist on the base branch. Read before the
+	// branch is created so a refusal leaves nothing behind. The blob SHA is
+	// also what the Contents API needs to update rather than create.
+	fResp, err := g.req(ctx, http.MethodGet, repoPath+"/contents/"+filePath+"?ref="+baseBranch, nil)
+	if err != nil {
+		return "", err
+	}
+	var existing struct {
+		SHA  string `json:"sha"`
+		Type string `json:"type"`
+	}
+	if fResp.StatusCode == http.StatusOK {
+		_ = json.NewDecoder(fResp.Body).Decode(&existing)
+	}
+	fResp.Body.Close()
+	if fResp.StatusCode != http.StatusOK || existing.SHA == "" || (existing.Type != "" && existing.Type != "file") {
+		return "", fmt.Errorf("%w: %q is not an existing file on %s (status %d)", ErrPathNotAllowed, cleanPath, baseBranch, fResp.StatusCode)
+	}
+
+	// 3. create branch. 422 means it already exists: a previous run's PR is
+	// (or was) open from it, and this proposal is a separate, unrelated
+	// patch that must not be appended to it. Refusing here is what keeps one
+	// PR to one commit.
 	brResp, err := g.req(ctx, http.MethodPost, repoPath+"/git/refs", map[string]string{
 		"ref": "refs/heads/" + branch, "sha": ref.Object.SHA,
 	})
 	if err != nil {
 		return "", err
 	}
-	if brResp.StatusCode >= 300 && brResp.StatusCode != http.StatusUnprocessableEntity {
-		brResp.Body.Close()
+	brResp.Body.Close()
+	if brResp.StatusCode == http.StatusUnprocessableEntity {
+		return "", fmt.Errorf("%w: %s (repo %s)", ErrBranchExists, branch, p.Repo)
+	}
+	if brResp.StatusCode >= 300 {
 		return "", fmt.Errorf("github create branch: status %d", brResp.StatusCode)
 	}
-	brResp.Body.Close()
-
-	// 3. existing file SHA (needed to update; absent => new file)
-	var existingSHA string
-	fResp, err := g.req(ctx, http.MethodGet, repoPath+"/contents/"+filePath+"?ref="+url.QueryEscape(branch), nil)
-	if err != nil {
-		return "", err
-	}
-	if fResp.StatusCode == http.StatusOK {
-		var f struct {
-			SHA string `json:"sha"`
-		}
-		_ = json.NewDecoder(fResp.Body).Decode(&f)
-		existingSHA = f.SHA
-	}
-	fResp.Body.Close()
 
 	put := map[string]any{
 		"message": fmt.Sprintf("fix(ai-sre): %s (%s)", summary, issue),
 		"content": base64.StdEncoding.EncodeToString([]byte(p.NewContent)),
 		"branch":  branch,
-	}
-	if existingSHA != "" {
-		put["sha"] = existingSHA
+		"sha":     existing.SHA,
 	}
 	pResp, err := g.req(ctx, http.MethodPut, repoPath+"/contents/"+filePath, put)
 	if err != nil {
@@ -309,7 +362,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 		return "", fmt.Errorf("github put contents: status %d", pResp.StatusCode)
 	}
 
-	// 5. open PR
+	// 4. open PR
 	prBody := fmt.Sprintf(
 		"Automated AI-SRE remediation for %s.\n\nSingle file changed: `%s`\n\n%s\n\n**Human review required — do not auto-merge.**",
 		issue, filePath, safeSummary(p.Rationale, maxRationaleBodyRunes))

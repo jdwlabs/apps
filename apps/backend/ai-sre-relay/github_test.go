@@ -20,7 +20,8 @@ func TestGitHubOpenPR(t *testing.T) {
 		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/git/refs"):
 			w.WriteHeader(http.StatusCreated)
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/contents/"):
-			w.WriteHeader(http.StatusNotFound) // new file
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"sha": "filesha", "type": "file"})
 		case r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/contents/"):
 			raw, _ := io.ReadAll(r.Body)
 			var m map[string]any
@@ -37,8 +38,8 @@ func TestGitHubOpenPR(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "values.yaml", NewContent: "limits:\n  memory: 512Mi\n", Rationale: "raise", Confidence: 0.9}
-	link, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
+	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "limits:\n  memory: 512Mi\n", Rationale: "raise", Confidence: 0.9}
+	link, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,8 +66,8 @@ func TestGitHubOpenPRRejectsRepo(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			called = false
-			p := Patch{Repo: tc.repo, FilePath: "values.yaml", NewContent: "x"}
-			_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), tc.allowed, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
+			p := Patch{Repo: tc.repo, FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x"}
+			_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), tc.allowed, testPathGlobs, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 			if err == nil {
 				t.Fatal("expected rejection")
 			}
@@ -80,7 +81,7 @@ func TestGitHubOpenPRRejectsRepo(t *testing.T) {
 // A refusal that names only one side of the mismatch leaves an operator unable
 // to tell a hallucinated target from a misconfigured allowlist.
 func TestGitHubRepoRefusalNamesBothSides(t *testing.T) {
-	g := NewGitHubClient("http://unused", StaticGitHubToken("ghtok"), []string{"jdwlabs/platform", "jdwlabs/deployments"}, nil)
+	g := NewGitHubClient("http://unused", StaticGitHubToken("ghtok"), []string{"jdwlabs/platform", "jdwlabs/deployments"}, testPathGlobs, nil)
 	err := g.checkRepo("example/gitops")
 	if !errors.Is(err, ErrRepoNotAllowed) {
 		t.Fatalf("refusal is not identifiable as an allowlist rejection: %v", err)
@@ -95,7 +96,7 @@ func TestGitHubRepoRefusalNamesBothSides(t *testing.T) {
 // An empty allowlist is a configuration state, not a bad proposal, so it must
 // not masquerade as one.
 func TestGitHubEmptyAllowlistIsNotARepoRejection(t *testing.T) {
-	err := NewGitHubClient("http://unused", StaticGitHubToken("ghtok"), nil, nil).checkRepo("jdwlabs/platform")
+	err := NewGitHubClient("http://unused", StaticGitHubToken("ghtok"), nil, testPathGlobs, nil).checkRepo("jdwlabs/platform")
 	if err == nil {
 		t.Fatal("expected the arm to be disabled")
 	}
@@ -113,7 +114,7 @@ func TestGitHubOpenPRRejectsFilePath(t *testing.T) {
 		t.Run(bad, func(t *testing.T) {
 			called = false
 			p := Patch{Repo: "jdwlabs/platform", FilePath: bad, NewContent: "x"}
-			_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
+			_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 			if err == nil {
 				t.Fatalf("expected rejection for %q", bad)
 			}
@@ -133,8 +134,8 @@ func TestGitHubOpenPRSurfacesBaseRefStatus(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "values.yaml", NewContent: "x"}
-	_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
+	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x"}
+	_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err == nil {
 		t.Fatal("expected an error")
 	}
@@ -144,7 +145,7 @@ func TestGitHubOpenPRSurfacesBaseRefStatus(t *testing.T) {
 }
 
 func TestSafeFilePathEscapesSegments(t *testing.T) {
-	got, err := safeFilePath("tenants/platform/my values.yaml")
+	_, got, err := safeFilePath("tenants/platform/my values.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
