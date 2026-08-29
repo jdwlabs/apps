@@ -183,7 +183,7 @@ func TestHallucinatedRepoStillOpensPRAgainstConfiguredTarget(t *testing.T) {
 	if err != nil || patch == nil {
 		t.Fatalf("no patch produced: (%+v, %v)", patch, err)
 	}
-	link, err := NewGitHubClient(gh.URL, StaticGitHubToken("ghtok"), targets, testPathGlobs, gh.Client()).
+	link, err := NewGitHubClient(gh.URL, StaticGitHubToken("ghtok"), targets, testPathGlobs, nil, gh.Client()).
 		OpenPR(context.Background(), *patch, "JDWLABS-312")
 	if err != nil {
 		t.Fatalf("PR refused after injection: %v", err)

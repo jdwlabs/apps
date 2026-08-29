@@ -49,11 +49,10 @@ const (
 	// ArgoCD never reads. The relay re-checks the path against the same
 	// layout before writing, so this is guidance, not the boundary.
 	patchPromptLayout = `
-The repository is an ArgoCD GitOps tree. The ONLY files that are reconciled are:
-- tenants/<tenant>/tenant.yaml — the tenant's service list (each entry is a Helm release);
+The repository is an ArgoCD GitOps tree. The ONLY files you may propose editing are:
 - tenants/<tenant>/services/<release>/values.yaml — that release's Helm values;
 - tenants/<tenant>/services/<release>/postInstall/<name>.yaml — raw manifests applied after the release.
-"file_path" MUST be one of those existing files, edited in place with its full new contents. NEVER invent another layout, NEVER create a new file or a new top-level directory: a file anywhere else is not watched and changes nothing. Find the release that owns the failing resource from the tenant.yaml service names and the namespace in the analysis. If you are not certain which existing file owns the resource, respond with {"confidence":0} instead of guessing.`
+"file_path" MUST be one of those existing files, edited in place with its full new contents. NEVER invent another layout, NEVER create a new file or a new top-level directory. NEVER propose tenants/<tenant>/tenant.yaml itself, even though it is also reconciled: it is that tenant's whole service list, generated with prune and self-heal, and a hallucinated or truncated rewrite of it deletes every workload ArgoCD deploys for the tenant — the boundary refuses it either way, so proposing it only wastes the attempt. Find the release that owns the failing resource from that tenant's tenant.yaml service names and the namespace in the analysis. If you are not certain which existing file owns the resource, respond with {"confidence":0} instead of guessing.`
 	patchPromptTail = `
 If no safe single-file change exists, respond with exactly: {"confidence":0}`
 )

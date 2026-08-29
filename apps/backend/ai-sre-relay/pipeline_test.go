@@ -321,6 +321,127 @@ func TestCountersExposeRepoRejections(t *testing.T) {
 	}
 }
 
+type pathRejectingGH struct{}
+
+func (pathRejectingGH) OpenPR(_ context.Context, p Patch, _ IssueKey) (PRLink, error) {
+	return "", fmt.Errorf("%w: proposed %q, allowed [tenants/*/services/*/values.yaml]", ErrPathNotAllowed, p.FilePath)
+}
+
+// A patch discarded for its file path, not its repo, must land in the
+// pathsRejected counter and log line — the two allowlists diagnose different
+// problems and must not be conflated.
+func TestPipelinePathRejectionIsLoudAndCounted(t *testing.T) {
+	var buf bytes.Buffer
+	log := slog.New(slog.NewJSONHandler(&buf, nil))
+	patch := &Patch{Repo: "jdwlabs/platform", FilePath: "cluster/grafana/gitsync.yaml", NewContent: "c", Confidence: 0.9}
+	d := &fakeDiscord{}
+	p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: patch},
+		&fakeJira{key: "JDWLABS-313"}, pathRejectingGH{}, d, log)
+
+	if err := p.Handle(context.Background(), Alert{Fingerprint: "fp"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Counters().pathsRejected.Load(); got != 1 {
+		t.Fatalf("pathsRejected = %d, want 1", got)
+	}
+	if got := p.Counters().reposRejected.Load(); got != 0 {
+		t.Fatalf("reposRejected = %d, want 0 (this was a path rejection)", got)
+	}
+	out := buf.String()
+	for _, want := range []string{"not a watched, existing manifest", "cluster/grafana/gitsync.yaml"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("rejection log omits %q:\n%s", want, out)
+		}
+	}
+	if d.pr != nil {
+		t.Fatal("no PR link may be reported for a discarded remediation")
+	}
+}
+
+type branchExistsGH struct{}
+
+func (branchExistsGH) OpenPR(_ context.Context, p Patch, _ IssueKey) (PRLink, error) {
+	return "", fmt.Errorf("%w: fix/ai-sre/jdwlabs-314 (repo %s)", ErrBranchExists, p.Repo)
+}
+
+// A branch that already has a PR is a quiet, expected skip: counted as
+// branchesSkipped, logged at Info, and never mistaken for the orphaned case.
+func TestPipelineBranchExistsIsQuietAndCounted(t *testing.T) {
+	var buf bytes.Buffer
+	log := slog.New(slog.NewJSONHandler(&buf, nil))
+	patch := &Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "c", Confidence: 0.9}
+	d := &fakeDiscord{}
+	p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: patch},
+		&fakeJira{key: "JDWLABS-314"}, branchExistsGH{}, d, log)
+
+	if err := p.Handle(context.Background(), Alert{Fingerprint: "fp"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Counters().branchesSkipped.Load(); got != 1 {
+		t.Fatalf("branchesSkipped = %d, want 1", got)
+	}
+	if got := p.Counters().branchesOrphaned.Load(); got != 0 {
+		t.Fatalf("branchesOrphaned = %d, want 0 (this branch has a PR)", got)
+	}
+	if strings.Contains(buf.String(), `"level":"ERROR"`) {
+		t.Fatalf("an already-in-review skip must not log at Error:\n%s", buf.String())
+	}
+}
+
+type branchOrphanedGH struct{}
+
+func (branchOrphanedGH) OpenPR(_ context.Context, p Patch, _ IssueKey) (PRLink, error) {
+	return "", fmt.Errorf("%w: fix/ai-sre/jdwlabs-315 (repo %s)", ErrBranchOrphaned, p.Repo)
+}
+
+// An orphaned branch — one a previous run created and then failed to open a
+// PR from — must be loud: counted separately from the expected
+// branchesSkipped skip, and logged at Error, because nobody has been asked
+// to review the commit sitting on it.
+func TestPipelineBranchOrphanedIsLoudAndCounted(t *testing.T) {
+	var buf bytes.Buffer
+	log := slog.New(slog.NewJSONHandler(&buf, nil))
+	patch := &Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "c", Confidence: 0.9}
+	d := &fakeDiscord{}
+	p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: patch},
+		&fakeJira{key: "JDWLABS-315"}, branchOrphanedGH{}, d, log)
+
+	if err := p.Handle(context.Background(), Alert{Fingerprint: "fp"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Counters().branchesOrphaned.Load(); got != 1 {
+		t.Fatalf("branchesOrphaned = %d, want 1", got)
+	}
+	if got := p.Counters().branchesSkipped.Load(); got != 0 {
+		t.Fatalf("branchesSkipped = %d, want 0 (this branch has no PR)", got)
+	}
+	out := buf.String()
+	if !strings.Contains(out, `"level":"ERROR"`) {
+		t.Fatalf("an orphaned branch must log at Error:\n%s", out)
+	}
+	if !strings.Contains(out, "fix/ai-sre/jdwlabs-315") {
+		t.Fatalf("orphaned-branch log omits the branch:\n%s", out)
+	}
+}
+
+func TestCountersExposePathAndBranchOutcomes(t *testing.T) {
+	var c counters
+	c.pathsRejected.Add(2)
+	c.branchesSkipped.Add(5)
+	c.branchesOrphaned.Add(1)
+	var buf bytes.Buffer
+	c.writeTo(&buf)
+	for _, want := range []string{
+		"ai_sre_relay_path_rejections_total 2",
+		"ai_sre_relay_branches_skipped_total 5",
+		"ai_sre_relay_branches_orphaned_total 1",
+	} {
+		if !strings.Contains(buf.String(), want) {
+			t.Fatalf("counter not exposed: %q\n%s", want, buf.String())
+		}
+	}
+}
+
 type fakePatcherErr struct{}
 
 func (fakePatcherErr) Generate(context.Context, Analysis) (*Patch, error) {
