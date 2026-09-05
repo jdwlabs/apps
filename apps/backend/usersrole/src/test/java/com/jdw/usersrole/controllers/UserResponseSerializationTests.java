@@ -28,6 +28,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// Standalone MockMvc serializes through Jackson's default converters rather than the
+// context's. That is faithful here only because src/main registers no ObjectMapper bean
+// to diverge from them; OpenApiPasswordContractTests covers the real context.
 @ExtendWith(MockitoExtension.class)
 @Tag("fast")
 @Tag("unit")
