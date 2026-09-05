@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS auth.users_roles
     CONSTRAINT fk_role FOREIGN KEY (role_id) REFERENCES auth.roles(role_id)
 );
 
+CREATE INDEX IF NOT EXISTS users_roles_role_id_idx ON auth.users_roles (role_id);
+
 CREATE TABLE IF NOT EXISTS auth.profiles
 (
     profile_id BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY,
@@ -54,6 +56,8 @@ CREATE TABLE IF NOT EXISTS auth.profiles
     PRIMARY KEY (profile_id),
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(user_id)
 );
+
+CREATE INDEX IF NOT EXISTS profiles_user_id_idx ON auth.profiles (user_id);
 
 CREATE TABLE IF NOT EXISTS auth.addresses
 (
@@ -73,6 +77,8 @@ CREATE TABLE IF NOT EXISTS auth.addresses
     CONSTRAINT fk_profile FOREIGN KEY (profile_id) REFERENCES auth.profiles(profile_id)
 );
 
+CREATE INDEX IF NOT EXISTS addresses_profile_id_idx ON auth.addresses (profile_id);
+
 CREATE TABLE IF NOT EXISTS auth.profile_icons
 (
     icon_id BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY,
@@ -85,3 +91,5 @@ CREATE TABLE IF NOT EXISTS auth.profile_icons
     PRIMARY KEY (icon_id),
     CONSTRAINT fk_profile FOREIGN KEY (profile_id) REFERENCES auth.profiles(profile_id)
 );
+
+CREATE INDEX IF NOT EXISTS profile_icons_profile_id_idx ON auth.profile_icons (profile_id);
