@@ -609,30 +609,23 @@ paths:
       x-authorization:
         rule: ADMIN_OR_SELF_BY_PROFILE_ID
         preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
-      x-behaviour-change:
-        change: The delete is scoped to the profile in the path. Today it is not.
-        today: |
-          `ProfileService.deleteAddress` takes `profileId` and never uses it — it
-          calls `deleteAddressByAddressId(addressId)`, which is
-          `DELETE FROM auth.addresses WHERE address_id = :id`. Authorization is
-          checked against the caller's own `profileId`, and the delete then
-          ignores it. Any authenticated principal with a profile can delete any
-          address in the table by guessing a sequential id, and gets 204 for it.
-        frozenAs: |
-          `DELETE ... WHERE address_id = :addressId AND profile_id = :profileId`,
-          returning 404 when the address does not belong to the profile in the
-          path.
-        classification: security
-        reasoning: |
-          This contract exists to make authorization regressions detectable
-          rather than discoverable by a user, and the parity tests downstream are
-          generated from it. Transcribing this one faithfully would write an
-          insecure direct object reference into the specification the Go services
-          are built and tested against, and the parity suite would then certify
-          it. Recording it as an intended deviation is the only reading of
-          "frozen against today's behaviour" that does not defeat the purpose of
-          freezing it. The 404 it adds is unreachable for any caller acting on
-          their own data.
+      description: |
+        Scoped to the profile in the path, and 404 when the address does not
+        belong to it. This is a transcription, not a deviation: the scoping is in
+        `AddressDaoPostgres.deleteByProfileIdAndAddressId`, whose statement is
+        `DELETE FROM auth.addresses WHERE address_id = :addressId AND profile_id
+        = :profileId`, and `ProfileService.deleteAddress` raises
+        `ResourceNotFoundException` when it deletes no row.
+
+        It was not always so, and the history is worth keeping: until recently
+        the handler took `profileId`, used it for the authorization check, and
+        then deleted by `addressId` alone, so any authenticated principal with a
+        profile could delete any address in the table by guessing a sequential id
+        and get 204 for it. This contract specified the scoped behaviour while
+        that was still true, because writing an insecure direct object reference
+        into the document the Go services are built and parity-tested against
+        would have had the generated suite certify it. The application has since
+        been fixed independently, so contract and code now agree.
       parameters:
         - $ref: '#/components/parameters/ProfileId'
         - $ref: '#/components/parameters/AddressId'
@@ -646,8 +639,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           description: |
-            The address does not belong to the profile in the path. Added by the
-            `x-behaviour-change` above; not reachable today.
+            The address does not belong to the profile in the path, so the
+            scoped delete matched no row. `Address not found with id {addressId}
+            for profile with id {profileId}` as `text/plain`. Unreachable for any
+            caller acting on their own data.
           content:
             text/plain:
               schema:
