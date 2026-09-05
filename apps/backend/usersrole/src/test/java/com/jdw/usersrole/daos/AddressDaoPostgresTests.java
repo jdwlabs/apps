@@ -4,6 +4,7 @@ import com.jdw.usersrole.models.Address;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -133,14 +134,43 @@ class AddressDaoPostgresTests {
     }
 
     @Test
-    void deleteById_shouldInvokeDeleteOperation() {
+    void deleteByIdAndProfileId_shouldInvokeDeleteOperation() {
         JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
         when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
         when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
+        when(statementSpec.update()).thenReturn(1);
 
-        addressDaoPostgres.deleteById(1L);
+        int rowsDeleted = addressDaoPostgres.deleteByIdAndProfileId(1L, 2L);
 
+        assertEquals(1, rowsDeleted);
         verify(statementSpec, times(1)).update();
+        verify(statementSpec, times(1)).param("addressId", 1L);
+        verify(statementSpec, times(1)).param("profileId", 2L);
+    }
+
+    @Test
+    void deleteByIdAndProfileId_shouldScopeSqlToBothAddressAndProfile() {
+        JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
+        when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
+
+        addressDaoPostgres.deleteByIdAndProfileId(1L, 2L);
+
+        verify(jdbcClient).sql(sqlCaptor.capture());
+        String sql = sqlCaptor.getValue();
+        assertTrue(sql.contains("address_id = :addressId"), sql);
+        assertTrue(sql.contains("profile_id = :profileId"), sql);
+    }
+
+    @Test
+    void deleteByIdAndProfileId_shouldReportNoRowsDeleted_whenAddressBelongsToAnotherProfile() {
+        JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
+        when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
+        when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
+        when(statementSpec.update()).thenReturn(0);
+
+        assertEquals(0, addressDaoPostgres.deleteByIdAndProfileId(1L, 2L));
     }
 
     @Test

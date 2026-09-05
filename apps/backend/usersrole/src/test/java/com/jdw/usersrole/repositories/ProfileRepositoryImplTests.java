@@ -282,10 +282,22 @@ class ProfileRepositoryImplTests {
     }
 
     @Test
-    void deleteAddressByAddressId_shouldDeleteAddress() {
-        profileRepository.deleteAddressByAddressId(1L);
+    void deleteAddress_shouldDeleteAddressScopedToProfile() {
+        when(addressDao.deleteByIdAndProfileId(1L, 2L)).thenReturn(1);
 
-        verify(addressDao, times(1)).deleteById(1L);
+        assertTrue(profileRepository.deleteAddress(2L, 1L));
+
+        verify(addressDao, times(1)).deleteByIdAndProfileId(1L, 2L);
+        verifyNoMoreInteractions(addressDao, profileDao, profileIconDao);
+    }
+
+    @Test
+    void deleteAddress_shouldReportFailure_whenAddressBelongsToAnotherProfile() {
+        when(addressDao.deleteByIdAndProfileId(1L, 2L)).thenReturn(0);
+
+        assertFalse(profileRepository.deleteAddress(2L, 1L));
+
+        verify(addressDao, times(1)).deleteByIdAndProfileId(1L, 2L);
         verifyNoMoreInteractions(addressDao, profileDao, profileIconDao);
     }
 

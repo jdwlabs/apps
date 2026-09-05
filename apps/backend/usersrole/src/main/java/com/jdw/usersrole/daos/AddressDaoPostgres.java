@@ -106,11 +106,12 @@ public class AddressDaoPostgres implements AddressDao {
     }
 
     @Override
-    public void deleteById(Long id) {
-        log.debug("Deleting address with id: {}", id);
-        String sql = "DELETE FROM auth.addresses WHERE address_id = :id";
-        jdbcClient.sql(sql)
-                .param("id", id)
+    public int deleteByIdAndProfileId(Long addressId, Long profileId) {
+        log.debug("Deleting address with id: {}, profile id: {}", addressId, profileId);
+        String sql = "DELETE FROM auth.addresses WHERE address_id = :addressId AND profile_id = :profileId";
+        return jdbcClient.sql(sql)
+                .param("addressId", addressId)
+                .param("profileId", profileId)
                 .update();
     }
 

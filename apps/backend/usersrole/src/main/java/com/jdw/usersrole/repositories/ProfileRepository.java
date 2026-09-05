@@ -22,7 +22,7 @@ public interface ProfileRepository {
 
     Profile saveAddress(Address address);
 
-    void deleteAddressByAddressId(Long addressId);
+    boolean deleteAddress(Long profileId, Long addressId);
 
     Profile saveIcon(ProfileIcon icon);
 

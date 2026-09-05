@@ -187,7 +187,10 @@ public class ProfileService {
     @ExecutionTimeLogger
     public void deleteAddress(@NotNull Long profileId, @NotNull Long addressId, @NotNull String emailAddress) {
         log.info("Deleting address with: profileId={}, addressId={}, requester={}", profileId, addressId, emailAddress);
-        profileRepository.deleteAddressByAddressId(addressId);
+        if (!profileRepository.deleteAddress(profileId, addressId)) {
+            throw new ResourceNotFoundException(
+                    "Address not found with id " + addressId + " for profile with id " + profileId);
+        }
     }
 
     @ExecutionTimeLogger
