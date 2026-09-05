@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"testing"
 
 	"libs/backend/shared/auth"
@@ -73,10 +74,12 @@ func TestAllowCoversEveryContractRule(t *testing.T) {
 		{"self by email allows the owner", noFallback, authz.RuleAdminOrSelfByEmail, plain, authz.Subject{EmailAddress: ptr("user@jdw.com")}, true},
 		{"self by email is case sensitive", noFallback, authz.RuleAdminOrSelfByEmail, plain, authz.Subject{EmailAddress: ptr("User@jdw.com")}, false},
 		{"self by email denies another address", noFallback, authz.RuleAdminOrSelfByEmail, plain, authz.Subject{EmailAddress: ptr("other@jdw.com")}, false},
+		{"self by email denies an anonymous caller", noFallback, authz.RuleAdminOrSelfByEmail, nil, authz.Subject{EmailAddress: ptr("user@jdw.com")}, false},
 
 		{"self by body user id allows an admin over anyone", noFallback, authz.RuleAdminOrSelfByBodyUserID, admin, authz.Subject{BodyUserID: ptr(int64(999))}, true},
 		{"self by body user id allows the owner", noFallback, authz.RuleAdminOrSelfByBodyUserID, plain, authz.Subject{BodyUserID: ptr(int64(3))}, true},
 		{"self by body user id denies another user", noFallback, authz.RuleAdminOrSelfByBodyUserID, plain, authz.Subject{BodyUserID: ptr(int64(999))}, false},
+		{"self by body user id denies an anonymous caller", noFallback, authz.RuleAdminOrSelfByBodyUserID, nil, authz.Subject{BodyUserID: ptr(int64(3))}, false},
 
 		{"self by profile id allows an admin over anyone", withFallback, authz.RuleAdminOrSelfByProfileID, admin, authz.Subject{ProfileID: ptr(int64(999))}, true},
 		{"self by profile id allows the claim owner", withFallback, authz.RuleAdminOrSelfByProfileID, plain, authz.Subject{ProfileID: ptr(int64(30))}, true},
@@ -268,7 +271,43 @@ func TestAuthorityNamesMatchTheJvm(t *testing.T) {
 	}
 }
 
-var contractRulePattern = regexp.MustCompile(`(?m)^\s+rule:\s*(\S+)\s*$`)
+var (
+	authorizationBlockPattern = regexp.MustCompile(`^(\s+)x-authorization:\s*$`)
+	rulePattern               = regexp.MustCompile(`^\s+rule:\s*(\S+)\s*$`)
+)
+
+// rulesInBlocks reads the rule of each x-authorization block, rather than every
+// "rule:" key in the document: a later contract could add that key under some
+// other extension, and matching it there would silently widen what the caller
+// believes it has asserted.
+//
+// Scanned by indentation rather than by one regexp because RE2 has no
+// backreferences, so the block's own indent cannot be matched against itself.
+func rulesInBlocks(content []byte) []string {
+	var rules []string
+	lines := strings.Split(string(content), "\n")
+	for i, line := range lines {
+		block := authorizationBlockPattern.FindStringSubmatch(line)
+		if block == nil {
+			continue
+		}
+		indent := len(block[1])
+		for _, inner := range lines[i+1:] {
+			if strings.TrimSpace(inner) == "" {
+				continue
+			}
+			// The block ends at the first line indented no further than it.
+			if len(inner)-len(strings.TrimLeft(inner, " ")) <= indent {
+				break
+			}
+			if rule := rulePattern.FindStringSubmatch(inner); rule != nil {
+				rules = append(rules, rule[1])
+				break
+			}
+		}
+	}
+	return rules
+}
 
 func rulesInFrozenContracts(t *testing.T) []string {
 	t.Helper()
@@ -279,8 +318,12 @@ func rulesInFrozenContracts(t *testing.T) []string {
 		if err != nil {
 			t.Fatalf("read %s: %v", name, err)
 		}
-		for _, match := range contractRulePattern.FindAllSubmatch(content, -1) {
-			seen[string(match[1])] = true
+		found := rulesInBlocks(content)
+		if len(found) == 0 {
+			t.Fatalf("%s: no x-authorization rules matched; the contract layout changed", name)
+		}
+		for _, rule := range found {
+			seen[rule] = true
 		}
 	}
 	names := make([]string, 0, len(seen))
@@ -289,4 +332,44 @@ func rulesInFrozenContracts(t *testing.T) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+func TestRulesInBlocksReadsOnlyTheAuthorizationBlock(t *testing.T) {
+	document := []byte(`paths:
+  /api/users:
+    get:
+      x-authorization:
+        rule: ADMIN
+        preAuthorize: "hasAuthority('ADMIN')"
+      x-some-later-extension:
+        rule: NOT_AN_AUTHORIZATION_RULE
+      responses:
+        '200':
+          description: ok
+    post:
+      x-authorization:
+        note: |
+          A block whose rule is not the first key.
+        rule: AUTHENTICATED
+`)
+
+	got := rulesInBlocks(document)
+
+	want := []string{"ADMIN", "AUTHENTICATED"}
+	if len(got) != len(want) {
+		t.Fatalf("rules = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("rules[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestTheContractsCarryEveryRuleTheLibraryImplements(t *testing.T) {
+	// A count, so that a scanner change which silently stops matching cannot
+	// leave TestAllowKnowsEveryRuleTheFrozenContractsName passing vacuously.
+	if got, want := len(rulesInFrozenContracts(t)), len(authz.Rules()); got != want {
+		t.Errorf("the contracts name %d distinct rules, the library implements %d", got, want)
+	}
 }

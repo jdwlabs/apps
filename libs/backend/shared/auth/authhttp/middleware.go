@@ -1,17 +1,22 @@
 // Package authhttp wires the verifier and the authorization rules into
-// net/http, and answers refusals in the exact shape the Spring application
-// answers them: the same status, the same Access-Denied-Reason header, and the
-// container error body the frozen contracts pin.
+// net/http, and refuses requests the way the Spring application refuses them:
+// the same status, the same Access-Denied-Reason header, and the same empty
+// body.
 //
-// The bodies matter less than the statuses — no frontend reads them — but
-// reproducing them keeps a client that logs a response from seeing the split.
+// The empty body is measured, not assumed. Both Spring handlers call
+// sendError with a message, but server.error.include-message is unset, so
+// Boot's default of "never" applies and the deployed service answers 401 and
+// 403 with Content-Length 0 and no Content-Type, whatever the request's Accept
+// header. The frozen contract documents a ContainerError JSON body for those
+// statuses; the running application does not produce one. Reproducing what the
+// application does is what keeps the cutover invisible, and the contract itself
+// records that clients key off the status and the header rather than the body.
 package authhttp
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"net/http"
-	"time"
 
 	"libs/backend/shared/auth"
 	"libs/backend/shared/auth/authz"
@@ -28,56 +33,58 @@ const (
 	ReasonNotAuthorized          = "Not Authorized"
 )
 
-// Both handlers build the body as "Access Denied " plus the exception message,
-// so the prefix appears twice in the rendered message. Reproduced rather than
-// tidied: a client that matches on the string must not see the split.
-const (
-	messagePrefix          = "Access Denied "
-	authenticationRequired = "Full authentication is required to access this resource"
-	accessIsDenied         = "Access is denied"
-)
-
-// Spring Boot serializes the error timestamp with Jackson's default date
-// format, not as an epoch number.
-const containerTimestampLayout = "2006-01-02T15:04:05.000-07:00"
-
 type contextKey struct{}
 
 var principalKey contextKey
 
-// containerError is the servlet container's error body. Field order is the
-// order Spring Boot's DefaultErrorAttributes inserts them.
-type containerError struct {
-	Timestamp string `json:"timestamp"`
-	Status    int    `json:"status"`
-	Error     string `json:"error"`
-	Message   string `json:"message"`
-	Path      string `json:"path"`
-}
+// ErrNoVerifier is returned by NewMiddleware rather than left to surface as a
+// nil dereference on the first request, which would take a service down after
+// it had already reported itself healthy.
+var ErrNoVerifier = errors.New("middleware needs a verifier")
 
 // Middleware verifies the bearer token on each request and puts the principal
-// in the request context.
+// in the request context. Build it with NewMiddleware.
 type Middleware struct {
-	Verifier *auth.Verifier
+	verifier *auth.Verifier
 	// Public reports whether a request bypasses the authentication requirement,
 	// standing in for SecurityConfig's permitAll matchers. A public request
 	// whose token verifies still carries its principal, because the JVM filter
 	// runs ahead of those matchers and some public operations read the caller.
 	// Nil makes every route require a token.
 	Public func(*http.Request) bool
-	// OnError observes verification failures. The JVM filter logs them at warn
-	// and answers 401 either way; nothing here depends on a logger.
+	// OnError observes a token that was presented and failed to verify. It is
+	// not called for a request that carried no bearer token at all: the JVM
+	// filter returns early on those without logging, and treating every
+	// anonymous request as an error would bury the real failures.
 	OnError func(*http.Request, error)
 }
 
+// NewMiddleware returns a Middleware, refusing a nil verifier.
+func NewMiddleware(verifier *auth.Verifier) (*Middleware, error) {
+	if verifier == nil {
+		return nil, ErrNoVerifier
+	}
+	return &Middleware{verifier: verifier}, nil
+}
+
 // Handler wraps next with authentication.
-func (m Middleware) Handler(next http.Handler) http.Handler {
+func (m *Middleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// A CORS preflight carries no Authorization header — browsers never put
+		// one on it — so authenticating it would refuse every cross-origin
+		// request the frontends make. Spring never reaches this point: its
+		// CorsFilter sits ahead of the JWT filter and answers the preflight
+		// itself, which is why the deployed service returns 200 here.
+		if isCorsPreflight(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		public := m.Public != nil && m.Public(r)
 
-		principal, err := m.Verifier.VerifyAuthorizationHeader(r.Header.Get("Authorization"))
+		principal, err := m.verifier.VerifyAuthorizationHeader(r.Header.Get("Authorization"))
 		if err != nil {
-			if m.OnError != nil {
+			if m.OnError != nil && !errors.Is(err, auth.ErrMissingBearerToken) {
 				m.OnError(r, err)
 			}
 			if !public {
@@ -90,6 +97,12 @@ func (m Middleware) Handler(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(WithPrincipal(r.Context(), principal)))
 	})
+}
+
+// isCorsPreflight matches the two properties that make a request a preflight:
+// the OPTIONS method and the header the browser only sends on one.
+func isCorsPreflight(r *http.Request) bool {
+	return r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != ""
 }
 
 // WithPrincipal stores a verified principal in a context. Exported so a test
@@ -117,7 +130,7 @@ func Authorize(w http.ResponseWriter, r *http.Request, a authz.Authorizer, rule 
 	allowed, err := a.Allow(r.Context(), rule, principal, subject)
 	switch {
 	case err != nil:
-		writeError(w, r, http.StatusInternalServerError, "", http.StatusText(http.StatusInternalServerError))
+		w.WriteHeader(http.StatusInternalServerError)
 		return false
 	case allowed:
 		return true
@@ -131,30 +144,22 @@ func Authorize(w http.ResponseWriter, r *http.Request, a authz.Authorizer, rule 
 }
 
 // WriteUnauthorized answers as CustomAuthenticationEntryPoint does.
-func WriteUnauthorized(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusUnauthorized, ReasonAuthenticationRequired, messagePrefix+authenticationRequired)
+func WriteUnauthorized(w http.ResponseWriter, _ *http.Request) {
+	writeRefusal(w, http.StatusUnauthorized, ReasonAuthenticationRequired)
 }
 
 // WriteForbidden answers as CustomAccessDeniedHandler does.
-func WriteForbidden(w http.ResponseWriter, r *http.Request) {
-	writeError(w, r, http.StatusForbidden, ReasonNotAuthorized, messagePrefix+accessIsDenied)
+func WriteForbidden(w http.ResponseWriter, _ *http.Request) {
+	writeRefusal(w, http.StatusForbidden, ReasonNotAuthorized)
 }
 
-// writeError renders the container error body. An empty reason omits the
-// header: only the two refusal handlers add it, and a 500 is not a refusal.
-func writeError(w http.ResponseWriter, r *http.Request, status int, reason, message string) {
-	if reason != "" {
-		w.Header().Set(HeaderAccessDeniedReason, reason)
-	}
-	w.Header().Set("Content-Type", "application/json")
+// writeRefusal sends the status and the reason header with no body.
+//
+// The deployed service sends the header twice, because the filter chain also
+// runs on the error dispatch and the entry point commences a second time. One
+// copy is sent here: a client reads the first value either way, and reproducing
+// a duplicate would be copying an accident rather than a behaviour.
+func writeRefusal(w http.ResponseWriter, status int, reason string) {
+	w.Header().Set(HeaderAccessDeniedReason, reason)
 	w.WriteHeader(status)
-	// A write failure here means the client is gone; there is no second
-	// response to send and no caller left to tell.
-	_ = json.NewEncoder(w).Encode(containerError{
-		Timestamp: time.Now().UTC().Format(containerTimestampLayout),
-		Status:    status,
-		Error:     http.StatusText(status),
-		Message:   message,
-		Path:      r.URL.Path,
-	})
 }

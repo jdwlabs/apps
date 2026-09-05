@@ -2,7 +2,7 @@ package authhttp_test
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -33,6 +33,15 @@ func minter() authtest.Minter {
 	}
 }
 
+func middleware(t *testing.T) *authhttp.Middleware {
+	t.Helper()
+	m, err := authhttp.NewMiddleware(verifier(t))
+	if err != nil {
+		t.Fatalf("NewMiddleware: %v", err)
+	}
+	return m
+}
+
 func verifier(t *testing.T) *auth.Verifier {
 	t.Helper()
 	v, err := auth.NewVerifier(auth.Config{
@@ -58,21 +67,23 @@ func validToken(t *testing.T) string {
 	return token
 }
 
-type containerError struct {
-	Timestamp string `json:"timestamp"`
-	Status    int    `json:"status"`
-	Error     string `json:"error"`
-	Message   string `json:"message"`
-	Path      string `json:"path"`
-}
-
-func decodeBody(t *testing.T, res *http.Response) containerError {
+// assertRefusalShape pins what the deployed service actually sends: the status,
+// the reason header, and nothing else. Measured against a booted usersrole on a
+// real port, across Accept values of application/json, */* and text/html.
+func assertRefusalShape(t *testing.T, recorder *httptest.ResponseRecorder, status int, reason string) {
 	t.Helper()
-	var body containerError
-	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
-		t.Fatalf("decode body: %v", err)
+	if recorder.Code != status {
+		t.Errorf("status = %d, want %d", recorder.Code, status)
 	}
-	return body
+	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != reason {
+		t.Errorf("%s = %q, want %q", authhttp.HeaderAccessDeniedReason, got, reason)
+	}
+	if body := recorder.Body.String(); body != "" {
+		t.Errorf("body = %q, want empty; the JVM refuses with Content-Length 0", body)
+	}
+	if got := recorder.Header().Get("Content-Type"); got != "" {
+		t.Errorf("Content-Type = %q, want none", got)
+	}
 }
 
 func TestMiddlewarePassesAVerifiedPrincipalToTheHandler(t *testing.T) {
@@ -88,7 +99,7 @@ func TestMiddlewarePassesAVerifiedPrincipalToTheHandler(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/users/42", nil)
 	request.Header.Set("Authorization", "Bearer "+validToken(t))
 
-	authhttp.Middleware{Verifier: verifier(t)}.Handler(next).ServeHTTP(recorder, request)
+	middleware(t).Handler(next).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
@@ -155,36 +166,12 @@ func TestMiddlewareAnswersTheEntryPointShapeOnEveryAuthenticationFailure(t *test
 				request.Header.Set("Authorization", header)
 			}
 
-			authhttp.Middleware{Verifier: verifier(t)}.Handler(next).ServeHTTP(recorder, request)
+			middleware(t).Handler(next).ServeHTTP(recorder, request)
 
 			if reached {
 				t.Error("the handler ran for an unauthenticated request")
 			}
-			if recorder.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want 401", recorder.Code)
-			}
-			if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != "Authentication Required" {
-				t.Errorf("%s = %q, want %q", authhttp.HeaderAccessDeniedReason, got, "Authentication Required")
-			}
-			if got := recorder.Header().Get("Content-Type"); got != "application/json" {
-				t.Errorf("Content-Type = %q, want application/json", got)
-			}
-			body := decodeBody(t, recorder.Result())
-			if body.Status != http.StatusUnauthorized {
-				t.Errorf("body status = %d, want 401", body.Status)
-			}
-			if body.Error != "Unauthorized" {
-				t.Errorf("body error = %q, want Unauthorized", body.Error)
-			}
-			if body.Message != "Access Denied Full authentication is required to access this resource" {
-				t.Errorf("body message = %q", body.Message)
-			}
-			if body.Path != "/api/users/42" {
-				t.Errorf("body path = %q, want /api/users/42", body.Path)
-			}
-			if _, err := time.Parse("2006-01-02T15:04:05.000-07:00", body.Timestamp); err != nil {
-				t.Errorf("body timestamp %q is not the shape the container writes: %v", body.Timestamp, err)
-			}
+			assertRefusalShape(t, recorder, http.StatusUnauthorized, "Authentication Required")
 		})
 	}
 }
@@ -200,11 +187,9 @@ func TestMiddlewareLeavesPublicRoutesAlone(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/auth/authenticate", nil)
 
-	middleware := authhttp.Middleware{
-		Verifier: verifier(t),
-		Public:   func(r *http.Request) bool { return r.URL.Path == "/auth/authenticate" },
-	}
-	middleware.Handler(next).ServeHTTP(recorder, request)
+	m := middleware(t)
+	m.Public = func(r *http.Request) bool { return r.URL.Path == "/auth/authenticate" }
+	m.Handler(next).ServeHTTP(recorder, request)
 
 	if !reached {
 		t.Error("the handler did not run for a public route")
@@ -226,8 +211,9 @@ func TestMiddlewareStillVerifiesATokenOnAPublicRoute(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/auth/authenticate", nil)
 	request.Header.Set("Authorization", "Bearer "+validToken(t))
 
-	middleware := authhttp.Middleware{Verifier: verifier(t), Public: func(*http.Request) bool { return true }}
-	middleware.Handler(next).ServeHTTP(recorder, request)
+	m := middleware(t)
+	m.Public = func(*http.Request) bool { return true }
+	m.Handler(next).ServeHTTP(recorder, request)
 
 	if got == nil {
 		t.Fatal("a valid token on a public route produced no principal")
@@ -251,8 +237,9 @@ func TestMiddlewareLetsAnInvalidTokenThroughOnAPublicRoute(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/auth/authenticate", nil)
 	request.Header.Set("Authorization", "Bearer not-a-token")
 
-	middleware := authhttp.Middleware{Verifier: verifier(t), Public: func(*http.Request) bool { return true }}
-	middleware.Handler(next).ServeHTTP(recorder, request)
+	m := middleware(t)
+	m.Public = func(*http.Request) bool { return true }
+	m.Handler(next).ServeHTTP(recorder, request)
 
 	if !reached {
 		t.Error("the handler did not run for a public route")
@@ -268,14 +255,94 @@ func TestMiddlewareReportsVerificationFailures(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/users/42", nil)
 	request.Header.Set("Authorization", "Bearer "+authtest.TamperSignature(validToken(t)))
 
-	middleware := authhttp.Middleware{
-		Verifier: verifier(t),
-		OnError:  func(_ *http.Request, err error) { reported = err },
-	}
-	middleware.Handler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).ServeHTTP(recorder, request)
+	m := middleware(t)
+	m.OnError = func(_ *http.Request, err error) { reported = err }
+	m.Handler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).ServeHTTP(recorder, request)
 
 	if reported == nil {
 		t.Fatal("OnError was not called")
+	}
+}
+
+// The JVM filter returns early on a request with no bearer token, without
+// logging: an anonymous request is ordinary traffic, not a failure. Reporting
+// them would bury the tokens that actually failed to verify.
+func TestMiddlewareDoesNotReportRequestsThatCarriedNoToken(t *testing.T) {
+	tests := []struct {
+		name   string
+		header string
+	}{
+		{"no authorization header", ""},
+		{"non-bearer scheme", "Basic Zm9vOmJhcg=="},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			called := false
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/users/42", nil)
+			if tc.header != "" {
+				request.Header.Set("Authorization", tc.header)
+			}
+
+			m := middleware(t)
+			m.OnError = func(*http.Request, error) { called = true }
+			m.Handler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).ServeHTTP(recorder, request)
+
+			if called {
+				t.Error("OnError was called for a request that presented no token")
+			}
+			if recorder.Code != http.StatusUnauthorized {
+				t.Errorf("status = %d, want 401", recorder.Code)
+			}
+		})
+	}
+}
+
+// A browser never attaches Authorization to a preflight, and Spring's CorsFilter
+// answers it ahead of the JWT filter. Measured on a booted usersrole: an
+// unauthenticated preflight returns 200. Refusing it here would break every
+// cross-origin call the frontends make at cutover.
+func TestMiddlewareLetsCorsPreflightThrough(t *testing.T) {
+	reached := false
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reached = true })
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodOptions, "/api/users/42", nil)
+	request.Header.Set("Origin", "http://localhost:4200")
+	request.Header.Set("Access-Control-Request-Method", "GET")
+
+	middleware(t).Handler(next).ServeHTTP(recorder, request)
+
+	if !reached {
+		t.Error("the preflight was refused; every cross-origin request would fail")
+	}
+	if recorder.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200", recorder.Code)
+	}
+}
+
+// Only a real preflight is exempt. A plain OPTIONS request carries no
+// Access-Control-Request-Method and must still be authenticated, or the
+// exemption becomes a way to reach a handler without a token.
+func TestMiddlewareStillAuthenticatesPlainOptions(t *testing.T) {
+	reached := false
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reached = true })
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodOptions, "/api/users/42", nil)
+
+	middleware(t).Handler(next).ServeHTTP(recorder, request)
+
+	if reached {
+		t.Error("a plain OPTIONS request reached the handler unauthenticated")
+	}
+	assertRefusalShape(t, recorder, http.StatusUnauthorized, "Authentication Required")
+}
+
+func TestNewMiddlewareRejectsANilVerifier(t *testing.T) {
+	_, err := authhttp.NewMiddleware(nil)
+
+	if !errors.Is(err, authhttp.ErrNoVerifier) {
+		t.Errorf("error = %v, want %v", err, authhttp.ErrNoVerifier)
 	}
 }
 
@@ -285,25 +352,7 @@ func TestWriteForbiddenMatchesTheAccessDeniedHandler(t *testing.T) {
 
 	authhttp.WriteForbidden(recorder, request)
 
-	if recorder.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want 403", recorder.Code)
-	}
-	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != "Not Authorized" {
-		t.Errorf("%s = %q, want %q", authhttp.HeaderAccessDeniedReason, got, "Not Authorized")
-	}
-	body := decodeBody(t, recorder.Result())
-	if body.Status != http.StatusForbidden {
-		t.Errorf("body status = %d, want 403", body.Status)
-	}
-	if body.Error != "Forbidden" {
-		t.Errorf("body error = %q, want Forbidden", body.Error)
-	}
-	if body.Message != "Access Denied Access is denied" {
-		t.Errorf("body message = %q", body.Message)
-	}
-	if body.Path != "/api/profiles/7" {
-		t.Errorf("body path = %q, want /api/profiles/7", body.Path)
-	}
+	assertRefusalShape(t, recorder, http.StatusForbidden, "Not Authorized")
 }
 
 func TestPrincipalFromReportsAnEmptyContext(t *testing.T) {
@@ -326,9 +375,7 @@ func TestAuthorizeWritesTheAccessDeniedShapeOnDenial(t *testing.T) {
 	if recorder.Code != http.StatusForbidden {
 		t.Errorf("status = %d, want 403", recorder.Code)
 	}
-	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != "Not Authorized" {
-		t.Errorf("%s = %q, want Not Authorized", authhttp.HeaderAccessDeniedReason, got)
-	}
+	assertRefusalShape(t, recorder, http.StatusForbidden, "Not Authorized")
 }
 
 func TestAuthorizeWritesNothingWhenItAllows(t *testing.T) {
@@ -359,9 +406,7 @@ func TestAuthorizeAnswersUnauthorizedWithoutAPrincipal(t *testing.T) {
 	if recorder.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want 401", recorder.Code)
 	}
-	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != "Authentication Required" {
-		t.Errorf("%s = %q, want Authentication Required", authhttp.HeaderAccessDeniedReason, got)
-	}
+	assertRefusalShape(t, recorder, http.StatusUnauthorized, "Authentication Required")
 }
 
 func TestAuthorizeAnswersServerErrorWhenTheRuleCannotBeDecided(t *testing.T) {
@@ -383,12 +428,5 @@ func TestAuthorizeAnswersServerErrorWhenTheRuleCannotBeDecided(t *testing.T) {
 	}
 	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != "" {
 		t.Errorf("%s = %q; a lookup failure says nothing about the caller's rights", authhttp.HeaderAccessDeniedReason, got)
-	}
-	body := decodeBody(t, recorder.Result())
-	if body.Status != http.StatusInternalServerError || body.Error != "Internal Server Error" {
-		t.Errorf("body = %+v, want the container error shape for 500", body)
-	}
-	if body.Path != "/api/profiles/7" {
-		t.Errorf("body path = %q, want /api/profiles/7", body.Path)
 	}
 }

@@ -51,6 +51,23 @@ operation: the key that verifies is the key that signs.
   every Go verification fails at once. `NewVerifier` refuses a key outside the
   HS256 band at construction, turning that outage into a startup error.
 
+### Before cutover: measure the deployed key length
+
+Nothing in this repository knows how long the live `UR_JWT_SECRET_KEY` is, and
+a key of 48 decoded bytes or more means the JVM has been signing HS384 all
+along — every Go verification would fail on the first request after cutover.
+Measure it before switching traffic, without printing it:
+
+```bash
+# Byte length only. The secret itself never reaches a terminal, a log or a
+# shell history: base64 -d and wc -c both read from the pipe.
+kubectl -n <namespace> get secret <secret>   -o jsonpath='{.data.UR_JWT_SECRET_KEY}' | base64 -d | base64 -d | wc -c
+```
+
+Expect a number from 32 to 47. Anything else is a cutover blocker rather than a
+tuning question: 31 or less and the JVM refuses the key outright, 48 or more and
+it signs with an algorithm this library will not accept.
+
 ---
 
 ## 🔧 Usage
@@ -88,9 +105,13 @@ handler := authhttp.Middleware{
 }.Handler(mux)
 ```
 
-Refusals carry the `Access-Denied-Reason` header and container error body the
-contracts pin: `Authentication Required` with 401 from the middleware, and
-`Not Authorized` with 403 from `WriteForbidden`.
+Refusals carry the `Access-Denied-Reason` header and **no body**:
+`Authentication Required` with 401 from the middleware, `Not Authorized` with
+403 from `WriteForbidden`. See the note on the error body below.
+
+A CORS preflight is never authenticated. Browsers do not attach `Authorization`
+to one, and Spring's `CorsFilter` answers it ahead of the JWT filter, so
+refusing it here would break every cross-origin call the frontends make.
 
 ### Deciding a rule
 
@@ -122,6 +143,34 @@ build rather than being discovered by whoever writes the handler.
 
 ---
 
+## 📭 The error body: what the contract says, and what the service sends
+
+The frozen contracts document a `ContainerError` JSON body on every 401 and 403.
+**The running application does not send one.** Both Spring handlers call
+`sendError` with a message, but `server.error.include-message` is set nowhere —
+not in `application.yaml`, not in any deployment values file — so Boot's default
+of `never` applies, and the deployed service answers with `Content-Length: 0`,
+no `Content-Type`, and an empty body. Measured against a booted `usersrole` on a
+real port, with `Accept` of `application/json`, `*/*` and `text/html` in turn.
+
+This library reproduces the service, not the document: status, header, empty
+body. That is what keeps the cutover invisible, and the contract itself records
+that clients key off the status and the header and never the body — the shared
+frontend error helper switches on the status code alone.
+
+Two consequences worth knowing:
+
+- **Setting `server.error.include-message` on the JVM would change the wire
+  format** of every 401 and 403, and this library would then be the one that is
+  wrong. It is a contract change, not a logging tweak.
+- **The contract's `ContainerError` schema for 401 and 403 is inaccurate** and
+  wants a correction in its own change, since these documents are frozen.
+
+The deployed service also sends `Access-Denied-Reason` twice, because the filter
+chain runs again on the error dispatch and the entry point commences a second
+time. One copy is sent here: a client reads the first value either way, and
+copying an accident is not parity.
+
 ## ⚠️ Where this is deliberately not the JVM
 
 Spring rebuilds the principal from the database on every request. This library
@@ -145,9 +194,15 @@ than papered over, and both are pinned by tests:
 
 ```bash
 nx test backend-shared-auth      # go test -race ./...
-nx lint backend-shared-auth
+nx lint backend-shared-auth      # go vet ./...
 nx tidy backend-shared-auth
 ```
+
+`lint` runs `go vet` rather than the executor's default `go fmt`, which rewrites
+files and never fails, so it gated nothing. `golangci-lint` is clean on this
+package but is not wired in: it is installed neither in CI nor in the
+devcontainer, so making it the lint target would fail every run. Installing it
+and wiring all four Go projects is worth its own change.
 
 ### Cross-implementation parity
 
@@ -184,8 +239,12 @@ AUTH_PARITY_PRINT_TOKEN=1 go test . -run TestPrintGoMintedToken -v
 ## 📌 Notes
 
 - Token issuance stays on the JVM. `authtest` mints only so that tests need no
-  running identity service, and it is a separate package precisely so nothing on
-  the verification path can import it.
+  running identity service, and `TestNoServiceImportsTheMinter` walks the
+  service modules and fails if any non-test file imports it — a service that can
+  sign its own tokens can mint itself any principal.
+- `NewVerifier` requires an expected issuer and audience. A service that
+  genuinely accepts several origins sets `AllowAnyIssuerAndAudience`, because an
+  unset field is far more often an oversight than a decision.
 - The only external dependency is `github.com/golang-jwt/jwt/v5`.
 
 ---
