@@ -21,9 +21,11 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.util.ServletRequestPathUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -147,7 +149,12 @@ class ProfileRouteResolutionTests {
     void putOnThePreviouslyAmbiguousUriAnswersBadRequestNotServerError() throws Exception {
         mockMvc.perform(multipart(HttpMethod.PUT, PREVIOUSLY_AMBIGUOUS_URI)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer token"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                // Pinned to the cause, not just the status: a missing `icon` part
+                // would answer 400 too, and the contract claims this 400 is `user`
+                // failing to convert to a profile id.
+                .andExpect(result -> assertInstanceOf(MethodArgumentTypeMismatchException.class,
+                        result.getResolvedException()));
     }
 
     @Test
@@ -155,7 +162,9 @@ class ProfileRouteResolutionTests {
     void deleteOnThePreviouslyAmbiguousUriAnswersBadRequestNotServerError() throws Exception {
         mockMvc.perform(delete(PREVIOUSLY_AMBIGUOUS_URI)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer token"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MethodArgumentTypeMismatchException.class,
+                        result.getResolvedException()));
     }
 
     @Test

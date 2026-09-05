@@ -528,7 +528,17 @@ profile aggregate (section 5.2), which would force `identity-service` to call
 `profile-service` on every user read — the one genuinely bad outcome available
 here. **Amendment to the contract:** the `identity-service` user representation
 drops the embedded profile and exposes `profile_id` only. Clients that need the
-profile fetch `GET /api/profiles/user/{userId}` from `profile-service`.
+profile fetch `GET /api/profiles/by-user/{userId}` from `profile-service`.
+
+_Note added 2026-09-05._ That sentence originally named
+`GET /api/profiles/user/{userId}`, which is the path the audit measured. The
+three by-user operations have since moved to `/api/profiles/by-user/{userId}`,
+because the old path tied with `/api/profiles/{profileId}/icon` in Spring's
+handler mapping and made `PUT` and `DELETE /api/profiles/user/icon` answer 500.
+Only this forward-looking amendment is updated; the measurement tables above
+stay at the revision they were taken from. `docs/contracts/README.md` and
+`x-path-precedence` in `profile-service.openapi.yaml` carry the change and the
+measured routing.
 
 This is the amendment the audit produces, and it pays for itself. Dropping the
 embedded profile removes the whole `getProfile` call — 3 of the 4 statements in

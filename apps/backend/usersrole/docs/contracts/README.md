@@ -291,14 +291,14 @@ sixth, the by-user path, has since been changed in the application itself. Each
 is marked on the operation or schema it affects so it cannot be mistaken for a
 transcription.
 
-| Change                                                                                                          | Where                                                                       | Class    | Visible to a client today?                                                   |
-| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
-| `User` drops the embedded profile for `profileId`                                                               | `identity-service:User`                                                     | design   | No — nothing reads `user.profile`                                            |
-| `GET /api/roles` gains `page` and `size`                                                                        | `GET /api/roles`                                                            | design   | No — the catalogue holds 3 rows                                              |
-| Role grants come from the token, not a per-request read                                                         | `x-authority-freshness`                                                     | security | Not today; after the split, up to 2 h of revocation latency                  |
-| A stale `profile_id` claim yields 404 where today it is 403, on the eight profile operations that look up first | `x-stale-profile-claim`                                                     | security | Only after deleting your own profile — a different message, no broken screen |
-| A stale `profile_id` claim yields 204 where today it is 403, on the two that delete without looking up          | `DELETE /api/profiles/{profileId}`, `DELETE /api/profiles/{profileId}/icon` | security | Only after deleting your own profile — a silent success instead of a refusal |
-| The by-user lookups move to `/api/profiles/by-user/{userId}`                                                    | `GET`, `PUT`, `DELETE` `/api/profiles/by-user/{userId}`                     | defect   | Yes — the old path is gone, and its one client moved with it in this change  |
+| Change                                                                                                          | Where                                                                       | Class    | Visible to a client today?                                                                                |
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `User` drops the embedded profile for `profileId`                                                               | `identity-service:User`                                                     | design   | No — nothing reads `user.profile`                                                                         |
+| `GET /api/roles` gains `page` and `size`                                                                        | `GET /api/roles`                                                            | design   | No — the catalogue holds 3 rows                                                                           |
+| Role grants come from the token, not a per-request read                                                         | `x-authority-freshness`                                                     | security | Not today; after the split, up to 2 h of revocation latency                                               |
+| A stale `profile_id` claim yields 404 where today it is 403, on the eight profile operations that look up first | `x-stale-profile-claim`                                                     | security | Only after deleting your own profile — a different message, no broken screen                              |
+| A stale `profile_id` claim yields 204 where today it is 403, on the two that delete without looking up          | `DELETE /api/profiles/{profileId}`, `DELETE /api/profiles/{profileId}/icon` | security | Only after deleting your own profile — a silent success instead of a refusal                              |
+| The by-user lookups move to `/api/profiles/by-user/{userId}`                                                    | `GET`, `PUT`, `DELETE` `/api/profiles/by-user/{userId}`                     | defect   | Yes — the old path is gone; its one client moves with it, and the two images have to be promoted together |
 
 The last row is a fix rather than a choice about the rewrite, and the only one of
 the six the application has already made — see below. The three security rows
@@ -335,6 +335,18 @@ the frontends is the obvious kindness, and it does not work: the alias is the
 same pattern that tied, so the tie returns and the 500 with it. The only caller,
 `libs/frontend/usersui/data-access/src/lib/profiles/profiles.service.ts`, moves
 in this same change.
+
+**The two images have to be promoted together.** `usersrole` and `usersui` are
+separate ArgoCD applications with their own charts, image tags and promotion
+PRs, and both sit in sync wave 1, so nothing sequences them. Because no alias
+survives, either promotion order breaks production on its own: `usersrole` first
+leaves the old `usersui` calling a path that no longer exists, and `usersui`
+first has the new bundle calling a path that does not exist yet. A production
+promotion is therefore one deployments PR bumping `charts/usersrole/values-prd.yaml`
+and `charts/usersui/values-prd.yaml` in the same commit, and a rollback reverts
+both tags the same way. Pods still roll independently inside that window, so the
+profile screens can 404 briefly; nothing outside them is affected, and sign-in
+does not touch these operations.
 
 `by-user/{userId}` normalizes to 23 against the icon pattern's 20, so it outranks
 it instead of tying. The resolution is measured against the running
