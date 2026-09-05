@@ -103,6 +103,12 @@ jobs:
         run: pnpm exec nx format:check --all
       - name: Run Linting & Unit Tests
         run: pnpm exec nx affected -t lint test
+      # Its own step rather than a `lint` dependency because it boots the Spring
+      # application to fetch the document it diffs against, and `lint` everywhere
+      # else in this repo is static. `nx affected` still decides whether it runs
+      # at all, so a change that does not touch the service costs nothing.
+      - name: Check Frozen API Contracts
+        run: pnpm exec nx affected -t check-contracts
       - name: Run Build
         run: pnpm exec nx affected -t build
       - if: ${{ github.event_name == 'pull_request' }}

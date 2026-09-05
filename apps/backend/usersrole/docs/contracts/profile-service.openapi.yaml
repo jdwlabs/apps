@@ -1,0 +1,1013 @@
+openapi: 3.1.0
+
+info:
+  title: profile-service
+  version: 1.0.0
+  summary: Profiles, addresses and icons, frozen against the usersrole Spring controllers.
+  description: |
+    The profile half of the usersrole split: 15 operations, all under
+    `/api/profiles`.
+
+    Frozen against the behaviour of `ProfilesController` and `ProfileService`,
+    not against the springdoc document they publish — springdoc reports every
+    handler as `200 */*` and mis-types both icon uploads as `application/json`,
+    because it reads return types and parameter types rather than what the
+    handlers build and consume. Every status and media type below was
+    transcribed from the handler bodies and the `GlobalExceptionHandler`.
+    `docs/contracts/README.md` lists every deviation from the served document
+    and why it is there, and `scripts/check-contract-drift.mjs` fails the build
+    when a deviation appears that is not on that list.
+
+    This service authorizes entirely from the verified token minted by
+    `identity-service`. It makes no call to `identity-service` on the request
+    path, in either direction.
+  license:
+    name: PolyForm-Noncommercial-1.0.0
+    url: https://polyformproject.org/licenses/noncommercial/1.0.0/
+
+servers:
+  - url: '{AUTH_BASE_URL}'
+    description: |
+      The same hostname `identity-service` serves. The frontends build every URL
+      as `${AUTH_BASE_URL}/api/...`, so the split is routed by path prefix and no
+      client changes at cutover.
+    variables:
+      AUTH_BASE_URL:
+        default: http://localhost:8080
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: profiles
+    description: Profile records.
+  - name: addresses
+    description: Addresses, a subresource of a profile.
+  - name: icons
+    description: The profile icon, a single optional PNG per profile.
+
+x-profile-id-fallback:
+  problem: |
+    Eleven of these fifteen operations authorize with
+    `#profileId == authentication.principal.getProfileId()`, and that value comes
+    from the `profile_id` token claim. The claim is stamped once, at login. A
+    user who logs in without a profile and then creates one carries a null claim
+    for the rest of the token's life — up to the full two-hour TTL — and is
+    locked out of the profile they just created.
+  decision: |
+    `profile-service` falls back to a `user_id`-keyed profile lookup whenever the
+    `profile_id` claim is absent or null, and authorizes against the profile id
+    that lookup returns. `identity-service` does not re-mint tokens on profile
+    creation.
+  reasoning: |
+    The fallback is one indexed read on `auth.profiles.user_id`, and only on the
+    path where the claim is missing — a present claim short-circuits it, so the
+    common request pays nothing. Re-minting instead would need
+    `profile-service` to reach back into `identity-service` at write time, which
+    is the synchronous coupling the whole split exists to avoid, and it would
+    still leave every already-issued token stale. The `user_id` claim is always
+    present and always correct, so the fallback has something sound to key on.
+  implementationNote: |
+    Falling back is not the same as trusting the request. The lookup is keyed on
+    the `user_id` claim, never on a path variable, so a caller cannot widen their
+    own authorization by asking for someone else's profile id.
+  requiredIndex: auth.profiles.user_id
+
+x-icon-identifier:
+  decision: "`profileId` is the icon's only identifier."
+  problem: |
+    `ProfileIconDaoPostgres` changes its mind about what "the id" means between
+    methods: `findById` filters on `profile_id` while being named as if it took
+    an icon id — it is byte-for-byte the same statement as `findByProfileId` —
+    while `update` and `deleteById` filter on `icon_id`, and `create` returns
+    `profile_id`. So `create` hands back a value `deleteById` would misread as an
+    icon id. Nothing trips over it today only because the repository calls just
+    the two `profileId` methods.
+  frozenAs: |
+    Every route already addresses the icon as `/api/profiles/{profileId}/icon`;
+    no route accepts an icon id. The contract makes that the whole story: read,
+    create, replace and delete are all keyed on `profile_id`, which is also the
+    natural key, since a profile has at most one icon.
+  payload: |
+    `ProfileIcon.id` stays in the response, frozen, because a client type
+    declares it. It is documented as an opaque surrogate: no route accepts it,
+    no lookup uses it, and the Go data access must not key on it.
+  reasoning: |
+    Choosing `icon_id` instead would mean inventing routes that do not exist and
+    changing every client. Choosing `profile_id` costs nothing, matches the
+    routes, matches the two methods actually in the call graph, and makes the
+    unique index on `auth.profile_icons.profile_id` the thing that enforces
+    "at most one icon per profile".
+
+x-path-precedence:
+  constraint: |
+    `/api/profiles/user/{userId}` and `/api/profiles/{profileId}` overlap, as do
+    `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/address` and
+    `/api/profiles/{profileId}/icon`. A request for `/api/profiles/user/7` matches
+    both shapes.
+  resolution: |
+    The literal `user` segment wins. Spring ranks a literal path segment above a
+    template one, so `/api/profiles/user/7` reaches `getProfileByUserId` and
+    never `getProfileById` with a `profileId` of `user`. The Go router must
+    reproduce that precedence explicitly — routers that match in declaration
+    order will send the request to whichever route is registered first, and the
+    failure is silent: `getProfileById` would answer 400 on the unparseable id,
+    which reads as a client error rather than as a routing bug.
+  lint: |
+    `no-ambiguous-paths` is switched off in `redocly.yaml` for exactly these
+    three pairs, with this entry as the record of why.
+
+x-multipart-limits:
+  maxFileSize: 2MB
+  maxRequestSize: 2MB
+  source: '`spring.servlet.multipart.max-file-size` and `max-request-size`.'
+  onExceeded: |
+    `MultipartException`, answered 400 with the exception message as
+    `text/plain`. The limit applies to the whole request as well as the file, so
+    a 2 MB file plus its part headers is already over.
+
+paths:
+  /api/profiles:
+    get:
+      tags: [profiles]
+      operationId: getProfiles
+      summary: List profiles, one page at a time.
+      x-authorization:
+        rule: ADMIN
+        preAuthorize: "hasAuthority('ADMIN')"
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: A page of profiles as a bare array. No envelope, no total count.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [profiles]
+      operationId: createProfile
+      summary: Create a profile for a user.
+      description: |
+        One profile per user. A second create for the same user id is 409.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_BODY_USER_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profile.userId() == authentication.principal.getUserId()"
+        note: |
+          The only rule in either service that reads the request body rather than
+          a path variable or a claim. A caller may create a profile for
+          themselves, an ADMIN for anyone.
+      x-cross-boundary-read:
+        today: |
+          `ProfileService.createProfile` calls `UserRepository.findById` to prove
+          the user exists before inserting, and resolves the acting principal's
+          user id by email for the audit columns.
+        frozenAs: |
+          Neither read survives the split. The acting user id comes from the
+          `user_id` claim, and the existence check becomes a foreign key on
+          `auth.profiles.user_id` — enforced by Postgres, stronger than the
+          application check it replaces, and free on the request path. The 404
+          below is preserved: a foreign-key violation on insert is reported as a
+          missing user, not as a 500.
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileCreateRequestDTO'
+      responses:
+        '201':
+          description: Profile created. springdoc reports 200; the handler builds `HttpStatus.CREATED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/profiles/{profileId}:
+    get:
+      tags: [profiles]
+      operationId: getProfileById
+      summary: Read one profile.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+        note: Subject to the `profile_id` claim fallback described in `x-profile-id-fallback`.
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        '200':
+          description: The profile, with its addresses and icon metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [profiles]
+      operationId: updateProfileById
+      summary: Replace a profile's name fields and birthdate.
+      description: '`userId` is not in the update body: a profile cannot be moved between users.'
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+        note: Subject to the `profile_id` claim fallback described in `x-profile-id-fallback`.
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequestDTO'
+      responses:
+        '200':
+          description: The updated profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [profiles]
+      operationId: deleteProfileById
+      summary: Delete a profile with its addresses and icon.
+      description: |
+        A no-op for an id that does not exist, and still 204.
+
+        A caller who deletes their own profile keeps a token whose `profile_id`
+        claim now points at a row that is gone. Every subsequent profile request
+        under that claim is 404, not 403 — the claim fallback covers an absent
+        claim, not a stale non-null one. Frozen; the client's remedy is to
+        re-authenticate.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '204':
+          description: |
+            Deleted, no body. springdoc reports `200` with a `Profile` body
+            because the handler's declared return type is
+            `ResponseEntity<Profile>`; the body it builds is `noContent()`.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/profiles/user/{userId}:
+    get:
+      tags: [profiles]
+      operationId: getProfileByUserId
+      summary: Read a user's profile.
+      description: |
+        The operation `identity-service` clients use once the `User` payload no
+        longer embeds the profile aggregate.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_USER_ID
+        preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
+        note: |
+          Keyed on `user_id`, which is always present in the token, so this
+          operation is unaffected by the `profile_id` staleness.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: The profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [profiles]
+      operationId: updateProfileByUserId
+      summary: Replace a user's profile.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_USER_ID
+        preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequestDTO'
+      responses:
+        '200':
+          description: The updated profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [profiles]
+      operationId: deleteProfileByUserId
+      summary: Delete a user's profile with its addresses and icon.
+      description: A no-op for a user id with no profile, and still 204.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_USER_ID
+        preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '204':
+          description: Deleted, no body. springdoc reports 200 with a `Profile` body; the handler builds `noContent()`.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/profiles/{profileId}/address:
+    post:
+      tags: [addresses]
+      operationId: addAddress
+      summary: Add an address to a profile.
+      description: |
+        Returns 200, not 201, unlike every other create in either service. The
+        handler builds `ResponseEntity.ok`. Frozen as-is: the asymmetry is
+        harmless and changing it would be a client-visible change for nothing.
+
+        The response is the whole profile, not the created address, so a client
+        that needs the new address id reads it from `addresses`.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequestDTO'
+      responses:
+        '200':
+          description: The profile with the new address in `addresses`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/profiles/{profileId}/address/{addressId}:
+    put:
+      tags: [addresses]
+      operationId: updateAddress
+      summary: Replace one of a profile's addresses.
+      description: |
+        Scoped to the profile: the handler resolves the address inside that
+        profile's own address set, so an `addressId` belonging to another profile
+        is 404 rather than an edit.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AddressId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequestDTO'
+      responses:
+        '200':
+          description: The profile with the updated address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [addresses]
+      operationId: deleteAddress
+      summary: Delete one of a profile's addresses.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      x-behaviour-change:
+        change: The delete is scoped to the profile in the path. Today it is not.
+        today: |
+          `ProfileService.deleteAddress` takes `profileId` and never uses it — it
+          calls `deleteAddressByAddressId(addressId)`, which is
+          `DELETE FROM auth.addresses WHERE address_id = :id`. Authorization is
+          checked against the caller's own `profileId`, and the delete then
+          ignores it. Any authenticated principal with a profile can delete any
+          address in the table by guessing a sequential id, and gets 204 for it.
+        frozenAs: |
+          `DELETE ... WHERE address_id = :addressId AND profile_id = :profileId`,
+          returning 404 when the address does not belong to the profile in the
+          path.
+        classification: security
+        reasoning: |
+          This contract exists to make authorization regressions detectable
+          rather than discoverable by a user, and the parity tests downstream are
+          generated from it. Transcribing this one faithfully would write an
+          insecure direct object reference into the specification the Go services
+          are built and tested against, and the parity suite would then certify
+          it. Recording it as an intended deviation is the only reading of
+          "frozen against today's behaviour" that does not defeat the purpose of
+          freezing it. The 404 it adds is unreachable for any caller acting on
+          their own data.
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AddressId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '204':
+          description: Deleted, no body. springdoc reports 200 with a `Profile` body; the handler builds `noContent()`.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            The address does not belong to the profile in the path. Added by the
+            `x-behaviour-change` above; not reachable today.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/profiles/{profileId}/icon:
+    get:
+      tags: [icons]
+      operationId: getProfileIcon
+      summary: Download a profile's icon.
+      description: |
+        The only non-JSON response in either service: the raw bytes of the stored
+        icon, declared `image/png` by the handler's `produces`. The bytes are
+        whatever was uploaded — nothing validates that they are a PNG, so the
+        declared type is a promise the service does not check. Frozen; a Go
+        implementation that starts sniffing content types would change behaviour
+        for existing rows.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        '200':
+          description: The icon bytes.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: The profile has no icon. `Profile icon not found with id {profileId}` as `text/plain`.
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      tags: [icons]
+      operationId: addIcon
+      summary: Upload a profile's first icon.
+      description: |
+        `multipart/form-data` with one part named `icon`, capped by
+        `x-multipart-limits`. springdoc declares the body `application/json`
+        because it renders the `MultipartFile` parameter as a JSON object with a
+        binary property; the handler consumes multipart and nothing else.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IconUpload'
+      responses:
+        '200':
+          description: The profile with its new icon.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: |
+            The `icon` part is missing
+            (`MissingServletRequestPartException`), or the upload is over the 2 MB
+            cap (`MultipartException`). Both answer `text/plain` with the
+            exception's own message.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The profile already has an icon. Replace it with `PUT` instead.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          $ref: '#/components/responses/IconUploadFailed'
+    put:
+      tags: [icons]
+      operationId: updateIcon
+      summary: Replace a profile's icon.
+      description: |
+        `multipart/form-data` with one part named `icon`, as for the upload.
+
+        Replacing an icon on a profile that has none is 500, not 404: the handler
+        reads the current icon's id to carry it onto the replacement and
+        dereferences null when there is no current icon. Frozen as a documented
+        status rather than silently corrected, because a client that gets 500
+        today would get 404 tomorrow, and the frontends' error text is keyed on
+        the status. Correcting it is a behaviour change and belongs with the
+        service rewrite, not with the freeze.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IconUpload'
+      responses:
+        '200':
+          description: The profile with its replaced icon.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: The `icon` part is missing, or the upload is over the 2 MB cap.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: |
+            The upload could not be read (`IconUploadException`), or the profile
+            had no icon to replace — see the description above. `text/plain` for
+            the first, the container error body for the second.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerError'
+    delete:
+      tags: [icons]
+      operationId: deleteIcon
+      summary: Delete a profile's icon.
+      description: |
+        Keyed on `profile_id` — see `x-icon-identifier`. A no-op for a profile
+        with no icon, and still 204.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_PROFILE_ID
+        preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '204':
+          description: Deleted, no body. springdoc reports 200 with a `Profile` body; the handler builds `noContent()`.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        `Authorization: Bearer <jwt>`, minted by `identity-service` and verified
+        here against the shared HS256 secret. The claim set is documented as
+        `x-jwt-claims` in the identity contract; this service reads `roles`,
+        `user_id` and `profile_id` from it and calls nothing.
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Zero-based page index.
+      schema:
+        type: integer
+        format: int32
+        default: 0
+        minimum: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Page size.
+      schema:
+        type: integer
+        format: int32
+        default: 100
+        minimum: 1
+    ProfileId:
+      name: profileId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    AddressId:
+      name: addressId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    AuthorizationHeader:
+      name: Authorization
+      in: header
+      required: true
+      description: |
+        Declared explicitly because the handler reads the raw header to resolve
+        the acting user for the audit columns. Redundant with the `bearerAuth`
+        security scheme and kept only because removing it would change the served
+        document. In the Go service the acting user comes from the verified
+        `user_id` claim and this parameter disappears.
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: |
+        Bean-validation failures produce a JSON object of field name to message;
+        an unparseable body produces the fixed `text/plain` string
+        `Request body is invalid. Please check the format and try again.`
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrors'
+        text/plain:
+          schema:
+            type: string
+    Unauthorized:
+      description: |
+        No token, an expired token, or a token that fails verification. Written
+        through `HttpServletResponse.sendError`, so the body is the servlet
+        container's error representation. Clients key off the status and the
+        header, never the body.
+      headers:
+        Access-Denied-Reason:
+          description: '`Authentication Required`'
+          required: true
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ContainerError'
+    Forbidden:
+      description: |
+        Authenticated but not permitted by the operation's `x-authorization`
+        rule. Written through `sendError`, so the body is the container's error
+        representation.
+      headers:
+        Access-Denied-Reason:
+          description: '`Not Authorized`'
+          required: true
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ContainerError'
+    NotFound:
+      description: |
+        `ResourceNotFoundException`. The body is the exception message as
+        `text/plain`, e.g. `Profile not found with id 42`.
+      content:
+        text/plain:
+          schema:
+            type: string
+    Conflict:
+      description: |
+        `ResourceExistsException`. The body is the exception message as
+        `text/plain`, e.g. `Profile already exists for user with id 7`.
+      content:
+        text/plain:
+          schema:
+            type: string
+    IconUploadFailed:
+      description: |
+        `IconUploadException` — the uploaded part could not be read. The body is
+        the exception message as `text/plain`.
+      content:
+        text/plain:
+          schema:
+            type: string
+
+  schemas:
+    ProfileCreateRequestDTO:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        middleName:
+          type: string
+        lastName:
+          type: string
+          minLength: 1
+        birthdate:
+          type: string
+          format: date-time
+        userId:
+          type: integer
+          format: int64
+          description: The user this profile belongs to. Immutable once created.
+      required: [firstName, lastName, birthdate, userId]
+
+    ProfileUpdateRequestDTO:
+      type: object
+      description: The create body without `userId`, which cannot be changed.
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        middleName:
+          type: string
+        lastName:
+          type: string
+          minLength: 1
+        birthdate:
+          type: string
+          format: date-time
+      required: [firstName, lastName, birthdate]
+
+    AddressRequestDTO:
+      type: object
+      properties:
+        addressLine1:
+          type: string
+          minLength: 1
+        addressLine2:
+          type: string
+        city:
+          type: string
+          minLength: 1
+        stateProvince:
+          type: string
+          minLength: 1
+        postalCode:
+          type: string
+          minLength: 1
+        country:
+          type: string
+          minLength: 1
+      required: [addressLine1, city, stateProvince, postalCode, country]
+
+    IconUpload:
+      type: object
+      description: |
+        One multipart part named `icon`. The part name is fixed by the handler's
+        `@RequestParam("icon")`; a different name is 400.
+      properties:
+        icon:
+          type: string
+          format: binary
+          description: The icon bytes, at most 2 MB.
+      required: [icon]
+
+    Profile:
+      type: object
+      description: |
+        The profile aggregate. Returned whole by every operation on this service
+        except the icon download and the deletes, including the address and icon
+        writes, which answer with the parent profile rather than the subresource.
+      properties:
+        id:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        middleName:
+          type: [string, 'null']
+        lastName:
+          type: string
+        birthdate:
+          type: string
+          format: date-time
+        userId:
+          type: integer
+          format: int64
+        addresses:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Address'
+        icon:
+          description: |
+            The icon's metadata and bytes, or null when the profile has none.
+            Base64 in JSON, so a profile read carries the whole image; the
+            dedicated `image/png` download exists for clients that want the bytes
+            without the envelope.
+          oneOf:
+            - $ref: '#/components/schemas/ProfileIcon'
+            - type: 'null'
+        createdByUserId:
+          type: integer
+          format: int64
+        createdTime:
+          type: string
+          format: date-time
+        modifiedByUserId:
+          type: integer
+          format: int64
+        modifiedTime:
+          type: string
+          format: date-time
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        addressLine1:
+          type: string
+        addressLine2:
+          type: [string, 'null']
+        city:
+          type: string
+        stateProvince:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        profileId:
+          type: integer
+          format: int64
+        createdByUserId:
+          type: integer
+          format: int64
+        createdTime:
+          type: string
+          format: date-time
+        modifiedByUserId:
+          type: integer
+          format: int64
+        modifiedTime:
+          type: string
+          format: date-time
+
+    ProfileIcon:
+      type: object
+      description: |
+        Icon metadata plus the bytes. Identified by `profileId` — see
+        `x-icon-identifier`.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: |
+            Opaque surrogate key. No route accepts it and no lookup uses it;
+            `profileId` is the icon's identifier. Present because a client type
+            declares it.
+        profileId:
+          type: integer
+          format: int64
+          description: The icon's identifier. At most one icon per profile.
+        icon:
+          type: string
+          contentEncoding: base64
+          description: The stored bytes, base64-encoded in JSON.
+        createdByUserId:
+          type: integer
+          format: int64
+        createdTime:
+          type: string
+          format: date-time
+        modifiedByUserId:
+          type: integer
+          format: int64
+        modifiedTime:
+          type: string
+          format: date-time
+
+    ValidationErrors:
+      type: object
+      description: Field name to validation message, one entry per rejected field.
+      additionalProperties:
+        type: string
+
+    ContainerError:
+      type: object
+      description: |
+        The servlet container's error body, produced whenever a status is set
+        through `sendError` rather than composed by a handler. Its exact keys are
+        a framework detail; the frontends' shared error helper switches on the
+        status code alone.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string

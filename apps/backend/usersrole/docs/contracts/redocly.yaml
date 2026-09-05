@@ -1,0 +1,23 @@
+# Lint configuration for the two frozen service contracts.
+#
+# The ruleset is named rather than left to the CLI default so that a Redocly
+# upgrade cannot quietly change what CI enforces on a frozen document.
+extends:
+  - recommended
+
+rules:
+  # `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/address` are
+  # ambiguous to a generic router, and deliberately so: Spring matches the
+  # literal `user` segment ahead of the `{profileId}` template, and both routes
+  # exist in the API being frozen. The precedence rule the Go router has to
+  # reproduce is written up as `x-path-precedence` in the profile contract, so
+  # the constraint is recorded where an implementer will read it. Leaving the
+  # rule on would emit two warnings on every run forever, which is how real
+  # findings get scrolled past.
+  no-ambiguous-paths: off
+
+apis:
+  identity-service:
+    root: ./identity-service.openapi.yaml
+  profile-service:
+    root: ./profile-service.openapi.yaml

@@ -1,0 +1,1034 @@
+openapi: 3.1.0
+
+info:
+  title: identity-service
+  version: 1.0.0
+  summary: Authentication, users and roles, frozen against the usersrole Spring controllers.
+  description: |
+    The identity half of the usersrole split: 18 operations over `/auth`,
+    `/api/users` and `/api/roles`.
+
+    This document is frozen against the behaviour of the Spring controllers, not
+    against the springdoc document those controllers publish. springdoc reports
+    every handler as `200 */*` because it reads return types rather than the
+    `ResponseEntity` statuses the handlers actually build; every status and media
+    type below was transcribed from the handler bodies and the
+    `GlobalExceptionHandler`. `docs/contracts/README.md` lists every deviation
+    from the served document and why it is there, and
+    `scripts/check-contract-drift.mjs` fails the build when a deviation appears
+    that is not on that list.
+
+    Three behaviours below are deliberate changes rather than transcriptions —
+    the amended `User` response, pagination on `GET /api/roles`, and the icon
+    identifier in the profile contract. They are the audit's deferred decisions,
+    and each is marked `x-behaviour-change` on the operation or schema it
+    affects.
+  license:
+    name: PolyForm-Noncommercial-1.0.0
+    url: https://polyformproject.org/licenses/noncommercial/1.0.0/
+
+servers:
+  - url: '{AUTH_BASE_URL}'
+    description: |
+      The three frontends build every URL as `${AUTH_BASE_URL}/api/...` or
+      `${AUTH_BASE_URL}/auth/...`, so both services stay behind one hostname and
+      the split is routed by path prefix. No client changes at cutover.
+    variables:
+      AUTH_BASE_URL:
+        default: http://localhost:8080
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: Token issue and public registration. Reachable without a token.
+  - name: users
+    description: User records and their role grants.
+  - name: roles
+    description: The role catalogue and its user grants.
+
+x-jwt-claims:
+  description: |
+    The claim set `identity-service` mints and `profile-service` verifies. This is
+    the only interface between the two services on the request path — there is no
+    synchronous call in either direction. HS256 over a shared secret; the scheme
+    is unchanged by the split.
+  algorithm: HS256
+  ttlMs: 7200000
+  claims:
+    sub: Email address of the principal. The subject, not the user id.
+    roles: Array of role names granted to the principal, e.g. `["ADMIN"]`.
+    user_id: Numeric user id. Authorizes every `#userId == principal.getUserId()` rule.
+    profile_id: |
+      Numeric profile id, or null when the principal had no profile row at
+      token-mint time. Stale by construction: it is stamped once at login and
+      never refreshed, so a user who creates a profile mid-session carries a null
+      claim until the token expires. `profile-service` resolves this by falling
+      back to a `user_id`-keyed profile lookup whenever the claim is absent — see
+      `x-profile-id-fallback` in the profile contract.
+    aud: Issuer origin, `scheme://host:port` of the request that minted the token.
+    iss: Issuer origin with `/auth/authenticate` appended.
+    jti: Random UUID per token.
+    nbf: Not-before, equal to the issue time.
+    exp: Expiry, issue time plus the configured TTL.
+
+paths:
+  /auth/authenticate:
+    post:
+      tags: [auth]
+      operationId: authenticate
+      summary: Exchange credentials for a JWT.
+      security: []
+      x-authorization:
+        rule: PUBLIC
+        preAuthorize: null
+        note: Reachable without a token via the filter chain rule `.requestMatchers("/auth/**", "/actuator/**", "/openapi/**").permitAll()`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequestDTO'
+      responses:
+        '200':
+          description: Token minted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDTO'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: |
+            Wrong password, or no user with that email address. A wrong password
+            raises `BadCredentialsException` inside the handler, which the
+            security filter chain translates through the authentication entry
+            point; an unknown email raises `UsernameNotFoundException`, which the
+            `GlobalExceptionHandler` answers as `text/plain`. The two paths
+            therefore return the same status with different body shapes.
+          headers:
+            Access-Denied-Reason:
+              description: '`Authentication Required`. Present only on the entry-point path.'
+              required: false
+              schema:
+                type: string
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerError'
+
+  /auth/user:
+    post:
+      tags: [auth]
+      operationId: registerUser
+      summary: Public self-registration.
+      security: []
+      x-authorization:
+        rule: PUBLIC
+        preAuthorize: null
+        note: |
+          Reachable without a token. The created row is audited as created by
+          user id 1 — `UserService.createUser(dto)` hard-codes that requester id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequestDTO'
+      responses:
+        '201':
+          description: User created. springdoc reports 200; the handler builds `HttpStatus.CREATED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/users:
+    get:
+      tags: [users]
+      operationId: getAllUsers
+      summary: List users, one page at a time.
+      x-authorization:
+        rule: ADMIN
+        preAuthorize: "hasAuthority('ADMIN')"
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: A page of users as a bare array. There is no envelope and no total count.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [users]
+      operationId: createUser
+      summary: Create a user as an authenticated caller.
+      x-authorization:
+        rule: AUTHENTICATED
+        preAuthorize: null
+        note: |
+          No method-level predicate — any authenticated principal may create a
+          user. The bearer token also supplies the audit requester: the handler
+          reads the `Authorization` header itself to resolve the creating user id
+          rather than taking it from the security context.
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequestDTO'
+      responses:
+        '201':
+          description: User created. springdoc reports 200; the handler builds `HttpStatus.CREATED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/users/{userId}:
+    get:
+      tags: [users]
+      operationId: getUserById
+      summary: Read one user.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_USER_ID
+        preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: The user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [users]
+      operationId: updateUser
+      summary: Replace a user's email address and password.
+      description: |
+        The request body is the same `UserRequestDTO` as registration, and both
+        fields are required, so every update rewrites the bcrypt hash. A client
+        that wants to change only the email address must resend the password.
+        Frozen as-is.
+
+        Updating to an email address another user already holds violates
+        `users_email_address_key` and surfaces as 500, not 409 — the unique
+        violation is raised by Postgres and no handler maps it.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_USER_ID
+        preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequestDTO'
+      responses:
+        '200':
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: |
+            The new email address is already taken. A unique-constraint violation
+            with no handler mapping it. Frozen because clients key their messages
+            off the status code and changing it is a visible behaviour change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerError'
+    delete:
+      tags: [users]
+      operationId: deleteUser
+      summary: Delete a user and everything hanging off it.
+      description: |
+        Deleting a user removes its role grants, its profile, and that profile's
+        addresses and icon. Those last three tables belong to `profile-service`,
+        so this is the one write that crosses the service boundary.
+
+        Frozen as one local transaction in `identity-service`, not a call into
+        `profile-service`: both services share the `auth` schema, so the cascade
+        stays a database concern. See `x-delete-cascade`.
+
+        Deleting an id that does not exist is a no-op and still returns 204 — the
+        handler issues the deletes without checking for the row first.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_USER_ID
+        preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
+      x-delete-cascade:
+        ownedByThisService: [auth.users_roles, auth.users]
+        ownedByProfileService:
+          [auth.addresses, auth.profile_icons, auth.profiles]
+        mechanism: |
+          `ON DELETE CASCADE` on the shared schema's foreign keys, so the five
+          deletes stay one statement and one transaction. The cost is a coupling
+          the contract cannot hide: `profile-service` must not cache profile rows
+          and must not assume it is the only writer of its own tables. That cost
+          is accepted here because the alternative — a synchronous call from
+          identity to profile inside a delete — makes user deletion fail whenever
+          `profile-service` is down, which is worse than the coupling.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '204':
+          description: |
+            Deleted, no body. springdoc reports `200` with a `User` body because
+            the handler's declared return type is `ResponseEntity<User>`; the
+            body it actually builds is `noContent()`.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/users/email/{emailAddress}:
+    get:
+      tags: [users]
+      operationId: getUserByEmailAddress
+      summary: Read one user by email address.
+      x-authorization:
+        rule: ADMIN_OR_SELF_BY_EMAIL
+        preAuthorize: "hasAuthority('ADMIN') or #emailAddress == authentication.principal.getUsername()"
+        note: |
+          Compares against the token subject, which is the email address. The
+          comparison is exact and case-sensitive, so a caller who authenticates
+          as `User@example.com` cannot read `user@example.com`.
+      parameters:
+        - name: emailAddress
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: The user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/users/{userId}/roles/grant:
+    put:
+      tags: [users]
+      operationId: grantRolesToUser
+      summary: Grant roles to a user.
+      x-authorization:
+        rule: ADMIN_OR_MANAGER
+        preAuthorize: "hasAnyAuthority('ADMIN', 'MANAGER')"
+        note: |
+          A second check runs inside the service: granting role id 1 requires the
+          caller to already hold role id 1. A MANAGER who tries raises
+          `AccessDeniedException` and gets 403 from the access-denied handler,
+          not from the predicate.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleIdList'
+      responses:
+        '200':
+          description: The user with its updated grants.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/users/{userId}/roles/revoke:
+    put:
+      tags: [users]
+      operationId: revokeRolesFromUser
+      summary: Revoke roles from a user.
+      x-authorization:
+        rule: ADMIN_OR_MANAGER
+        preAuthorize: "hasAnyAuthority('ADMIN', 'MANAGER')"
+        note: Same elevated-role guard as the grant operation — revoking role id 1 requires holding it.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleIdList'
+      responses:
+        '200':
+          description: The user with its updated grants.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/roles:
+    get:
+      tags: [roles]
+      operationId: getAllRoles
+      summary: List roles, one page at a time.
+      description: |
+        Paginated in this contract; unpaginated today. See `x-behaviour-change`.
+      x-authorization:
+        rule: AUTHENTICATED
+        preAuthorize: null
+        note: |
+          Any authenticated principal can enumerate the whole role catalogue,
+          including each role's user-grant list. Frozen deliberately rather than
+          tightened — see `x-authorization-decision`.
+      x-behaviour-change:
+        change: '`page` and `size` are added, defaulting to 0 and 100.'
+        today: |
+          `RoleDaoPostgres.findAll` is `SELECT * FROM auth.roles` with no
+          `ORDER BY` and no `LIMIT`. The endpoint returns the whole table in
+          whatever order Postgres produces, and the audit measured its fan-out at
+          `1 + N` statements over that whole table.
+        frozenAs: |
+          `page` and `size` with the same defaults and the same bare-array
+          response as `/api/users` and `/api/profiles`, over
+          `ORDER BY role_id LIMIT :size OFFSET :page * :size`. The ordering is
+          part of the change: pagination without a total order returns
+          overlapping pages.
+        clientImpact: |
+          The three role-list callers in the frontends
+          (`libs/frontend/rolesui/feature/core/**`) request no query parameters,
+          so they receive the first 100 roles instead of all of them. The
+          deployed catalogue holds 3 rows, so no client sees a difference today;
+          a workspace that grows past 100 roles would, and that is the point of
+          recording it here rather than discovering it later.
+      x-authorization-decision:
+        decision: Frozen as `authenticated`. Not tightened in this contract.
+        reasoning: |
+          Neither the container nor any remote applies a client-side role gate —
+          a grep for role checks across `libs/frontend` and `apps/frontend`
+          returns one unrelated comment. The role screens are therefore reachable
+          by every authenticated user, and they are reachable precisely because
+          these three reads answer them. Tightening to ADMIN_OR_MANAGER turns
+          those screens into 403s at cutover with no client change to compensate,
+          which is exactly the silent authorization regression this contract
+          exists to make impossible.
+        residualExposure: |
+          The exposure that matters is not the catalogue but the `users` array on
+          each `Role`: it discloses which user ids hold which role to any
+          authenticated caller. Narrowing that is a separate change, because the
+          two assignment screens consume it, so it needs a frontend change to
+          land alongside. Out of scope here; recorded so it is not mistaken for
+          an oversight.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: A page of roles as a bare array. No envelope, no total count.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [roles]
+      operationId: createRole
+      summary: Create a role.
+      x-authorization:
+        rule: ADMIN
+        preAuthorize: "hasAuthority('ADMIN')"
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequestDTO'
+      responses:
+        '201':
+          description: Role created. springdoc reports 200; the handler builds `HttpStatus.CREATED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/roles/{roleId}:
+    get:
+      tags: [roles]
+      operationId: getRoleById
+      summary: Read one role.
+      x-authorization:
+        rule: AUTHENTICATED
+        preAuthorize: null
+        note: See the `x-authorization-decision` on `GET /api/roles`.
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      responses:
+        '200':
+          description: The role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [roles]
+      operationId: updateRole
+      summary: Replace a role's name and description.
+      description: |
+        `auth.roles` has no unique index on `role_name`, so unlike the user
+        update this one cannot fail on a duplicate: two roles may end up sharing
+        a name, and `GET /api/roles/name/{roleName}` then returns whichever the
+        DAO's `SELECT` yields first. Frozen as-is.
+      x-authorization:
+        rule: ADMIN
+        preAuthorize: "hasAuthority('ADMIN')"
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequestDTO'
+      responses:
+        '200':
+          description: The updated role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [roles]
+      operationId: deleteRole
+      summary: Delete a role.
+      description: |
+        A no-op for an id that does not exist, and still 204 — the handler
+        deletes without reading first.
+      x-authorization:
+        rule: ADMIN
+        preAuthorize: "hasAuthority('ADMIN')"
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      responses:
+        '204':
+          description: Deleted, no body. springdoc reports 200; the handler builds `noContent()`.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/roles/name/{roleName}:
+    get:
+      tags: [roles]
+      operationId: getRoleByName
+      summary: Read one role by name.
+      x-authorization:
+        rule: AUTHENTICATED
+        preAuthorize: null
+        note: See the `x-authorization-decision` on `GET /api/roles`.
+      parameters:
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/roles/{roleId}/users/grant:
+    put:
+      tags: [roles]
+      operationId: grantUsersToRole
+      summary: Grant a role to users.
+      description: |
+        The same write as `PUT /api/users/{userId}/roles/grant` from the other
+        direction — both insert into `auth.users_roles`. That two-writer table is
+        why users and roles stay in one service.
+      x-authorization:
+        rule: ADMIN_OR_MANAGER
+        preAuthorize: "hasAnyAuthority('ADMIN', 'MANAGER')"
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserIdList'
+      responses:
+        '200':
+          description: The role with its updated grants.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/roles/{roleId}/users/revoke:
+    put:
+      tags: [roles]
+      operationId: revokeUsersFromRole
+      summary: Revoke a role from users.
+      x-authorization:
+        rule: ADMIN_OR_MANAGER
+        preAuthorize: "hasAnyAuthority('ADMIN', 'MANAGER')"
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserIdList'
+      responses:
+        '200':
+          description: The role with its updated grants.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        `Authorization: Bearer <jwt>`, verified against the shared HS256 secret.
+        Several write operations additionally declare the header as an explicit
+        parameter, because their handlers parse it themselves to resolve the
+        audit requester rather than reading the security context.
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Zero-based page index.
+      schema:
+        type: integer
+        format: int32
+        default: 0
+        minimum: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Page size.
+      schema:
+        type: integer
+        format: int32
+        default: 100
+        minimum: 1
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    RoleId:
+      name: roleId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    AuthorizationHeader:
+      name: Authorization
+      in: header
+      required: true
+      description: |
+        Declared explicitly because the handler reads the raw header to resolve
+        the acting user for the audit columns. Redundant with the `bearerAuth`
+        security scheme and kept only because removing it would change the served
+        document. In the Go services the acting user comes from the verified
+        `user_id` claim and this parameter disappears; it is frozen here because
+        it is part of today's document.
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: |
+        Two body shapes share this status. Bean-validation failures produce a
+        JSON object of field name to message, from
+        `GlobalExceptionHandler.handle(MethodArgumentNotValidException)`. An
+        unparseable body produces the fixed `text/plain` string
+        `Request body is invalid. Please check the format and try again.`
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrors'
+        text/plain:
+          schema:
+            type: string
+    Unauthorized:
+      description: |
+        No token, an expired token, or a token that fails verification. Written
+        by the authentication entry point through `HttpServletResponse.sendError`,
+        so the body is the servlet container's error representation rather than
+        anything the application composes. Clients key off the status and the
+        header, never the body.
+      headers:
+        Access-Denied-Reason:
+          description: '`Authentication Required`'
+          required: true
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ContainerError'
+    Forbidden:
+      description: |
+        Authenticated but not permitted: the operation's `x-authorization` rule
+        rejected the principal, or the elevated-role guard on the grant and
+        revoke operations did. Written by the access-denied handler through
+        `sendError`, so the body is the container's error representation.
+      headers:
+        Access-Denied-Reason:
+          description: '`Not Authorized`'
+          required: true
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ContainerError'
+    NotFound:
+      description: |
+        `ResourceNotFoundException`. The body is the exception message as
+        `text/plain`, e.g. `User not found with id 42`.
+      content:
+        text/plain:
+          schema:
+            type: string
+    Conflict:
+      description: |
+        `ResourceExistsException`. The body is the exception message as
+        `text/plain`, e.g. `User already exists with email address a@b.c`.
+      content:
+        text/plain:
+          schema:
+            type: string
+
+  schemas:
+    UserRequestDTO:
+      type: object
+      description: The registration, creation and update body. Both fields are required on all three.
+      properties:
+        emailAddress:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+          writeOnly: true
+          description: |
+            Accepted on input, never returned. At least 8 characters with an
+            upper-case letter, a lower-case letter, a digit and a symbol. Stored
+            bcrypt-encoded.
+          pattern: "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?~`])[A-Za-z\\d!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?~`]{8,}$"
+      required: [emailAddress, password]
+
+    AuthResponseDTO:
+      type: object
+      properties:
+        jwtToken:
+          type: string
+          minLength: 1
+      required: [jwtToken]
+
+    User:
+      type: object
+      description: |
+        The user representation. Carries no password field in any response — see
+        `x-password-contract` — and no embedded profile — see
+        `x-behaviour-change`.
+      x-password-contract: |
+        `User.password` is `@JsonIgnore` on the record, so the bcrypt hash is
+        absent from every response including the public registration one. The
+        field exists only on `UserRequestDTO`, where it is `writeOnly`. A guard
+        test scans every model and DTO for password-like fields left
+        serializable, and `check-contract-drift.mjs` re-asserts the same property
+        against both the served document and this file.
+      x-behaviour-change:
+        change: '`profile` is replaced by `profileId`.'
+        today: |
+          The `User` payload embeds the whole profile aggregate — the profile
+          record, its address set and its icon. The audit measured what that
+          costs: 4 statements per row of a user listing instead of 1, roughly 401
+          statements for a default-size `GET /api/users`.
+        frozenAs: |
+          `profileId`, nullable, and nothing else from the profile. A client that
+          needs the profile fetches `GET /api/profiles/user/{userId}` from
+          `profile-service`.
+        reasoning: |
+          Keeping the embedded aggregate would force `identity-service` to call
+          `profile-service` on every single user read — a synchronous hop on the
+          hottest path in the system, to serve data the caller usually does not
+          want. It is the one outcome the split must not produce. Dropping it
+          also removes 3 of the 4 statements in the per-row multiplier, taking
+          that default-size listing from about 401 statements to 101 before any
+          batching.
+        clientImpact: |
+          No current client reads `user.profile`: the profile screens call
+          `libs/frontend/usersui/data-access/.../profiles.service.ts`, which
+          already addresses `/api/profiles` directly. The field is dropped rather
+          than deprecated because a frozen contract with a field no service will
+          populate is worse than one without it.
+      properties:
+        id:
+          type: integer
+          format: int64
+        emailAddress:
+          type: string
+          format: email
+        status:
+          type: string
+          description: '`ACTIVE` for every row this service creates.'
+        roles:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/UserRole'
+        profileId:
+          type: [integer, 'null']
+          format: int64
+          description: |
+            The user's profile id, or null when it has no profile row. Resolved
+            by `identity-service` from `auth.profiles.user_id`, a read-only
+            cross-context read on the shared schema. The same lookup supplies the
+            `profile_id` token claim.
+        createdByUserId:
+          type: integer
+          format: int64
+        createdTime:
+          type: string
+          format: date-time
+        modifiedByUserId:
+          type: integer
+          format: int64
+        modifiedTime:
+          type: string
+          format: date-time
+
+    UserRole:
+      type: object
+      description: One row of `auth.users_roles`. Written from both the user and the role side.
+      properties:
+        userId:
+          type: integer
+          format: int64
+        roleId:
+          type: integer
+          format: int64
+        createdByUserId:
+          type: integer
+          format: int64
+        createdTime:
+          type: string
+          format: date-time
+
+    RoleRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+      required: [name, description]
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        users:
+          type: array
+          uniqueItems: true
+          description: |
+            The role's grants. Visible to any authenticated caller — see the
+            `x-authorization-decision` on `GET /api/roles`.
+          items:
+            $ref: '#/components/schemas/UserRole'
+        createdByUserId:
+          type: integer
+          format: int64
+        createdTime:
+          type: string
+          format: date-time
+        modifiedByUserId:
+          type: integer
+          format: int64
+        modifiedTime:
+          type: string
+          format: date-time
+
+    RoleIdList:
+      type: array
+      minItems: 1
+      items:
+        type: integer
+        format: int64
+
+    UserIdList:
+      type: array
+      minItems: 1
+      items:
+        type: integer
+        format: int64
+
+    ValidationErrors:
+      type: object
+      description: Field name to validation message, one entry per rejected field.
+      additionalProperties:
+        type: string
+
+    ContainerError:
+      type: object
+      description: |
+        The servlet container's error body, produced whenever a status is set
+        through `sendError` rather than composed by a handler. Its exact keys are
+        a framework detail; no client reads them, and the frontends' shared error
+        helper switches on the status code alone.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
