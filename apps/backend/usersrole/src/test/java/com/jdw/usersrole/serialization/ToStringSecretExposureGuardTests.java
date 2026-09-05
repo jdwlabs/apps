@@ -2,6 +2,7 @@ package com.jdw.usersrole.serialization;
 
 import com.jdw.usersrole.dtos.UserRequestDTO;
 import com.jdw.usersrole.models.User;
+import com.jdw.usersrole.serialization.fixtures.NestedUnmaskedPasswordFixture;
 import com.jdw.usersrole.serialization.fixtures.UnmaskedPasswordFixture;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -52,6 +54,15 @@ class ToStringSecretExposureGuardTests {
                 leakedToStrings(Set.of(UnmaskedPasswordFixture.class)));
     }
 
+    // A secret does not have to be the outer type's own field to leak: User.profile() embeds
+    // Profile directly, so a secret added a level down would render into the outer toString()
+    // through plain string concatenation just as easily as one at the top level.
+    @Test
+    void guardFlagsAToStringThatLeaksASecretThroughANestedRecord() {
+        assertEquals(List.of(NestedUnmaskedPasswordFixture.class.getName()),
+                leakedToStrings(Set.of(NestedUnmaskedPasswordFixture.class)));
+    }
+
     private List<String> leakedToStrings(Set<Class<?>> types) {
         List<String> leaked = new ArrayList<>();
         for (Class<?> type : types) {
@@ -64,28 +75,45 @@ class ToStringSecretExposureGuardTests {
     }
 
     private Object instantiateWithSecretMarker(Class<?> type) {
-        RecordComponent[] components = type.getRecordComponents();
-        Class<?>[] paramTypes = new Class<?>[components.length];
-        Object[] args = new Object[components.length];
-        for (int i = 0; i < components.length; i++) {
-            paramTypes[i] = components[i].getType();
-            args[i] = valueFor(components[i]);
+        return instantiateWithSecretMarker(type, new HashSet<>());
+    }
+
+    // `visiting` tracks the current instantiation chain (not every type seen), so a record
+    // that legitimately embeds the same nested type twice in different branches is still
+    // built in full — only an actual cycle (a type embedding itself, directly or through
+    // others) gets short-circuited to null.
+    private Object instantiateWithSecretMarker(Class<?> type, Set<Class<?>> visiting) {
+        if (!visiting.add(type)) {
+            return null;
         }
         try {
+            RecordComponent[] components = type.getRecordComponents();
+            Class<?>[] paramTypes = new Class<?>[components.length];
+            Object[] args = new Object[components.length];
+            for (int i = 0; i < components.length; i++) {
+                paramTypes[i] = components[i].getType();
+                args[i] = valueFor(components[i], visiting);
+            }
             Constructor<?> constructor = type.getDeclaredConstructor(paramTypes);
             constructor.setAccessible(true);
             return constructor.newInstance(args);
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException(
                     "could not instantiate " + type.getName() + " via its canonical constructor", e);
+        } finally {
+            visiting.remove(type);
         }
     }
 
-    private Object valueFor(RecordComponent component) {
-        if (namesASecret(component.getName()) && component.getType() == String.class) {
+    private Object valueFor(RecordComponent component, Set<Class<?>> visiting) {
+        Class<?> type = component.getType();
+        if (namesASecret(component.getName()) && type == String.class) {
             return SECRET_MARKER;
         }
-        return defaultValueFor(component.getType());
+        if (isRecursableRecord(type)) {
+            return instantiateWithSecretMarker(type, visiting);
+        }
+        return defaultValueFor(type);
     }
 
     private Object defaultValueFor(Class<?> type) {
@@ -132,19 +160,41 @@ class ToStringSecretExposureGuardTests {
                     .map(definition -> definition.getBeanClassName())
                     .map(this::loadClass)
                     .filter(Class::isRecord)
-                    .filter(this::hasSecretField)
+                    .filter(type -> hasSecretField(type, new HashSet<>()))
                     .forEach(types::add);
         }
         return types;
     }
 
-    private boolean hasSecretField(Class<?> type) {
+    // Recurses into nested record components (e.g. User -> Profile) so a secret does not have
+    // to be a direct field of the scanned type to be caught — it only has to be reachable
+    // through toString()'s implicit chain of nested calls. `visited` here is a plain
+    // once-ever set rather than an ancestor stack: whether a type transitively reaches a
+    // secret is a fixed property of that type, independent of which path found it, so
+    // short-circuiting a repeat visit (including a cyclic one) never hides a real positive.
+    private boolean hasSecretField(Class<?> type, Set<Class<?>> visited) {
+        if (!visited.add(type)) {
+            return false;
+        }
         for (RecordComponent component : type.getRecordComponents()) {
             if (namesASecret(component.getName())) {
                 return true;
             }
+            Class<?> componentType = component.getType();
+            if (isRecursableRecord(componentType) && hasSecretField(componentType, visited)) {
+                return true;
+            }
         }
         return false;
+    }
+
+    private boolean isRecursableRecord(Class<?> type) {
+        return type.isRecord() && !isJdkType(type);
+    }
+
+    private boolean isJdkType(Class<?> type) {
+        String packageName = type.getPackageName();
+        return packageName.startsWith("java.") || packageName.startsWith("javax.");
     }
 
     private Class<?> loadClass(String className) {
