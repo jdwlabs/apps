@@ -19,8 +19,29 @@
       "outputs": ["{projectRoot}/build/libs"]
     },
     "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "redocly lint --config {projectRoot}/docs/contracts/redocly.yaml"
+      },
       "cache": true,
-      "command": "echo Ignored in project configuration"
+      "inputs": ["{projectRoot}/docs/contracts/**/*"]
+    },
+    "contract-extract": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "bash gradlew test --tests com.jdw.usersrole.contracts.ServedOpenApiDocumentDumpTests"
+      },
+      "outputs": ["{projectRoot}/build/openapi"]
+    },
+    "check-contracts": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["contract-extract"],
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "node {projectRoot}/scripts/check-contract-drift.mjs"
+      }
     },
     "update-app": {
       "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml \"$(bash scripts/resolve-version.sh usersrole)\" {projectName}"

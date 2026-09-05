@@ -1,0 +1,122 @@
+{
+  "$comment": "Every way the two frozen contracts differ from the springdoc document usersrole serves. check-contract-drift.mjs fails on any difference this file does not account for, and on any entry here that no longer applies. Keep it in step with README.md.",
+  "servedDocument": {
+    "path": "/openapi/api-docs",
+    "producedBy": "gradle test --tests com.jdw.usersrole.contracts.ServedOpenApiDocumentDumpTests",
+    "writtenTo": "build/openapi/served-api-docs.json"
+  },
+  "globalRules": [
+    {
+      "id": "error-responses-added",
+      "applies": "Every operation.",
+      "reason": "springdoc documents no error response at all. The 4xx and 5xx entries in both contracts are transcribed from GlobalExceptionHandler, CustomAuthenticationEntryPoint and CustomAccessDeniedHandler, which springdoc cannot see because they are not annotations on the handlers."
+    },
+    {
+      "id": "response-media-type-narrowed",
+      "applies": "Every JSON response springdoc reports as */*.",
+      "reason": "springdoc reports */* because the handlers declare no produces. The only content negotiation configured is Jackson, so the served type is application/json for every one of them. The single exception is the icon download, which does declare produces and which springdoc therefore already reports as image/png."
+    },
+    {
+      "id": "nullability-and-encoding-refined",
+      "applies": "Property types inside the frozen schemas.",
+      "reason": "springdoc infers every property as non-nullable and reports byte arrays as format: byte. The frozen schemas mark the properties that are genuinely nullable (User.profileId, Profile.middleName, Profile.icon, Address.addressLine2) and describe the icon bytes as base64-encoded content. These refine property types; they never add or remove a property, and the drift check compares property names, so a real schema change still fails."
+    }
+  ],
+  "operations": {
+    "POST /auth/user": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "201"
+      },
+      "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED). springdoc reports the declared return type, not the status the body carries."
+    },
+    "POST /api/users": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "201"
+      },
+      "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
+    },
+    "DELETE /api/users/{userId}": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "204"
+      },
+      "reason": "The handler is declared ResponseEntity<User> but builds noContent(). There is no body."
+    },
+    "POST /api/roles": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "201"
+      },
+      "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
+    },
+    "DELETE /api/roles/{roleId}": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "204"
+      },
+      "reason": "The handler builds noContent(). springdoc already reports no body here because the return type is ResponseEntity<Void>; only the status is wrong."
+    },
+    "GET /api/roles": {
+      "parametersAdded": ["page", "size"],
+      "reason": "Intended behaviour change, not a transcription. The endpoint is unpaginated today and its fan-out is 1 + N over the whole roles table. Paginated here on the same page/size contract as the user and profile listings, over a stable role_id ordering. Recorded as x-behaviour-change on the operation."
+    },
+    "POST /api/profiles": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "201"
+      },
+      "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
+    },
+    "DELETE /api/profiles/{profileId}": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "204"
+      },
+      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
+    },
+    "DELETE /api/profiles/user/{userId}": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "204"
+      },
+      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
+    },
+    "DELETE /api/profiles/{profileId}/address/{addressId}": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "204"
+      },
+      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent(). The 404 this operation also gains is an intended behaviour change recorded as x-behaviour-change: the delete is scoped to the profile in the path, where today it ignores it."
+    },
+    "DELETE /api/profiles/{profileId}/icon": {
+      "successStatus": {
+        "served": "200",
+        "frozen": "204"
+      },
+      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
+    },
+    "POST /api/profiles/{profileId}/icon": {
+      "requestMediaType": {
+        "served": "application/json",
+        "frozen": "multipart/form-data"
+      },
+      "reason": "The handler takes @RequestParam(\"icon\") MultipartFile and consumes multipart. springdoc renders the MultipartFile as a JSON object with a binary property, which is not a request the service accepts."
+    },
+    "PUT /api/profiles/{profileId}/icon": {
+      "requestMediaType": {
+        "served": "application/json",
+        "frozen": "multipart/form-data"
+      },
+      "reason": "Same as the icon upload: the handler consumes multipart, springdoc reports application/json."
+    }
+  },
+  "schemas": {
+    "identity-service:User": {
+      "propertiesRemoved": ["profile"],
+      "propertiesAdded": ["profileId"],
+      "reason": "Intended behaviour change, not a transcription. The embedded profile aggregate would force identity-service to call profile-service on every user read. Recorded as x-behaviour-change on the schema."
+    }
+  }
+}
