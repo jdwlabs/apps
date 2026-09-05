@@ -27,7 +27,7 @@ libs/backend/shared/auth/
 ├── authz/rules.go             # one function per contract rule
 ├── authhttp/middleware.go     # net/http authentication and refusal shapes
 ├── authtest/minter.go         # test-only minter reproducing JwtService
-├── testdata/                  # cross-implementation parity fixtures
+├── parity_test.go             # the Go half of the cross-implementation suite
 └── project.json               # Nx project configuration
 ```
 
@@ -151,29 +151,32 @@ nx tidy backend-shared-auth
 
 ### Cross-implementation parity
 
-`testdata/` holds one token minted by each implementation, and each side asserts
-the other's:
+One token minted by each implementation is checked in, and each side asserts the
+other's. Each fixture lives in the source of the side that consumes it rather
+than in a shared data file, so the directive telling the secrets gate that a
+token signed with a published test key is not a credential sits on the line a
+reviewer reads.
 
-- `jvm-minted-token.json` — minted by `JwtService.generateToken`, verified here
-  by `TestATokenMintedByTheJvmVerifiesHere` with the clock pinned inside its
-  two-hour window.
-- `go-minted-token.json` — minted by `authtest.Minter`, verified on the JVM side
-  by `JwtGoParityTests`, which also compares the JOSE header and the claim set
-  against a token it mints itself. Its lifetime is deliberately long:
-  `JwtService` reads the wall clock, so a realistic expiry would make that
-  assertion untestable rather than strict.
+- `parity_test.go` holds a token minted by `JwtService.generateToken` and
+  verifies it in `TestATokenMintedByTheJvmVerifiesHere`, with the clock pinned
+  inside its two-hour window.
+- `JwtGoParityTests` holds a token minted by `authtest.Minter` and verifies it
+  through the production `extractAllClaims`, then compares the JOSE header and
+  the claim set against a token it mints itself. That token's lifetime is
+  deliberately long: `JwtService` reads the wall clock and offers no seam, so a
+  realistic expiry would make the assertion untestable rather than strict.
 
-Refreshing them after a claim-layout change:
+Refreshing them after a claim-layout change — each command produces a
+replacement to paste into the other side:
 
 ```bash
 # JVM side, writes build/parity/jvm-minted-token.json
 cd apps/backend/usersrole
 bash gradlew test --tests com.jdw.usersrole.services.JwtGoParityTests
-cp build/parity/jvm-minted-token.json ../../../libs/backend/shared/auth/testdata/
 
-# Go side, rewrites testdata/go-minted-token.json
+# Go side, prints a replacement for JwtGoParityTests.GO_MINTED_TOKEN
 cd libs/backend/shared/auth
-AUTH_PARITY_WRITE_FIXTURE=1 go test . -run TestWriteGoMintedFixture
+AUTH_PARITY_PRINT_TOKEN=1 go test . -run TestPrintGoMintedToken -v
 ```
 
 ---

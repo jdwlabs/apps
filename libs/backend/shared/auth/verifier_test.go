@@ -193,7 +193,10 @@ func TestVerifyRejectsBadTokens(t *testing.T) {
 			return authtest.TamperSignature(mintRaw(t, "HS256", baseClaims()))
 		}, auth.ErrInvalidSignature},
 		{"signed with another key", func(t *testing.T) string {
-			other := authtest.Minter{SecretKeyBase64: "b3RoZXJzZWNyZXRrZXlmb3Jqc29ud2VidG9rZW4xMjM0NTY3ODkwYWJjZGU=", IssuerOrigin: issuerOrigin, Now: func() time.Time { return mintedAt }}
+			// A second published test key, so the failure is a genuine
+			// signature mismatch rather than a malformed token.
+			const otherSecret = "b3RoZXJzZWNyZXRrZXlmb3Jqc29ud2VidG9rZW4xMjM0NTY3ODkwYWJjZGU=" // gitleaks:allow
+			other := authtest.Minter{SecretKeyBase64: otherSecret, IssuerOrigin: issuerOrigin, Now: func() time.Time { return mintedAt }}
 			token, err := other.MintRaw("HS256", baseClaims())
 			if err != nil {
 				t.Fatalf("MintRaw: %v", err)
