@@ -1,5 +1,6 @@
 package com.jdw.usersrole.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +11,7 @@ public record UserRequestDTO(
         @NotBlank(message = "emailAddress is mandatory")
         @Email(message = "emailAddress is not valid", regexp = "^[\\w\\.-]+@[\\w\\.-]+\\.[a-zA-Z]{2,}$")
         String emailAddress,
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         @NotNull(message = "password is mandatory")
         @NotBlank(message = "password is mandatory")
         @Pattern(
