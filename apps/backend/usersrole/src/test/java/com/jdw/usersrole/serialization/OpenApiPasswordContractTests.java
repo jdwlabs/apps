@@ -29,7 +29,7 @@ class OpenApiPasswordContractTests {
 
         assertNotNull(userProperties);
         assertFalse(userProperties.containsKey("password"),
-                "the frozen OpenAPI contract still carries User.password: " + userProperties.keySet());
+                "the served OpenAPI document still carries User.password: " + userProperties.keySet());
     }
 
     @Test
