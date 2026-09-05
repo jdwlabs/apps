@@ -73,12 +73,26 @@ project costs nothing. `lint` rides the existing `nx affected -t lint test` step
 the document it diffs against and `lint` everywhere else in this repo is static.
 
 The drift check cannot see authorization: the served springdoc document carries
-none. `AuthorizationContractParityTests` covers that half. It reflects over the
-four controllers, rebuilds each mapping's path and HTTP method, and asserts that
-every operation's `x-authorization.preAuthorize` is exactly the `@PreAuthorize`
-predicate the handler applies — including the operations that deliberately carry
-none. It also fails if a controller maps something no contract freezes, if a
-contract freezes something no controller maps, or if the mapping count moves off 33. It runs with the ordinary unit tests, so it needs no booted application.
+none. Two tests cover that half.
+
+`AuthorizationContractParityTests` reflects over the four controllers, rebuilds
+each mapping's path and HTTP method, and asserts that every operation's
+`x-authorization.preAuthorize` is exactly the `@PreAuthorize` predicate the
+handler applies. An operation that carries no predicate must say so with an
+explicit `preAuthorize: null`, and a missing key fails — otherwise the six
+operations without one would be asserted vacuously. It also fails if a controller
+maps something no contract freezes, if a contract freezes something no controller
+maps, or if the mapping count moves off 33. No booted application needed.
+
+`FilterChainContractParityTests` covers what the annotations cannot say. The six
+operations with no predicate are separated into PUBLIC and AUTHENTICATED by
+`SecurityConfig`'s `.requestMatchers("/auth/**", "/actuator/**", "/openapi/**")
+.permitAll()`, and nothing else in the build reads that matcher list — flipping
+it would turn the public endpoints private with every other check still green. So
+rather than parse the matcher list, which would assert the source against itself,
+this drives real unauthenticated requests over all 33 operations and asserts the
+outcome the contract claims: an operation frozen as PUBLIC must not answer 401,
+every other operation must, and nothing outside `/auth` may be frozen as PUBLIC.
 
 ## The decisions this contract settles
 
@@ -212,9 +226,12 @@ someone else's profile id.
 
 A _stale non-null_ claim is a different case, and the fallback does not cover it:
 a caller who deletes their own profile keeps a claim pointing at a row that is
-gone, and gets 404 where today they get 403. That is an authorization widening,
-so it is recorded as an `x-behaviour-change` on
-`DELETE /api/profiles/{profileId}` rather than left as a footnote.
+gone, and the predicate then passes on all ten operations. Eight of them look the
+resource up first and answer 404 where today they answer 403; the two that delete
+without looking up — `DELETE /api/profiles/{profileId}` and
+`DELETE /api/profiles/{profileId}/icon` — answer 204, a silent success for a
+caller who owns nothing. Both are widenings and both are recorded, in
+`x-stale-profile-claim` and on the delete operation itself.
 
 Recorded as `x-profile-id-fallback` in the profile contract.
 
@@ -232,7 +249,8 @@ fail whenever `profile-service` is down, and leaves a half-deleted user when it
 fails midway.
 
 **The database is not doing this.** No foreign key in `auth` declares
-`ON DELETE CASCADE`; all four take the default `NO ACTION`. The ordering is
+`ON DELETE CASCADE`; all five take the default `NO ACTION` — `users_roles`
+carries two of them, one to each parent. The ordering is
 therefore load-bearing application logic that the Go service has to reproduce,
 not a database behaviour it inherits for free. Moving the cascade into the schema
 is the better end state and is a migration, so it belongs to its own change
@@ -267,19 +285,20 @@ Two further findings support that claim:
 
 ## Everything these documents change
 
-"Frozen" does not mean identical. Five behaviours differ from what runs today,
+"Frozen" does not mean identical. Six behaviours differ from what runs today,
 and each is marked on the operation or schema it affects so it cannot be mistaken
 for a transcription.
 
-| Change                                                      | Where                                                  | Class    | Visible to a client today?                                                   |
-| ----------------------------------------------------------- | ------------------------------------------------------ | -------- | ---------------------------------------------------------------------------- |
-| `User` drops the embedded profile for `profileId`           | `identity-service:User`                                | design   | No — nothing reads `user.profile`                                            |
-| `GET /api/roles` gains `page` and `size`                    | `GET /api/roles`                                       | design   | No — the catalogue holds 3 rows                                              |
-| The address delete is scoped to its profile                 | `DELETE /api/profiles/{profileId}/address/{addressId}` | security | No — unreachable when acting on your own data                                |
-| Role grants come from the token, not a per-request read     | `x-authority-freshness`                                | security | Not today; after the split, up to 2 h of revocation latency                  |
-| A stale `profile_id` claim yields 404 where today it is 403 | `DELETE /api/profiles/{profileId}`                     | security | Only after deleting your own profile — a different message, no broken screen |
+| Change                                                                                                          | Where                                                                       | Class    | Visible to a client today?                                                   |
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| `User` drops the embedded profile for `profileId`                                                               | `identity-service:User`                                                     | design   | No — nothing reads `user.profile`                                            |
+| `GET /api/roles` gains `page` and `size`                                                                        | `GET /api/roles`                                                            | design   | No — the catalogue holds 3 rows                                              |
+| The address delete is scoped to its profile                                                                     | `DELETE /api/profiles/{profileId}/address/{addressId}`                      | security | No — unreachable when acting on your own data                                |
+| Role grants come from the token, not a per-request read                                                         | `x-authority-freshness`                                                     | security | Not today; after the split, up to 2 h of revocation latency                  |
+| A stale `profile_id` claim yields 404 where today it is 403, on the eight profile operations that look up first | `x-stale-profile-claim`                                                     | security | Only after deleting your own profile — a different message, no broken screen |
+| A stale `profile_id` claim yields 204 where today it is 403, on the two that delete without looking up          | `DELETE /api/profiles/{profileId}`, `DELETE /api/profiles/{profileId}/icon` | security | Only after deleting your own profile — a silent success instead of a refusal |
 
-The last two follow from the split itself rather than from a choice made here:
+The last three follow from the split itself rather than from a choice made here:
 `profile-service` will not own `auth.users` or `auth.users_roles`, so it cannot
 keep re-reading them. They are listed because a reviewer comparing the Go service
 against this contract must not read "authorizes from the verified token" as

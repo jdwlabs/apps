@@ -46,6 +46,8 @@ class AuthorizationContractParityTests {
     private static final List<Class<?>> CONTROLLERS =
             List.of(AuthController.class, UsersController.class, RolesController.class, ProfilesController.class);
     private static final int EXPECTED_MAPPINGS = 33;
+    private static final List<String> HTTP_METHODS =
+            List.of("get", "put", "post", "delete", "patch", "head", "options", "trace");
 
     private record Mapping(String httpMethod, String path, String preAuthorize) {
         String key() {
@@ -71,6 +73,13 @@ class AuthorizationContractParityTests {
             Object authorization = operation.get("x-authorization");
             if (!(authorization instanceof Map<?, ?> block)) {
                 mismatches.add(mapping.key() + " carries no x-authorization block");
+                continue;
+            }
+            if (!block.containsKey("preAuthorize")) {
+                // Without this, `preAuthorize: null` and a deleted key are the same
+                // value, and the six operations that carry no predicate would be
+                // asserted vacuously.
+                mismatches.add(mapping.key() + " has an x-authorization block with no preAuthorize key");
                 continue;
             }
             Object frozenPredicate = block.get("preAuthorize");
@@ -101,11 +110,16 @@ class AuthorizationContractParityTests {
         for (String file : List.of("identity-service.openapi.yaml", "profile-service.openapi.yaml")) {
             Map<String, Object> document = new Yaml().load(Files.readString(CONTRACTS.resolve(file)));
             Map<?, ?> paths = (Map<?, ?>) document.get("paths");
-            paths.forEach((path, item) -> ((Map<?, ?>) item).forEach((httpMethod, operation) -> {
+            paths.forEach((path, item) -> ((Map<?, ?>) item).forEach((field, value) -> {
+                // A path item may also carry `parameters`, `summary` and the like,
+                // which are not operations and are not Maps.
+                if (!HTTP_METHODS.contains(field.toString().toLowerCase())) {
+                    return;
+                }
                 @SuppressWarnings("unchecked")
-                Map<String, Object> typed = (Map<String, Object>) operation;
-                String key = httpMethod.toString().toUpperCase() + " " + path;
-                assertTrue(operations.put(key, typed) == null, key + " is frozen in both contracts");
+                Map<String, Object> operation = (Map<String, Object>) value;
+                String key = field.toString().toUpperCase() + " " + path;
+                assertTrue(operations.put(key, operation) == null, key + " is frozen in both contracts");
             }));
         }
         return operations;

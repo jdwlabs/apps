@@ -161,46 +161,98 @@ x-icon-identifier:
 
 x-path-precedence:
   constraint: |
-    Two four-segment pairs overlap, because `{profileId}` will happily capture
-    the literal `user`:
+    `{profileId}` captures the literal `user`, so two four-segment pairs overlap:
+    `/api/profiles/user/{userId}` against `/api/profiles/{profileId}/address`,
+    and against `/api/profiles/{profileId}/icon`.
+    `/api/profiles/{profileId}` overlaps neither — it is three segments where the
+    others are four, so no URI reaches both.
+  howSpringResolvesIt: |
+    Pattern specificity is the last step, not the first. `RequestMappingInfo`
+    narrows the candidates by HTTP method, then by `produces`, and only compares
+    patterns among whatever survives. So an overlap is invisible wherever the
+    two mappings differ in method or in the media type they produce, and the
+    comparator's verdict never gets a chance to apply.
 
-    - `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/address` both
-      match `/api/profiles/user/address`.
-    - `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/icon` both
-      match `/api/profiles/user/icon`.
+    When it does apply, `PathPattern.SPECIFICITY_COMPARATOR` compares catch-all,
+    then capture count, then normalized length — the pattern length with each
+    `{capture}` counted as one character, longer being more specific. Segment
+    position is not a factor, and a literal segment carries no weight over a
+    template one. Measured: `user/{userId}` is 20, `{profileId}/address` is 23,
+    `{profileId}/icon` is 20, so the address pattern outranks `user/{userId}` and
+    the icon pattern ties it exactly.
+  measuredRouting: |
+    Resolved against the running `RequestMappingHandlerMapping`, not reasoned
+    from the comparator:
 
-    `/api/profiles/{profileId}` does not overlap with any of them — it is three
-    segments where the others are four, so no URI reaches both.
-  rule: |
-    Spring resolves these with `PathPattern.SPECIFICITY_COMPARATOR`
-    (`PathPatternParser` is the default in Spring Web 7 and nothing in
-    `application.yaml` overrides it). It compares catch-all first, then capture
-    count, then normalized length — the pattern length with each `{capture}`
-    counted as one character, longer being more specific. **Segment position is
-    never considered, and a literal segment carries no weight over a template
-    one.**
-  measured: |
-    Measured against the real comparator, not inferred:
-
-    - `user/{userId}` (normalized length 20) beats `{profileId}` (15).
-    - `{profileId}/address` (23) beats `user/{userId}` (20) — so
-      `/api/profiles/user/address` routes to `addAddress` with a `profileId` of
-      `user`, not to `getProfileByUserId`. That is the opposite of what
-      "the literal segment wins" would predict.
-    - `user/{userId}` and `{profileId}/icon` are both 20: an exact tie.
+    - `/api/profiles/user/address` — GET, PUT and DELETE reach
+      `getProfileByUserId`, `updateProfileByUserId` and `deleteProfileByUserId`.
+      The address pattern maps POST only, so the method condition drops it before
+      any pattern comparison; its higher specificity never comes into it. POST
+      reaches `addAddress` because it is then the only candidate.
+    - `/api/profiles/user/icon` — GET reaches `getProfileByUserId` with the
+      `Accept` header unset, `*/*`, or `application/json`, and reaches
+      `getProfileIcon` only for `Accept: image/png`. `getProfileIcon` is the one
+      handler here that declares `produces`, so the produces condition breaks the
+      tie that the pattern comparator cannot. POST reaches `addIcon` as the only
+      candidate.
+    - **PUT and DELETE on `/api/profiles/user/icon` throw
+      `IllegalStateException: Ambiguous handler methods mapped` and answer 500.**
+      Those two methods are mapped by both patterns, neither declares `produces`,
+      and the patterns tie — so nothing is left to separate them.
   defect: |
-    The tie is not a precedence for the Go router to reproduce; it is a defect to
-    carry knowingly. A tie leaves Spring's ambiguous-mapping check with no
-    winner, so `GET`, `PUT` and `DELETE` on `/api/profiles/user/icon` — the three
-    methods the two patterns share — fail at request time with 500. `POST` is
-    unaffected, since only the icon pattern declares it.
+    The two 500s are a defect to carry knowingly, not a precedence for the Go
+    router to reproduce. Not fixed here: the fix is a route change, and this
+    document freezes routes.
 
-    Not fixed here: the fix is a route change, and this document freezes routes.
     A Go router should reject the ambiguity at startup rather than at request
-    time, which turns a production 500 into a build failure.
+    time, which turns a production 500 into a build failure. It must also not
+    assume the tie is theoretical: it is reachable by any client that sends
+    `PUT` or `DELETE` to that URI.
   lint: |
     `no-ambiguous-paths` is switched off for this document in `redocly.yaml`,
     covering exactly the two pairs above, with this entry as the record of why.
+
+x-stale-profile-claim:
+  classification: security
+  change: |
+    After a caller deletes their own profile, the ten operations that authorize
+    on `profileId` answer differently than they do today.
+  today: |
+    The principal is rehydrated from the database each request, so once the row
+    is gone `SecurityUser.getProfileId()` returns null. The predicate compares a
+    non-null path variable against null, which is false, and the access-denied
+    handler answers **403** for all ten.
+  afterTheSplit: |
+    The token still carries the old, non-null `profile_id`. The caller's own path
+    variable matches it, so the predicate passes and each operation proceeds to
+    whatever it does next. That splits the ten in two, by whether the handler
+    looks the resource up before acting:
+
+    - **403 becomes 404** on the eight that look up first: `GET` and `PUT`
+      `/api/profiles/{profileId}`, `POST /api/profiles/{profileId}/address`,
+      `PUT` and `DELETE` `/api/profiles/{profileId}/address/{addressId}`, and
+      `GET`, `POST` and `PUT` `/api/profiles/{profileId}/icon`.
+    - **403 becomes 204** on the two that do not: `DELETE
+      /api/profiles/{profileId}` and `DELETE /api/profiles/{profileId}/icon`
+      issue their deletes without reading anything first, so a caller who owns
+      nothing gets a silent success.
+
+    The `x-profile-id-fallback` above does not cover any of this: it triggers on
+    an absent claim, and this claim is present and stale.
+  reasoning: |
+    Recorded because both halves are widenings, and the 204 half is the wider
+    one — 404 at least tells the caller nothing was there, while 204 reports
+    success for a delete that matched no row. Neither is exploitable while the
+    profile is genuinely gone, and both stop being harmless the moment a
+    `profile_id` is reused, which is why the Go schema must never recycle it.
+
+    Restoring 403 exactly would mean checking profile existence before
+    authorizing on every one of the ten, which is the per-request database read
+    the split exists to remove.
+  clientImpact: |
+    The frontends' shared error helper maps 403 and 404 to different strings, so
+    a user who deletes their profile and keeps clicking sees a different message.
+    No screen breaks, and the remedy in every case is to re-authenticate.
 
 x-multipart-limits:
   maxFileSize: 2MB
@@ -359,34 +411,27 @@ paths:
       x-behaviour-change:
         change: |
           After deleting their own profile, a non-admin caller reusing the same
-          token gets 404 where today they get 403.
+          token gets **204** here where today they get 403.
         classification: security
         today: |
-          The principal is rehydrated from the database each request, so once the
-          profile row is gone `SecurityUser.getProfileId()` returns null. The
-          predicate compares a non-null path variable against null, which is
-          false, and the access-denied handler answers **403** for every profile
-          operation until the caller re-authenticates.
+          The principal is rehydrated per request, so once the row is gone
+          `getProfileId()` returns null, the predicate is false, and this
+          operation answers 403.
         frozenAs: |
-          Under claim-based authorization the token still carries the old,
-          non-null `profile_id`. The caller's own path variable matches it, the
-          predicate passes, and the service lookup then answers **404**. The
-          fallback in `x-profile-id-fallback` does not cover this: it triggers on
-          an absent claim, and this claim is present and stale.
+          Under claim-based authorization the stale non-null claim matches the
+          path variable, the predicate passes, and the handler deletes without
+          reading anything first — `ProfileRepositoryImpl.deleteById` has no
+          existence check, which is also why this operation has no 404 in its
+          response set at all. So the caller gets a silent success for a delete
+          that matched no row.
         reasoning: |
-          Recorded rather than papered over. 403 to 404 is a widening — the
-          caller is now authorized for a resource they no longer own, and only
-          the resource's absence stops them. It is harmless while the row is
-          truly gone, and it stops being harmless the moment a profile id is
-          reused, which is why the Go schema must not recycle `profile_id`.
-          Restoring 403 exactly would mean checking profile existence before
-          authorizing on every one of these ten operations, which is the
-          per-request database read the split exists to remove.
-        clientImpact: |
-          The frontends' shared error helper maps 403 and 404 to different
-          strings, so a user who deletes their profile sees a different message.
-          Neither message is wrong and neither screen breaks; the remedy in both
-          cases is to re-authenticate.
+          This is the wider half of the widening described in
+          `x-stale-profile-claim`: the eight operations that look up first
+          degrade to 404, which at least says nothing was there, while this one
+          and `DELETE /api/profiles/{profileId}/icon` report success. Recorded
+          rather than corrected, because correcting it means an existence check
+          before authorizing — the per-request read the split removes.
+        seeAlso: x-stale-profile-claim
       parameters:
         - $ref: '#/components/parameters/ProfileId'
         - $ref: '#/components/parameters/AuthorizationHeader'
