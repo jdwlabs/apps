@@ -24,8 +24,7 @@
         "cwd": "{workspaceRoot}",
         "command": "redocly lint --config {projectRoot}/docs/contracts/redocly.yaml"
       },
-      "cache": true,
-      "inputs": ["{projectRoot}/docs/contracts/**/*"]
+      "cache": true
     },
     "contract-extract": {
       "executor": "nx:run-commands",
