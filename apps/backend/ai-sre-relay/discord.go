@@ -46,7 +46,7 @@ const (
 // embedColor picks red/orange/gray by severity; a resolved alert is always
 // green regardless of severity, since it's good news rather than still-bad.
 func embedColor(a Alert) int {
-	if a.Status == "resolved" {
+	if a.Status == statusResolved {
 		return colorGreen
 	}
 	switch a.Severity() {

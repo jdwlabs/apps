@@ -50,7 +50,14 @@ func newRouter(e enqueuer, c *counters, webhookToken string) http.Handler {
 		// freed mid-loop should be used rather than wasted.
 		accepted := true
 		for _, a := range payload.Alerts {
-			if a.Status == "firing" && !e.enqueue(a) {
+			// A resolved notification is the only thing that will ever say the
+			// condition cleared, so it takes the same path as a firing one:
+			// dropping it here is what left closed conditions holding open
+			// tickets that then absorbed every later firing as a repeat.
+			if a.Status != statusFiring && a.Status != statusResolved {
+				continue
+			}
+			if !e.enqueue(a) {
 				accepted = false
 			}
 		}

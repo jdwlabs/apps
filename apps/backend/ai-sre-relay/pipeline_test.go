@@ -8,7 +8,9 @@ import (
 	"io"
 	"log/slog"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 type fakeHolmes struct {
@@ -30,6 +32,10 @@ type fakeJira struct {
 	refires  []int
 	openErr  error
 	refireOn bool // records that IsOpen was consulted at all
+
+	resolveNotes []time.Time
+	closes       []time.Time
+	closeErr     error
 }
 
 func (f *fakeJira) Upsert(context.Context, Alert, Analysis) (IssueKey, error) {
@@ -48,6 +54,20 @@ func (f *fakeJira) IsOpen(context.Context, IssueKey) (bool, error) {
 
 func (f *fakeJira) NoteRefire(_ context.Context, _ IssueKey, count int) error {
 	f.refires = append(f.refires, count)
+	return nil
+}
+
+func (f *fakeJira) NoteResolved(_ context.Context, _ IssueKey, at time.Time) error {
+	f.resolveNotes = append(f.resolveNotes, at)
+	return nil
+}
+
+func (f *fakeJira) Close(_ context.Context, _ IssueKey, at time.Time) error {
+	if f.closeErr != nil {
+		return f.closeErr
+	}
+	f.closes = append(f.closes, at)
+	f.closed = true
 	return nil
 }
 
@@ -139,6 +159,14 @@ func (fakeJiraErr) IsOpen(context.Context, IssueKey) (bool, error) {
 }
 
 func (fakeJiraErr) NoteRefire(context.Context, IssueKey, int) error {
+	return errors.New("jira down")
+}
+
+func (fakeJiraErr) NoteResolved(context.Context, IssueKey, time.Time) error {
+	return errors.New("jira down")
+}
+
+func (fakeJiraErr) Close(context.Context, IssueKey, time.Time) error {
 	return errors.New("jira down")
 }
 
@@ -459,5 +487,368 @@ func TestPipelinePatchErrorStillContinues(t *testing.T) {
 	}
 	if !d.called {
 		t.Fatal("discord must still fire after a patch error")
+	}
+}
+
+// fakeClock drives the resolved-since grace window without sleeping.
+type fakeClock struct {
+	mu sync.Mutex
+	t  time.Time
+}
+
+func (c *fakeClock) now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.t
+}
+
+func (c *fakeClock) advance(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.t = c.t.Add(d)
+}
+
+const testResolveTime = "2026-07-28T04:00:00Z"
+
+func mustParseTime(t *testing.T, s string) time.Time {
+	t.Helper()
+	parsed, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		t.Fatalf("parse %q: %v", s, err)
+	}
+	return parsed
+}
+
+func resolvedAlert() Alert {
+	a := repeatAlert()
+	a.Status = statusResolved
+	a.EndsAt = testResolveTime
+	return a
+}
+
+// newTestPipeline wires a pipeline whose grace window is driven by clk.
+func newTestPipeline(t *testing.T, h holmesInvestigator, j jiraUpserter, grace time.Duration, clk *fakeClock) *Pipeline {
+	t.Helper()
+	clk.t = mustParseTime(t, testResolveTime)
+	return NewPipeline(h, fakePatcher{p: nil}, j, &fakeGH{}, &fakeDiscord{}, silentLogger(),
+		withCloseGrace(grace), withClock(clk.now))
+}
+
+// A resolve notification is recorded on the ticket immediately, but the close
+// waits out the grace window: an alert that resolves and re-fires an hour
+// later never had a fixed condition.
+func TestPipelineResolvedAlertIsNotedWithoutClosing(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-400"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+
+	want := mustParseTime(t, testResolveTime)
+	if len(j.resolveNotes) != 1 || !j.resolveNotes[0].Equal(want) {
+		t.Fatalf("resolve notes = %v, want one note at %v", j.resolveNotes, want)
+	}
+	if len(j.closes) != 0 {
+		t.Fatalf("ticket closed inside the grace window: %v", j.closes)
+	}
+}
+
+// Alertmanager re-sends a resolved notification while the alert stays
+// resolved; the grace clock starts at the first one and the ticket collects
+// one note, not one per notification.
+func TestPipelineRepeatedResolveNotesOnce(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-401"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	for range 3 {
+		if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+			t.Fatal(err)
+		}
+		clk.advance(time.Hour)
+	}
+	if len(j.resolveNotes) != 1 {
+		t.Fatalf("resolve notes = %v, want exactly one", j.resolveNotes)
+	}
+	if len(j.closes) != 0 {
+		t.Fatalf("ticket closed before the grace window elapsed: %v", j.closes)
+	}
+}
+
+// Once the alert has stayed resolved for the whole grace window the relay
+// closes its own ticket, naming the resolve time.
+func TestPipelineClosesTicketAfterGrace(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-402"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+
+	want := mustParseTime(t, testResolveTime)
+	if len(j.closes) != 1 || !j.closes[0].Equal(want) {
+		t.Fatalf("closes = %v, want one close naming %v", j.closes, want)
+	}
+	if got := p.Counters().ticketsAutoClosed.Load(); got != 1 {
+		t.Fatalf("ticketsAutoClosed = %d, want 1", got)
+	}
+	// A second sweep must not comment on the ticket again.
+	p.SweepResolved(context.Background())
+	if len(j.closes) != 1 {
+		t.Fatalf("closes = %v, want the close to happen exactly once", j.closes)
+	}
+}
+
+// A re-fire inside the grace window means the condition was never fixed: the
+// pending close is cancelled and the ticket stays open.
+func TestPipelineRefireCancelsPendingClose(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-403"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	// The grace window elapses while the re-fire is being investigated, which
+	// is the case the cancellation has to survive: investigations run for
+	// minutes, and a sweep inside one must not close the ticket it is about
+	// to write to.
+	clk.advance(12 * time.Hour)
+	refire := repeatAlert()
+	refire.StartsAt = "2026-07-28T05:00:00Z"
+	if err := p.Handle(context.Background(), refire); err != nil {
+		t.Fatal(err)
+	}
+	p.SweepResolved(context.Background())
+
+	if len(j.closes) != 0 {
+		t.Fatalf("re-fired alert had its ticket closed anyway: %v", j.closes)
+	}
+	if got := p.Counters().ticketsAutoClosed.Load(); got != 0 {
+		t.Fatalf("ticketsAutoClosed = %d, want 0", got)
+	}
+}
+
+// sweepingHolmes runs a sweep from inside the investigation, standing in for
+// the periodic sweep landing while a re-fire is being investigated.
+type sweepingHolmes struct {
+	p *Pipeline
+	n int
+}
+
+func (h *sweepingHolmes) Investigate(ctx context.Context, _ Alert) (Analysis, error) {
+	h.n++
+	h.p.SweepResolved(ctx)
+	return Analysis{RootCause: "x"}, nil
+}
+
+// The pending close must be withdrawn before the investigation starts, not
+// after it finishes: an investigation runs for minutes and a sweep landing
+// mid-way would otherwise close the ticket the alert is still firing on.
+func TestPipelineRefireCancelsPendingCloseBeforeInvestigating(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-410"}
+	h := &sweepingHolmes{}
+	p := newTestPipeline(t, h, j, 6*time.Hour, clk)
+	h.p = p
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(12 * time.Hour)
+
+	refire := repeatAlert()
+	refire.StartsAt = "2026-07-28T05:00:00Z"
+	if err := p.Handle(context.Background(), refire); err != nil {
+		t.Fatal(err)
+	}
+	if len(j.closes) != 0 {
+		t.Fatalf("ticket closed by a sweep during the re-fire investigation: %v", j.closes)
+	}
+}
+
+// After the relay closes a ticket, the same fingerprint firing again is new
+// work: the Done ticket must not suppress the investigation. Jira's upsert is
+// what routes that investigation back onto the closed ticket by reopening it.
+func TestPipelineAutoClosedTicketDoesNotSuppressNextFiring(t *testing.T) {
+	clk := &fakeClock{}
+	h := &countingHolmes{}
+	j := &fakeJira{key: "JDWLABS-404"}
+	p := newTestPipeline(t, h, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+	if len(j.closes) != 1 {
+		t.Fatalf("closes = %v, want the ticket closed before the re-fire", j.closes)
+	}
+
+	refire := repeatAlert()
+	refire.StartsAt = "2026-07-29T09:00:00Z"
+	if err := p.Handle(context.Background(), refire); err != nil {
+		t.Fatal(err)
+	}
+	if h.n != 2 {
+		t.Fatalf("investigations = %d, want 2 (a closed ticket must not absorb a new firing)", h.n)
+	}
+	if j.upserts != 2 {
+		t.Fatalf("jira upserts = %d, want 2 (the re-fire reopens the ticket via upsert)", j.upserts)
+	}
+	if len(j.refires) != 0 {
+		t.Fatalf("a closed ticket must not collect refire notes, got %v", j.refires)
+	}
+}
+
+// Even a repeat of the same firing episode must not be absorbed once the
+// ticket is Done — the dedup decision is fingerprint plus ticket status.
+func TestPipelineDoneTicketNeverSuppressesRepeat(t *testing.T) {
+	clk := &fakeClock{}
+	h := &countingHolmes{}
+	j := &fakeJira{key: "JDWLABS-405"}
+	p := newTestPipeline(t, h, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if h.n != 2 {
+		t.Fatalf("investigations = %d, want 2 (a Done ticket must not suppress the repeat)", h.n)
+	}
+}
+
+// A ticket a human closed during the grace window is left alone: the relay
+// drops its pending close instead of commenting on a finished ticket.
+func TestPipelineSkipsCloseWhenTicketAlreadyDone(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-406"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	j.closed = true
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+
+	if len(j.closes) != 0 {
+		t.Fatalf("relay closed a ticket that was already Done: %v", j.closes)
+	}
+	if got := p.Counters().ticketsAutoClosed.Load(); got != 0 {
+		t.Fatalf("ticketsAutoClosed = %d, want 0", got)
+	}
+}
+
+// A failed close must stay pending: dropping it would leave the ticket open
+// forever with nothing scheduled to try again.
+func TestPipelineRetriesCloseAfterFailure(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-407", closeErr: errors.New("jira down")}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+	if len(j.closes) != 0 {
+		t.Fatalf("closes = %v, want none while Jira is failing", j.closes)
+	}
+
+	j.closeErr = nil
+	p.SweepResolved(context.Background())
+	if len(j.closes) != 1 {
+		t.Fatalf("closes = %v, want the pending close retried once Jira recovers", j.closes)
+	}
+}
+
+// A resolve for an alert this process never filed a ticket for is a no-op, not
+// an error: the relay restarted, or the alert predates it.
+func TestPipelineResolvedAlertWithoutTicketIsIgnored(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-408"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if len(j.resolveNotes) != 0 || len(j.closes) != 0 {
+		t.Fatalf("untracked resolve touched Jira: notes=%v closes=%v", j.resolveNotes, j.closes)
+	}
+	if j.upserts != 0 {
+		t.Fatalf("resolve must never open a ticket, upserts = %d", j.upserts)
+	}
+}
+
+// A resolve notification carrying no usable end time still starts the grace
+// clock, from the moment the relay saw it.
+func TestPipelineResolvedAlertWithoutEndsAtUsesReceiptTime(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-409"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	a := resolvedAlert()
+	a.EndsAt = ""
+	if err := p.Handle(context.Background(), a); err != nil {
+		t.Fatal(err)
+	}
+	if len(j.resolveNotes) != 1 || !j.resolveNotes[0].Equal(clk.now()) {
+		t.Fatalf("resolve notes = %v, want one note at receipt time %v", j.resolveNotes, clk.now())
+	}
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+	if len(j.closes) != 1 {
+		t.Fatalf("closes = %v, want the grace window to run from receipt time", j.closes)
+	}
+}
+
+func TestCountersExposeTicketsAutoClosed(t *testing.T) {
+	var c counters
+	c.ticketsAutoClosed.Add(4)
+	var buf bytes.Buffer
+	c.writeTo(&buf)
+	if !strings.Contains(buf.String(), "ai_sre_relay_tickets_auto_closed_total 4") {
+		t.Fatalf("counter not exposed:\n%s", buf.String())
 	}
 }

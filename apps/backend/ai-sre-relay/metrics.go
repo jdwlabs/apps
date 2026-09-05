@@ -35,6 +35,12 @@ type counters struct {
 	// Unlike branchesSkipped this is never expected: any nonzero rate means a
 	// commit is sitting unseen and wants a human to go look.
 	branchesOrphaned atomic.Int64
+	// ticketsAutoClosed counts tickets the relay closed itself after their
+	// alert stayed resolved for the grace period. Read against the rate of
+	// investigations: a zero here while investigations keep landing means
+	// resolve notifications are not arriving (send_resolved off on the
+	// receiver, most likely) and every ticket is again waiting on a human.
+	ticketsAutoClosed atomic.Int64
 	// alertsRejected counts refusal responses, not distinct alerts: a sender
 	// retrying one alert increments it once per attempt, so during a storm it
 	// runs an order of magnitude above the number of alerts actually affected.
@@ -65,6 +71,9 @@ func (c *counters) writeTo(w io.Writer) {
 	fmt.Fprint(w, "# HELP ai_sre_relay_branches_orphaned_total Remediations dropped because the ticket's PR branch existed with no pull request in any state, the remnant of a run that failed after creating it.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_branches_orphaned_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_branches_orphaned_total %d\n", c.branchesOrphaned.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_tickets_auto_closed_total Tickets the relay transitioned to Done after their alert stayed resolved for the close grace period.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_tickets_auto_closed_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_tickets_auto_closed_total %d\n", c.ticketsAutoClosed.Load())
 	fmt.Fprint(w, "# HELP ai_sre_relay_alerts_rejected_total Refusal responses returned because the investigation queue was full, including repeated sender retries of the same alert; not a count of distinct alerts.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_alerts_rejected_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_alerts_rejected_total %d\n", c.alertsRejected.Load())

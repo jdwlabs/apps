@@ -84,7 +84,7 @@ func TestDispatcherQueueFullDrops(t *testing.T) {
 	// A refused fingerprint must not stay marked in-flight, or the retry that
 	// the 503 provokes would be silently coalesced and never investigated.
 	d.mu.Lock()
-	_, stillHeld := d.inflight["c"]
+	_, stillHeld := d.inflight[inflightKey(Alert{Fingerprint: "c"})]
 	d.mu.Unlock()
 	if stillHeld {
 		t.Fatal("refused fingerprint left marked in-flight; its retry would be coalesced away")
@@ -210,6 +210,40 @@ func TestDispatcherCoalescesInFlightFingerprint(t *testing.T) {
 	case <-processed:
 	case <-time.After(time.Second):
 		t.Fatal("re-fired fingerprint was not investigated after the first run completed")
+	}
+	d.shutdown(context.Background())
+}
+
+// The resolve for an alert whose investigation is still running must not be
+// coalesced away as a repeat of it: it is the only notification that will ever
+// say the condition cleared, and losing it leaves the ticket open forever.
+func TestDispatcherDoesNotCoalesceResolvedWithFiring(t *testing.T) {
+	release := make(chan struct{})
+	processed := make(chan string, 4)
+	h := handlerFunc(func(_ context.Context, a Alert) error {
+		<-release
+		processed <- a.Status
+		return nil
+	})
+	d := newDispatcher(h, 1, 4, time.Second, &counters{}, silentLogger())
+
+	if !d.enqueue(Alert{Fingerprint: "a", Status: statusFiring}) {
+		t.Fatal("firing enqueue must be accepted")
+	}
+	time.Sleep(20 * time.Millisecond) // let the worker pick up the firing alert
+	if !d.enqueue(Alert{Fingerprint: "a", Status: statusResolved}) {
+		t.Fatal("resolved enqueue must be accepted")
+	}
+
+	close(release)
+	var got []string
+	for range 2 {
+		select {
+		case s := <-processed:
+			got = append(got, s)
+		case <-time.After(time.Second):
+			t.Fatalf("only %v reached the pipeline; the resolve was coalesced away", got)
+		}
 	}
 	d.shutdown(context.Background())
 }

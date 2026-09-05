@@ -41,6 +41,19 @@ func splitList(v string) []string {
 	return out
 }
 
+// envDuration reads a Go duration ("6h", "45m"). An unparseable or
+// non-positive value falls back rather than disabling the behaviour it
+// configures — a typo must not silently turn auto-close into never-close.
+func envDuration(key string, fallback time.Duration) time.Duration {
+	if v := os.Getenv(key); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			return d
+		}
+		slog.Warn("ignoring unusable duration", "key", key, "value", v, "using", fallback.String())
+	}
+	return fallback
+}
+
 func mustEnv(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
@@ -109,7 +122,10 @@ func main() {
 	deniedPaths := splitList(os.Getenv("GITHUB_PATH_DENYLIST"))
 	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, allowedPaths, deniedPaths, hc)
 
-	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log)
+	// How long an alert must stay resolved before the relay closes the ticket
+	// it opened for it.
+	closeGrace := envDuration("RESOLVED_CLOSE_GRACE", defaultCloseGrace)
+	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log, withCloseGrace(closeGrace))
 
 	workers := envInt("MAX_CONCURRENT", 4)
 	// The queue only has to keep workers fed between HTTP accept and pickup;
@@ -139,8 +155,28 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
+	// Pending closes are evaluated on a sweep rather than a per-ticket timer:
+	// the tracked state is in-process only, so a restart drops pending closes
+	// instead of leaving a timer to fire against state that no longer holds.
+	sweepEvery := envDuration("RESOLVED_SWEEP_INTERVAL", 10*time.Minute)
+	sweepCtx, stopSweeping := context.WithCancel(context.Background())
+	defer stopSweeping()
 	go func() {
-		log.Info("relay listening", "addr", srv.Addr, "workers", workers, "queue", queueSize)
+		t := time.NewTicker(sweepEvery)
+		defer t.Stop()
+		for {
+			select {
+			case <-sweepCtx.Done():
+				return
+			case <-t.C:
+				pipeline.SweepResolved(sweepCtx)
+			}
+		}
+	}()
+
+	go func() {
+		log.Info("relay listening", "addr", srv.Addr, "workers", workers, "queue", queueSize,
+			"close_grace", closeGrace.String(), "sweep_every", sweepEvery.String())
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Error("server error", "err", err)
 			os.Exit(1)
@@ -157,6 +193,7 @@ func main() {
 	// Stop accepting new webhooks first, then drain in-flight investigations so
 	// a rolling update does not silently discard work already accepted.
 	_ = srv.Shutdown(ctx)
+	stopSweeping()
 	disp.shutdown(ctx)
 	log.Info("shutdown complete")
 }

@@ -29,6 +29,11 @@ type jiraUpserter interface {
 	// must stay visible; silent suppression is indistinguishable from a
 	// pipeline that has stopped working.
 	NoteRefire(ctx context.Context, key IssueKey, count int) error
+	// NoteResolved records that Alertmanager reported the alert resolved, so
+	// the pending close is on the ticket before it happens.
+	NoteResolved(ctx context.Context, key IssueKey, resolvedAt time.Time) error
+	// Close transitions the issue to Done, naming the resolve time.
+	Close(ctx context.Context, key IssueKey, resolvedAt time.Time) error
 }
 type prOpener interface {
 	OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error)
@@ -45,7 +50,16 @@ type firing struct {
 	startsAt string
 	issue    IssueKey
 	repeats  int
+	// resolvedAt is zero while the alert is firing. Once set it is both the
+	// pending-close clock and the time named on the ticket; a re-fire clears
+	// it again.
+	resolvedAt time.Time
 }
+
+// defaultCloseGrace is how long an alert must stay resolved before the relay
+// closes its own ticket. Long enough that a condition which merely went quiet
+// — a flapping job, a scrape gap — re-fires and cancels the close first.
+const defaultCloseGrace = 6 * time.Hour
 
 type Pipeline struct {
 	holmes  holmesInvestigator
@@ -55,17 +69,41 @@ type Pipeline struct {
 	discord discordNotifier
 	log     *slog.Logger
 
+	closeGrace time.Duration
+	now        func() time.Time
+
 	counters counters
 
 	mu     sync.Mutex
 	active map[string]firing
+
+	// sweepMu keeps two sweeps — the ticker's and the one a resolve
+	// notification triggers — from racing onto the same ticket and closing it
+	// twice.
+	sweepMu sync.Mutex
 }
 
-func NewPipeline(h holmesInvestigator, pg patcher, j jiraUpserter, gh prOpener, d discordNotifier, log *slog.Logger) *Pipeline {
-	return &Pipeline{
+type pipelineOption func(*Pipeline)
+
+func withCloseGrace(d time.Duration) pipelineOption {
+	return func(p *Pipeline) { p.closeGrace = d }
+}
+
+func withClock(now func() time.Time) pipelineOption {
+	return func(p *Pipeline) { p.now = now }
+}
+
+func NewPipeline(h holmesInvestigator, pg patcher, j jiraUpserter, gh prOpener, d discordNotifier, log *slog.Logger, opts ...pipelineOption) *Pipeline {
+	p := &Pipeline{
 		holmes: h, patch: pg, jira: j, github: gh, discord: d, log: log,
-		active: map[string]firing{},
+		closeGrace: defaultCloseGrace,
+		now:        time.Now,
+		active:     map[string]firing{},
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 // Counters exposes the pipeline's own operational signal for the metrics
@@ -115,10 +153,157 @@ func (p *Pipeline) forget(a Alert) {
 	delete(p.active, a.Fingerprint)
 }
 
+// resolveTime is when the condition cleared: the alert's own end time when it
+// carries a usable one, so a delayed or redelivered notification does not
+// restart the grace window.
+func (p *Pipeline) resolveTime(a Alert) time.Time {
+	now := p.now()
+	ends, err := time.Parse(time.RFC3339, a.EndsAt)
+	if err != nil || ends.After(now) {
+		return now
+	}
+	return ends
+}
+
+// markResolved starts the pending close for a fingerprint the relay owns a
+// ticket for. The bool reports whether this notification is the one that
+// started it, so repeated resolve notifications do not re-comment or push the
+// close further out.
+func (p *Pipeline) markResolved(a Alert) (IssueKey, time.Time, bool) {
+	if a.Fingerprint == "" {
+		return "", time.Time{}, false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, ok := p.active[a.Fingerprint]
+	if !ok || f.issue == "" {
+		return "", time.Time{}, false
+	}
+	if !f.resolvedAt.IsZero() {
+		return f.issue, f.resolvedAt, false
+	}
+	f.resolvedAt = p.resolveTime(a)
+	p.active[a.Fingerprint] = f
+	return f.issue, f.resolvedAt, true
+}
+
+// cancelPendingClose withdraws a scheduled close because the alert is firing
+// again. It reports whether there was one to withdraw.
+func (p *Pipeline) cancelPendingClose(a Alert) (IssueKey, bool) {
+	if a.Fingerprint == "" {
+		return "", false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, ok := p.active[a.Fingerprint]
+	if !ok || f.resolvedAt.IsZero() {
+		return "", false
+	}
+	f.resolvedAt = time.Time{}
+	p.active[a.Fingerprint] = f
+	return f.issue, true
+}
+
+// pendingClose is one ticket whose grace window has elapsed.
+type pendingClose struct {
+	fingerprint string
+	issue       IssueKey
+	resolvedAt  time.Time
+}
+
+// dueCloses snapshots the tickets whose grace window has elapsed. The Jira
+// calls that follow run outside the lock, so a webhook arriving mid-sweep is
+// never blocked behind them.
+func (p *Pipeline) dueCloses() []pendingClose {
+	cutoff := p.now().Add(-p.closeGrace)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	var due []pendingClose
+	for fp, f := range p.active {
+		if f.issue == "" || f.resolvedAt.IsZero() || f.resolvedAt.After(cutoff) {
+			continue
+		}
+		due = append(due, pendingClose{fingerprint: fp, issue: f.issue, resolvedAt: f.resolvedAt})
+	}
+	return due
+}
+
+// clearPendingClose drops the tracked firing only if it still carries the
+// resolve time the sweep acted on. An alert that re-fired mid-sweep has a
+// fresh entry that must survive; its ticket, if the close already landed, is
+// reopened by the next upsert.
+func (p *Pipeline) clearPendingClose(fingerprint string, resolvedAt time.Time) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if f, ok := p.active[fingerprint]; ok && f.resolvedAt.Equal(resolvedAt) {
+		delete(p.active, fingerprint)
+	}
+}
+
+// SweepResolved closes the tickets whose alerts have stayed resolved for the
+// grace period. It is driven by incoming resolve notifications and by a
+// periodic sweep rather than by per-ticket timers, so a restart drops pending
+// closes instead of leaving a timer to fire against stale state.
+func (p *Pipeline) SweepResolved(ctx context.Context) {
+	p.sweepMu.Lock()
+	defer p.sweepMu.Unlock()
+	for _, due := range p.dueCloses() {
+		log := p.log.With("fingerprint", due.fingerprint, "issue", due.issue, "resolved_at", due.resolvedAt)
+		open, err := p.jira.IsOpen(ctx, due.issue)
+		switch {
+		case err != nil:
+			// Leave the pending close in place: the next sweep retries it.
+			log.Error("pending close: ticket state unreadable", "err", err)
+		case !open:
+			log.Info("pending close dropped: ticket is already closed")
+			p.clearPendingClose(due.fingerprint, due.resolvedAt)
+		default:
+			if cerr := p.jira.Close(ctx, due.issue, due.resolvedAt); cerr != nil {
+				log.Error("pending close failed; will retry", "err", cerr)
+				continue
+			}
+			p.counters.ticketsAutoClosed.Add(1)
+			p.clearPendingClose(due.fingerprint, due.resolvedAt)
+			log.Info("alert stayed resolved for the grace period; ticket closed",
+				"grace", p.closeGrace.String())
+		}
+	}
+}
+
+// handleResolved records the resolve on the ticket and schedules its close.
+func (p *Pipeline) handleResolved(ctx context.Context, a Alert) error {
+	log := p.log.With("fingerprint", a.Fingerprint, "alert", a.Name())
+	issue, at, first := p.markResolved(a)
+	if issue == "" {
+		log.Info("resolve notification for an alert with no ticket in this process; nothing to close")
+		return nil
+	}
+	if first {
+		if err := p.jira.NoteResolved(ctx, issue, at); err != nil {
+			log.Error("resolve note failed", "issue", issue, "err", err)
+		}
+		log.Info("alert resolved; ticket close pending",
+			"issue", issue, "resolved_at", at, "grace", p.closeGrace.String())
+	}
+	p.SweepResolved(ctx)
+	return nil
+}
+
 // Handle runs one alert through the pipeline. Each output is independent: a
 // failure is logged with the fingerprint and never suppresses later outputs.
 func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
+	if a.Status == statusResolved {
+		return p.handleResolved(ctx, a)
+	}
 	log := p.log.With("fingerprint", a.Fingerprint, "alert", a.Name())
+
+	// A condition that fires again inside the grace window was never fixed.
+	// The withdrawal happens before the investigation, not after it: an
+	// investigation runs for minutes and a sweep in the middle of one would
+	// otherwise close the ticket it is about to write to.
+	if issue, cancelled := p.cancelPendingClose(a); cancelled {
+		log.Info("alert re-fired inside the close grace period; pending close cancelled", "issue", issue)
+	}
 
 	// Alertmanager re-notifies a still-firing alert every repeat_interval.
 	// Re-running the investigation produces the same analysis at full LLM
