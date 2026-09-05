@@ -314,12 +314,21 @@ class ProfileServiceTests {
     }
 
     @Test
-    void deleteAddress_shouldDeleteAddress_whenAddressExists() {
-        doNothing().when(profileRepository).deleteAddressByAddressId(1L);
+    void deleteAddress_shouldDeleteAddress_whenAddressBelongsToProfile() {
+        when(profileRepository.deleteAddress(1L, 1L)).thenReturn(true);
 
         profileService.deleteAddress(1L, 1L, "user@jdw.com");
 
-        verify(profileRepository, times(1)).deleteAddressByAddressId(1L);
+        verify(profileRepository, times(1)).deleteAddress(1L, 1L);
+    }
+
+    @Test
+    void deleteAddress_shouldThrowResourceNotFoundException_whenAddressBelongsToAnotherProfile() {
+        when(profileRepository.deleteAddress(1L, 99L)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> profileService.deleteAddress(1L, 99L, "user@jdw.com"));
+
+        verify(profileRepository, times(1)).deleteAddress(1L, 99L);
     }
 
     @Test
