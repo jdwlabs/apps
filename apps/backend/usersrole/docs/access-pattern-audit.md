@@ -301,7 +301,7 @@ Non-prod fixture at time of measurement: 3 users, 3 roles, 9 user-role links, 2
 profiles, 1 address, 1 icon. User 1 has a profile with one address and one icon;
 user 3 has no profile row.
 
-### 4.2 Measured per-row hydration cost
+### 4.2 Measured cost of a single-user lookup
 
 | Case                                          | users | users_roles | profiles | addresses | profile_icons | **Total** |
 | --------------------------------------------- | ----- | ----------- | -------- | --------- | ------------- | --------- |
@@ -314,6 +314,35 @@ user 3 has no profile row.
 The two identical runs establish reproducibility; the two controls establish
 that the harness attributes scans to the request under test and not to
 background activity.
+
+#### 4.2.1 Separating the lookup from the hydration
+
+The totals above are for a whole single-user lookup, and the listing path does
+**not** cost the same per row. `UserRepositoryImpl` carries two `getUser`
+overloads with different costs, and which one runs depends on the caller:
+
+- `getUser(Optional<User>)` is called by `findById` and `findByEmailAddress`,
+  after their DAO has already fetched the user row. The 5 statements measured
+  above are that entire path: **1** for `userDao.findByEmailAddress` on
+  `auth.users`, plus **4** for the hydration.
+- `getUser(User)` is called by `findAll`, mapped over each row of a page the DAO
+  has already fetched in one statement. It never re-queries `auth.users`.
+
+Both overloads run an identical hydration body — `userRoleDao.findByUserId`,
+then `getProfile(id)`, which issues `profileDao.findByUserId` and, when a
+profile row exists, `addressDao.findByProfileId` and
+`profileIconDao.findByProfileId`. So the per-row multiplier for any listing is
+the measured total minus the one `auth.users` statement that a listing does not
+repeat:
+
+| Row                               | users_roles | profiles | addresses | profile_icons | **Per row** |
+| --------------------------------- | ----------- | -------- | --------- | ------------- | ----------- |
+| Row whose user has a profile      | 1 idx       | 1 seq    | 1 seq     | 1 seq         | **4**       |
+| Row whose user has no profile row | 1 idx       | 1 seq    | —         | —             | **2**       |
+
+`ProfileRepositoryImpl` and `RoleRepositoryImpl` are built the same way, each
+with a two-overload pair whose listing side takes an already-fetched record. No
+listing path in the codebase re-queries its own primary table per row.
 
 ### 4.3 Access paths, confirmed by observation
 
@@ -331,16 +360,18 @@ Corroborating this independently, the cumulative counters carry
 
 ### 4.4 Per-request totals for the three list endpoints
 
-Derived from the measured per-row cost, not observed end-to-end. The
-multiplicand is measured; the multiplier is the page size.
+Derived from the per-row multiplier in 4.2.1, not observed end-to-end. The
+multiplicand is measured; the multiplier is the page size. Each endpoint's
+per-row helper is the overload that takes an already-fetched record, so none of
+them re-queries its own primary table per row.
 
 `UsersController` and `ProfilesController` both default `size` to 100.
 
-| Endpoint            | Statements                                                    | At `size=100`        |
-| ------------------- | ------------------------------------------------------------- | -------------------- |
-| `GET /api/users`    | 1 listing + 5 per row with a profile, 3 per row without       | **301 – 501**        |
-| `GET /api/profiles` | 1 listing + 2 per row (`addresses`, `profile_icons`)          | **201**              |
-| `GET /api/roles`    | 1 listing + 1 per row (`users_roles` by `role_id`, unindexed) | **1 + N**, unbounded |
+| Endpoint            | Per-row helper        | Statements                                                    | At `size=100`        |
+| ------------------- | --------------------- | ------------------------------------------------------------- | -------------------- |
+| `GET /api/users`    | `getUser(User)`       | 1 listing + 4 per row with a profile, 2 per row without       | **201 – 401**        |
+| `GET /api/profiles` | `getProfile(Profile)` | 1 listing + 2 per row (`addresses`, `profile_icons`)          | **201**              |
+| `GET /api/roles`    | `getRole(Role)`       | 1 listing + 1 per row (`users_roles` by `role_id`, unindexed) | **1 + N**, unbounded |
 
 `GET /api/roles` has no pagination at all, so its multiplier is the whole
 `auth.roles` table rather than a page size.
@@ -348,7 +379,9 @@ multiplicand is measured; the multiplier is the page size.
 ### 4.5 The fixed preamble on every authenticated request
 
 `JwtAuthenticationFilter` calls `loadUserByUsername` on every request carrying a
-bearer token, which runs the same hydration measured in 4.2. Evaluating a
+bearer token, which runs the full single-user lookup measured in 4.2 — 5
+statements, via `findByEmailAddress` and the `getUser(Optional<User>)`
+overload. Evaluating a
 `@PreAuthorize` predicate then calls `SecurityUser.getAuthorities()`, which
 costs 2 further statements per granted role — `roles` by id, then `users_roles`
 by `role_id`.
@@ -357,7 +390,7 @@ For a principal holding 3 roles, as all three non-prod users do, that is a
 floor of **5 + 6 = 11 statements before the handler body executes**, on every
 authenticated request including ones that return 403. A default-page
 `GET /api/users` by such a principal therefore issues on the order of
-**512 statements**.
+**11 + 401 = 412 statements**.
 
 This preamble is the single most important thing for the Go design to change.
 It is per-request work that the JWT already carries the answer to: the token
@@ -403,7 +436,7 @@ omits it; this is the clearest single argument for introducing real DTOs in the
 rewrite.
 
 **The `User` payload embeds the entire profile aggregate.** This is what makes
-the user listing cost 5 statements per row instead of 2, and it is the coupling
+the user listing cost 4 statements per row instead of 1, and it is the coupling
 that the service boundary has to sever. See section 6.2.
 
 ## 6. The frozen boundary
@@ -487,9 +520,11 @@ here. **Amendment to the contract:** the `identity-service` user representation
 drops the embedded profile and exposes `profile_id` only. Clients that need the
 profile fetch `GET /api/profiles/user/{userId}` from `profile-service`.
 
-This is the amendment the audit produces, and it pays for itself: it removes 3
-of the 5 statements per row measured in 4.2, taking a default-page
-`GET /api/users` from roughly 501 statements to 201, before any batching.
+This is the amendment the audit produces, and it pays for itself. Dropping the
+embedded profile removes the whole `getProfile` call — 3 of the 4 statements in
+the per-row multiplier of 4.2.1 — leaving only `userRoleDao.findByUserId`. A
+default-page `GET /api/users` falls from roughly 401 statements to 101, before
+any batching.
 
 ### 6.3 Measured baseline
 
@@ -593,13 +628,16 @@ the data access.
 
 Measured over the same 7-day window, `servicediscovery` in prd:
 
-| Metric                  | Value                                          |
-| ----------------------- | ---------------------------------------------- |
-| Working set, 7 d mean   | 4.24 – 5.59 MB (2 of 3 pods); 27.70 MB (third) |
-| Container RSS, 7 d peak | 3.32 / 4.60 / 5.41 MB                          |
-| CPU, 7 d peak           | 0.14 – 0.70 millicores                         |
-| Configured request      | 32 Mi / 10 m                                   |
-| Configured limit        | 64 Mi / 50 m                                   |
+Binary units throughout, as in the tables above.
+
+| Metric                  | Bytes                               | MiB                    |
+| ----------------------- | ----------------------------------- | ---------------------- |
+| Working set, 7 d mean   | 4,239,852 / 5,587,149 (2 of 3 pods) | **4.04 / 5.33**        |
+| Working set, 7 d mean   | 27,703,949 (third pod)              | **26.42**              |
+| Container RSS, 7 d peak | 3,317,760 / 4,595,712 / 5,410,816   | **3.16 / 4.38 / 5.16** |
+| CPU, 7 d peak           | —                                   | 0.14 – 0.70 millicores |
+| Configured request      | —                                   | 32 Mi / 10 m           |
+| Configured limit        | —                                   | 64 Mi / 50 m           |
 
 **Restating the epic's headline metric against measured values.** The
 decomposition analysis framed the gap as "1 Gi per replica versus tens of MiB",
@@ -622,12 +660,12 @@ than documented.
 ### 6.4 Resource sizing for the two Go services
 
 Derived from the measurements above. The anchor is the measured Go service on
-this cluster (5.41 MB RSS peak, 0.70 millicore peak), adjusted for what each new
+this cluster (5.16 MiB RSS peak, 0.70 millicore peak), adjusted for what each new
 service does that the anchor does not.
 
 | Service            | Request memory | Request CPU | Limit memory | Limit CPU | Reasoning                                                                                                                                                                                                                        |
 | ------------------ | -------------- | ----------- | ------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `identity-service` | **32 Mi**      | **10 m**    | **128 Mi**   | **200 m** | Matches the measured Go sibling's request, which peaks at 5.41 MB RSS. Adds a connection pool and bcrypt. The limit gives 4x headroom over the sibling's own limit for bcrypt's per-verification working set.                    |
+| `identity-service` | **32 Mi**      | **10 m**    | **128 Mi**   | **200 m** | Matches the measured Go sibling's request, which peaks at 5.16 MiB RSS. Adds a connection pool and bcrypt. The limit gives 4x headroom over the sibling's own limit for bcrypt's per-verification working set.                   |
 | `profile-service`  | **48 Mi**      | **10 m**    | **192 Mi**   | **500 m** | Same base, plus icon handling. `max-file-size` is 2 MB and icons are read whole into memory; at 10 concurrent requests that is up to 20 MB transient, plus response buffering. The higher CPU limit absorbs image upload bursts. |
 
 Both figures are far above the measured 0.83 millicore mean for the whole
