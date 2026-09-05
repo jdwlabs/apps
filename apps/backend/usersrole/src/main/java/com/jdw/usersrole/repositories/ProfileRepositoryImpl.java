@@ -104,8 +104,8 @@ public class ProfileRepositoryImpl implements ProfileRepository {
     @Override
     @Transactional
     public boolean deleteAddress(Long profileId, Long addressId) {
-        log.debug("Deleting address with address id: {}, profile id: {}", addressId, profileId);
-        return addressDao.deleteByIdAndProfileId(addressId, profileId) > 0;
+        log.debug("Deleting address with profile id: {}, address id: {}", profileId, addressId);
+        return addressDao.deleteByProfileIdAndAddressId(profileId, addressId) > 0;
     }
 
     @Override

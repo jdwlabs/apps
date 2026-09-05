@@ -224,15 +224,15 @@ not inferred: section 4.3.
 
 ### 3.5 AddressDaoPostgres — 7 statements, table `auth.addresses`
 
-| Repository method        | SQL                                                                                                                                                      | Path |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| `create`                 | `INSERT INTO auth.addresses (profile_id, address_line_1, address_line_2, city, state_province, postal_code, country, …) VALUES (…) RETURNING address_id` | —    |
-| `findById`               | `SELECT * FROM auth.addresses WHERE address_id = :id`                                                                                                    | idx  |
-| `findByProfileId`        | `SELECT * FROM auth.addresses WHERE profile_id = :id`                                                                                                    | seq  |
-| `findAll`                | `SELECT * FROM auth.addresses`                                                                                                                           | seq  |
-| `update`                 | `UPDATE auth.addresses SET address_line_1=…, … WHERE address_id = :id`                                                                                   | idx  |
-| `deleteByIdAndProfileId` | `DELETE FROM auth.addresses WHERE address_id = :addressId AND profile_id = :profileId`                                                                   | idx  |
-| `deleteByProfileId`      | `DELETE FROM auth.addresses WHERE profile_id = :id`                                                                                                      | seq  |
+| Repository method               | SQL                                                                                                                                                      | Path |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `create`                        | `INSERT INTO auth.addresses (profile_id, address_line_1, address_line_2, city, state_province, postal_code, country, …) VALUES (…) RETURNING address_id` | —    |
+| `findById`                      | `SELECT * FROM auth.addresses WHERE address_id = :id`                                                                                                    | idx  |
+| `findByProfileId`               | `SELECT * FROM auth.addresses WHERE profile_id = :id`                                                                                                    | seq  |
+| `findAll`                       | `SELECT * FROM auth.addresses`                                                                                                                           | seq  |
+| `update`                        | `UPDATE auth.addresses SET address_line_1=…, … WHERE address_id = :id`                                                                                   | idx  |
+| `deleteByProfileIdAndAddressId` | `DELETE FROM auth.addresses WHERE address_id = :addressId AND profile_id = :profileId`                                                                   | idx  |
+| `deleteByProfileId`             | `DELETE FROM auth.addresses WHERE profile_id = :id`                                                                                                      | seq  |
 
 ### 3.6 ProfileIconDaoPostgres — 7 statements, table `auth.profile_icons`
 

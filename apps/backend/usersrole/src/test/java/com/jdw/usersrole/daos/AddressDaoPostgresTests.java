@@ -134,13 +134,13 @@ class AddressDaoPostgresTests {
     }
 
     @Test
-    void deleteByIdAndProfileId_shouldInvokeDeleteOperation() {
+    void deleteByProfileIdAndAddressId_shouldInvokeDeleteOperation() {
         JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
         when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
         when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
         when(statementSpec.update()).thenReturn(1);
 
-        int rowsDeleted = addressDaoPostgres.deleteByIdAndProfileId(1L, 2L);
+        int rowsDeleted = addressDaoPostgres.deleteByProfileIdAndAddressId(2L, 1L);
 
         assertEquals(1, rowsDeleted);
         verify(statementSpec, times(1)).update();
@@ -148,29 +148,31 @@ class AddressDaoPostgresTests {
         verify(statementSpec, times(1)).param("profileId", 2L);
     }
 
+    // Full-statement equality, not a substring probe: `address_id = :addressId OR
+    // profile_id = :profileId` satisfies any per-predicate check while deleting every
+    // address the caller owns.
     @Test
-    void deleteByIdAndProfileId_shouldScopeSqlToBothAddressAndProfile() {
+    void deleteByProfileIdAndAddressId_shouldIssueTheAddressAndProfileScopedStatement() {
         JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
         when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
 
-        addressDaoPostgres.deleteByIdAndProfileId(1L, 2L);
+        addressDaoPostgres.deleteByProfileIdAndAddressId(2L, 1L);
 
         verify(jdbcClient).sql(sqlCaptor.capture());
-        String sql = sqlCaptor.getValue();
-        assertTrue(sql.contains("address_id = :addressId"), sql);
-        assertTrue(sql.contains("profile_id = :profileId"), sql);
+        String sql = sqlCaptor.getValue().replaceAll("\\s+", " ").trim();
+        assertEquals("DELETE FROM auth.addresses WHERE address_id = :addressId AND profile_id = :profileId", sql);
     }
 
     @Test
-    void deleteByIdAndProfileId_shouldReportNoRowsDeleted_whenAddressBelongsToAnotherProfile() {
+    void deleteByProfileIdAndAddressId_shouldReportNoRowsDeleted_whenAddressBelongsToAnotherProfile() {
         JdbcClient.StatementSpec statementSpec = mock(JdbcClient.StatementSpec.class);
         when(jdbcClient.sql(anyString())).thenReturn(statementSpec);
         when(statementSpec.param(anyString(), any())).thenReturn(statementSpec);
         when(statementSpec.update()).thenReturn(0);
 
-        assertEquals(0, addressDaoPostgres.deleteByIdAndProfileId(1L, 2L));
+        assertEquals(0, addressDaoPostgres.deleteByProfileIdAndAddressId(2L, 1L));
     }
 
     @Test
