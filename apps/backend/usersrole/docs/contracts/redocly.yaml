@@ -12,10 +12,12 @@ apis:
     root: ./profile-service.openapi.yaml
     rules:
       # Scoped to this document, because only this one has ambiguous paths.
-      # `{profileId}` captures the literal `user`, so `user/{userId}` overlaps
+      # `{profileId}` captures any literal, so `by-user/{userId}` overlaps
       # `{profileId}/address` and `{profileId}/icon` — two pairs, two warnings.
-      # Both are real, and `x-path-precedence` in this document records how
-      # Spring actually resolves them, including the icon tie that 500s. Leaving
-      # the rule on would emit the same two warnings on every run forever, which
-      # is how real findings get scrolled past.
+      # Both are real: OpenAPI cannot express which template wins, and the
+      # overlap survives the move that removed the ambiguity Spring could not
+      # resolve. `x-path-precedence` in this document records the measured
+      # routing for both pairs. Leaving the rule on would emit the same two
+      # warnings on every run forever, which is how real findings get scrolled
+      # past.
       no-ambiguous-paths: off

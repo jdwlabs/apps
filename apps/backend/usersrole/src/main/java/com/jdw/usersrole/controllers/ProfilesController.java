@@ -44,7 +44,7 @@ public class ProfilesController {
     }
 
     @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()")
-    @GetMapping("/user/{userId}")
+    @GetMapping("/by-user/{userId}")
     public ResponseEntity<Profile> getProfileByUserId(@PathVariable Long userId) {
         log.trace("Getting profile with user id {}", userId);
         Profile profile = profileService.getProfileByUserId(userId);
@@ -73,7 +73,7 @@ public class ProfilesController {
     }
 
     @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()")
-    @PutMapping("/user/{userId}")
+    @PutMapping("/by-user/{userId}")
     public ResponseEntity<Profile> updateProfileByUserId(@PathVariable Long userId,
                                                          @Valid @RequestBody ProfileUpdateRequestDTO profile,
                                                          @RequestHeader(name = "Authorization") String authorizationHeader) {
@@ -94,7 +94,7 @@ public class ProfilesController {
     }
 
     @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()")
-    @DeleteMapping("/user/{userId}")
+    @DeleteMapping("/by-user/{userId}")
     public ResponseEntity<Profile> deleteProfileByUserId(@PathVariable Long userId,
                                                          @RequestHeader(name = "Authorization") String authorizationHeader) {
         log.trace("Deleting profile with user id {}", userId);

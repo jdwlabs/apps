@@ -161,56 +161,68 @@ x-icon-identifier:
 
 x-path-precedence:
   constraint: |
-    `{profileId}` captures the literal `user`, so two four-segment pairs overlap:
-    `/api/profiles/user/{userId}` against `/api/profiles/{profileId}/address`,
-    and against `/api/profiles/{profileId}/icon`.
-    `/api/profiles/{profileId}` overlaps neither — it is three segments where the
-    others are four, so no URI reaches both.
+    `{profileId}` captures any literal, so anything mapped one segment under
+    `/api/profiles` competes with every literal child of
+    `/api/profiles/{profileId}`. The by-user lookups used to sit exactly there,
+    as `/api/profiles/user/{userId}`, overlapping two four-segment patterns:
+    `/api/profiles/{profileId}/address` and `/api/profiles/{profileId}/icon`.
   howSpringResolvesIt: |
-    Pattern specificity is the last step, not the first. `RequestMappingInfo`
-    narrows the candidates by HTTP method, then by `produces`, and only compares
-    patterns among whatever survives. So an overlap is invisible wherever the
-    two mappings differ in method or in the media type they produce, and the
-    comparator's verdict never gets a chance to apply.
+    Two things happen, in order. Every condition on a mapping must match the
+    request — method, headers, consumes, produces — and a mapping that fails any
+    of them is dropped. Only then are the survivors compared, and that
+    comparison starts with the pattern; params, headers, consumes and finally
+    produces get a say only where the patterns tie. So an overlap is invisible
+    wherever the two mappings differ in method, and a `produces` condition
+    settles a case only when pattern specificity could not.
 
-    When it does apply, `PathPattern.SPECIFICITY_COMPARATOR` compares catch-all,
-    then capture count, then normalized length — the pattern length with each
-    `{capture}` counted as one character, longer being more specific. Segment
-    position is not a factor, and a literal segment carries no weight over a
-    template one. Measured: `user/{userId}` is 20, `{profileId}/address` is 23,
-    `{profileId}/icon` is 20, so the address pattern outranks `user/{userId}` and
-    the icon pattern ties it exactly.
+    When patterns are compared, `PathPattern.SPECIFICITY_COMPARATOR` compares
+    catch-all, then capture count, then normalized length — the pattern length
+    with each `{capture}` counted as one character, longer being more specific.
+    Segment position is not a factor, and a literal segment carries no weight
+    over a template one. Measured: `user/{userId}` was 20 and
+    `{profileId}/icon` is 20, so those two tied exactly and nothing was left to
+    separate them; `by-user/{userId}` is 23, which outranks it.
+  defectAndResolution: |
+    While the two tied, `PUT` and `DELETE` on `/api/profiles/user/icon` threw
+    `IllegalStateException: Ambiguous handler methods mapped` and answered 500 —
+    reachable by any authenticated client, not theoretical. `GET` escaped it
+    only because `getProfileIcon` declares `produces: image/png`, which drops
+    the other candidate before the ambiguity check.
+
+    **Resolved by moving the by-user lookups to `/api/profiles/by-user/{userId}`
+    for `GET`, `PUT` and `DELETE`**, marked `x-behaviour-change` on all three.
+    The old path is gone rather than kept as a deprecated alias: an alias is the
+    same two patterns, so it would re-create the identical tie and fix nothing.
+    The one client,
+    `libs/frontend/usersui/data-access/src/lib/profiles/profiles.service.ts`,
+    moved with it.
   measuredRouting: |
-    Resolved against the running `RequestMappingHandlerMapping`, not reasoned
-    from the comparator:
+    Resolved against the running `RequestMappingHandlerMapping` by
+    `ProfileRouteResolutionTests`, not reasoned from the comparator:
 
-    - `/api/profiles/user/address` — GET, PUT and DELETE reach
+    - `/api/profiles/user/icon` — `GET` reaches `getProfileIcon` with the
+      `Accept` header unset, `*/*` or `image/png`, and is refused 406 for
+      `application/json`, the icon handler now being the only candidate. `PUT`
+      reaches `updateIcon` and `DELETE` reaches `deleteIcon`, both answering 400
+      because `user` is not a profile id. No method reaches an ambiguity.
+    - `/api/profiles/by-user/icon` — `GET`, `PUT` and `DELETE` all reach the
+      by-user handlers, which answer 400 on the same conversion. `GET` does so
+      even for `Accept: image/png`: patterns are compared before produces, and
+      `by-user/{userId}` outranks `{profileId}/icon`.
+    - `/api/profiles/by-user/{userId}` with a numeric id reaches
       `getProfileByUserId`, `updateProfileByUserId` and `deleteProfileByUserId`.
-      The address pattern maps POST only, so the method condition drops it before
-      any pattern comparison; its higher specificity never comes into it. POST
-      reaches `addAddress` because it is then the only candidate.
-    - `/api/profiles/user/icon` — GET reaches `getProfileByUserId` with the
-      `Accept` header unset, `*/*`, or `application/json`, and reaches
-      `getProfileIcon` only for `Accept: image/png`. `getProfileIcon` is the one
-      handler here that declares `produces`, so the produces condition breaks the
-      tie that the pattern comparator cannot. POST reaches `addIcon` as the only
-      candidate.
-    - **PUT and DELETE on `/api/profiles/user/icon` throw
-      `IllegalStateException: Ambiguous handler methods mapped` and answer 500.**
-      Those two methods are mapped by both patterns, neither declares `produces`,
-      and the patterns tie — so nothing is left to separate them.
-  defect: |
-    The two 500s are a defect to carry knowingly, not a precedence for the Go
-    router to reproduce. Not fixed here: the fix is a route change, and this
-    document freezes routes.
-
-    A Go router should reject the ambiguity at startup rather than at request
-    time, which turns a production 500 into a build failure. It must also not
-    assume the tie is theoretical: it is reachable by any client that sends
-    `PUT` or `DELETE` to that URI.
+    - `/api/profiles/by-user/address` still ties `{profileId}/address` at 23,
+      but the address pattern maps `POST` only, so the method condition drops it
+      before any pattern comparison.
   lint: |
-    `no-ambiguous-paths` is switched off for this document in `redocly.yaml`,
-    covering exactly the two pairs above, with this entry as the record of why.
+    `no-ambiguous-paths` stays off for this document. The template overlap is
+    not gone — `/api/profiles/by-user/icon` still matches both
+    `/api/profiles/by-user/{userId}` and `/api/profiles/{profileId}/icon`, and
+    OpenAPI has no way to say which wins. What changed is that Spring now
+    resolves it deterministically instead of throwing, and the routing above is
+    what a Go router has to reproduce: the longest normalized pattern wins. It
+    should still reject a genuine tie at startup rather than at request time,
+    which turns a production 500 into a build failure.
 
 x-stale-profile-claim:
   classification: security
@@ -446,7 +458,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /api/profiles/user/{userId}:
+  /api/profiles/by-user/{userId}:
     get:
       tags: [profiles]
       operationId: getProfileByUserId
@@ -454,6 +466,22 @@ paths:
       description: |
         The operation `identity-service` clients use once the `User` payload no
         longer embeds the profile aggregate.
+      x-behaviour-change:
+        change: 'Moved from `/api/profiles/user/{userId}`.'
+        previously: |
+          Served one segment under `/api/profiles`, where `user` sits in the
+          `{profileId}` slot and the pattern tied with
+          `/api/profiles/{profileId}/icon` — making `PUT` and `DELETE
+          /api/profiles/user/icon` answer 500. See `x-path-precedence`.
+        frozenAs: |
+          `/api/profiles/by-user/{userId}`, with nothing left on the old path: an
+          alias would be the same pair of patterns and re-create the tie.
+        clientImpact: |
+          The application moved in the same change, so this is a change to the
+          served API rather than a divergence from it. The only caller,
+          `libs/frontend/usersui/data-access/src/lib/profiles/profiles.service.ts`,
+          moved with it; a client left on the old path reaches the icon routes
+          and gets 400 or 406, never this operation.
       x-authorization:
         rule: ADMIN_OR_SELF_BY_USER_ID
         preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
@@ -479,6 +507,22 @@ paths:
       tags: [profiles]
       operationId: updateProfileByUserId
       summary: Replace a user's profile.
+      x-behaviour-change:
+        change: 'Moved from `/api/profiles/user/{userId}`.'
+        previously: |
+          Served one segment under `/api/profiles`, where `user` sits in the
+          `{profileId}` slot and the pattern tied with
+          `/api/profiles/{profileId}/icon` — making `PUT` and `DELETE
+          /api/profiles/user/icon` answer 500. See `x-path-precedence`.
+        frozenAs: |
+          `/api/profiles/by-user/{userId}`, with nothing left on the old path: an
+          alias would be the same pair of patterns and re-create the tie.
+        clientImpact: |
+          The application moved in the same change, so this is a change to the
+          served API rather than a divergence from it. The only caller,
+          `libs/frontend/usersui/data-access/src/lib/profiles/profiles.service.ts`,
+          moved with it; a client left on the old path reaches the icon routes
+          and gets 400 or 406, never this operation.
       x-authorization:
         rule: ADMIN_OR_SELF_BY_USER_ID
         preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"
@@ -511,6 +555,22 @@ paths:
       operationId: deleteProfileByUserId
       summary: Delete a user's profile with its addresses and icon.
       description: A no-op for a user id with no profile, and still 204.
+      x-behaviour-change:
+        change: 'Moved from `/api/profiles/user/{userId}`.'
+        previously: |
+          Served one segment under `/api/profiles`, where `user` sits in the
+          `{profileId}` slot and the pattern tied with
+          `/api/profiles/{profileId}/icon` — making `PUT` and `DELETE
+          /api/profiles/user/icon` answer 500. See `x-path-precedence`.
+        frozenAs: |
+          `/api/profiles/by-user/{userId}`, with nothing left on the old path: an
+          alias would be the same pair of patterns and re-create the tie.
+        clientImpact: |
+          The application moved in the same change, so this is a change to the
+          served API rather than a divergence from it. The only caller,
+          `libs/frontend/usersui/data-access/src/lib/profiles/profiles.service.ts`,
+          moved with it; a client left on the old path reaches the icon routes
+          and gets 400 or 406, never this operation.
       x-authorization:
         rule: ADMIN_OR_SELF_BY_USER_ID
         preAuthorize: "hasAuthority('ADMIN') or #userId == authentication.principal.getUserId()"

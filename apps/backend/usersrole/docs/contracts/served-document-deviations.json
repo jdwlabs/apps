@@ -137,13 +137,13 @@
       },
       "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
     },
-    "GET /api/profiles/user/{userId}": {
+    "GET /api/profiles/by-user/{userId}": {
       "errorStatuses": ["401", "403", "404"]
     },
-    "PUT /api/profiles/user/{userId}": {
+    "PUT /api/profiles/by-user/{userId}": {
       "errorStatuses": ["400", "401", "403", "404"]
     },
-    "DELETE /api/profiles/user/{userId}": {
+    "DELETE /api/profiles/by-user/{userId}": {
       "errorStatuses": ["401", "403"],
       "successStatus": {
         "served": "200",
