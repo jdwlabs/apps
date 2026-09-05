@@ -13,7 +13,7 @@ allowBuilds:
   unrs-resolver: false
 
 overrides:
-  memfs: '4.68.1'
+  memfs: '4.69.1'
   '@babel/core@<7.29.6': '^7.29.6'
   '@hono/node-server@<2.0.5': '^2.0.5'
   'adm-zip@<0.6.0': '^0.6.0'
