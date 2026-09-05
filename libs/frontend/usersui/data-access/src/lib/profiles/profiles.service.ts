@@ -46,7 +46,7 @@ export class ProfilesService {
 
     return this.http
       .get<Profile>(
-        `${this.environment.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        `${this.environment.AUTH_BASE_URL}/api/profiles/by-user/${userId}`,
         {
           headers: headers,
         },
@@ -91,7 +91,7 @@ export class ProfilesService {
 
     return this.http
       .put<Profile>(
-        `${this.environment.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        `${this.environment.AUTH_BASE_URL}/api/profiles/by-user/${userId}`,
         {
           firstName: profile.firstName,
           middleName: profile.middleName,
@@ -121,7 +121,7 @@ export class ProfilesService {
 
     return this.http
       .delete<void>(
-        `${this.environment.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        `${this.environment.AUTH_BASE_URL}/api/profiles/by-user/${userId}`,
         { headers: headers },
       )
       .pipe(

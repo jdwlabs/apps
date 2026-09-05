@@ -948,7 +948,7 @@ components:
           statements for a default-size `GET /api/users`.
         frozenAs: |
           `profileId`, nullable, and nothing else from the profile. A client that
-          needs the profile fetches `GET /api/profiles/user/{userId}` from
+          needs the profile fetches `GET /api/profiles/by-user/{userId}` from
           `profile-service`.
         reasoning: |
           Keeping the embedded aggregate would force `identity-service` to call

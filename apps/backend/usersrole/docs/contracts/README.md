@@ -114,7 +114,7 @@ statements to 101 before any batching.
 
 No current client reads `user.profile` — the profile screens call
 `profiles.service.ts`, which already addresses `/api/profiles` directly. Clients
-that need the profile fetch `GET /api/profiles/user/{userId}`.
+that need the profile fetch `GET /api/profiles/by-user/{userId}`.
 
 Recorded as `x-behaviour-change` on `identity-service:User`.
 
@@ -285,9 +285,11 @@ Two further findings support that claim:
 
 ## Everything these documents change
 
-"Frozen" does not mean identical. Five behaviours differ from what runs today,
-and each is marked on the operation or schema it affects so it cannot be mistaken
-for a transcription.
+"Frozen" does not mean identical. Six behaviours differ from the application as
+the audit found it — five of them still differ from what runs today, and the
+sixth, the by-user path, has since been changed in the application itself. Each
+is marked on the operation or schema it affects so it cannot be mistaken for a
+transcription.
 
 | Change                                                                                                          | Where                                                                       | Class    | Visible to a client today?                                                   |
 | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
@@ -296,13 +298,50 @@ for a transcription.
 | Role grants come from the token, not a per-request read                                                         | `x-authority-freshness`                                                     | security | Not today; after the split, up to 2 h of revocation latency                  |
 | A stale `profile_id` claim yields 404 where today it is 403, on the eight profile operations that look up first | `x-stale-profile-claim`                                                     | security | Only after deleting your own profile — a different message, no broken screen |
 | A stale `profile_id` claim yields 204 where today it is 403, on the two that delete without looking up          | `DELETE /api/profiles/{profileId}`, `DELETE /api/profiles/{profileId}/icon` | security | Only after deleting your own profile — a silent success instead of a refusal |
+| The by-user lookups move to `/api/profiles/by-user/{userId}`                                                    | `GET`, `PUT`, `DELETE` `/api/profiles/by-user/{userId}`                     | defect   | Yes — the old path is gone, and its one client moved with it in this change  |
 
-The last three follow from the split itself rather than from a choice made here:
+The last row is a fix rather than a choice about the rewrite, and the only one of
+the six the application has already made — see below. The three security rows
+follow from the split itself rather than from a choice made here:
 `profile-service` will not own `auth.users` or `auth.users_roles`, so it cannot
 keep re-reading them. They are listed because a reviewer comparing the Go service
 against this contract must not read "authorizes from the verified token" as
 equivalent to today's behaviour. It is not, and where it differs it differs in
 the permissive direction.
+
+### The by-user lookups moved, because the old path was ambiguous
+
+`GET`, `PUT` and `DELETE` are specified at `/api/profiles/by-user/{userId}`. They
+were served at `/api/profiles/user/{userId}` until this change, and nothing
+answers the old path now.
+
+`{profileId}` captures the literal `user`, so `/api/profiles/user/{userId}` sat
+in the same slot as every literal child of `/api/profiles/{profileId}`, and it
+tied with `/api/profiles/{profileId}/icon` under Spring's specificity comparator
+— both normalize to 20 characters, and a literal segment carries no weight over a
+template one. `PUT` and `DELETE /api/profiles/user/icon` therefore reached the
+handler-mapping ambiguity check and answered 500, reachable by any authenticated
+client. `GET` escaped it only because `getProfileIcon` declares
+`produces: image/png`, which drops the other candidate before the check.
+
+The earlier version of this document recorded that as a defect to carry, on the
+grounds that the fix is a route change and this document freezes routes. That was
+the wrong call: it left a live 500 in the application and wrote a defect into the
+document the Go services are built and parity-tested against. The routes move
+instead.
+
+**No alias on the old path.** Leaving `/api/profiles/user/{userId}` answering for
+the frontends is the obvious kindness, and it does not work: the alias is the
+same pattern that tied, so the tie returns and the 500 with it. The only caller,
+`libs/frontend/usersui/data-access/src/lib/profiles/profiles.service.ts`, moves
+in this same change.
+
+`by-user/{userId}` normalizes to 23 against the icon pattern's 20, so it outranks
+it instead of tying. The resolution is measured against the running
+`RequestMappingHandlerMapping` in `ProfileRouteResolutionTests` rather than
+reasoned from the comparator; `x-path-precedence` in the profile contract carries
+the measured routing for every method on both URIs, and each of the three
+operations carries an `x-behaviour-change`.
 
 ### A correction that has since become a transcription
 

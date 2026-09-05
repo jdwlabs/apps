@@ -159,7 +159,7 @@ describe('ProfilesService', () => {
       });
 
       const req = httpMock.expectOne(
-        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/1`,
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/1`,
       );
       expect(req.request.method).toBe('GET');
       expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
@@ -212,7 +212,7 @@ describe('ProfilesService', () => {
       service.editProfile(3, updatedProfile).subscribe();
 
       const req = httpMock.expectOne(
-        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/3`,
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/3`,
       );
       expect(req.request.method).toBe('PUT');
       expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
@@ -504,7 +504,7 @@ describe('ProfilesService', () => {
       service.deleteProfile(userId).subscribe();
 
       const req = httpMock.expectOne(
-        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/${userId}`,
       );
       expect(req.request.method).toBe('DELETE');
       expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
@@ -532,7 +532,7 @@ describe('ProfilesService', () => {
       });
 
       const req = httpMock.expectOne(
-        `${environmentMock.AUTH_BASE_URL}/api/profiles/user/${userId}`,
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/${userId}`,
       );
       req.flush(
         { message: 'Internal Server Error' },
