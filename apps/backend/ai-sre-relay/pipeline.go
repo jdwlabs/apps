@@ -155,16 +155,36 @@ func (p *Pipeline) countRepeat(a Alert) (int, bool) {
 	return f.repeats, true
 }
 
+// remember records the ticket for a finished investigation. It merges into any
+// existing entry rather than replacing it: a resolve can land while the
+// investigation is still running — the dispatcher tracks firing and resolved
+// as separate in-flight keys precisely so it can — and overwriting would drop
+// the pending close it started, silently, after the ticket had already been
+// commented and announced as resolving.
 func (p *Pipeline) remember(a Alert, issue IssueKey) {
 	if a.Fingerprint == "" || issue == "" {
 		return
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if _, known := p.active[a.Fingerprint]; !known && len(p.active) >= maxTrackedFirings {
+	f, known := p.active[a.Fingerprint]
+	if !known {
+		if len(p.active) >= maxTrackedFirings {
+			p.counters.fingerprintsUntracked.Add(1)
+			p.log.Warn("fingerprint tracking is full; this alert gets no repeat suppression and no auto-close",
+				"fingerprint", a.Fingerprint, "alert", a.Name(), "issue", issue, "tracked", len(p.active))
+			return
+		}
+		p.active[a.Fingerprint] = firing{startsAt: a.StartsAt, issue: issue}
 		return
 	}
-	p.active[a.Fingerprint] = firing{startsAt: a.StartsAt, issue: issue}
+	next := firing{startsAt: a.StartsAt, issue: issue, resolvedAt: f.resolvedAt}
+	// Repeat numbering belongs to one firing episode; a new episode starts
+	// again at one.
+	if f.startsAt == a.StartsAt {
+		next.repeats = f.repeats
+	}
+	p.active[a.Fingerprint] = next
 }
 
 func (p *Pipeline) forget(a Alert) {
@@ -321,6 +341,12 @@ func (p *Pipeline) SweepResolved(ctx context.Context) {
 	p.sweepMu.Lock()
 	defer p.sweepMu.Unlock()
 	for _, due := range p.dueCloses() {
+		// Each ticket costs at least one Jira round-trip; without this a
+		// shutdown or an expired deadline still walks the whole table.
+		if err := ctx.Err(); err != nil {
+			p.log.Info("sweep stopped before finishing", "err", err)
+			return
+		}
 		p.closeIfStillDue(ctx, due)
 	}
 }
@@ -374,18 +400,22 @@ func (p *Pipeline) closeIfStillDue(ctx context.Context, due pendingClose) {
 		log.Error("pending close failed; will retry", "err", cerr)
 		return
 	}
-	p.counters.ticketsAutoClosed.Add(1)
-	log.Info("alert stayed resolved for the grace period; ticket closed", "grace", p.closeGrace.String())
-
 	if !p.clearPendingClose(due.fingerprint, due.resolvedAt) {
 		// The alert re-fired while the close was in flight. The ticket is Done
 		// for a firing alert; nothing else will notice, because the re-fire's
-		// own path already ran.
+		// own path already ran. This is not an auto-close — the ticket ends up
+		// open again — so it is counted as a reopen instead.
 		log.Info("close raced a re-fire; reopening the ticket")
 		if rerr := p.jira.Reopen(ctx, due.issue); rerr != nil {
+			p.counters.ticketReopensFailed.Add(1)
 			log.Error("reopening a ticket closed against a firing alert failed", "err", rerr)
+			return
 		}
+		p.counters.ticketReopens.Add(1)
+		return
 	}
+	p.counters.ticketsAutoClosed.Add(1)
+	log.Info("alert stayed resolved for the grace period; ticket closed", "grace", p.closeGrace.String())
 }
 
 // handleResolved records the resolve on the ticket and schedules its close.
@@ -413,6 +443,7 @@ func (p *Pipeline) handleResolved(ctx context.Context, a Alert) error {
 			return nil
 		}
 		if issue, at, first = p.adoptResolved(a, found); issue == "" {
+			p.counters.fingerprintsUntracked.Add(1)
 			log.Warn("resolve: fingerprint tracking is full; ticket left open", "issue", found)
 			return nil
 		}

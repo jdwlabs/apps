@@ -1068,13 +1068,19 @@ func TestPipelineResolveDoesNotBlockOnARunningSweep(t *testing.T) {
 		defer close(done)
 		_ = p.Handle(context.Background(), resolvedAlert())
 	}()
+	blocked := false
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		p.sweepMu.Unlock()
+		blocked = true
+	}
+	// Release before failing and wait for the goroutine either way: a late
+	// write from it must not race the test's teardown.
+	p.sweepMu.Unlock()
+	<-done
+	if blocked {
 		t.Fatal("resolve handling blocked behind an in-progress sweep")
 	}
-	p.sweepMu.Unlock()
 
 	if len(j.resolveNotes) != 1 {
 		t.Fatalf("resolve notes = %v, want the resolve recorded despite the busy sweep", j.resolveNotes)
@@ -1237,5 +1243,246 @@ func TestPipelineResolveNotifiesDiscord(t *testing.T) {
 	}
 	if d.notifies != 1 {
 		t.Fatalf("discord notifications = %d, want 1: a repeated resolve is not news", d.notifies)
+	}
+}
+
+// resolvingHolmes delivers a resolve notification while the investigation it
+// interrupts is still running. The dispatcher allows exactly this: firing and
+// resolved for one fingerprint are separate in-flight keys.
+type resolvingHolmes struct {
+	p       *Pipeline
+	resolve Alert
+	n       int
+}
+
+func (h *resolvingHolmes) Investigate(ctx context.Context, _ Alert) (Analysis, error) {
+	h.n++
+	if h.n == 1 {
+		_ = h.p.Handle(ctx, h.resolve)
+	}
+	return Analysis{RootCause: "x"}, nil
+}
+
+// The investigation finishing must not erase the pending close the resolve
+// started. It used to: the ticket was commented and announced as resolving,
+// then the close was dropped with no log, no metric and no way to tell from
+// the outside that the ticket would now stay open forever.
+func TestPipelineResolveDuringInvestigationSurvivesItsCompletion(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-430"}
+	h := &resolvingHolmes{resolve: resolvedAlert()}
+	p := newTestPipeline(t, h, j, 6*time.Hour, clk)
+	h.p = p
+
+	// A prior episode leaves the fingerprint mapped, so the resolve lands on
+	// the mapping the in-flight investigation is about to overwrite.
+	first := repeatAlert()
+	if err := p.Handle(context.Background(), first); err != nil {
+		t.Fatal(err)
+	}
+	h.n = 0
+	second := repeatAlert()
+	second.StartsAt = "2026-07-28T05:00:00Z"
+	if err := p.Handle(context.Background(), second); err != nil {
+		t.Fatal(err)
+	}
+	if len(j.resolveNotes) != 1 {
+		t.Fatalf("resolve notes = %v, want the mid-investigation resolve recorded", j.resolveNotes)
+	}
+
+	clk.advance(24 * time.Hour)
+	p.SweepResolved(context.Background())
+	if len(j.closes) != 1 {
+		t.Fatalf("closes = %v, want the pending close to survive the investigation completing", j.closes)
+	}
+}
+
+// Same loss through the adoption path: the resolve arrives before this process
+// has tracked anything, recovers the ticket from Jira, and the investigation
+// that was already running then overwrites it.
+func TestPipelineAdoptedResolveSurvivesAConcurrentInvestigation(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-431", findKey: "JDWLABS-431"}
+	h := &resolvingHolmes{resolve: resolvedAlert()}
+	p := newTestPipeline(t, h, j, 6*time.Hour, clk)
+	h.p = p
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if j.finds != 1 {
+		t.Fatalf("fingerprint searches = %d, want the untracked resolve to have adopted", j.finds)
+	}
+
+	clk.advance(24 * time.Hour)
+	p.SweepResolved(context.Background())
+	if len(j.closes) != 1 {
+		t.Fatalf("closes = %v, want the adopted pending close to survive the investigation", j.closes)
+	}
+}
+
+// The repeat counter belongs to a firing episode. A new episode starts its
+// numbering again rather than continuing the last one's.
+func TestPipelineNewEpisodeRestartsRepeatNumbering(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-432"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	first := repeatAlert()
+	if err := p.Handle(context.Background(), first); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), first); err != nil {
+		t.Fatal(err)
+	}
+	second := repeatAlert()
+	second.StartsAt = "2026-07-28T05:00:00Z"
+	if err := p.Handle(context.Background(), second); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), second); err != nil {
+		t.Fatal(err)
+	}
+	if len(j.refires) != 2 || j.refires[0] != 1 || j.refires[1] != 1 {
+		t.Fatalf("refire notes = %v, want [1 1]: each episode numbers its own repeats", j.refires)
+	}
+}
+
+// A close that raced a re-fire is not an auto-close: the ticket is open again
+// at the end of it, and counting it would overstate what the relay finished.
+func TestPipelineRacedCloseIsCountedAsAReopenNotAClose(t *testing.T) {
+	clk := &fakeClock{}
+	base := &fakeJira{key: "JDWLABS-433"}
+	j := &closeRacingJira{fakeJira: base}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+	j.race = func() { p.cancelPendingClose(repeatAlert()) }
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+
+	if got := p.Counters().ticketsAutoClosed.Load(); got != 0 {
+		t.Fatalf("ticketsAutoClosed = %d, want 0: the ticket was reopened", got)
+	}
+	if got := p.Counters().ticketReopens.Load(); got != 1 {
+		t.Fatalf("ticketReopens = %d, want 1", got)
+	}
+}
+
+type reopenFailingJira struct {
+	*fakeJira
+	race func()
+}
+
+func (j *reopenFailingJira) Close(ctx context.Context, key IssueKey, at time.Time) error {
+	j.race()
+	return j.fakeJira.Close(ctx, key, at)
+}
+
+func (j *reopenFailingJira) Reopen(context.Context, IssueKey) error {
+	return errors.New("jira down")
+}
+
+// A reopen that fails is terminal — the ticket stays Done while its alert
+// fires — so it needs its own counter to alert on.
+func TestPipelineFailedReopenIsCounted(t *testing.T) {
+	clk := &fakeClock{}
+	base := &fakeJira{key: "JDWLABS-434"}
+	j := &reopenFailingJira{fakeJira: base}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+	j.race = func() { p.cancelPendingClose(repeatAlert()) }
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(6 * time.Hour)
+	p.SweepResolved(context.Background())
+
+	if got := p.Counters().ticketReopensFailed.Load(); got != 1 {
+		t.Fatalf("ticketReopensFailed = %d, want 1", got)
+	}
+	if got := p.Counters().ticketsAutoClosed.Load(); got != 0 {
+		t.Fatalf("ticketsAutoClosed = %d, want 0", got)
+	}
+}
+
+// A sweep must stop when its context is done, or a shutdown waits on every
+// remaining ticket's Jira round-trip.
+func TestPipelineSweepStopsOnCancelledContext(t *testing.T) {
+	clk := &fakeClock{}
+	j := &fakeJira{key: "JDWLABS-435"}
+	p := newTestPipeline(t, &countingHolmes{}, j, 6*time.Hour, clk)
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Handle(context.Background(), resolvedAlert()); err != nil {
+		t.Fatal(err)
+	}
+	clk.advance(6 * time.Hour)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	p.SweepResolved(ctx)
+
+	if len(j.closes) != 0 {
+		t.Fatalf("closes = %v, want none: the sweep's context was already done", j.closes)
+	}
+	if j.refireOn {
+		t.Fatal("sweep called Jira despite a cancelled context")
+	}
+}
+
+// A tracking table at its ceiling silently stopped tracking new fingerprints.
+// Silent is the problem: every alert past the ceiling loses repeat suppression
+// and auto-close at once, and nothing said so.
+func TestPipelineFullTrackingTableIsVisible(t *testing.T) {
+	clk := &fakeClock{}
+	var buf bytes.Buffer
+	clk.t = mustParseTime(t, testResolveTime)
+	j := &fakeJira{key: "JDWLABS-436"}
+	p := NewPipeline(&countingHolmes{}, fakePatcher{p: nil}, j, &fakeGH{}, &fakeDiscord{},
+		slog.New(slog.NewJSONHandler(&buf, nil)), withCloseGrace(6*time.Hour), withClock(clk.now))
+
+	p.mu.Lock()
+	for i := range maxTrackedFirings {
+		p.active[fmt.Sprintf("filler-%d", i)] = firing{issue: "JDWLABS-1"}
+	}
+	p.mu.Unlock()
+
+	if err := p.Handle(context.Background(), repeatAlert()); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Counters().fingerprintsUntracked.Load(); got != 1 {
+		t.Fatalf("fingerprintsUntracked = %d, want 1", got)
+	}
+	if !strings.Contains(buf.String(), `"level":"WARN"`) {
+		t.Fatalf("a full tracking table must be logged:\n%s", buf.String())
+	}
+}
+
+func TestCountersExposeReopenAndTrackingOutcomes(t *testing.T) {
+	var c counters
+	c.ticketReopens.Add(2)
+	c.ticketReopensFailed.Add(1)
+	c.fingerprintsUntracked.Add(7)
+	var buf bytes.Buffer
+	c.writeTo(&buf)
+	for _, want := range []string{
+		`ai_sre_relay_ticket_reopens_total{result="ok"} 2`,
+		`ai_sre_relay_ticket_reopens_total{result="failed"} 1`,
+		"ai_sre_relay_fingerprints_untracked_total 7",
+	} {
+		if !strings.Contains(buf.String(), want) {
+			t.Fatalf("counter not exposed: %q\n%s", want, buf.String())
+		}
 	}
 }

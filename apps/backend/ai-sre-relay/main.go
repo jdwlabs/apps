@@ -98,7 +98,10 @@ func main() {
 	discord := NewDiscordNotifier(mustEnv("DISCORD_WEBHOOK_URL"), jiraURL, hc)
 	// "Task" not "Bug": the target project's type scheme has no Bug type and
 	// Jira rejects creates with an unknown type (400).
-	jira := NewJiraClient(jiraURL, mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), env("JIRA_ISSUE_TYPE", "Task"), hc)
+	// JIRA_DONE_STATUS names the status an automatic close aims for; the Done
+	// category alone also covers "Won't Do" and "Duplicate".
+	jira := NewJiraClient(jiraURL, mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), env("JIRA_ISSUE_TYPE", "Task"), hc,
+		withDoneStatus(env("JIRA_DONE_STATUS", defaultDoneStatus)))
 	githubAPI := env("GITHUB_API", "https://api.github.com")
 	githubTokens, err := newGitHubTokenSource(githubAPI, hc)
 	if err != nil {
@@ -169,7 +172,11 @@ func main() {
 			case <-sweepCtx.Done():
 				return
 			case <-t.C:
-				pipeline.SweepResolved(sweepCtx)
+				// One tick's work must finish before the next one is due;
+				// without a deadline a wedged Jira stalls the sweep forever.
+				tickCtx, tickCancel := context.WithTimeout(sweepCtx, sweepEvery)
+				pipeline.SweepResolved(tickCtx)
+				tickCancel()
 			}
 		}
 	}()
