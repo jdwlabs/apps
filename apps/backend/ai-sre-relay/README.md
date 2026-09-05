@@ -92,7 +92,9 @@ tells the relay a condition cleared: with it off, every ticket the relay opens
 stays open until a human closes it, and the auto-close path is dead code. The
 `ai-sre` receiver lives in the platform repo at
 `tenants/platform/services/kube-prometheus-stack/postInstall/alertmanager-config-externalsecret.yaml`;
-the companion change that flips the flag is jdwlabs/platform#419.
+the companion change that flips the flag is jdwlabs/platform#420, open and
+awaiting a codeowner approval at the time of writing. Until it merges, the
+auto-close path below never runs.
 
 ---
 
