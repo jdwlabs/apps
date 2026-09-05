@@ -17,7 +17,11 @@
       ]
     },
     "lint": {
-      "executor": "@nx-go/nx-go:lint"
+      "executor": "@nx-go/nx-go:lint",
+      "options": {
+        "linter": "go",
+        "args": ["vet"]
+      }
     },
     "tidy": {
       "executor": "@nx-go/nx-go:tidy"

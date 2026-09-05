@@ -32,18 +32,19 @@ const (
 )
 
 var (
-	ErrMissingSecretKey    = errors.New("jwt secret key is not set")
-	ErrInvalidSecretKey    = errors.New("jwt secret key is unusable")
-	ErrMissingBearerToken  = errors.New("no bearer token in the authorization header")
-	ErrMalformedToken      = errors.New("token is malformed")
-	ErrUnexpectedAlgorithm = errors.New("token is not signed with " + signingAlgorithm)
-	ErrInvalidSignature    = errors.New("token signature does not verify")
-	ErrTokenExpired        = errors.New("token has expired")
-	ErrTokenNotYetValid    = errors.New("token is not yet valid")
-	ErrMissingClaim        = errors.New("token is missing a required claim")
-	ErrInvalidClaim        = errors.New("token claim has the wrong type")
-	ErrInvalidIssuer       = errors.New("token issuer is not the expected one")
-	ErrInvalidAudience     = errors.New("token audience is not the expected one")
+	ErrMissingSecretKey      = errors.New("jwt secret key is not set")
+	ErrMissingExpectedClaims = errors.New("expected issuer and audience are not configured")
+	ErrInvalidSecretKey      = errors.New("jwt secret key is unusable")
+	ErrMissingBearerToken    = errors.New("no bearer token in the authorization header")
+	ErrMalformedToken        = errors.New("token is malformed")
+	ErrUnexpectedAlgorithm   = errors.New("token is not signed with " + signingAlgorithm)
+	ErrInvalidSignature      = errors.New("token signature does not verify")
+	ErrTokenExpired          = errors.New("token has expired")
+	ErrTokenNotYetValid      = errors.New("token is not yet valid")
+	ErrMissingClaim          = errors.New("token is missing a required claim")
+	ErrInvalidClaim          = errors.New("token claim has the wrong type")
+	ErrInvalidIssuer         = errors.New("token issuer is not the expected one")
+	ErrInvalidAudience       = errors.New("token audience is not the expected one")
 )
 
 // Config configures a Verifier.
@@ -52,12 +53,16 @@ type Config struct {
 	// app.jwt.secret-key.
 	SecretKeyBase64 string
 	// ExpectedIssuer is the full iss claim, which the JVM builds as the issuer
-	// origin with /auth/authenticate appended. Empty accepts any issuer, but
-	// never an absent one.
+	// origin with /auth/authenticate appended.
 	ExpectedIssuer string
-	// ExpectedAudience is the issuer origin. Empty accepts any audience, but
-	// never an absent one.
+	// ExpectedAudience is the issuer origin.
 	ExpectedAudience string
+	// AllowAnyIssuerAndAudience drops the iss and aud value checks, leaving only
+	// the presence checks. It exists because a service that genuinely accepts
+	// tokens from several origins needs a way to say so out loud; leaving the
+	// two fields empty is not that way, because an unset field is far more often
+	// an oversight than a decision, and the failure it causes is silent.
+	AllowAnyIssuerAndAudience bool
 	// Leeway absorbs clock skew between the minting and verifying hosts.
 	Leeway time.Duration
 	Now    func() time.Time
@@ -98,7 +103,18 @@ func NewVerifier(cfg Config) (*Verifier, error) {
 		return nil, fmt.Errorf("%w: %d bytes, which makes the JVM sign with a stronger HMAC variant than %s", ErrInvalidSecretKey, len(key), signingAlgorithm)
 	}
 
-	options := []jwt.ParserOption{jwt.WithJSONNumber()}
+	if !cfg.AllowAnyIssuerAndAudience && (cfg.ExpectedIssuer == "" || cfg.ExpectedAudience == "") {
+		return nil, fmt.Errorf("%w: set both, or AllowAnyIssuerAndAudience to accept any", ErrMissingExpectedClaims)
+	}
+
+	options := []jwt.ParserOption{
+		jwt.WithJSONNumber(),
+		// A second, independent pin on the algorithm. The key function below is
+		// the authoritative one — no key is ever handed to a different
+		// algorithm — but a parser option that cannot be reached by a code path
+		// that forgets to check is cheap insurance.
+		jwt.WithValidMethods([]string{signingAlgorithm}),
+	}
 	if cfg.Leeway > 0 {
 		options = append(options, jwt.WithLeeway(cfg.Leeway))
 	}
@@ -128,15 +144,23 @@ func (v *Verifier) VerifyAuthorizationHeader(header string) (*Principal, error) 
 // returns the principal the claims describe.
 func (v *Verifier) Verify(token string) (*Principal, error) {
 	claims := jwt.MapClaims{}
-	if _, err := v.parser.ParseWithClaims(token, claims, v.keyFunc); err != nil {
+	parsed, err := v.parser.ParseWithClaims(token, claims, v.keyFunc)
+	if err != nil {
+		// WithValidMethods rejects a wrong algorithm before the key function
+		// runs, and reports it as a signature failure. Reading the algorithm off
+		// the partially parsed token recovers the specific error without
+		// matching on the library's message text.
+		if parsed != nil && parsed.Method != nil && parsed.Method.Alg() != signingAlgorithm {
+			return nil, fmt.Errorf("%w: header says %q", ErrUnexpectedAlgorithm, parsed.Method.Alg())
+		}
 		return nil, translateParseError(err)
 	}
 	return v.principalFrom(claims)
 }
 
-// keyFunc pins the algorithm. The check lives here rather than in
-// jwt.WithValidMethods so that a wrong algorithm is reported as one, instead of
-// being folded into a generic signature failure.
+// keyFunc is the authoritative algorithm pin: the key is handed only to
+// HS256, so no other algorithm can reach signature verification even if the
+// parser option above were dropped.
 func (v *Verifier) keyFunc(token *jwt.Token) (any, error) {
 	if token.Method.Alg() != signingAlgorithm {
 		return nil, fmt.Errorf("%w: header says %q", ErrUnexpectedAlgorithm, token.Method.Alg())
@@ -204,7 +228,7 @@ func (v *Verifier) principalFrom(claims jwt.MapClaims) (*Principal, error) {
 		return nil, err
 	}
 
-	if v.expectedIssuer != "" && issuer != v.expectedIssuer {
+	if v.expectedIssuer != "" && issuer != v.expectedIssuer { // presence is always required above
 		return nil, fmt.Errorf("%w: %q", ErrInvalidIssuer, issuer)
 	}
 	if v.expectedAudience != "" && !contains(audience, v.expectedAudience) {

@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"encoding/base64"
 	"errors"
 	"testing"
 	"time"
@@ -256,10 +257,11 @@ func TestVerifyRejectsClaimsOfTheWrongType(t *testing.T) {
 	}
 }
 
-func TestVerifyAcceptsAnyIssuerAndAudienceWhenNoneIsConfigured(t *testing.T) {
+func TestVerifyAcceptsAnyIssuerAndAudienceOnlyWhenAskedTo(t *testing.T) {
 	v, err := auth.NewVerifier(auth.Config{
-		SecretKeyBase64: paritySecret,
-		Now:             func() time.Time { return mintedAt.Add(time.Minute) },
+		SecretKeyBase64:           paritySecret,
+		AllowAnyIssuerAndAudience: true,
+		Now:                       func() time.Time { return mintedAt.Add(time.Minute) },
 	})
 	if err != nil {
 		t.Fatalf("NewVerifier: %v", err)
@@ -273,9 +275,11 @@ func TestVerifyAcceptsAnyIssuerAndAudienceWhenNoneIsConfigured(t *testing.T) {
 
 func TestVerifyAppliesClockLeeway(t *testing.T) {
 	v, err := auth.NewVerifier(auth.Config{
-		SecretKeyBase64: paritySecret,
-		Leeway:          30 * time.Second,
-		Now:             func() time.Time { return mintedAt.Add(authtest.DefaultTTL + 10*time.Second) },
+		SecretKeyBase64:  paritySecret,
+		ExpectedIssuer:   issuerClaim,
+		ExpectedAudience: issuerOrigin,
+		Leeway:           30 * time.Second,
+		Now:              func() time.Time { return mintedAt.Add(authtest.DefaultTTL + 10*time.Second) },
 	})
 	if err != nil {
 		t.Fatalf("NewVerifier: %v", err)
@@ -284,6 +288,51 @@ func TestVerifyAppliesClockLeeway(t *testing.T) {
 
 	if _, err := v.Verify(token); err != nil {
 		t.Fatalf("Verify inside the leeway window: %v", err)
+	}
+}
+
+// An unset ExpectedIssuer or ExpectedAudience used to disable the check
+// silently, which is the failure mode with no symptom: tokens from any issuer
+// verify and nothing says so.
+func TestNewVerifierRequiresAnExpectedIssuerAndAudience(t *testing.T) {
+	tests := []struct {
+		name     string
+		issuer   string
+		audience string
+	}{
+		{"neither", "", ""},
+		{"issuer only", issuerClaim, ""},
+		{"audience only", "", issuerOrigin},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := auth.NewVerifier(auth.Config{
+				SecretKeyBase64:  paritySecret,
+				ExpectedIssuer:   tc.issuer,
+				ExpectedAudience: tc.audience,
+			})
+			if !errors.Is(err, auth.ErrMissingExpectedClaims) {
+				t.Errorf("error = %v, want %v", err, auth.ErrMissingExpectedClaims)
+			}
+		})
+	}
+}
+
+// Algorithm confusion: a token whose header claims an asymmetric algorithm must
+// be refused on the header alone, before anything treats the HMAC secret as a
+// public key. The signature bytes are deliberately meaningless — reaching the
+// point where they matter would already be the bug.
+func TestVerifyRejectsAnAsymmetricAlgorithmHeader(t *testing.T) {
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
+	payload := base64.RawURLEncoding.EncodeToString([]byte(`{"sub":"user@jdw.com","iss":"` +
+		issuerClaim + `","aud":"` + issuerOrigin + `","jti":"id","nbf":1,"exp":99999999999}`))
+	token := header + "." + payload + "." + base64.RawURLEncoding.EncodeToString([]byte("not-a-signature"))
+
+	_, err := verifier(t).Verify(token)
+
+	if !errors.Is(err, auth.ErrUnexpectedAlgorithm) {
+		t.Errorf("Verify error = %v, want %v", err, auth.ErrUnexpectedAlgorithm)
 	}
 }
 
@@ -300,7 +349,11 @@ func TestNewVerifierRejectsAnUnusableSecret(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := auth.NewVerifier(auth.Config{SecretKeyBase64: tc.secret})
+			_, err := auth.NewVerifier(auth.Config{
+				SecretKeyBase64:  tc.secret,
+				ExpectedIssuer:   issuerClaim,
+				ExpectedAudience: issuerOrigin,
+			})
 			if !errors.Is(err, tc.want) {
 				t.Errorf("NewVerifier error = %v, want %v", err, tc.want)
 			}

@@ -1,8 +1,12 @@
 // Package authtest mints tokens in the exact claim layout the JVM JwtService
 // produces, so services can write parity tests without reaching for a running
-// identity service. It is deliberately a separate package: nothing in the
-// verification path imports it, so no build can accidentally mint a token in
-// production with a test key.
+// identity service.
+//
+// Nothing that ships may import it — a service able to sign its own tokens can
+// mint itself any principal. Go cannot express "test code only" across modules,
+// so TestNoServiceImportsTheMinter enforces it by walking the service modules
+// and failing on any non-test file that imports this package. The verification
+// path does not import it either, which the same test would catch.
 package authtest
 
 import (
