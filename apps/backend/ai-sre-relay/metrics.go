@@ -41,6 +41,16 @@ type counters struct {
 	// resolve notifications are not arriving (send_resolved off on the
 	// receiver, most likely) and every ticket is again waiting on a human.
 	ticketsAutoClosed atomic.Int64
+	// ticketReopens and ticketReopensFailed count closes that raced a re-fire
+	// and had to be undone. A failed reopen is terminal: the ticket is Done
+	// while its alert is firing, and no later notification repairs it.
+	ticketReopens       atomic.Int64
+	ticketReopensFailed atomic.Int64
+	// fingerprintsUntracked counts alerts that could not be tracked because
+	// the bounded table was full. Each one silently loses both repeat
+	// suppression and auto-close, so any nonzero value is a reason to raise
+	// the ceiling or look for a fingerprint storm.
+	fingerprintsUntracked atomic.Int64
 	// alertsRejected counts refusal responses, not distinct alerts: a sender
 	// retrying one alert increments it once per attempt, so during a storm it
 	// runs an order of magnitude above the number of alerts actually affected.
@@ -74,6 +84,13 @@ func (c *counters) writeTo(w io.Writer) {
 	fmt.Fprint(w, "# HELP ai_sre_relay_tickets_auto_closed_total Tickets the relay transitioned to Done after their alert stayed resolved for the close grace period.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_tickets_auto_closed_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_tickets_auto_closed_total %d\n", c.ticketsAutoClosed.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_ticket_reopens_total Tickets reopened after an automatic close raced the alert firing again, by outcome.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_ticket_reopens_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_ticket_reopens_total{result=\"ok\"} %d\n", c.ticketReopens.Load())
+	fmt.Fprintf(w, "ai_sre_relay_ticket_reopens_total{result=\"failed\"} %d\n", c.ticketReopensFailed.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_fingerprints_untracked_total Alerts left untracked because the fingerprint table was at its ceiling; each loses repeat suppression and auto-close.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_fingerprints_untracked_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_fingerprints_untracked_total %d\n", c.fingerprintsUntracked.Load())
 	fmt.Fprint(w, "# HELP ai_sre_relay_alerts_rejected_total Refusal responses returned because the investigation queue was full, including repeated sender retries of the same alert; not a count of distinct alerts.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_alerts_rejected_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_alerts_rejected_total %d\n", c.alertsRejected.Load())

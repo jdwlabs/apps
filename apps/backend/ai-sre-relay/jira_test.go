@@ -434,7 +434,7 @@ func TestJiraCloseFailsWithoutDoneTransition(t *testing.T) {
 
 // After a restart the relay has no in-process mapping, so a resolve has to
 // recover the ticket the same way the firing path does: by the fingerprint
-// label. Done tickets are excluded — there is nothing left to close.
+// label, with the same query, so the two paths cannot select different issues.
 func TestJiraFindOpenByFingerprintSearchesTheFingerprintLabel(t *testing.T) {
 	var jql string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -455,8 +455,30 @@ func TestJiraFindOpenByFingerprintSearchesTheFingerprintLabel(t *testing.T) {
 	if !strings.Contains(jql, `labels = "amfp-fp1"`) {
 		t.Fatalf("search must key on the fingerprint label: %s", jql)
 	}
-	if !strings.Contains(jql, "statusCategory != Done") {
-		t.Fatalf("search must exclude Done tickets: %s", jql)
+	// The upsert has to see Done tickets in order to reopen them, so the query
+	// cannot filter them out on one side only; the Done case is decided on the
+	// result instead.
+	if strings.Contains(jql, "statusCategory") {
+		t.Fatalf("the fingerprint search must match the upsert's, unfiltered: %s", jql)
+	}
+}
+
+// A Done ticket has nothing left to close, so the resolve path reports
+// nothing even though the search matched it.
+func TestJiraFindOpenByFingerprintIgnoresADoneMatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"issues": []map[string]any{
+			{"key": "JDWLABS-95", "fields": map[string]any{
+				"status": map[string]any{"statusCategory": map[string]any{"key": "done"}},
+			}},
+		}})
+	}))
+	defer srv.Close()
+
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		FindOpenByFingerprint(context.Background(), Alert{Fingerprint: "fp1"})
+	if err != nil || key != "" {
+		t.Fatalf("key=%q err=%v, want nothing to close for a Done match", key, err)
 	}
 }
 
@@ -537,6 +559,10 @@ func TestJiraReopenMovesTicketOutOfDone(t *testing.T) {
 	var transitionID, comment string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.Method == http.MethodGet && r.URL.Query().Get("fields") == "status":
+			_ = json.NewEncoder(w).Encode(map[string]any{"fields": map[string]any{
+				"status": map[string]any{"statusCategory": map[string]any{"key": "done"}},
+			}})
 		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
 			raw, _ := io.ReadAll(r.Body)
 			comment = string(raw)
@@ -570,5 +596,141 @@ func TestJiraReopenMovesTicketOutOfDone(t *testing.T) {
 	}
 	if comment == "" {
 		t.Fatal("a reopen must say why the ticket came back")
+	}
+}
+
+// Reopening a ticket that is not Done would push it to whatever open status
+// the workflow happens to list first and comment about a reopen that never
+// happened. The close being undone may simply never have landed.
+func TestJiraReopenLeavesAnOpenTicketAlone(t *testing.T) {
+	touched := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Query().Get("fields") == "status" {
+			_ = json.NewEncoder(w).Encode(map[string]any{"fields": map[string]any{
+				"status": map[string]any{"statusCategory": map[string]any{"key": "indeterminate"}},
+			}})
+			return
+		}
+		touched = true
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	if err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Reopen(context.Background(), "JDWLABS-96"); err != nil {
+		t.Fatal(err)
+	}
+	if touched {
+		t.Fatal("an already-open ticket must not be transitioned or commented on")
+	}
+}
+
+// "Won't Do" and "Duplicate" sit in the Done category too. Closing an incident
+// as a duplicate says something the relay does not mean, so the named status
+// wins over whichever Done-category transition the workflow lists first.
+func TestJiraClosePrefersTheNamedDoneStatus(t *testing.T) {
+	var transitionID string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "41", "name": "Won't Do", "to": map[string]any{"name": "Won't Do", "statusCategory": map[string]any{"key": "done"}}},
+				{"id": "51", "name": "Duplicate", "to": map[string]any{"name": "Duplicate", "statusCategory": map[string]any{"key": "done"}}},
+				{"id": "31", "name": "Finish", "to": map[string]any{"name": "Done", "statusCategory": map[string]any{"key": "done"}}},
+			}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/transitions"):
+			var payload struct {
+				Transition struct {
+					ID string `json:"id"`
+				} `json:"transition"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			transitionID = payload.Transition.ID
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	if err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Close(context.Background(), "JDWLABS-97", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if transitionID != "31" {
+		t.Fatalf("transition id = %q, want 31 (target status \"Done\"), not the first Done-category one", transitionID)
+	}
+}
+
+// A workflow that calls it something else still closes, by category.
+func TestJiraCloseFallsBackToTheDoneCategory(t *testing.T) {
+	var transitionID string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "61", "name": "Complete", "to": map[string]any{"name": "Completed", "statusCategory": map[string]any{"key": "done"}}},
+			}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/transitions"):
+			var payload struct {
+				Transition struct {
+					ID string `json:"id"`
+				} `json:"transition"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			transitionID = payload.Transition.ID
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	if err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Close(context.Background(), "JDWLABS-98", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if transitionID != "61" {
+		t.Fatalf("transition id = %q, want the Done-category fallback 61", transitionID)
+	}
+}
+
+// The status name is configurable: not every project calls it "Done".
+func TestJiraCloseHonoursAConfiguredDoneStatus(t *testing.T) {
+	var transitionID string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "31", "name": "Finish", "to": map[string]any{"name": "Done", "statusCategory": map[string]any{"key": "done"}}},
+				{"id": "71", "name": "Ship", "to": map[string]any{"name": "Shipped", "statusCategory": map[string]any{"key": "done"}}},
+			}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/transitions"):
+			var payload struct {
+				Transition struct {
+					ID string `json:"id"`
+				} `json:"transition"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			transitionID = payload.Transition.ID
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	if err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client(), withDoneStatus("Shipped")).
+		Close(context.Background(), "JDWLABS-99", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if transitionID != "71" {
+		t.Fatalf("transition id = %q, want the configured status's transition 71", transitionID)
 	}
 }

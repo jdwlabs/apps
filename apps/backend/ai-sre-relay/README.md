@@ -13,19 +13,20 @@ a ticket over the life of an alert.
 The relay owns one Jira ticket per alert fingerprint and now owns its close as
 well as its open. States below are per fingerprint, tracked in process memory.
 
-| Event                                          | What the relay does                                                                          |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `firing`, fingerprint unknown                  | Investigates, upserts a ticket, remembers `fingerprint → issue`                              |
-| `firing`, same firing episode, ticket open     | Skips the investigation, comments `Still firing — repeat notification N`                     |
-| `firing`, same firing episode, ticket Done     | Forgets the mapping and investigates afresh; the upsert reopens the Done ticket              |
-| `firing` while a close is pending              | Cancels the pending close before investigating                                               |
-| `resolved`, fingerprint known                  | Comments the resolve time, posts a Discord notice, starts the grace window                   |
-| `resolved`, fingerprint untracked              | Recovers the ticket by its `amfp-<fingerprint>` label and adopts it, then as above           |
-| `resolved`, no open ticket for the fingerprint | No-op — a resolve never opens a ticket                                                       |
-| Grace window elapsed, ticket still open        | Comments the resolve time and transitions the ticket to Done, `tickets_auto_closed_total` +1 |
-| Grace window elapsed, ticket closed by a human | Drops the pending close, comments nothing                                                    |
-| `firing` after the relay closed the ticket     | Investigates and reopens the same ticket rather than filing a duplicate                      |
-| `firing` that lost the race with a close       | The close is undone: the ticket is reopened with the reason on it                            |
+| Event                                          | What the relay does                                                                            |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `firing`, fingerprint unknown                  | Investigates, upserts a ticket, remembers `fingerprint → issue`                                |
+| `firing`, same firing episode, ticket open     | Skips the investigation, comments `Still firing — repeat notification N`                       |
+| `firing`, same firing episode, ticket Done     | Forgets the mapping and investigates afresh; the upsert reopens the Done ticket                |
+| `firing` while a close is pending              | Cancels the pending close before investigating                                                 |
+| `resolved`, fingerprint known                  | Comments the resolve time, posts a Discord notice, starts the grace window                     |
+| `resolved`, fingerprint untracked              | Recovers the ticket by its `amfp-<fingerprint>` label and adopts it, then as above             |
+| `resolved`, no open ticket for the fingerprint | No-op — a resolve never opens a ticket                                                         |
+| Grace window elapsed, ticket still open        | Transitions the ticket to Done, then comments the resolve time; `tickets_auto_closed_total` +1 |
+| Transition landed, closing comment did not     | Counted as closed and logged at Error; never retried, since the ticket is already Done         |
+| Grace window elapsed, ticket closed by a human | Drops the pending close, comments nothing                                                      |
+| `firing` after the relay closed the ticket     | Investigates and reopens the same ticket rather than filing a duplicate                        |
+| `firing` that lost the race with a close       | The close is undone: the ticket is reopened with the reason on it                              |
 
 Two properties are worth stating explicitly, because losing either one is what
 made tickets accumulate before:
@@ -67,6 +68,12 @@ human. This is the benign failure — the pre-existing behaviour, a ticket that
 stays open — rather than a persisted timer firing against state that no longer
 holds, which is why the state was left in memory.
 
+One rough edge sits here: a resolve's Jira work runs on a 60s budget of its
+own, detached from the per-alert deadline, while shutdown drains for 25s. A
+rolling update landing in that gap can cut a close between its transition and
+its comment — a Done ticket with no explanation on it. The next sweep will not
+retry it, because the ticket is already Done.
+
 ---
 
 ## Configuration
@@ -77,9 +84,15 @@ Environment variables; every one below has a working default.
 | ------------------------------- | ------------------ | --------------------------------------------------------------------------- |
 | `RESOLVED_CLOSE_GRACE`          | `6h`               | How long an alert must stay resolved before its ticket is closed            |
 | `RESOLVED_SWEEP_INTERVAL`       | `10m`              | How often pending closes are re-evaluated, independent of incoming webhooks |
+| `JIRA_DONE_STATUS`              | `Done`             | Status name an automatic close aims for before falling back to the category |
 | `INVESTIGATION_TIMEOUT_SECONDS` | `240`              | Per-alert deadline for the whole pipeline                                   |
 | `MAX_CONCURRENT`                | `4`                | Investigation workers                                                       |
 | `QUEUE_SIZE`                    | `2×MAX_CONCURRENT` | Accepted-but-not-started depth; overflow answers 503                        |
+
+`JIRA_DONE_STATUS` exists because "Won't Do" and "Duplicate" usually sit in
+the Done category too, and closing an incident as a duplicate says something
+the relay does not mean. The named status wins; the category is the fallback
+for workflows that call it something else.
 
 Both duration variables take Go duration syntax (`6h`, `90m`). An unparseable
 or non-positive value is ignored with a warning and the default is used, so a
@@ -91,10 +104,8 @@ typo cannot silently turn auto-close into never-close.
 tells the relay a condition cleared: with it off, every ticket the relay opens
 stays open until a human closes it, and the auto-close path is dead code. The
 `ai-sre` receiver lives in the platform repo at
-`tenants/platform/services/kube-prometheus-stack/postInstall/alertmanager-config-externalsecret.yaml`;
-the companion change that flips the flag is jdwlabs/platform#420, open and
-awaiting a codeowner approval at the time of writing. Until it merges, the
-auto-close path below never runs.
+`tenants/platform/services/kube-prometheus-stack/postInstall/alertmanager-config-externalsecret.yaml`.
+Until that flag is on, everything below this line is inert.
 
 ---
 
@@ -102,16 +113,18 @@ auto-close path below never runs.
 
 Prometheus text exposition on `GET /metrics`, unauthenticated.
 
-| Metric                                   | Read it as                                                               |
-| ---------------------------------------- | ------------------------------------------------------------------------ |
-| `ai_sre_relay_investigations_run_total`  | Alerts investigated                                                      |
-| `ai_sre_relay_repeats_skipped_total`     | Repeat notifications absorbed by an open ticket                          |
-| `ai_sre_relay_tickets_auto_closed_total` | Tickets the relay transitioned to Done after their alert stayed resolved |
-| `ai_sre_relay_repo_rejections_total`     | Remediations dropped at the repository allowlist                         |
-| `ai_sre_relay_path_rejections_total`     | Remediations dropped at the path allowlist                               |
-| `ai_sre_relay_branches_skipped_total`    | Remediations dropped because the ticket's PR branch existed              |
-| `ai_sre_relay_branches_orphaned_total`   | Branches found with no pull request — a previous run failed mid-way      |
-| `ai_sre_relay_alerts_rejected_total`     | Refusal responses (503) — retry pressure, not distinct alerts            |
+| Metric                                      | Read it as                                                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `ai_sre_relay_investigations_run_total`     | Alerts investigated                                                             |
+| `ai_sre_relay_repeats_skipped_total`        | Repeat notifications absorbed by an open ticket                                 |
+| `ai_sre_relay_tickets_auto_closed_total`    | Tickets the relay transitioned to Done after their alert stayed resolved        |
+| `ai_sre_relay_repo_rejections_total`        | Remediations dropped at the repository allowlist                                |
+| `ai_sre_relay_path_rejections_total`        | Remediations dropped at the path allowlist                                      |
+| `ai_sre_relay_branches_skipped_total`       | Remediations dropped because the ticket's PR branch existed                     |
+| `ai_sre_relay_branches_orphaned_total`      | Branches found with no pull request — a previous run failed mid-way             |
+| `ai_sre_relay_ticket_reopens_total`         | Closes that raced a re-fire and were undone, by `result` — `failed` is terminal |
+| `ai_sre_relay_fingerprints_untracked_total` | Alerts past the tracking ceiling; each loses repeat suppression and auto-close  |
+| `ai_sre_relay_alerts_rejected_total`        | Refusal responses (503) — retry pressure, not distinct alerts                   |
 
 ---
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,12 +20,20 @@ import (
 // the memory ceiling matters more than caching every possible dedup key.
 const maxTrackedDedupKeys = 1024
 
+// defaultDoneStatus is the status name a close aims for before falling back to
+// any Done-category transition.
+const defaultDoneStatus = "Done"
+
 type JiraClient struct {
 	baseURL    string
 	email      string
 	token      string
 	projectKey string
 	issueType  string
+	// doneStatus names the status a close aims for. Workflows commonly expose
+	// several Done-category transitions — Done, Won't Do, Duplicate — and
+	// picking whichever comes first mislabels why the work ended.
+	doneStatus string
 	hc         *http.Client
 
 	// mu serializes upserts and guards known. Jira offers no unique-constraint
@@ -36,15 +45,29 @@ type JiraClient struct {
 	known map[string]IssueKey // dedup label -> issue key created or matched by this process
 }
 
-func NewJiraClient(baseURL, email, token, projectKey, issueType string, hc *http.Client) *JiraClient {
+type jiraOption func(*JiraClient)
+
+func withDoneStatus(name string) jiraOption {
+	return func(j *JiraClient) {
+		if name != "" {
+			j.doneStatus = name
+		}
+	}
+}
+
+func NewJiraClient(baseURL, email, token, projectKey, issueType string, hc *http.Client, opts ...jiraOption) *JiraClient {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
-	return &JiraClient{
+	j := &JiraClient{
 		baseURL: baseURL, email: email, token: token,
-		projectKey: projectKey, issueType: issueType, hc: hc,
+		projectKey: projectKey, issueType: issueType, doneStatus: defaultDoneStatus, hc: hc,
 		known: map[string]IssueKey{},
 	}
+	for _, opt := range opts {
+		opt(j)
+	}
+	return j
 }
 
 func (j *JiraClient) label(a Alert) string { return "amfp-" + a.Fingerprint }
@@ -119,7 +142,7 @@ func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey
 		}
 		return j.updateIssue(ctx, key, an, done)
 	}
-	hit, err := j.searchOne(ctx, fmt.Sprintf(`project = %s AND labels = %q ORDER BY created DESC`, j.projectKey, j.label(a)))
+	hit, err := j.fingerprintHit(ctx, a)
 	if err != nil {
 		return "", err
 	}
@@ -176,9 +199,11 @@ func (j *JiraClient) searchOne(ctx context.Context, jql string) (*searchHit, err
 	// /rest/api/3/search was removed by Atlassian in 2025; its /search/jql
 	// replacement returns bare issue IDs unless fields are requested. status
 	// is requested too so we can tell a Done match from an open one without
-	// a second round-trip; ORDER BY + maxResults=1 pins it to the most
-	// recently touched issue.
-	resp, err := j.do(ctx, http.MethodGet, "/rest/api/3/search/jql?fields=key,status&maxResults=1&jql="+url.QueryEscape(jql), nil)
+	// a second round-trip; ORDER BY pins the answer to the most recently
+	// created issue. Two are fetched to use one: a second match means the
+	// dedup label is on more than one ticket, which is worth saying out loud
+	// because from then on the choice between them is just ordering.
+	resp, err := j.do(ctx, http.MethodGet, "/rest/api/3/search/jql?fields=key,status&maxResults=2&jql="+url.QueryEscape(jql), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -207,6 +232,10 @@ func (j *JiraClient) searchOne(ctx context.Context, jql string) (*searchHit, err
 	}
 	if len(search.Issues) == 0 {
 		return nil, nil
+	}
+	if len(search.Issues) > 1 {
+		slog.Warn("jira search matched more than one issue; using the most recent",
+			"jql", jql, "using", search.Issues[0].Key, "also", search.Issues[1].Key)
 	}
 	return &searchHit{Key: search.Issues[0].Key, StatusCategory: search.Issues[0].Fields.Status.StatusCategory.Key}, nil
 }
@@ -312,28 +341,46 @@ func (j *JiraClient) Close(ctx context.Context, key IssueKey, resolvedAt time.Ti
 func (j *JiraClient) Reopen(ctx context.Context, key IssueKey) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
+	// The close this undoes may never have landed, or a human may have
+	// reopened it first. Moving an already-open ticket would push it to an
+	// arbitrary status and comment about a reopen that did not happen.
+	done, err := j.isDone(ctx, key)
+	if err != nil {
+		return err
+	}
+	if !done {
+		return nil
+	}
 	if err := j.transition(ctx, key, false); err != nil {
 		return err
 	}
-	_, err := j.commentOn(ctx, key,
+	_, cerr := j.commentOn(ctx, key,
 		"🔁 Alert re-fired while this ticket was being closed automatically; reopening.")
-	return err
+	return cerr
+}
+
+// fingerprintHit is the one fingerprint-label search both the upsert and the
+// resolve path use. It deliberately does not filter Done: the upsert has to
+// see a closed ticket in order to reopen it. Filtering on one side only would
+// let the two paths select different issues whenever a fingerprint has both a
+// newer Done ticket and an older open one.
+func (j *JiraClient) fingerprintHit(ctx context.Context, a Alert) (*searchHit, error) {
+	return j.searchOne(ctx, fmt.Sprintf(`project = %s AND labels = %q ORDER BY created DESC`,
+		j.projectKey, j.label(a)))
 }
 
 // FindOpenByFingerprint recovers the open ticket already filed for an alert's
 // fingerprint. The relay's own tracking is in-process, so this is how a
-// resolve arriving after a restart finds the ticket it belongs to. Done
-// tickets are excluded: there is nothing left to close.
+// resolve arriving after a restart finds the ticket it belongs to. A Done
+// match reports nothing: there is nothing left to close.
 func (j *JiraClient) FindOpenByFingerprint(ctx context.Context, a Alert) (IssueKey, error) {
 	if a.Fingerprint == "" {
 		return "", nil
 	}
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	hit, err := j.searchOne(ctx, fmt.Sprintf(
-		`project = %s AND labels = %q AND statusCategory != Done ORDER BY created DESC`,
-		j.projectKey, j.label(a)))
-	if err != nil || hit == nil {
+	hit, err := j.fingerprintHit(ctx, a)
+	if err != nil || hit == nil || hit.done() {
 		return "", err
 	}
 	key := IssueKey(hit.Key)
@@ -415,6 +462,7 @@ func (j *JiraClient) transition(ctx context.Context, key IssueKey, toDone bool) 
 		Transitions []struct {
 			ID string `json:"id"`
 			To struct {
+				Name           string `json:"name"`
 				StatusCategory struct {
 					Key string `json:"key"`
 				} `json:"statusCategory"`
@@ -428,10 +476,24 @@ func (j *JiraClient) transition(ctx context.Context, key IssueKey, toDone bool) 
 	resp.Body.Close()
 
 	var transitionID string
+	// "Won't Do" and "Duplicate" usually sit in the Done category too, and
+	// closing an incident as a duplicate says something the relay does not
+	// mean. The configured status name wins; the category is the fallback for
+	// workflows that name it something else entirely.
+	if toDone {
+		for _, tr := range t.Transitions {
+			if strings.EqualFold(tr.To.Name, j.doneStatus) && tr.To.StatusCategory.Key == "done" {
+				transitionID = tr.ID
+				break
+			}
+		}
+	}
 	for _, tr := range t.Transitions {
+		if transitionID != "" {
+			break
+		}
 		if (tr.To.StatusCategory.Key == "done") == toDone {
 			transitionID = tr.ID
-			break
 		}
 	}
 	if transitionID == "" {
