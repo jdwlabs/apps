@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -279,20 +280,65 @@ func (j *JiraClient) NoteResolved(ctx context.Context, key IssueKey, resolvedAt 
 	return err
 }
 
+// ErrClosedWithoutNote reports a ticket that reached Done but whose closing
+// comment did not post. The distinction matters to the caller: the close is
+// finished and must not be retried, but nothing on the ticket says why it
+// closed.
+var ErrClosedWithoutNote = errors.New("ticket closed without its closing comment")
+
 // Close transitions the issue to Done after its alert has stayed resolved,
 // leaving the resolve time on the ticket so the close is auditable without
 // cross-referencing Alertmanager.
+//
+// The transition goes first and the comment second, because the caller retries
+// a failed close on every sweep: commenting first turns a workflow that cannot
+// reach Done into a ticket collecting one closing comment per sweep, forever.
 func (j *JiraClient) Close(ctx context.Context, key IssueKey, resolvedAt time.Time) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	// Comment first: a transition that lands with no explanation is worse
-	// than an explanation with no transition, which the next sweep retries.
+	if err := j.transition(ctx, key, true); err != nil {
+		return err
+	}
 	if _, err := j.commentOn(ctx, key, fmt.Sprintf(
 		"🟢 Closed automatically: the alert resolved at %s and stayed resolved for the grace period. If it fires again this ticket is reopened.",
 		stamp(resolvedAt))); err != nil {
+		return fmt.Errorf("%w: %s: %w", ErrClosedWithoutNote, key, err)
+	}
+	return nil
+}
+
+// Reopen returns a ticket to an open status after a close raced a re-fire, so
+// a ticket is never left Done while its alert is firing.
+func (j *JiraClient) Reopen(ctx context.Context, key IssueKey) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if err := j.transition(ctx, key, false); err != nil {
 		return err
 	}
-	return j.transition(ctx, key, true)
+	_, err := j.commentOn(ctx, key,
+		"🔁 Alert re-fired while this ticket was being closed automatically; reopening.")
+	return err
+}
+
+// FindOpenByFingerprint recovers the open ticket already filed for an alert's
+// fingerprint. The relay's own tracking is in-process, so this is how a
+// resolve arriving after a restart finds the ticket it belongs to. Done
+// tickets are excluded: there is nothing left to close.
+func (j *JiraClient) FindOpenByFingerprint(ctx context.Context, a Alert) (IssueKey, error) {
+	if a.Fingerprint == "" {
+		return "", nil
+	}
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	hit, err := j.searchOne(ctx, fmt.Sprintf(
+		`project = %s AND labels = %q AND statusCategory != Done ORDER BY created DESC`,
+		j.projectKey, j.label(a)))
+	if err != nil || hit == nil {
+		return "", err
+	}
+	key := IssueKey(hit.Key)
+	j.rememberKnown(j.label(a), key)
+	return key, nil
 }
 
 // stamp renders a resolve time for a ticket comment. UTC, because the relay,

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -360,7 +361,7 @@ func TestJiraNoteResolvedRecordsTheResolveTime(t *testing.T) {
 // The closing transition is looked up by the target status category, like the
 // reopen path: workflows name the transition differently and the id is not
 // stable across projects.
-func TestJiraCloseCommentsThenTransitionsToDone(t *testing.T) {
+func TestJiraCloseUsesTheDoneCategoryTransition(t *testing.T) {
 	var comment, transitionID string
 	order := []string{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -402,8 +403,8 @@ func TestJiraCloseCommentsThenTransitionsToDone(t *testing.T) {
 	if !strings.Contains(comment, "2026-07-28T04:00:00Z") {
 		t.Fatalf("closing comment omits the resolve time: %s", comment)
 	}
-	if len(order) != 2 || order[0] != "comment" {
-		t.Fatalf("order = %v, want the closing comment before the transition", order)
+	if len(order) != 2 || order[0] != "transition" {
+		t.Fatalf("order = %v, want the transition before the closing comment", order)
 	}
 }
 
@@ -428,5 +429,146 @@ func TestJiraCloseFailsWithoutDoneTransition(t *testing.T) {
 		Close(context.Background(), "JDWLABS-90", time.Now())
 	if err == nil {
 		t.Fatal("close must fail when no Done transition is available")
+	}
+}
+
+// After a restart the relay has no in-process mapping, so a resolve has to
+// recover the ticket the same way the firing path does: by the fingerprint
+// label. Done tickets are excluded — there is nothing left to close.
+func TestJiraFindOpenByFingerprintSearchesTheFingerprintLabel(t *testing.T) {
+	var jql string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/api/3/search") {
+			jql, _ = url.QueryUnescape(r.URL.Query().Get("jql"))
+			_ = json.NewEncoder(w).Encode(map[string]any{"issues": []map[string]string{{"key": "JDWLABS-91"}}})
+			return
+		}
+		t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+	}))
+	defer srv.Close()
+
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		FindOpenByFingerprint(context.Background(), Alert{Fingerprint: "fp1"})
+	if err != nil || key != "JDWLABS-91" {
+		t.Fatalf("key=%q err=%v", key, err)
+	}
+	if !strings.Contains(jql, `labels = "amfp-fp1"`) {
+		t.Fatalf("search must key on the fingerprint label: %s", jql)
+	}
+	if !strings.Contains(jql, "statusCategory != Done") {
+		t.Fatalf("search must exclude Done tickets: %s", jql)
+	}
+}
+
+func TestJiraFindOpenByFingerprintReturnsEmptyOnNoMatch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"issues": []any{}})
+	}))
+	defer srv.Close()
+
+	key, err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		FindOpenByFingerprint(context.Background(), Alert{Fingerprint: "fp1"})
+	if err != nil || key != "" {
+		t.Fatalf("key=%q err=%v, want an empty key and no error", key, err)
+	}
+}
+
+// The transition goes first. Commenting first means a workflow that cannot
+// reach Done collects one closing comment per sweep interval, forever.
+func TestJiraCloseTransitionsBeforeCommenting(t *testing.T) {
+	var order []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			order = append(order, "comment")
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "31", "to": map[string]any{"statusCategory": map[string]any{"key": "done"}}},
+			}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/transitions"):
+			order = append(order, "transition")
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	if err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Close(context.Background(), "JDWLABS-92", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if len(order) != 2 || order[0] != "transition" {
+		t.Fatalf("order = %v, want the transition before the closing comment", order)
+	}
+}
+
+// A ticket that transitioned but could not be commented on is closed, not
+// pending. Saying so distinctly is what stops the caller retrying a Done
+// ticket every sweep.
+func TestJiraCloseReportsATransitionedTicketWithNoNote(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			w.WriteHeader(http.StatusForbidden)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "31", "to": map[string]any{"statusCategory": map[string]any{"key": "done"}}},
+			}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/transitions"):
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Close(context.Background(), "JDWLABS-93", time.Now())
+	if !errors.Is(err, ErrClosedWithoutNote) {
+		t.Fatalf("err = %v, want ErrClosedWithoutNote", err)
+	}
+}
+
+// A close that raced a re-fire has to be undone, with the reason on the
+// ticket: it is Done while its alert is firing.
+func TestJiraReopenMovesTicketOutOfDone(t *testing.T) {
+	var transitionID, comment string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			raw, _ := io.ReadAll(r.Body)
+			comment = string(raw)
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "31", "to": map[string]any{"statusCategory": map[string]any{"key": "done"}}},
+				{"id": "11", "to": map[string]any{"statusCategory": map[string]any{"key": "new"}}},
+			}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/transitions"):
+			var payload struct {
+				Transition struct {
+					ID string `json:"id"`
+				} `json:"transition"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			transitionID = payload.Transition.ID
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	if err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Reopen(context.Background(), "JDWLABS-94"); err != nil {
+		t.Fatal(err)
+	}
+	if transitionID != "11" {
+		t.Fatalf("transition id = %q, want the non-Done transition 11", transitionID)
+	}
+	if comment == "" {
+		t.Fatal("a reopen must say why the ticket came back")
 	}
 }
