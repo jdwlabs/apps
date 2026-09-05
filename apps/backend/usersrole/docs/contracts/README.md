@@ -285,7 +285,7 @@ Two further findings support that claim:
 
 ## Everything these documents change
 
-"Frozen" does not mean identical. Six behaviours differ from what runs today,
+"Frozen" does not mean identical. Five behaviours differ from what runs today,
 and each is marked on the operation or schema it affects so it cannot be mistaken
 for a transcription.
 
@@ -293,7 +293,6 @@ for a transcription.
 | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
 | `User` drops the embedded profile for `profileId`                                                               | `identity-service:User`                                                     | design   | No — nothing reads `user.profile`                                            |
 | `GET /api/roles` gains `page` and `size`                                                                        | `GET /api/roles`                                                            | design   | No — the catalogue holds 3 rows                                              |
-| The address delete is scoped to its profile                                                                     | `DELETE /api/profiles/{profileId}/address/{addressId}`                      | security | No — unreachable when acting on your own data                                |
 | Role grants come from the token, not a per-request read                                                         | `x-authority-freshness`                                                     | security | Not today; after the split, up to 2 h of revocation latency                  |
 | A stale `profile_id` claim yields 404 where today it is 403, on the eight profile operations that look up first | `x-stale-profile-claim`                                                     | security | Only after deleting your own profile — a different message, no broken screen |
 | A stale `profile_id` claim yields 204 where today it is 403, on the two that delete without looking up          | `DELETE /api/profiles/{profileId}`, `DELETE /api/profiles/{profileId}/icon` | security | Only after deleting your own profile — a silent success instead of a refusal |
@@ -305,17 +304,23 @@ against this contract must not read "authorizes from the verified token" as
 equivalent to today's behaviour. It is not, and where it differs it differs in
 the permissive direction.
 
-### The one correction
+### A correction that has since become a transcription
 
 `DELETE /api/profiles/{profileId}/address/{addressId}` is specified scoped to the
-profile in the path. Today it is not: the handler takes `profileId`, uses it for
-the authorization check, and then deletes by `addressId` alone, so any
-authenticated principal with a profile can delete any address in the table by
-guessing a sequential id and gets 204 for it.
+profile in the path, answering 404 when the address does not belong to it.
 
-Transcribing that faithfully would write an insecure direct object reference into
-the specification the Go services are built and tested against, and the parity
-suite generated from this contract would then certify it. Recording it as an
-intended deviation is the only reading of "frozen against today's behaviour" that
-does not defeat the purpose of freezing it. The 404 it adds is unreachable for
-any caller acting on their own data.
+When this contract was written that was a deviation. The handler took
+`profileId`, used it for the authorization check, and then deleted by `addressId`
+alone, so any authenticated principal with a profile could delete any address in
+the table by guessing a sequential id and get 204 for it. Transcribing that
+faithfully would have written an insecure direct object reference into the
+document the Go services are built and parity-tested against, and the generated
+suite would have certified it — so the contract specified the scoped behaviour
+and recorded the gap.
+
+The application has since been fixed independently, in
+`AddressDaoPostgres.deleteByProfileIdAndAddressId` and
+`ProfileService.deleteAddress`. Contract and code now agree, and this is a
+transcription like every other operation. The history stays here because it is
+the clearest example of what these documents are for: the contract named the
+behaviour that ought to hold before anything enforced it.

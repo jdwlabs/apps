@@ -18,8 +18,8 @@ info:
     `scripts/check-contract-drift.mjs` fails the build when a deviation appears
     that is not on that list.
 
-    Not everything here is a transcription. Six behaviours differ from what runs
-    today — two by choice, four as consequences of the split itself — and every
+    Not everything here is a transcription. Five behaviours differ from what runs
+    today — two by choice, three as consequences of the split itself — and every
     one is marked `x-behaviour-change`, `x-authority-freshness` or
     `x-profile-id-fallback` on the operation or schema it affects. The full list,
     with what each is visible to a client, is the table in

@@ -171,7 +171,7 @@
         "served": "application/json=ref:Profile",
         "frozen": "no content"
       },
-      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent(). The 404 this operation also gains is an intended behaviour change recorded as x-behaviour-change: the delete is scoped to the profile in the path, where today it ignores it."
+      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent(). The 404 this operation carries is a transcription: the delete is scoped to the profile in the path by AddressDaoPostgres.deleteByProfileIdAndAddressId, and ProfileService.deleteAddress raises ResourceNotFoundException when it matches no row."
     },
     "GET /api/profiles/{profileId}/icon": {
       "errorStatuses": ["401", "403", "404"],
