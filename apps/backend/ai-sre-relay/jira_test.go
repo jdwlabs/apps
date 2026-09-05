@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestJiraUpsertCreatesWhenNoDuplicate(t *testing.T) {
@@ -328,5 +329,104 @@ func TestJiraKnownMapIsBounded(t *testing.T) {
 	}
 	if _, ok := j.known[j.alertLabel(a)]; ok {
 		t.Fatal("a new alertname dedup key must not be tracked once the cap is hit")
+	}
+}
+
+func TestJiraNoteResolvedRecordsTheResolveTime(t *testing.T) {
+	var body string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			raw, _ := io.ReadAll(r.Body)
+			body = string(raw)
+			w.WriteHeader(http.StatusCreated)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	at := time.Date(2026, 7, 28, 4, 0, 0, 0, time.UTC)
+	err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		NoteResolved(context.Background(), "JDWLABS-88", at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(body, "2026-07-28T04:00:00Z") {
+		t.Fatalf("resolve note omits the resolve time: %s", body)
+	}
+}
+
+// The closing transition is looked up by the target status category, like the
+// reopen path: workflows name the transition differently and the id is not
+// stable across projects.
+func TestJiraCloseCommentsThenTransitionsToDone(t *testing.T) {
+	var comment, transitionID string
+	order := []string{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			raw, _ := io.ReadAll(r.Body)
+			comment = string(raw)
+			order = append(order, "comment")
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "11", "name": "Back to Backlog", "to": map[string]any{"statusCategory": map[string]any{"key": "new"}}},
+				{"id": "31", "name": "Ship It", "to": map[string]any{"statusCategory": map[string]any{"key": "done"}}},
+			}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/transitions"):
+			var payload struct {
+				Transition struct {
+					ID string `json:"id"`
+				} `json:"transition"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+			transitionID = payload.Transition.ID
+			order = append(order, "transition")
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	at := time.Date(2026, 7, 28, 4, 0, 0, 0, time.UTC)
+	if err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Close(context.Background(), "JDWLABS-89", at); err != nil {
+		t.Fatal(err)
+	}
+	if transitionID != "31" {
+		t.Fatalf("transition id = %q, want the Done-category transition 31", transitionID)
+	}
+	if !strings.Contains(comment, "2026-07-28T04:00:00Z") {
+		t.Fatalf("closing comment omits the resolve time: %s", comment)
+	}
+	if len(order) != 2 || order[0] != "comment" {
+		t.Fatalf("order = %v, want the closing comment before the transition", order)
+	}
+}
+
+// A workflow with no reachable Done transition must surface an error rather
+// than report a ticket closed that is still open.
+func TestJiraCloseFailsWithoutDoneTransition(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment"):
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/transitions"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"transitions": []map[string]any{
+				{"id": "11", "name": "Back to Backlog", "to": map[string]any{"statusCategory": map[string]any{"key": "new"}}},
+			}})
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	err := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client()).
+		Close(context.Background(), "JDWLABS-90", time.Now())
+	if err == nil {
+		t.Fatal("close must fail when no Done transition is available")
 	}
 }

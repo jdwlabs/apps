@@ -25,7 +25,8 @@ type dispatcher struct {
 	log        *slog.Logger
 	wg         sync.WaitGroup
 
-	// inflight tracks fingerprints that are queued or being investigated.
+	// inflight tracks fingerprint/status pairs that are queued or being
+	// investigated.
 	// Alertmanager re-notifies on group_interval while an investigation for
 	// the same fingerprint can still be running (they take minutes);
 	// investigating the repeat would double the LLM spend and race the Jira
@@ -89,14 +90,15 @@ func (d *dispatcher) process(a Alert) {
 // queued alerts were already acknowledged and no longer exist anywhere else.
 func (d *dispatcher) enqueue(a Alert) bool {
 	if a.Fingerprint != "" {
+		key := inflightKey(a)
 		d.mu.Lock()
-		if _, dup := d.inflight[a.Fingerprint]; dup {
+		if _, dup := d.inflight[key]; dup {
 			d.mu.Unlock()
 			d.log.Info("alert already queued or investigating; coalescing repeat",
-				"fingerprint", a.Fingerprint, "alert", a.Name())
+				"fingerprint", a.Fingerprint, "alert", a.Name(), "status", a.Status)
 			return true
 		}
-		d.inflight[a.Fingerprint] = struct{}{}
+		d.inflight[key] = struct{}{}
 		d.mu.Unlock()
 	}
 	select {
@@ -117,9 +119,15 @@ func (d *dispatcher) release(a Alert) {
 		return
 	}
 	d.mu.Lock()
-	delete(d.inflight, a.Fingerprint)
+	delete(d.inflight, inflightKey(a))
 	d.mu.Unlock()
 }
+
+// inflightKey separates a fingerprint's firing notifications from its resolve.
+// Keyed on the fingerprint alone, a resolve arriving while the investigation
+// it belongs to is still running would be coalesced away as a repeat of it,
+// and nothing else would ever report that the condition cleared.
+func inflightKey(a Alert) string { return a.Status + "\x00" + a.Fingerprint }
 
 // shutdown stops accepting work and waits for in-flight and queued
 // investigations to finish, bounded by ctx. Call only after the HTTP server has

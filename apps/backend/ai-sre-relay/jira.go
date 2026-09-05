@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 )
 
 // maxTrackedDedupKeys bounds known the same way pipeline.go's maxTrackedFirings
@@ -267,6 +268,37 @@ func (j *JiraClient) NoteRefire(ctx context.Context, key IssueKey, count int) er
 	return err
 }
 
+// NoteResolved records that Alertmanager reported the alert resolved, so the
+// pending close is visible on the ticket before it happens.
+func (j *JiraClient) NoteResolved(ctx context.Context, key IssueKey, resolvedAt time.Time) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	_, err := j.commentOn(ctx, key, fmt.Sprintf(
+		"✅ Alertmanager reported this alert resolved at %s. This ticket closes automatically if the alert stays resolved; a re-fire before then cancels the close.",
+		stamp(resolvedAt)))
+	return err
+}
+
+// Close transitions the issue to Done after its alert has stayed resolved,
+// leaving the resolve time on the ticket so the close is auditable without
+// cross-referencing Alertmanager.
+func (j *JiraClient) Close(ctx context.Context, key IssueKey, resolvedAt time.Time) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	// Comment first: a transition that lands with no explanation is worse
+	// than an explanation with no transition, which the next sweep retries.
+	if _, err := j.commentOn(ctx, key, fmt.Sprintf(
+		"🟢 Closed automatically: the alert resolved at %s and stayed resolved for the grace period. If it fires again this ticket is reopened.",
+		stamp(resolvedAt))); err != nil {
+		return err
+	}
+	return j.transition(ctx, key, true)
+}
+
+// stamp renders a resolve time for a ticket comment. UTC, because the relay,
+// Alertmanager and the reader are rarely in the same zone.
+func stamp(t time.Time) string { return t.UTC().Format(time.RFC3339) }
+
 func (j *JiraClient) groupInto(ctx context.Context, key IssueKey, an Analysis) (IssueKey, error) {
 	return j.commentOn(ctx, key, "🔗 Same alert re-fired with a new fingerprint (different labelset); grouping into this open ticket.\n\n"+an.RootCause)
 }
@@ -314,13 +346,17 @@ func (j *JiraClient) create(ctx context.Context, a Alert, an Analysis) (IssueKey
 	return IssueKey(created.Key), nil
 }
 
-// reopen transitions a Done issue back to an open status so a refiring
-// alert updates the original ticket instead of spawning a duplicate. It
-// picks the first available transition whose target status sits outside
-// the Done category; workflows name this transition differently ("Reopen",
-// "Backlog", "To Do", ...), so the target status category is what matters,
-// not the transition name.
+// reopen moves a Done issue back to an open status so a refiring alert updates
+// the original ticket instead of spawning a duplicate.
 func (j *JiraClient) reopen(ctx context.Context, key IssueKey) error {
+	return j.transition(ctx, key, false)
+}
+
+// transition moves an issue into or out of the Done status category. It picks
+// the first available transition whose target status sits on the wanted side;
+// workflows name these differently ("Reopen", "Backlog", "Ship It", ...) and
+// their ids differ per project, so the target status category is what matters.
+func (j *JiraClient) transition(ctx context.Context, key IssueKey, toDone bool) error {
 	resp, err := j.do(ctx, http.MethodGet, fmt.Sprintf("/rest/api/3/issue/%s/transitions", key), nil)
 	if err != nil {
 		return err
@@ -347,13 +383,17 @@ func (j *JiraClient) reopen(ctx context.Context, key IssueKey) error {
 
 	var transitionID string
 	for _, tr := range t.Transitions {
-		if tr.To.StatusCategory.Key != "done" {
+		if (tr.To.StatusCategory.Key == "done") == toDone {
 			transitionID = tr.ID
 			break
 		}
 	}
 	if transitionID == "" {
-		return fmt.Errorf("jira reopen %s: no non-Done transition available", key)
+		want := "non-Done"
+		if toDone {
+			want = "Done"
+		}
+		return fmt.Errorf("jira transition %s: no %s transition available", key, want)
 	}
 
 	tResp, err := j.do(ctx, http.MethodPost, fmt.Sprintf("/rest/api/3/issue/%s/transitions", key),

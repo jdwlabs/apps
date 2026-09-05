@@ -48,11 +48,15 @@ func TestHealthz(t *testing.T) {
 	}
 }
 
-func TestWebhookEnqueuesOnlyFiringAlerts(t *testing.T) {
+// A resolved notification is what tells the relay its ticket can be closed, so
+// it has to reach the pipeline like a firing one. Anything else Alertmanager
+// might send is still ignored.
+func TestWebhookEnqueuesFiringAndResolvedAlerts(t *testing.T) {
 	e := acceptAll()
 	const payload = `{"alerts":[
 	  {"status":"firing","fingerprint":"f1","labels":{"alertname":"A"}},
-	  {"status":"resolved","fingerprint":"f2","labels":{"alertname":"B"}}
+	  {"status":"resolved","fingerprint":"f2","endsAt":"2026-07-28T04:00:00Z","labels":{"alertname":"B"}},
+	  {"status":"suppressed","fingerprint":"f3","labels":{"alertname":"C"}}
 	]}`
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(payload))
@@ -61,8 +65,11 @@ func TestWebhookEnqueuesOnlyFiringAlerts(t *testing.T) {
 	if rr.Code != http.StatusAccepted {
 		t.Fatalf("code = %d, want 202", rr.Code)
 	}
-	if len(e.got) != 1 || e.got[0].Fingerprint != "f1" {
-		t.Fatalf("enqueued = %+v, want only f1", e.got)
+	if len(e.got) != 2 || e.got[0].Fingerprint != "f1" || e.got[1].Fingerprint != "f2" {
+		t.Fatalf("enqueued = %+v, want f1 and f2", e.got)
+	}
+	if e.got[1].EndsAt != "2026-07-28T04:00:00Z" {
+		t.Fatalf("resolved alert lost its end time: %+v", e.got[1])
 	}
 }
 
