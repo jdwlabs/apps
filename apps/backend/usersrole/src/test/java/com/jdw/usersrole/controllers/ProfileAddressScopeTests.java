@@ -26,9 +26,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Standalone MockMvc does not evaluate @PreAuthorize, so these exercise the resource
-// scoping applied underneath the authorization check — the layer both the ADMIN and the
-// self-by-profile branch fall through to.
+// Standalone MockMvc does not evaluate @PreAuthorize, so these cover only the resource
+// scoping applied underneath the authorization check. ProfileAddressAuthorizationTests
+// covers the authorization check itself, where the interceptor actually runs.
 @ExtendWith(MockitoExtension.class)
 @Tag("fast")
 @Tag("unit")
@@ -84,14 +84,5 @@ class ProfileAddressScopeTests {
                 .andExpect(status().isNoContent());
 
         assertFalse(addressOwners.containsKey(OWNED_ADDRESS_ID));
-    }
-
-    @Test
-    void deleteAddress_shouldReturnNoContent_whenAnAdministratorTargetsAnotherProfile() throws Exception {
-        mockMvc.perform(delete("/api/profiles/{profileId}/address/{addressId}", OTHER_PROFILE_ID, OTHER_ADDRESS_ID)
-                        .header("Authorization", "Bearer token"))
-                .andExpect(status().isNoContent());
-
-        assertFalse(addressOwners.containsKey(OTHER_ADDRESS_ID));
     }
 }

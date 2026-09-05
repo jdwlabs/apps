@@ -16,7 +16,7 @@ public interface AddressDao {
 
     Address update(Address address);
 
-    int deleteByIdAndProfileId(Long addressId, Long profileId);
+    int deleteByProfileIdAndAddressId(Long profileId, Long addressId);
 
     void deleteByProfileId(Long id);
 }

@@ -6,6 +6,7 @@ import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,13 @@ class JwtAuthenticationFilterTests {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.setContext(mock(SecurityContext.class));
+    }
+
+    // The holder is a shared ThreadLocal, so a mock context left behind here surfaces in
+    // whichever test runs next on this thread.
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
