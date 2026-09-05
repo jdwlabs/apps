@@ -25,14 +25,14 @@ public class AuthController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<AuthResponseDTO> authenticate(@Valid @RequestBody UserRequestDTO user) {
-        log.trace("Authenticating user {}", user);
+        log.trace("Authenticating user {}", user.emailAddress());
         AuthResponseDTO responseDTO = authService.authenticate(user);
         return ResponseEntity.ok(responseDTO);
     }
 
     @PostMapping("/user")
     public ResponseEntity<User> createUser(@Valid @RequestBody UserRequestDTO user) {
-        log.trace("Creating user {}", user);
+        log.trace("Creating user {}", user.emailAddress());
         User userCreated = userService.createUser(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(userCreated);
     }

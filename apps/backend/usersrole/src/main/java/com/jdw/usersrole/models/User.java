@@ -20,4 +20,21 @@ public record User(
         Long modifiedByUserId,
         Timestamp modifiedTime
 ) {
+    // Same reasoning as UserRequestDTO: this holds the password hash, @JsonIgnore keeps it
+    // out of JSON but does nothing for toString(), and a record's canonical toString()
+    // includes every component regardless.
+    @Override
+    public String toString() {
+        return "User[id=" + id +
+                ", emailAddress=" + emailAddress +
+                ", password=***" +
+                ", status=" + status +
+                ", roles=" + roles +
+                ", profile=" + profile +
+                ", createdByUserId=" + createdByUserId +
+                ", createdTime=" + createdTime +
+                ", modifiedByUserId=" + modifiedByUserId +
+                ", modifiedTime=" + modifiedTime +
+                "]";
+    }
 }

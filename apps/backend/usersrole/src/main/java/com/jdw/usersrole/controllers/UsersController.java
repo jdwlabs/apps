@@ -50,7 +50,7 @@ public class UsersController {
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody UserRequestDTO user, @RequestHeader(name = "Authorization") String authorizationHeader) {
-        log.trace("Creating user {}", user);
+        log.trace("Creating user {}", user.emailAddress());
         String emailAddress = jwtService.getEmailAddress(authorizationHeader);
         User userCreated = userService.createUser(user, emailAddress);
         return ResponseEntity.status(HttpStatus.CREATED).body(userCreated);

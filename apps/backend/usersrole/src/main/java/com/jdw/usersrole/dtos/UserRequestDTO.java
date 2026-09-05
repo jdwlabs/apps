@@ -20,4 +20,11 @@ public record UserRequestDTO(
         )
         String password
 ) {
+    // Records generate a canonical toString() that includes every component, so the plain
+    // @ToString.Exclude approach does not apply here — this override is the only way to
+    // keep the cleartext password out of anything that formats this DTO (e.g. a log call).
+    @Override
+    public String toString() {
+        return "UserRequestDTO[emailAddress=" + emailAddress + ", password=***]";
+    }
 }

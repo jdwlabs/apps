@@ -57,19 +57,19 @@ public class UserService {
     }
 
     public User createUser(@NotNull @Valid UserRequestDTO userDTO) {
-        log.info("Creating user: {}", userDTO);
+        log.info("Creating user: {}", userDTO.emailAddress());
         return createUser(userDTO, 1L);
     }
 
     public User createUser(@NotNull @Valid UserRequestDTO userDTO, @NotNull String emailAddress) {
-        log.info("Creating user: user={}, requester={}", userDTO, emailAddress);
+        log.info("Creating user: user={}, requester={}", userDTO.emailAddress(), emailAddress);
         Long userId = getUserIdByEmailAddress(emailAddress);
         return createUser(userDTO, userId);
     }
 
     @ExecutionTimeLogger
     public User createUser(@NotNull @Valid UserRequestDTO userDTO, @NotNull Long userId) {
-        log.info("Creating user: user={}, requesterId={}", userDTO, userId);
+        log.info("Creating user: user={}, requesterId={}", userDTO.emailAddress(), userId);
         userRepository.findByEmailAddress(userDTO.emailAddress())
                 .ifPresent(user -> {
                     throw new ResourceExistsException("User already exists with email address " + userDTO.emailAddress());
@@ -90,7 +90,7 @@ public class UserService {
 
     @ExecutionTimeLogger
     public User updateUser(@NotNull Long id, @Valid UserRequestDTO userDTO, @NotNull String emailAddress) {
-        log.info("Updating user: user={}, requester={}", userDTO, emailAddress);
+        log.info("Updating user: user={}, requester={}", userDTO.emailAddress(), emailAddress);
         User currentUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
         Long userId = getUserIdByEmailAddress(emailAddress);
