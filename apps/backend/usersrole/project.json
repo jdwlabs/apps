@@ -24,7 +24,13 @@
         "cwd": "{workspaceRoot}",
         "command": "redocly lint --config {projectRoot}/docs/contracts/redocly.yaml"
       },
-      "cache": true
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/pnpm-lock.yaml"
+      ]
     },
     "contract-extract": {
       "executor": "nx:run-commands",
@@ -32,7 +38,8 @@
         "cwd": "{projectRoot}",
         "command": "bash gradlew test --tests com.jdw.usersrole.contracts.ServedOpenApiDocumentDumpTests"
       },
-      "outputs": ["{projectRoot}/build/openapi"]
+      "outputs": ["{projectRoot}/build/openapi"],
+      "cache": true
     },
     "check-contracts": {
       "executor": "nx:run-commands",
