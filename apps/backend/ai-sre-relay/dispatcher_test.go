@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -246,4 +249,22 @@ func TestDispatcherDoesNotCoalesceResolvedWithFiring(t *testing.T) {
 		}
 	}
 	d.shutdown(context.Background())
+}
+
+// A resolve does no investigating; logging one is how an operator ends up
+// reading a healthy pipeline's throughput as double what it is.
+func TestDispatcherLogsResolveSeparatelyFromInvestigation(t *testing.T) {
+	var buf bytes.Buffer
+	h := handlerFunc(func(context.Context, Alert) error { return nil })
+	d := newDispatcher(h, 1, 2, time.Second, &counters{}, slog.New(slog.NewJSONHandler(&buf, nil)))
+
+	d.enqueue(Alert{Fingerprint: "a", Status: statusResolved})
+	d.shutdown(context.Background())
+
+	if strings.Contains(buf.String(), "investigation complete") {
+		t.Fatalf("a resolve was logged as a completed investigation:\n%s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "resolve processed") {
+		t.Fatalf("resolve handling logged nothing identifiable:\n%s", buf.String())
+	}
 }

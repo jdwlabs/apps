@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -32,8 +33,16 @@ type jiraUpserter interface {
 	// NoteResolved records that Alertmanager reported the alert resolved, so
 	// the pending close is on the ticket before it happens.
 	NoteResolved(ctx context.Context, key IssueKey, resolvedAt time.Time) error
-	// Close transitions the issue to Done, naming the resolve time.
+	// Close transitions the issue to Done, naming the resolve time. A ticket
+	// that reached Done but could not be commented on reports
+	// ErrClosedWithoutNote, which the caller must not retry.
 	Close(ctx context.Context, key IssueKey, resolvedAt time.Time) error
+	// Reopen undoes a close that raced a re-fire.
+	Reopen(ctx context.Context, key IssueKey) error
+	// FindOpenByFingerprint recovers the open ticket already filed for this
+	// alert. The relay's own fingerprint tracking does not survive a restart;
+	// the ticket does.
+	FindOpenByFingerprint(ctx context.Context, a Alert) (IssueKey, error)
 }
 type prOpener interface {
 	OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error)
@@ -55,6 +64,10 @@ type firing struct {
 	// it again.
 	resolvedAt time.Time
 }
+
+// resolveHandlingTimeout bounds the Jira and Discord work one resolve
+// notification does, on a context detached from the per-alert deadline.
+const resolveHandlingTimeout = 60 * time.Second
 
 // defaultCloseGrace is how long an alert must stay resolved before the relay
 // closes its own ticket. Long enough that a condition which merely went quiet
@@ -126,13 +139,20 @@ func (p *Pipeline) repeatOf(a Alert) (firing, bool) {
 }
 
 // countRepeat increments and returns the repeat count for a skipped refire.
-func (p *Pipeline) countRepeat(a Alert) int {
+// It reports false when the fingerprint is no longer tracked — a sweep can
+// forget one between the repeat check and here — because writing the entry
+// back would insert one with no issue key, unusable and holding a slot a real
+// alert then cannot have.
+func (p *Pipeline) countRepeat(a Alert) (int, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	f := p.active[a.Fingerprint]
+	f, ok := p.active[a.Fingerprint]
+	if !ok {
+		return 0, false
+	}
 	f.repeats++
 	p.active[a.Fingerprint] = f
-	return f.repeats
+	return f.repeats, true
 }
 
 func (p *Pipeline) remember(a Alert, issue IssueKey) {
@@ -165,10 +185,10 @@ func (p *Pipeline) resolveTime(a Alert) time.Time {
 	return ends
 }
 
-// markResolved starts the pending close for a fingerprint the relay owns a
-// ticket for. The bool reports whether this notification is the one that
-// started it, so repeated resolve notifications do not re-comment or push the
-// close further out.
+// markResolved starts the pending close for a fingerprint the relay already
+// tracks. The bool reports whether this notification is the one that started
+// it, so repeated resolve notifications do not re-comment or push the close
+// further out.
 func (p *Pipeline) markResolved(a Alert) (IssueKey, time.Time, bool) {
 	if a.Fingerprint == "" {
 		return "", time.Time{}, false
@@ -179,6 +199,29 @@ func (p *Pipeline) markResolved(a Alert) (IssueKey, time.Time, bool) {
 	if !ok || f.issue == "" {
 		return "", time.Time{}, false
 	}
+	return p.startCloseLocked(a, f)
+}
+
+// adoptResolved starts the pending close for a ticket recovered from Jira
+// rather than from this process's own memory. It reports an empty key when the
+// tracking table is full, which is the one case where the close cannot be
+// scheduled at all.
+func (p *Pipeline) adoptResolved(a Alert, issue IssueKey) (IssueKey, time.Time, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, known := p.active[a.Fingerprint]
+	if !known {
+		if len(p.active) >= maxTrackedFirings {
+			return "", time.Time{}, false
+		}
+		f = firing{startsAt: a.StartsAt, issue: issue}
+	}
+	return p.startCloseLocked(a, f)
+}
+
+// startCloseLocked stamps the resolve time on a tracked firing. Callers hold
+// p.mu.
+func (p *Pipeline) startCloseLocked(a Alert, f firing) (IssueKey, time.Time, bool) {
 	if !f.resolvedAt.IsZero() {
 		return f.issue, f.resolvedAt, false
 	}
@@ -228,65 +271,173 @@ func (p *Pipeline) dueCloses() []pendingClose {
 	return due
 }
 
-// clearPendingClose drops the tracked firing only if it still carries the
-// resolve time the sweep acted on. An alert that re-fired mid-sweep has a
-// fresh entry that must survive; its ticket, if the close already landed, is
-// reopened by the next upsert.
-func (p *Pipeline) clearPendingClose(fingerprint string, resolvedAt time.Time) {
+// stillPending reports whether the pending close a sweep snapshotted is still
+// the current one. Read immediately before the close goes out, it shrinks the
+// window in which a re-fire cannot stop it to the duration of the Jira call
+// itself.
+func (p *Pipeline) stillPending(fingerprint string, resolvedAt time.Time) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if f, ok := p.active[fingerprint]; ok && f.resolvedAt.Equal(resolvedAt) {
-		delete(p.active, fingerprint)
-	}
+	f, ok := p.active[fingerprint]
+	return ok && f.resolvedAt.Equal(resolvedAt)
 }
 
-// SweepResolved closes the tickets whose alerts have stayed resolved for the
-// grace period. It is driven by incoming resolve notifications and by a
-// periodic sweep rather than by per-ticket timers, so a restart drops pending
-// closes instead of leaving a timer to fire against stale state.
+// clearPendingClose drops the tracked firing after its close landed. It
+// reports false when the entry no longer carries that resolve time — a re-fire
+// beat the close — in which case the ticket is Done while its alert is firing
+// and has to be put back. An entry that is simply gone reports true: another
+// sweep already finished the job.
+func (p *Pipeline) clearPendingClose(fingerprint string, resolvedAt time.Time) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, ok := p.active[fingerprint]
+	if !ok {
+		return true
+	}
+	if !f.resolvedAt.Equal(resolvedAt) {
+		return false
+	}
+	delete(p.active, fingerprint)
+	return true
+}
+
+// dueClose returns one fingerprint's elapsed pending close, if it has one.
+func (p *Pipeline) dueClose(fingerprint string) (pendingClose, bool) {
+	cutoff := p.now().Add(-p.closeGrace)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, ok := p.active[fingerprint]
+	if !ok || f.issue == "" || f.resolvedAt.IsZero() || f.resolvedAt.After(cutoff) {
+		return pendingClose{}, false
+	}
+	return pendingClose{fingerprint: fingerprint, issue: f.issue, resolvedAt: f.resolvedAt}, true
+}
+
+// SweepResolved closes every ticket whose alert has stayed resolved for the
+// grace period. It is driven by a periodic sweep rather than by per-ticket
+// timers, so a restart drops pending closes instead of leaving a timer to fire
+// against stale state.
 func (p *Pipeline) SweepResolved(ctx context.Context) {
 	p.sweepMu.Lock()
 	defer p.sweepMu.Unlock()
 	for _, due := range p.dueCloses() {
-		log := p.log.With("fingerprint", due.fingerprint, "issue", due.issue, "resolved_at", due.resolvedAt)
-		open, err := p.jira.IsOpen(ctx, due.issue)
-		switch {
-		case err != nil:
-			// Leave the pending close in place: the next sweep retries it.
-			log.Error("pending close: ticket state unreadable", "err", err)
-		case !open:
-			log.Info("pending close dropped: ticket is already closed")
-			p.clearPendingClose(due.fingerprint, due.resolvedAt)
-		default:
-			if cerr := p.jira.Close(ctx, due.issue, due.resolvedAt); cerr != nil {
-				log.Error("pending close failed; will retry", "err", cerr)
-				continue
-			}
-			p.counters.ticketsAutoClosed.Add(1)
-			p.clearPendingClose(due.fingerprint, due.resolvedAt)
-			log.Info("alert stayed resolved for the grace period; ticket closed",
-				"grace", p.closeGrace.String())
+		p.closeIfStillDue(ctx, due)
+	}
+}
+
+// sweepOne evaluates a single fingerprint's pending close, for the resolve
+// notification that may have just made it due. It gives up rather than waiting
+// on a sweep already in progress: this runs on a dispatcher worker, of which
+// there are four, and blocking them behind a slow Jira is what turns a Jira
+// outage into refused alerts. Anything skipped here is picked up by the ticker.
+func (p *Pipeline) sweepOne(ctx context.Context, fingerprint string) {
+	if !p.sweepMu.TryLock() {
+		return
+	}
+	defer p.sweepMu.Unlock()
+	if due, ok := p.dueClose(fingerprint); ok {
+		p.closeIfStillDue(ctx, due)
+	}
+}
+
+// closeIfStillDue commits one pending close. Callers hold sweepMu.
+func (p *Pipeline) closeIfStillDue(ctx context.Context, due pendingClose) {
+	log := p.log.With("fingerprint", due.fingerprint, "issue", due.issue, "resolved_at", due.resolvedAt)
+	open, err := p.jira.IsOpen(ctx, due.issue)
+	switch {
+	case err != nil:
+		// Leave the pending close in place: the next sweep retries it.
+		log.Error("pending close: ticket state unreadable", "err", err)
+		return
+	case !open:
+		log.Info("pending close dropped: ticket is already closed")
+		p.clearPendingClose(due.fingerprint, due.resolvedAt)
+		return
+	}
+	// Re-read after the status round-trip: a re-fire during it has cancelled
+	// this close, and the snapshot is the only thing still claiming the alert
+	// is resolved.
+	if !p.stillPending(due.fingerprint, due.resolvedAt) {
+		log.Info("pending close abandoned: the alert re-fired while it was being closed")
+		return
+	}
+
+	cerr := p.jira.Close(ctx, due.issue, due.resolvedAt)
+	switch {
+	case cerr == nil:
+	case errors.Is(cerr, ErrClosedWithoutNote):
+		// The transition landed and only the explanation did not. Retrying
+		// would re-transition a Done ticket, so this counts as closed — but
+		// the ticket now says nothing about why, which needs a human.
+		log.Error("ticket closed but its closing comment did not post", "err", cerr)
+	default:
+		log.Error("pending close failed; will retry", "err", cerr)
+		return
+	}
+	p.counters.ticketsAutoClosed.Add(1)
+	log.Info("alert stayed resolved for the grace period; ticket closed", "grace", p.closeGrace.String())
+
+	if !p.clearPendingClose(due.fingerprint, due.resolvedAt) {
+		// The alert re-fired while the close was in flight. The ticket is Done
+		// for a firing alert; nothing else will notice, because the re-fire's
+		// own path already ran.
+		log.Info("close raced a re-fire; reopening the ticket")
+		if rerr := p.jira.Reopen(ctx, due.issue); rerr != nil {
+			log.Error("reopening a ticket closed against a firing alert failed", "err", rerr)
 		}
 	}
 }
 
 // handleResolved records the resolve on the ticket and schedules its close.
+//
+// The per-alert context is often already spent by the time an alert reaches
+// the pipeline, and a dropped resolve is invisible: the ticket simply never
+// closes. So the Jira work here runs on a detached, bounded context, the same
+// way the Holmes failure notice does.
 func (p *Pipeline) handleResolved(ctx context.Context, a Alert) error {
 	log := p.log.With("fingerprint", a.Fingerprint, "alert", a.Name())
+	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), resolveHandlingTimeout)
+	defer cancel()
+
 	issue, at, first := p.markResolved(a)
 	if issue == "" {
-		log.Info("resolve notification for an alert with no ticket in this process; nothing to close")
-		return nil
+		// Nothing tracked here: either this process never filed the ticket, or
+		// it restarted since. The ticket outlives the process, so ask Jira.
+		found, err := p.jira.FindOpenByFingerprint(rctx, a)
+		switch {
+		case err != nil:
+			log.Error("resolve: fingerprint lookup failed; ticket left open", "err", err)
+			return nil
+		case found == "":
+			log.Info("resolve notification for an alert with no open ticket; nothing to close")
+			return nil
+		}
+		if issue, at, first = p.adoptResolved(a, found); issue == "" {
+			log.Warn("resolve: fingerprint tracking is full; ticket left open", "issue", found)
+			return nil
+		}
+		log.Info("resolve: adopted an existing ticket for an untracked fingerprint", "issue", issue)
 	}
+
 	if first {
-		if err := p.jira.NoteResolved(ctx, issue, at); err != nil {
+		if err := p.jira.NoteResolved(rctx, issue, at); err != nil {
 			log.Error("resolve note failed", "issue", issue, "err", err)
+		}
+		// The investigation was announced in Discord; its resolution is the
+		// other half of that story and nothing else tells it.
+		if derr := p.discord.Notify(rctx, a, Analysis{RootCause: resolveNotice(issue, at, p.closeGrace)}, issue, nil, nil); derr != nil {
+			log.Error("discord resolve notice failed", "issue", issue, "err", derr)
 		}
 		log.Info("alert resolved; ticket close pending",
 			"issue", issue, "resolved_at", at, "grace", p.closeGrace.String())
 	}
-	p.SweepResolved(ctx)
+	p.sweepOne(rctx, a.Fingerprint)
 	return nil
+}
+
+func resolveNotice(issue IssueKey, at time.Time, grace time.Duration) string {
+	return fmt.Sprintf("✅ Resolved at %s. %s closes automatically after %s unless the alert fires again.",
+		at.UTC().Format(time.RFC3339), issue, grace.String())
 }
 
 // Handle runs one alert through the pipeline. Each output is independent: a
@@ -316,7 +467,14 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 			// Unknown ticket state is not a reason to skip work.
 			log.Error("refire ticket check failed; investigating", "issue", f.issue, "err", err)
 		case open:
-			n := p.countRepeat(a)
+			n, tracked := p.countRepeat(a)
+			if !tracked {
+				// A sweep forgot this fingerprint between the check above and
+				// here, so nothing is left to hang the skip on: treat it as
+				// new work rather than record a repeat of nothing.
+				log.Info("refire lost its tracked ticket mid-check; investigating", "issue", f.issue)
+				break
+			}
 			if nerr := p.jira.NoteRefire(ctx, f.issue, n); nerr != nil {
 				log.Error("refire note failed", "issue", f.issue, "err", nerr)
 			}

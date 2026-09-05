@@ -74,7 +74,13 @@ func (d *dispatcher) process(a Alert) {
 	defer cancel()
 	start := time.Now()
 	_ = d.handler.Handle(ctx, a)
-	d.log.Info("investigation complete",
+	// A resolve investigates nothing; logging it as a completed investigation
+	// reads as double the throughput the pipeline actually has.
+	msg := "investigation complete"
+	if a.Status == statusResolved {
+		msg = "resolve processed"
+	}
+	d.log.Info(msg,
 		"fingerprint", a.Fingerprint, "alert", a.Name(),
 		"duration_ms", time.Since(start).Milliseconds())
 }
