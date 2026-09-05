@@ -18,9 +18,12 @@ info:
     and why it is there, and `scripts/check-contract-drift.mjs` fails the build
     when a deviation appears that is not on that list.
 
-    This service authorizes entirely from the verified token minted by
-    `identity-service`. It makes no call to `identity-service` on the request
-    path, in either direction.
+    This service authorizes from the verified token minted by `identity-service`
+    and makes no call to it on the request path. That is a change from how the
+    JVM authorizes today, not a transcription of it: today every request
+    re-reads the principal, its grants and its profile from the database. What
+    that change costs is recorded in `x-authority-freshness` and
+    `x-profile-id-fallback` rather than left to be discovered.
   license:
     name: PolyForm-Noncommercial-1.0.0
     url: https://polyformproject.org/licenses/noncommercial/1.0.0/
@@ -46,14 +49,47 @@ tags:
   - name: icons
     description: The profile icon, a single optional PNG per profile.
 
+x-authority-freshness:
+  classification: security
+  change: |
+    Role grants are read from the token, not from the database, on every
+    authorization decision.
+  today: |
+    `SecurityUser.getAuthorities()` re-reads `auth.users_roles` and `auth.roles`
+    on every request, because the whole principal is rehydrated per request. So
+    revoking ADMIN from a user takes effect on that user's very next request,
+    even though their token still carries `roles: ["ADMIN"]`.
+  afterTheSplit: |
+    `profile-service` owns none of those tables and authorizes from the `roles`
+    claim. A revoked ADMIN therefore keeps ADMIN access to this service until the
+    token expires — up to the full two-hour TTL. `identity-service` still holds
+    the tables and can keep re-reading them, so the two services would diverge on
+    the same revocation unless this is decided deliberately.
+  decision: |
+    Recorded, not resolved here. Revocation latency is a property of any
+    claim-based scheme and the ticket freezes the existing HS256 claim set, so
+    fixing it means either short-lived tokens with refresh, or a revocation
+    check `profile-service` can make without calling `identity-service` — both
+    are scheme changes, explicitly out of scope for this freeze. What is in scope
+    is that it is written down: a reviewer comparing the Go service against this
+    contract must not read "authorizes from the token" as equivalent to today's
+    behaviour, because for revocation it is not.
+  boundOnStaleness: 7200000
+
 x-profile-id-fallback:
   problem: |
-    Eleven of these fifteen operations authorize with
-    `#profileId == authentication.principal.getProfileId()`, and that value comes
-    from the `profile_id` token claim. The claim is stamped once, at login. A
-    user who logs in without a profile and then creates one carries a null claim
-    for the rest of the token's life — up to the full two-hour TTL — and is
-    locked out of the profile they just created.
+    Ten of these fifteen operations authorize with
+    `#profileId == authentication.principal.getProfileId()`. Today that value is
+    not a claim at all: `SecurityUser.getProfileId()` walks the `User` aggregate
+    the filter loaded from the database this request, so a profile created
+    mid-session is visible on the very next request and there is no lockout.
+
+    Moving to claim-based authorization introduces one. The `profile_id` claim is
+    stamped once, at login, and never refreshed, so a user who logs in without a
+    profile and then creates one would carry a null claim for the rest of the
+    token's life — up to the full two-hour TTL — and be locked out of the profile
+    they just created. The fallback exists to keep the split from creating that
+    regression, not to fix something broken today.
   decision: |
     `profile-service` falls back to a `user_id`-keyed profile lookup whenever the
     `profile_id` claim is absent or null, and authorizes against the profile id
@@ -77,17 +113,41 @@ x-icon-identifier:
   decision: "`profileId` is the icon's only identifier."
   problem: |
     `ProfileIconDaoPostgres` changes its mind about what "the id" means between
-    methods: `findById` filters on `profile_id` while being named as if it took
-    an icon id — it is byte-for-byte the same statement as `findByProfileId` —
-    while `update` and `deleteById` filter on `icon_id`, and `create` returns
-    `profile_id`. So `create` hands back a value `deleteById` would misread as an
-    icon id. Nothing trips over it today only because the repository calls just
-    the two `profileId` methods.
+    methods, four times over:
+
+    - `findById` filters on `profile_id` while being named as if it took an icon
+      id — byte for byte the same statement as `findByProfileId`.
+    - `update` and `deleteById` filter on `icon_id`.
+    - `create` returns `profile_id`, a value `deleteById` would misread as an
+      icon id.
+    - `update` filters correctly on `icon_id` and then returns
+      `findByProfileId(profileIcon.id())` — feeding an icon id to a `profile_id`
+      filter, so the row it hands back is the wrong one whenever the two
+      sequences have diverged.
+
+    The last of these is live code, not a latent trap: `ProfileRepositoryImpl`
+    does call `create` and `update`, through `saveIcon`. It is invisible today
+    only because `saveIcon` discards what the DAO returns and re-reads the
+    profile, and because the two identity columns still happen to agree in the
+    deployed data.
   frozenAs: |
     Every route already addresses the icon as `/api/profiles/{profileId}/icon`;
     no route accepts an icon id. The contract makes that the whole story: read,
     create, replace and delete are all keyed on `profile_id`, which is also the
     natural key, since a profile has at most one icon.
+  invariantIsApplicationEnforced: |
+    "At most one icon per profile" is not a database constraint today.
+    `auth.profile_icons` has `icon_id` as its primary key and a **plain**
+    `profile_icons_profile_id_idx` on `profile_id` — an index, not a unique
+    index. The only thing stopping a second icon row is `ProfileService.addIcon`,
+    which reads the profile first and answers 409 when it already carries one.
+    So the invariant holds by application check, and a concurrent pair of
+    uploads can still write two rows.
+
+    Making the index unique would move the invariant into the schema and is the
+    right end state, but it is a migration and belongs to its own change rather
+    than to this freeze. The Go service must keep the application-level check
+    until then, not assume the database is enforcing it.
   payload: |
     `ProfileIcon.id` stays in the response, frozen, because a client type
     declares it. It is documented as an opaque surrogate: no route accepts it,
@@ -96,26 +156,51 @@ x-icon-identifier:
     Choosing `icon_id` instead would mean inventing routes that do not exist and
     changing every client. Choosing `profile_id` costs nothing, matches the
     routes, matches the two methods actually in the call graph, and makes the
-    unique index on `auth.profile_icons.profile_id` the thing that enforces
+    the natural key for the unique index that should eventually enforce
     "at most one icon per profile".
 
 x-path-precedence:
   constraint: |
-    `/api/profiles/user/{userId}` and `/api/profiles/{profileId}` overlap, as do
-    `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/address` and
-    `/api/profiles/{profileId}/icon`. A request for `/api/profiles/user/7` matches
-    both shapes.
-  resolution: |
-    The literal `user` segment wins. Spring ranks a literal path segment above a
-    template one, so `/api/profiles/user/7` reaches `getProfileByUserId` and
-    never `getProfileById` with a `profileId` of `user`. The Go router must
-    reproduce that precedence explicitly — routers that match in declaration
-    order will send the request to whichever route is registered first, and the
-    failure is silent: `getProfileById` would answer 400 on the unparseable id,
-    which reads as a client error rather than as a routing bug.
+    Two four-segment pairs overlap, because `{profileId}` will happily capture
+    the literal `user`:
+
+    - `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/address` both
+      match `/api/profiles/user/address`.
+    - `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/icon` both
+      match `/api/profiles/user/icon`.
+
+    `/api/profiles/{profileId}` does not overlap with any of them — it is three
+    segments where the others are four, so no URI reaches both.
+  rule: |
+    Spring resolves these with `PathPattern.SPECIFICITY_COMPARATOR`
+    (`PathPatternParser` is the default in Spring Web 7 and nothing in
+    `application.yaml` overrides it). It compares catch-all first, then capture
+    count, then normalized length — the pattern length with each `{capture}`
+    counted as one character, longer being more specific. **Segment position is
+    never considered, and a literal segment carries no weight over a template
+    one.**
+  measured: |
+    Measured against the real comparator, not inferred:
+
+    - `user/{userId}` (normalized length 20) beats `{profileId}` (15).
+    - `{profileId}/address` (23) beats `user/{userId}` (20) — so
+      `/api/profiles/user/address` routes to `addAddress` with a `profileId` of
+      `user`, not to `getProfileByUserId`. That is the opposite of what
+      "the literal segment wins" would predict.
+    - `user/{userId}` and `{profileId}/icon` are both 20: an exact tie.
+  defect: |
+    The tie is not a precedence for the Go router to reproduce; it is a defect to
+    carry knowingly. A tie leaves Spring's ambiguous-mapping check with no
+    winner, so `GET`, `PUT` and `DELETE` on `/api/profiles/user/icon` — the three
+    methods the two patterns share — fail at request time with 500. `POST` is
+    unaffected, since only the icon pattern declares it.
+
+    Not fixed here: the fix is a route change, and this document freezes routes.
+    A Go router should reject the ambiguity at startup rather than at request
+    time, which turns a production 500 into a build failure.
   lint: |
-    `no-ambiguous-paths` is switched off in `redocly.yaml` for exactly these
-    three pairs, with this entry as the record of why.
+    `no-ambiguous-paths` is switched off for this document in `redocly.yaml`,
+    covering exactly the two pairs above, with this entry as the record of why.
 
 x-multipart-limits:
   maxFileSize: 2MB
@@ -266,14 +351,42 @@ paths:
       description: |
         A no-op for an id that does not exist, and still 204.
 
-        A caller who deletes their own profile keeps a token whose `profile_id`
-        claim now points at a row that is gone. Every subsequent profile request
-        under that claim is 404, not 403 — the claim fallback covers an absent
-        claim, not a stale non-null one. Frozen; the client's remedy is to
-        re-authenticate.
+        Deleting your own profile changes what your existing token can do, and
+        the split changes it differently — see `x-behaviour-change`.
       x-authorization:
         rule: ADMIN_OR_SELF_BY_PROFILE_ID
         preAuthorize: "hasAuthority('ADMIN') or #profileId == authentication.principal.getProfileId()"
+      x-behaviour-change:
+        change: |
+          After deleting their own profile, a non-admin caller reusing the same
+          token gets 404 where today they get 403.
+        classification: security
+        today: |
+          The principal is rehydrated from the database each request, so once the
+          profile row is gone `SecurityUser.getProfileId()` returns null. The
+          predicate compares a non-null path variable against null, which is
+          false, and the access-denied handler answers **403** for every profile
+          operation until the caller re-authenticates.
+        frozenAs: |
+          Under claim-based authorization the token still carries the old,
+          non-null `profile_id`. The caller's own path variable matches it, the
+          predicate passes, and the service lookup then answers **404**. The
+          fallback in `x-profile-id-fallback` does not cover this: it triggers on
+          an absent claim, and this claim is present and stale.
+        reasoning: |
+          Recorded rather than papered over. 403 to 404 is a widening — the
+          caller is now authorized for a resource they no longer own, and only
+          the resource's absence stops them. It is harmless while the row is
+          truly gone, and it stops being harmless the moment a profile id is
+          reused, which is why the Go schema must not recycle `profile_id`.
+          Restoring 403 exactly would mean checking profile existence before
+          authorizing on every one of these ten operations, which is the
+          per-request database read the split exists to remove.
+        clientImpact: |
+          The frontends' shared error helper maps 403 and 404 to different
+          strings, so a user who deletes their profile sees a different message.
+          Neither message is wrong and neither screen breaks; the remedy in both
+          cases is to re-authenticate.
       parameters:
         - $ref: '#/components/parameters/ProfileId'
         - $ref: '#/components/parameters/AuthorizationHeader'
@@ -677,7 +790,9 @@ components:
       name: page
       in: query
       required: false
-      description: Zero-based page index.
+      description: |
+        Zero-based page index. Out-of-range input is clamped, not rejected: a
+        negative page is served as page 0 with a 200, never a 400.
       schema:
         type: integer
         format: int32
@@ -687,12 +802,19 @@ components:
       name: size
       in: query
       required: false
-      description: Page size.
+      description: |
+        Page size, bounded server-side to at most 500 rows so the listing always
+        issues a bounded query whatever the caller asks for. Like `page`, out-of
+        -range input is clamped rather than rejected: `size=0` is served as 1 and
+        `size=100000` as 500, both with a 200. `minimum` and `maximum` here
+        describe the range the service will actually serve, not a range it
+        validates — a request outside it succeeds.
       schema:
         type: integer
         format: int32
         default: 100
         minimum: 1
+        maximum: 500
     ProfileId:
       name: profileId
       in: path

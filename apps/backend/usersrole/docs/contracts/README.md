@@ -72,6 +72,14 @@ project costs nothing. `lint` rides the existing `nx affected -t lint test` step
 `check-contracts` gets its own step, because it boots the application to fetch
 the document it diffs against and `lint` everywhere else in this repo is static.
 
+The drift check cannot see authorization: the served springdoc document carries
+none. `AuthorizationContractParityTests` covers that half. It reflects over the
+four controllers, rebuilds each mapping's path and HTTP method, and asserts that
+every operation's `x-authorization.preAuthorize` is exactly the `@PreAuthorize`
+predicate the handler applies — including the operations that deliberately carry
+none. It also fails if a controller maps something no contract freezes, if a
+contract freezes something no controller maps, or if the mapping count moves off 33. It runs with the ordinary unit tests, so it needs no booted application.
+
 ## The decisions this contract settles
 
 The audit deferred seven contract questions. Each is answered here, and each
@@ -112,17 +120,29 @@ recorded deviation can excuse a failure.
 ### 3. The icon is identified by `profileId`
 
 `ProfileIconDaoPostgres` changes its mind about what "the id" means between
-methods: `findById` filters on `profile_id` while being named as if it took an
-icon id, `update` and `deleteById` filter on `icon_id`, and `create` returns
-`profile_id` — a value `deleteById` would misread. Nothing trips over it today
-only because the repository calls just the two `profileId` methods.
+methods, four times over: `findById` filters on `profile_id` while being named as
+if it took an icon id; `update` and `deleteById` filter on `icon_id`; `create`
+returns `profile_id`, which `deleteById` would misread; and `update` filters
+correctly on `icon_id` and then returns `findByProfileId(profileIcon.id())`,
+feeding an icon id to a `profile_id` filter.
+
+That last one is live code, not a latent trap — `ProfileRepositoryImpl.saveIcon`
+calls both `create` and `update`. It is invisible today only because `saveIcon`
+throws away what the DAO returns and re-reads the profile, and because the two
+identity sequences still happen to agree in the deployed data.
 
 **`profile_id` is the icon's only identifier.** Every route already addresses the
 icon as `/api/profiles/{profileId}/icon` and none accepts an icon id; the choice
-costs nothing, matches the routes, matches the two methods actually in the call
-graph, and makes a unique index on `auth.profile_icons.profile_id` enforce "at
-most one icon per profile". Choosing `icon_id` instead would mean inventing
-routes that do not exist and changing every client.
+costs nothing, matches the routes, and matches the natural key, since a profile
+holds at most one icon. Choosing `icon_id` instead would mean inventing routes
+that do not exist and changing every client.
+
+That "at most one" is enforced by the application, not the schema:
+`profile_icons_profile_id_idx` is a plain index, and only
+`ProfileService.addIcon` stops a second row by reading first and answering 409.
+Making it unique is the right end state and is a migration, so it belongs to its
+own change; until then the Go service keeps the application-level check rather
+than assuming the database holds the line.
 
 `ProfileIcon.id` stays in the response, because a client type declares it, and is
 documented as an opaque surrogate: no route accepts it, no lookup uses it, and
@@ -171,10 +191,12 @@ Recorded as `x-authorization-decision` on `GET /api/roles`.
 
 ### 6. A stale `profile_id` claim falls back to a `user_id` lookup
 
-The claim is stamped once at login and never refreshed, so a user who logs in
-without a profile and then creates one carries a null claim for up to the full
-two-hour token life — locked out of the profile they just created by the eleven
-operations that authorize on it.
+There is no lockout today. `SecurityUser.getProfileId()` walks the `User`
+aggregate the filter loaded from the database this request, so a profile created
+mid-session is visible on the very next request. The lockout is something the
+split would introduce: once the ten operations that authorize on `profileId` read
+it from a claim stamped at login, a user who logs in without a profile and then
+creates one carries a null claim for up to the full two-hour token life.
 
 **`profile-service` falls back to a `user_id`-keyed profile lookup whenever the
 claim is absent or null.** `identity-service` does not re-mint tokens on profile
@@ -188,9 +210,11 @@ already-issued token stale. The lookup keys on the `user_id` claim, never on a
 path variable, so a caller cannot widen their own authorization by asking for
 someone else's profile id.
 
-A _stale non-null_ claim is a different case and is not covered: a caller who
-deletes their own profile keeps a claim pointing at a row that is gone, and gets
-404 rather than 403 until they re-authenticate. Frozen.
+A _stale non-null_ claim is a different case, and the fallback does not cover it:
+a caller who deletes their own profile keeps a claim pointing at a row that is
+gone, and gets 404 where today they get 403. That is an authorization widening,
+so it is recorded as an `x-behaviour-change` on
+`DELETE /api/profiles/{profileId}` rather than left as a footnote.
 
 Recorded as `x-profile-id-fallback` in the profile contract.
 
@@ -200,18 +224,25 @@ Recorded as `x-profile-id-fallback` in the profile contract.
 that profile's addresses and icon. The last three tables belong to
 `profile-service`, so this is the only write that crosses the boundary.
 
-**It stays a single local transaction in `identity-service`, via `ON DELETE
-CASCADE` on the shared schema's foreign keys.** The alternative — a synchronous
-call from identity into profile inside a delete — makes user deletion fail
-whenever `profile-service` is down.
+**It stays a single local transaction in `identity-service`: five explicit
+deletes in a fixed order** — addresses by profile id, icons by profile id,
+profiles by user id, role grants by user id, then the user. The alternative — a
+synchronous call from identity into profile inside a delete — makes user deletion
+fail whenever `profile-service` is down, and leaves a half-deleted user when it
+fails midway.
+
+**The database is not doing this.** No foreign key in `auth` declares
+`ON DELETE CASCADE`; all four take the default `NO ACTION`. The ordering is
+therefore load-bearing application logic that the Go service has to reproduce,
+not a database behaviour it inherits for free. Moving the cascade into the schema
+is the better end state and is a migration, so it belongs to its own change
+rather than to this freeze.
 
 **The cost, recorded rather than hidden.** `profile-service` is not the only
 writer of its own tables. It must not cache profile rows, and it cannot assume a
 row it read still exists. The two services also stay bound to one schema and one
-migration timeline: the cascade is a schema constraint, so a change to it is a
-change both services inherit at the same instant. That is accepted here because
-the tables are already shared by design and physical separation is out of scope
-for the split.
+migration timeline. That is accepted here because the tables are already shared
+by design and physical separation is out of scope for the split.
 
 Recorded as `x-delete-cascade` on the delete operation.
 
@@ -234,12 +265,28 @@ Two further findings support that claim:
   changing one changes what a user reads.
 - **No client reads `user.profile`.** Checked before dropping it; see decision 1.
 
-The two intended behaviour changes that do reach a client — pagination on
-`GET /api/roles`, and the scoped address delete — are analysed in decision 4 and
-in `x-behaviour-change` on `DELETE /api/profiles/{profileId}/address/{addressId}`
-respectively. Neither is visible at current data volumes.
+## Everything these documents change
 
-## One correction rather than a transcription
+"Frozen" does not mean identical. Five behaviours differ from what runs today,
+and each is marked on the operation or schema it affects so it cannot be mistaken
+for a transcription.
+
+| Change                                                      | Where                                                  | Class    | Visible to a client today?                                                   |
+| ----------------------------------------------------------- | ------------------------------------------------------ | -------- | ---------------------------------------------------------------------------- |
+| `User` drops the embedded profile for `profileId`           | `identity-service:User`                                | design   | No — nothing reads `user.profile`                                            |
+| `GET /api/roles` gains `page` and `size`                    | `GET /api/roles`                                       | design   | No — the catalogue holds 3 rows                                              |
+| The address delete is scoped to its profile                 | `DELETE /api/profiles/{profileId}/address/{addressId}` | security | No — unreachable when acting on your own data                                |
+| Role grants come from the token, not a per-request read     | `x-authority-freshness`                                | security | Not today; after the split, up to 2 h of revocation latency                  |
+| A stale `profile_id` claim yields 404 where today it is 403 | `DELETE /api/profiles/{profileId}`                     | security | Only after deleting your own profile — a different message, no broken screen |
+
+The last two follow from the split itself rather than from a choice made here:
+`profile-service` will not own `auth.users` or `auth.users_roles`, so it cannot
+keep re-reading them. They are listed because a reviewer comparing the Go service
+against this contract must not read "authorizes from the verified token" as
+equivalent to today's behaviour. It is not, and where it differs it differs in
+the permissive direction.
+
+### The one correction
 
 `DELETE /api/profiles/{profileId}/address/{addressId}` is specified scoped to the
 profile in the path. Today it is not: the handler takes `profileId`, uses it for

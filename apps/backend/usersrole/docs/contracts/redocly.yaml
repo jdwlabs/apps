@@ -5,19 +5,17 @@
 extends:
   - recommended
 
-rules:
-  # `/api/profiles/user/{userId}` and `/api/profiles/{profileId}/address` are
-  # ambiguous to a generic router, and deliberately so: Spring matches the
-  # literal `user` segment ahead of the `{profileId}` template, and both routes
-  # exist in the API being frozen. The precedence rule the Go router has to
-  # reproduce is written up as `x-path-precedence` in the profile contract, so
-  # the constraint is recorded where an implementer will read it. Leaving the
-  # rule on would emit two warnings on every run forever, which is how real
-  # findings get scrolled past.
-  no-ambiguous-paths: off
-
 apis:
   identity-service:
     root: ./identity-service.openapi.yaml
   profile-service:
     root: ./profile-service.openapi.yaml
+    rules:
+      # Scoped to this document, because only this one has ambiguous paths.
+      # `{profileId}` captures the literal `user`, so `user/{userId}` overlaps
+      # `{profileId}/address` and `{profileId}/icon` — two pairs, two warnings.
+      # Both are real, and `x-path-precedence` in this document records how
+      # Spring actually resolves them, including the icon tie that 500s. Leaving
+      # the rule on would emit the same two warnings on every run forever, which
+      # is how real findings get scrolled past.
+      no-ambiguous-paths: off

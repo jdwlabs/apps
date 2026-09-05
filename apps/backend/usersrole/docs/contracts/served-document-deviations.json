@@ -1,5 +1,5 @@
 {
-  "$comment": "Every way the two frozen contracts differ from the springdoc document usersrole serves. check-contract-drift.mjs fails on any difference this file does not account for, and on any entry here that no longer applies. Keep it in step with README.md.",
+  "$comment": "The pinned contract for what the frozen documents say and the served springdoc document cannot show. Every one of the 33 operations has an entry: `errorStatuses` pins the error contract, which springdoc never emits and so cannot be diffed; the other fields record the ways a frozen operation deliberately differs from the served one. check-contract-drift.mjs fails on any difference this file does not account for, on any entry that no longer applies, and on any entry that asserts nothing. Keep it in step with README.md.",
   "servedDocument": {
     "path": "/openapi/api-docs",
     "producedBy": "gradle test --tests com.jdw.usersrole.contracts.ServedOpenApiDocumentDumpTests",
@@ -23,93 +23,191 @@
     }
   ],
   "operations": {
+    "POST /auth/authenticate": {
+      "errorStatuses": ["400", "401"]
+    },
     "POST /auth/user": {
+      "errorStatuses": ["400", "409"],
       "successStatus": {
         "served": "200",
         "frozen": "201"
       },
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED). springdoc reports the declared return type, not the status the body carries."
     },
+    "GET /api/users": {
+      "errorStatuses": ["401", "403"]
+    },
     "POST /api/users": {
+      "errorStatuses": ["400", "401", "409"],
       "successStatus": {
         "served": "200",
         "frozen": "201"
       },
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
     },
+    "GET /api/users/{userId}": {
+      "errorStatuses": ["401", "403", "404"]
+    },
+    "PUT /api/users/{userId}": {
+      "errorStatuses": ["400", "401", "403", "404", "500"]
+    },
     "DELETE /api/users/{userId}": {
+      "errorStatuses": ["401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
       },
+      "responseShape": {
+        "served": "application/json=ref:User",
+        "frozen": "no content"
+      },
       "reason": "The handler is declared ResponseEntity<User> but builds noContent(). There is no body."
     },
+    "GET /api/users/email/{emailAddress}": {
+      "errorStatuses": ["401", "403", "404"]
+    },
+    "PUT /api/users/{userId}/roles/grant": {
+      "errorStatuses": ["400", "401", "403", "404"]
+    },
+    "PUT /api/users/{userId}/roles/revoke": {
+      "errorStatuses": ["400", "401", "403", "404"]
+    },
+    "GET /api/roles": {
+      "errorStatuses": ["401"],
+      "parametersAdded": ["page", "size"],
+      "reason": "Intended behaviour change, not a transcription. The endpoint is unpaginated today and its fan-out is 1 + N over the whole roles table. Paginated here on the same page/size contract as the user and profile listings, over a stable role_id ordering. Recorded as x-behaviour-change on the operation."
+    },
     "POST /api/roles": {
+      "errorStatuses": ["400", "401", "403", "409"],
       "successStatus": {
         "served": "200",
         "frozen": "201"
       },
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
     },
+    "GET /api/roles/{roleId}": {
+      "errorStatuses": ["401", "404"]
+    },
+    "PUT /api/roles/{roleId}": {
+      "errorStatuses": ["400", "401", "403", "404", "500"]
+    },
     "DELETE /api/roles/{roleId}": {
+      "errorStatuses": ["401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
       },
       "reason": "The handler builds noContent(). springdoc already reports no body here because the return type is ResponseEntity<Void>; only the status is wrong."
     },
-    "GET /api/roles": {
-      "parametersAdded": ["page", "size"],
-      "reason": "Intended behaviour change, not a transcription. The endpoint is unpaginated today and its fan-out is 1 + N over the whole roles table. Paginated here on the same page/size contract as the user and profile listings, over a stable role_id ordering. Recorded as x-behaviour-change on the operation."
+    "GET /api/roles/name/{roleName}": {
+      "errorStatuses": ["401", "404"]
+    },
+    "PUT /api/roles/{roleId}/users/grant": {
+      "errorStatuses": ["400", "401", "403", "404"]
+    },
+    "PUT /api/roles/{roleId}/users/revoke": {
+      "errorStatuses": ["400", "401", "403", "404"]
+    },
+    "GET /api/profiles": {
+      "errorStatuses": ["401", "403"]
     },
     "POST /api/profiles": {
+      "errorStatuses": ["400", "401", "403", "404", "409"],
       "successStatus": {
         "served": "200",
         "frozen": "201"
       },
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
     },
+    "GET /api/profiles/{profileId}": {
+      "errorStatuses": ["401", "403", "404"]
+    },
+    "PUT /api/profiles/{profileId}": {
+      "errorStatuses": ["400", "401", "403", "404"]
+    },
     "DELETE /api/profiles/{profileId}": {
+      "errorStatuses": ["401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
       },
+      "responseShape": {
+        "served": "application/json=ref:Profile",
+        "frozen": "no content"
+      },
       "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
+    },
+    "GET /api/profiles/user/{userId}": {
+      "errorStatuses": ["401", "403", "404"]
+    },
+    "PUT /api/profiles/user/{userId}": {
+      "errorStatuses": ["400", "401", "403", "404"]
     },
     "DELETE /api/profiles/user/{userId}": {
+      "errorStatuses": ["401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
       },
+      "responseShape": {
+        "served": "application/json=ref:Profile",
+        "frozen": "no content"
+      },
       "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
     },
+    "POST /api/profiles/{profileId}/address": {
+      "errorStatuses": ["400", "401", "403", "404"]
+    },
+    "PUT /api/profiles/{profileId}/address/{addressId}": {
+      "errorStatuses": ["400", "401", "403", "404"]
+    },
     "DELETE /api/profiles/{profileId}/address/{addressId}": {
+      "errorStatuses": ["401", "403", "404"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
+      },
+      "responseShape": {
+        "served": "application/json=ref:Profile",
+        "frozen": "no content"
       },
       "reason": "The handler is declared ResponseEntity<Profile> but builds noContent(). The 404 this operation also gains is an intended behaviour change recorded as x-behaviour-change: the delete is scoped to the profile in the path, where today it ignores it."
     },
-    "DELETE /api/profiles/{profileId}/icon": {
-      "successStatus": {
-        "served": "200",
-        "frozen": "204"
+    "GET /api/profiles/{profileId}/icon": {
+      "errorStatuses": ["401", "403", "404"],
+      "responseShape": {
+        "served": "image/png=string/byte",
+        "frozen": "image/png=string/binary"
       },
-      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
+      "reason": "springdoc types the byte[] return as format: byte, which means base64 in JSON. The handler declares produces=image/png and writes the stored bytes straight to the response, so the wire format is binary, not base64. format: binary is what a generated client has to emit to read it correctly."
+    },
+    "PUT /api/profiles/{profileId}/icon": {
+      "errorStatuses": ["400", "401", "403", "404", "500"],
+      "requestMediaType": {
+        "served": "application/json",
+        "frozen": "multipart/form-data"
+      },
+      "reason": "Same as the icon upload: the handler consumes multipart, springdoc reports application/json."
     },
     "POST /api/profiles/{profileId}/icon": {
+      "errorStatuses": ["400", "401", "403", "404", "409", "500"],
       "requestMediaType": {
         "served": "application/json",
         "frozen": "multipart/form-data"
       },
       "reason": "The handler takes @RequestParam(\"icon\") MultipartFile and consumes multipart. springdoc renders the MultipartFile as a JSON object with a binary property, which is not a request the service accepts."
     },
-    "PUT /api/profiles/{profileId}/icon": {
-      "requestMediaType": {
-        "served": "application/json",
-        "frozen": "multipart/form-data"
+    "DELETE /api/profiles/{profileId}/icon": {
+      "errorStatuses": ["401", "403"],
+      "successStatus": {
+        "served": "200",
+        "frozen": "204"
       },
-      "reason": "Same as the icon upload: the handler consumes multipart, springdoc reports application/json."
+      "responseShape": {
+        "served": "application/json=ref:Profile",
+        "frozen": "no content"
+      },
+      "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
     }
   },
   "schemas": {
