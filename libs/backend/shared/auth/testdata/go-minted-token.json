@@ -1,0 +1,18 @@
+{
+  "description": "Minted by the Go library's test minter and verified by JwtService on the JVM side. Its lifetime is deliberately far longer than a real token: JwtService reads the wall clock, so a realistic expiry would make the JVM assertion time out rather than test anything.",
+  "secretKeyBase64": "bXl0dGVzdHNlY3JldGtleWZvcmpzb253d2VidG9rZW4xMjM0NTY3ODkwIC1uCg==",
+  "issuerOrigin": "http://localhost:8080",
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.ko6vRk3iGxy_NsN2HQcZxr8CPhRll-8yFm85mh_gC7E",
+  "claims": {
+    "sub": "parity@jdw.com",
+    "roles": ["ADMIN"],
+    "user_id": 42,
+    "profile_id": 7,
+    "aud": "http://localhost:8080",
+    "iss": "http://localhost:8080/auth/authenticate",
+    "jti": "6a2f1c34-9b7e-4d51-8f0a-2c6d5e4b3a19",
+    "iat": 1735689600,
+    "nbf": 1735689600,
+    "exp": 3312489600
+  }
+}
