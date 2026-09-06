@@ -128,9 +128,11 @@ paths:
             Wrong password, or no user with that email address. A wrong password
             raises `BadCredentialsException` inside the handler, which the
             security filter chain translates through the authentication entry
-            point; an unknown email raises `UsernameNotFoundException`, which the
-            `GlobalExceptionHandler` answers as `text/plain`. The two paths
-            therefore return the same status with different body shapes.
+            point: no body, no `Content-Type`, only the `Access-Denied-Reason`
+            header — see `Unauthorized` below. An unknown email raises
+            `UsernameNotFoundException`, which `GlobalExceptionHandler` answers
+            directly as `text/plain` with the exception message, bypassing the
+            entry point entirely. The two paths share a status and nothing else.
           headers:
             Access-Denied-Reason:
               description: '`Authentication Required`. Present only on the entry-point path.'
@@ -141,9 +143,7 @@ paths:
             text/plain:
               schema:
                 type: string
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ContainerError'
+                description: Present only on the `UsernameNotFoundException` path.
 
   /auth/user:
     post:
@@ -844,26 +844,29 @@ components:
     Unauthorized:
       description: |
         No token, an expired token, or a token that fails verification. Written
-        by the authentication entry point through `HttpServletResponse.sendError`,
-        so the body is the servlet container's error representation rather than
-        anything the application composes. Clients key off the status and the
-        header, never the body.
+        by the authentication entry point through `HttpServletResponse.sendError`.
+        `server.error.include-message` is unset, so Boot's default of `never`
+        applies and no error page renders: the response carries no body and no
+        `Content-Type`, for every `Accept` value. Clients key off the status and
+        the header; there is no body to key off.
       headers:
         Access-Denied-Reason:
           description: '`Authentication Required`'
           required: true
           schema:
             type: string
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ContainerError'
     Forbidden:
       description: |
         Authenticated but not permitted: the operation's `x-authorization` rule
         rejected the principal, or the elevated-role guard on the grant and
         revoke operations did. Written by the access-denied handler through
-        `sendError`, so the body is the container's error representation.
+        `sendError`, same as `Unauthorized` above — but unlike it, this one is
+        not empty. The caller here already has a verified token, so the
+        internal forward to `/error` that `sendError` triggers re-authenticates
+        with that same token and reaches `BasicErrorController`, which renders
+        Boot's standard error body. `message` is absent because
+        `server.error.include-message` is `never`, not because the body itself
+        is empty.
       headers:
         Access-Denied-Reason:
           description: '`Not Authorized`'

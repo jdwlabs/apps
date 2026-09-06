@@ -116,7 +116,8 @@ no longer works.
 
 Refusals carry the `Access-Denied-Reason` header and **no body**:
 `Authentication Required` with 401 from the middleware, `Not Authorized` with
-403 from `WriteForbidden`. See the note on the error body below.
+403 from `WriteForbidden`. The 401 case matches the JVM; the 403 one currently
+does not — see the note on the error body below.
 
 **Mount the CORS layer outside this middleware**, the ordering Spring uses,
 where `CorsFilter` runs ahead of the JWT filter. A browser never attaches
@@ -163,31 +164,50 @@ build rather than being discovered by whoever writes the handler.
 
 ## 📭 The error body: what the contract says, and what the service sends
 
-The frozen contracts document a `ContainerError` JSON body on every 401 and 403.
-**The running application does not send one.** Both Spring handlers call
-`sendError` with a message, but `server.error.include-message` is set nowhere —
-not in `application.yaml`, not in any deployment values file — so Boot's default
-of `never` applies, and the deployed service answers with `Content-Length: 0`,
-no `Content-Type`, and an empty body. Measured against a booted `usersrole` on a
-real port, with `Accept` of `application/json`, `*/*` and `text/html` in turn.
+The frozen contracts used to document a `ContainerError` JSON body on every
+401 and 403 alike. **That was only half right, and the two statuses are not
+symmetric.**
 
-This library reproduces the service, not the document: status, header, empty
-body. That is what keeps the cutover invisible, and the contract itself records
-that clients key off the status and the header and never the body — the shared
-frontend error helper switches on the status code alone.
+**401 (`WriteUnauthorized`) is genuinely empty.** `CustomAuthenticationEntryPoint`
+calls `sendError` with a message, `server.error.include-message` is set
+nowhere — not in `application.yaml`, not in any deployment values file — so
+Boot's default of `never` applies, and the request that triggered it was never
+authenticated in the first place. The internal forward `sendError` makes to
+`/error` re-enters the same filter chain, finds no principal on the second
+pass either, and is itself refused before `BasicErrorController` ever runs.
+Measured against a booted `usersrole` on a real port, with `Accept` of
+`application/json`, `*/*` and `text/html` in turn: `Content-Length: 0`, no
+`Content-Type`.
 
-Two consequences worth knowing:
+**403 (`WriteForbidden`) is not.** `CustomAccessDeniedHandler` calls the same
+`sendError`, but the caller here already holds a verified token — only
+`@PreAuthorize` refused it. The forwarded dispatch to `/error` re-authenticates
+with that same token, the filter chain lets it through this time, and
+`BasicErrorController` runs to completion: the deployed service answers with a
+real `application/json` body, shaped exactly like the frozen `ContainerError`
+schema (`timestamp`, `status`, `error`, `path` — no `message`, since
+`include-message` is `never`).
 
-- **Setting `server.error.include-message` on the JVM would change the wire
-  format** of every 401 and 403, and this library would then be the one that is
-  wrong. It is a contract change, not a logging tweak.
-- **The contract's `ContainerError` schema for 401 and 403 is inaccurate** and
-  wants a correction in its own change, since these documents are frozen.
+**This library currently reproduces only the 401 half.** `WriteForbidden`
+sends the status and the header with no body, matching what was assumed for
+both statuses rather than what a 403 with a valid token actually sends. That
+is a real gap between this library and the JVM, discovered while correcting
+the contracts rather than while building this package, and closing it is a
+behaviour change to Go production code that belongs in its own reviewed
+change, not folded into a documentation fix. Until then, a Go caller reading a
+403 response should not assume the body is empty.
 
-The deployed service also sends `Access-Denied-Reason` twice, because the filter
-chain runs again on the error dispatch and the entry point commences a second
-time. One copy is sent here: a client reads the first value either way, and
-copying an accident is not parity.
+One consequence worth knowing about the JVM side: **setting
+`server.error.include-message`** would change the wire format of the 403 body
+specifically, not the 401 one, since only the 403 body exists to change. It is
+a contract change, not a logging tweak.
+
+The deployed service also sends `Access-Denied-Reason` twice on the 401 path,
+because the filter chain runs again on the error dispatch and the entry point
+commences a second time. One copy is sent here: a client reads the first value
+either way, and copying an accident is not parity. The 403 path is not
+doubled — the second pass authenticates instead of refusing, so
+`CustomAccessDeniedHandler` never re-enters.
 
 ## ⚠️ Where this is deliberately not the JVM
 
