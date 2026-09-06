@@ -1,10 +1,14 @@
 package authhttp_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
+	"slices"
 	"testing"
 	"time"
 
@@ -67,9 +71,10 @@ func validToken(t *testing.T) string {
 	return token
 }
 
-// assertRefusalShape pins what the deployed service actually sends: the status,
-// the reason header, and nothing else. Measured against a booted usersrole on a
-// real port, across Accept values of application/json, */* and text/html.
+// assertRefusalShape pins what the deployed service actually sends on a 401:
+// the status, the reason header, and nothing else. Measured against a booted
+// usersrole on a real port, across Accept values of application/json, */* and
+// text/html. The 403 shape is different — see assertContainerErrorBody.
 func assertRefusalShape(t *testing.T, recorder *httptest.ResponseRecorder, status int, reason string) {
 	t.Helper()
 	if recorder.Code != status {
@@ -84,6 +89,91 @@ func assertRefusalShape(t *testing.T, recorder *httptest.ResponseRecorder, statu
 	if got := recorder.Header().Get("Content-Type"); got != "" {
 		t.Errorf("Content-Type = %q, want none", got)
 	}
+}
+
+// bootTimestampPattern matches the millisecond-precision, explicit-offset
+// timestamp Boot's Jackson configuration renders for java.util.Date — e.g.
+// 2026-09-06T04:20:00.123+00:00. The exact instant is never asserted, only
+// the shape: two servers answering the same request at different moments
+// still agree on it.
+var bootTimestampPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$`)
+
+// containerErrorKeys is the exact key set and order BasicErrorController
+// writes with server.error.include-message left at its default of never:
+// timestamp, status, error, path. message is omitted entirely rather than
+// present and blank.
+var containerErrorKeys = []string{"timestamp", "status", "error", "path"}
+
+// assertContainerErrorBody is the field-by-field fixture: it pins the Go 403
+// body against what
+// FilterChainContractParityTests.theAccessDeniedHandlerAnswersWithTheContainerErrorBody
+// measured on a booted usersrole. status and error are asserted by value;
+// timestamp and path vary per request and per instant, so they are asserted
+// by shape instead.
+func assertContainerErrorBody(t *testing.T, recorder *httptest.ResponseRecorder, path string) {
+	t.Helper()
+	if recorder.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d", recorder.Code, http.StatusForbidden)
+	}
+	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != authhttp.ReasonNotAuthorized {
+		t.Errorf("%s = %q, want %q", authhttp.HeaderAccessDeniedReason, got, authhttp.ReasonNotAuthorized)
+	}
+	if got := recorder.Header().Get("Content-Type"); got != "application/json" {
+		t.Errorf("Content-Type = %q, want application/json", got)
+	}
+
+	body := recorder.Body.Bytes()
+	if keys := jsonKeysInOrder(t, body); !slices.Equal(keys, containerErrorKeys) {
+		t.Fatalf("body keys = %v, want %v in that order (message must be absent: include-message is never)",
+			keys, containerErrorKeys)
+	}
+
+	var fields map[string]any
+	if err := json.Unmarshal(body, &fields); err != nil {
+		t.Fatalf("body did not decode as JSON: %v", err)
+	}
+	if fields["status"] != float64(http.StatusForbidden) {
+		t.Errorf("status field = %v, want %d", fields["status"], http.StatusForbidden)
+	}
+	if fields["error"] != "Forbidden" {
+		t.Errorf("error field = %v, want Forbidden", fields["error"])
+	}
+	if fields["path"] != path {
+		t.Errorf("path field = %v, want %q", fields["path"], path)
+	}
+	timestamp, ok := fields["timestamp"].(string)
+	if !ok || !bootTimestampPattern.MatchString(timestamp) {
+		t.Errorf("timestamp field = %v, want RFC 3339 with millisecond precision and an explicit "+
+			"offset like 2026-09-06T04:20:00.123+00:00", fields["timestamp"])
+	}
+}
+
+// jsonKeysInOrder returns the top-level object keys of body in the order they
+// appear on the wire. Decoding into map[string]any loses that order, and the
+// order is part of what this test pins.
+func jsonKeysInOrder(t *testing.T, body []byte) []string {
+	t.Helper()
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	tok, err := decoder.Token()
+	if err != nil {
+		t.Fatalf("reading the opening brace: %v", err)
+	}
+	if delim, ok := tok.(json.Delim); !ok || delim != '{' {
+		t.Fatalf("body is not a JSON object: %v", tok)
+	}
+	var keys []string
+	for decoder.More() {
+		key, err := decoder.Token()
+		if err != nil {
+			t.Fatalf("reading a key: %v", err)
+		}
+		keys = append(keys, key.(string))
+		var discard json.RawMessage
+		if err := decoder.Decode(&discard); err != nil {
+			t.Fatalf("reading %v's value: %v", key, err)
+		}
+	}
+	return keys
 }
 
 func TestMiddlewarePassesAVerifiedPrincipalToTheHandler(t *testing.T) {
@@ -403,7 +493,7 @@ func TestWriteForbiddenMatchesTheAccessDeniedHandler(t *testing.T) {
 
 	authhttp.WriteForbidden(recorder, request)
 
-	assertRefusalShape(t, recorder, http.StatusForbidden, "Not Authorized")
+	assertContainerErrorBody(t, recorder, "/api/profiles/7")
 }
 
 func TestPrincipalFromReportsAnEmptyContext(t *testing.T) {
@@ -423,10 +513,7 @@ func TestAuthorizeWritesTheAccessDeniedShapeOnDenial(t *testing.T) {
 	if allowed {
 		t.Fatal("Authorize allowed a caller reading another user")
 	}
-	if recorder.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want 403", recorder.Code)
-	}
-	assertRefusalShape(t, recorder, http.StatusForbidden, "Not Authorized")
+	assertContainerErrorBody(t, recorder, "/api/users/99")
 }
 
 func TestAuthorizeWritesNothingWhenItAllows(t *testing.T) {

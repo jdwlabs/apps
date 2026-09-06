@@ -114,10 +114,10 @@ This snippet is compiled and run as `Example` in `authhttp/example_test.go`, so
 a rename or a signature change fails the build rather than leaving a README that
 no longer works.
 
-Refusals carry the `Access-Denied-Reason` header and **no body**:
-`Authentication Required` with 401 from the middleware, `Not Authorized` with
-403 from `WriteForbidden`. The 401 case matches the JVM; the 403 one currently
-does not — see the note on the error body below.
+Refusals carry the `Access-Denied-Reason` header: `Authentication Required`
+with 401 from the middleware, `Not Authorized` with 403 from `WriteForbidden`.
+The 401 body is empty; the 403 body is not — see the note on the error body
+below.
 
 **Mount the CORS layer outside this middleware**, the ordering Spring uses,
 where `CorsFilter` runs ahead of the JWT filter. A browser never attaches
@@ -162,11 +162,11 @@ build rather than being discovered by whoever writes the handler.
 
 ---
 
-## 📭 The error body: what the contract says, and what the service sends
+## 📭 The error body: what the contract says, and what this library sends
 
-The frozen contracts used to document a `ContainerError` JSON body on every
-401 and 403 alike. **That was only half right, and the two statuses are not
-symmetric.**
+The frozen contracts document a `ContainerError` JSON body on 403 and an empty
+body on 401. **The two statuses are not symmetric, and this library now
+reproduces both halves.**
 
 **401 (`WriteUnauthorized`) is genuinely empty.** `CustomAuthenticationEntryPoint`
 calls `sendError` with a message, `server.error.include-message` is set
@@ -188,14 +188,13 @@ real `application/json` body, shaped exactly like the frozen `ContainerError`
 schema (`timestamp`, `status`, `error`, `path` — no `message`, since
 `include-message` is `never`).
 
-**This library currently reproduces only the 401 half.** `WriteForbidden`
-sends the status and the header with no body, matching what was assumed for
-both statuses rather than what a 403 with a valid token actually sends. That
-is a real gap between this library and the JVM, discovered while correcting
-the contracts rather than while building this package, and closing it is a
-behaviour change to Go production code that belongs in its own reviewed
-change, not folded into a documentation fix. Until then, a Go caller reading a
-403 response should not assume the body is empty.
+**`WriteForbidden` sends that body.** It writes `Content-Type: application/json`
+and a fixed-order JSON object — `timestamp`, `status`, `error`, `path`, with no
+`message` key at all rather than a blank one — matching what a 403 with a
+valid token actually sends. `timestamp` uses millisecond precision with an
+explicit numeric zone offset (`2026-09-06T04:20:00.123+00:00`), the shape
+Boot's Jackson configuration renders; a caller should compare it by shape, not
+by value, since the two implementations answer at different instants.
 
 One consequence worth knowing about the JVM side: **setting
 `server.error.include-message`** would change the wire format of the 403 body

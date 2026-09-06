@@ -1,22 +1,26 @@
 // Package authhttp wires the verifier and the authorization rules into
-// net/http, and refuses requests the way the Spring application refuses them:
-// the same status, the same Access-Denied-Reason header, and the same empty
-// body.
+// net/http, and refuses requests the way the Spring application refuses them.
 //
-// The empty body is measured, not assumed. Both Spring handlers call
-// sendError with a message, but server.error.include-message is unset, so
-// Boot's default of "never" applies and the deployed service answers 401 and
-// 403 with Content-Length 0 and no Content-Type, whatever the request's Accept
-// header. The frozen contract documents a ContainerError JSON body for those
-// statuses; the running application does not produce one. Reproducing what the
-// application does is what keeps the cutover invisible, and the contract itself
-// records that clients key off the status and the header rather than the body.
+// The two refusals are not symmetric, and that is measured, not assumed.
+// CustomAuthenticationEntryPoint's sendError forwards to /error with no
+// token, so AuthorizationFilter refuses that forwarded dispatch too and
+// BasicErrorController never runs: 401 answers with Content-Length 0 and no
+// Content-Type, whatever the request's Accept header. CustomAccessDeniedHandler's
+// sendError forwards with the same verified token that got the caller past
+// authentication the first time, so that dispatch is let through and
+// BasicErrorController renders its standard error JSON: 403 carries a real
+// application/json body shaped like the frozen contract's ContainerError
+// schema, with message absent because server.error.include-message is never,
+// not merely unset to "". Reproducing each status's real behaviour — one
+// empty, one not — is what keeps the cutover invisible.
 package authhttp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"libs/backend/shared/auth"
 	"libs/backend/shared/auth/authz"
@@ -157,23 +161,50 @@ func Authorize(w http.ResponseWriter, r *http.Request, a authz.Authorizer, rule 
 	}
 }
 
-// WriteUnauthorized answers as CustomAuthenticationEntryPoint does.
-func WriteUnauthorized(w http.ResponseWriter, _ *http.Request) {
-	writeRefusal(w, http.StatusUnauthorized, ReasonAuthenticationRequired)
-}
-
-// WriteForbidden answers as CustomAccessDeniedHandler does.
-func WriteForbidden(w http.ResponseWriter, _ *http.Request) {
-	writeRefusal(w, http.StatusForbidden, ReasonNotAuthorized)
-}
-
-// writeRefusal sends the status and the reason header with no body.
+// WriteUnauthorized answers as CustomAuthenticationEntryPoint does: the
+// header and the status, with no body.
 //
 // The deployed service sends the header twice, because the filter chain also
 // runs on the error dispatch and the entry point commences a second time. One
 // copy is sent here: a client reads the first value either way, and reproducing
 // a duplicate would be copying an accident rather than a behaviour.
-func writeRefusal(w http.ResponseWriter, status int, reason string) {
-	w.Header().Set(HeaderAccessDeniedReason, reason)
-	w.WriteHeader(status)
+func WriteUnauthorized(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set(HeaderAccessDeniedReason, ReasonAuthenticationRequired)
+	w.WriteHeader(http.StatusUnauthorized)
+}
+
+// containerError is BasicErrorController's response body, in the field order
+// Boot writes it. The json tags fix that order: encoding/json marshals a
+// struct's fields in declaration order, so this order is not incidental.
+// message carries no field at all, because server.error.include-message is
+// never rather than merely defaulted to "".
+type containerError struct {
+	Timestamp string `json:"timestamp"`
+	Status    int    `json:"status"`
+	Error     string `json:"error"`
+	Path      string `json:"path"`
+}
+
+// bootTimestampLayout renders millisecond precision with an explicit numeric
+// zone offset, matching Boot's Jackson configuration. It deliberately does
+// not use Go's "Z07:00" verb, which prints the literal "Z" for a zero offset:
+// the measured JVM output always writes "+00:00".
+const bootTimestampLayout = "2006-01-02T15:04:05.000-07:00"
+
+// WriteForbidden answers as CustomAccessDeniedHandler does. Unlike
+// WriteUnauthorized, the caller here already holds a verified token — only
+// method security refused it — so the same token authenticates the forwarded
+// dispatch to /error, BasicErrorController runs to completion, and the
+// response carries its standard error body instead of being empty.
+func WriteForbidden(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set(HeaderAccessDeniedReason, ReasonNotAuthorized)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	// A failed write means the client is gone; there is nobody left to tell.
+	_ = json.NewEncoder(w).Encode(containerError{
+		Timestamp: time.Now().UTC().Format(bootTimestampLayout),
+		Status:    http.StatusForbidden,
+		Error:     http.StatusText(http.StatusForbidden),
+		Path:      r.URL.Path,
+	})
 }
