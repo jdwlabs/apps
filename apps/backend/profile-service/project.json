@@ -1,0 +1,94 @@
+{
+  "name": "profile-service",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/backend/profile-service",
+  "tags": ["type:app", "scope:profile-service", "framework:go"],
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
+    }
+  },
+  "implicitDependencies": ["usersrole", "authdb"],
+  "targets": {
+    "build": {
+      "executor": "@nx-go/nx-go:build",
+      "options": {
+        "main": ".",
+        "outputPath": "../../../dist/apps/backend/profile-service/profile-service"
+      }
+    },
+    "serve": {
+      "executor": "@nx-go/nx-go:serve",
+      "options": {
+        "main": "."
+      }
+    },
+    "test": {
+      "executor": "@nx-go/nx-go:test",
+      "options": {
+        "race": true
+      },
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/apps/backend/usersrole/docs/contracts/profile-service.openapi.yaml",
+        "{workspaceRoot}/apps/database/authdb/src/00_schema.sql"
+      ]
+    },
+    "lint": {
+      "executor": "@nx-go/nx-go:lint",
+      "options": {
+        "linter": "go",
+        "args": ["vet"]
+      }
+    },
+    "tidy": {
+      "executor": "@nx-go/nx-go:tidy"
+    },
+    "build-image": {
+      "dependsOn": ["build"],
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "bash scripts/build-image.sh profile-service \"$(bash scripts/resolve-version.sh profile-service)\" {projectRoot}/Dockerfile \"Profiles, addresses and icons API for the jdwlabs platform\" --platform linux/amd64,linux/arm64 --push",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "local-build-image": {
+      "dependsOn": [],
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "bash scripts/build-image.sh profile-service local {projectRoot}/Dockerfile.local \"Profiles, addresses and icons API for the jdwlabs platform\" --load",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "serve-container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "docker run --rm -p 8080:8080 jdwlabs/profile-service:latest",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      }
+    },
+    "update-description": {
+      "command": "bash scripts/update-description.sh jdwlabs/profile-service {projectRoot}/README.docker.md"
+    },
+    "download": {
+      "command": "go mod download"
+    }
+  }
+}

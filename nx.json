@@ -167,6 +167,7 @@
       "rolesui",
       "usersui",
       "servicediscovery",
+      "profile-service",
       "usersrole",
       "authdb",
       "ai-sre-relay",
