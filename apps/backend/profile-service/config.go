@@ -41,8 +41,8 @@ const (
 	// request. This service serves the profile third of that surface and does
 	// not bind a connection to a goroutine, so it starts lower and is raised
 	// from measurement rather than from the JVM's number.
-	defaultMaxConnections    = 5
-	defaultMinConnections    = 2
+	defaultMaxConnections    = int32(5)
+	defaultMinConnections    = int32(2)
 	defaultShutdownTimeoutS  = 10
 	authenticatePathSuffix   = "/auth/authenticate"
 	defaultCORSOriginPattern = "http://*:[*],https://*:[*]"
@@ -89,8 +89,8 @@ func configFromEnvironment() (Config, error) {
 	config := Config{
 		Address:         ":" + util.GetEnvOrDefault(envPort, defaultPort),
 		DatabaseDSN:     dsn,
-		MaxConnections:  int32(envInt(envMaxConnections, defaultMaxConnections)),
-		MinConnections:  int32(envInt(envMinConnections, defaultMinConnections)),
+		MaxConnections:  envInt32(envMaxConnections, defaultMaxConnections),
+		MinConnections:  envInt32(envMinConnections, defaultMinConnections),
 		SecretKeyBase64: secret,
 		CORS: CORS{
 			AllowedOriginPatterns: envList(envCORSOriginPatterns, defaultCORSOriginPattern),
@@ -148,6 +148,18 @@ func envInt(name string, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+// envInt32 parses at the width the pool configuration takes. Parsing as int and
+// converting would truncate a value above 2^31 into a plausible small pool on a
+// 64-bit host rather than falling back, so the bound is the parser's rather than
+// a check after the fact.
+func envInt32(name string, fallback int32) int32 {
+	value, err := strconv.ParseInt(util.GetEnvOrDefault(name, ""), 10, 32)
+	if err != nil || value <= 0 {
+		return fallback
+	}
+	return int32(value)
 }
 
 func envList(name, fallback string) []string {
