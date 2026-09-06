@@ -112,6 +112,10 @@ describe('ProfilesService', () => {
     });
 
     it('should handle errors and call handleError', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(3);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
@@ -172,6 +176,10 @@ describe('ProfilesService', () => {
     });
 
     it('propagates a genuine no-profile 404 without showing a snackbar', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(3);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
       // The mocks in this file are shared across `it` blocks and never
@@ -200,6 +208,10 @@ describe('ProfilesService', () => {
     });
 
     it('shows a snackbar and propagates a routing 404 as an error', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(3);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
@@ -227,6 +239,10 @@ describe('ProfilesService', () => {
     });
 
     it('shows a snackbar and propagates a 500 as an error', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(2);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
@@ -359,6 +375,10 @@ describe('ProfilesService', () => {
     });
 
     it('should handle address not found (404) error', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(5);
       const profileId = 1;
       const addressId = 999; // Address ID that doesn't exist
       const token = 'mockJwtToken';
@@ -390,6 +410,10 @@ describe('ProfilesService', () => {
     });
 
     it('should handle unexpected HTTP errors', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(4);
       const profileId = 1;
       const addressId = 1;
       const token = 'mockJwtToken';
@@ -601,6 +625,10 @@ describe('ProfilesService', () => {
     });
 
     it('should handle errors and call handleError on failure', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(3);
       const userId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
@@ -645,6 +673,10 @@ describe('ProfilesService', () => {
     });
 
     it('should propagate an error if the underlying profile is not found', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(3);
       const profileId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
@@ -669,6 +701,10 @@ describe('ProfilesService', () => {
     });
 
     it('should handle unexpected HTTP errors and call handleError', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(4);
       const profileId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
@@ -727,6 +763,10 @@ describe('ProfilesService', () => {
     });
 
     it('propagates the original error to subscribers instead of completing silently', () => {
+      // Guards against handleError regressing to EMPTY: EMPTY completes
+      // without calling next or error, which would let this test pass
+      // green with none of the assertions below ever running.
+      expect.assertions(1);
       const mockError = new HttpErrorResponse({
         status: 500,
         error: { message: 'Internal Server Error' },
