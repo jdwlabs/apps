@@ -94,6 +94,37 @@ this drives real unauthenticated requests over all 33 operations and asserts the
 outcome the contract claims: an operation frozen as PUBLIC must not answer 401,
 every other operation must, and nothing outside `/auth` may be frozen as PUBLIC.
 
+## CORS preflight bypasses authentication
+
+Neither document specifies an `OPTIONS` operation, and none is needed: a
+browser's preflight — `OPTIONS` carrying an `Origin` and an
+`Access-Control-Request-Method` header — never reaches the operations these
+documents freeze. `SecurityConfig.securityFilterChain` wires
+`.cors(Customizer.withDefaults())`, which registers a `CorsFilter` ahead of
+`JwtAuthenticationFilter` in the chain. Measured against a booted `usersrole`
+on a real port, a preflight to an authenticated path answers 200 from that
+filter with no token and without ever reaching the JWT filter or the
+`@PreAuthorize` checks this contract freezes. A service built strictly to the
+per-operation contract, with no equivalent bypass, would 401 every
+cross-origin call the frontends make.
+
+The allowed values are `SecurityConfig.corsConfigurationSource`'s
+`CorsConfiguration`, transcribed rather than restated in each operation
+because the bean applies to every path (`"/**"`):
+
+| Setting                 | Value                                                                                                                                           |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Allowed origin patterns | `http://*:[*]`, `https://*:[*]`                                                                                                                 |
+| Allowed methods         | `GET`, `POST`, `PUT`, `DELETE`, `HEAD`, `PATCH`, `OPTIONS`                                                                                      |
+| Allowed headers         | `Authorization`, `Content-Type`                                                                                                                 |
+| Allow credentials       | Not set — no `Access-Control-Allow-Credentials` header is sent                                                                                  |
+| Max age                 | Not set — no `Access-Control-Max-Age` header is sent, so a browser does not cache the preflight and repeats it on the next cross-origin request |
+
+`FilterChainContractParityTests` drives a real preflight against the running
+application to pin this behaviour: an `OPTIONS` request carrying an `Origin`
+and an `Access-Control-Request-Method` to an operation this contract freezes
+as AUTHENTICATED still answers 200, with no `Authorization` header sent.
+
 ## The decisions this contract settles
 
 The audit deferred seven contract questions. Each is answered here, and each
