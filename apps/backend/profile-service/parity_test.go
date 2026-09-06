@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -415,18 +416,44 @@ func assertUnauthorizedShape(t *testing.T, response *httptest.ResponseRecorder) 
 	}
 }
 
-// assertForbiddenShape pins what this service is responsible for on a 403: the
-// status and the reason header. The body is not asserted here, and not composed
-// here either — every refusal goes through the shared library's writer. The
-// deployed JVM answers 403 with Boot's error body, because the caller's
-// verified token survives the forward to /error that an unauthenticated caller's
-// does not; the library still writes none, and correcting it is its own change.
-// Asserting either shape from this side would pin a decision that does not
-// belong to this service.
+// assertForbiddenShape pins the measured shape of a 403, which is not the shape
+// of a 401. The caller here already holds a verified token, so the forward to
+// /error that sendError triggers re-authenticates with it and reaches Boot's
+// error controller; an unauthenticated caller's forward is refused again and
+// renders nothing. Every refusal on this service goes through the shared
+// library's writer, so what this asserts is that the writer is reached, not that
+// this service composed a body.
 func assertForbiddenShape(t *testing.T, response *httptest.ResponseRecorder) {
 	t.Helper()
 	if got, want := response.Header().Get("Access-Denied-Reason"), "Not Authorized"; got != want {
 		t.Errorf("Access-Denied-Reason = %q, want %q", got, want)
+	}
+	if got, want := response.Header().Get("Content-Type"), contentTypeJSON; got != want {
+		t.Errorf("Content-Type = %q, want %q", got, want)
+	}
+	var body struct {
+		Timestamp string  `json:"timestamp"`
+		Status    int     `json:"status"`
+		Error     string  `json:"error"`
+		Path      string  `json:"path"`
+		Message   *string `json:"message"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatalf("the 403 body is not the container error representation: %v", err)
+	}
+	if body.Status != http.StatusForbidden {
+		t.Errorf("status field = %d, want %d", body.Status, http.StatusForbidden)
+	}
+	if body.Error != "Forbidden" {
+		t.Errorf("error field = %q, want %q", body.Error, "Forbidden")
+	}
+	if body.Timestamp == "" {
+		t.Error("timestamp field is empty")
+	}
+	// server.error.include-message is never, so the key is absent rather than
+	// present and empty.
+	if body.Message != nil {
+		t.Errorf("message field = %q, want it absent", *body.Message)
 	}
 }
 
