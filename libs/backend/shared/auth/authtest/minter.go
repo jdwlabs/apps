@@ -2,11 +2,13 @@
 // produces, so services can write parity tests without reaching for a running
 // identity service.
 //
-// Nothing that ships may import it — a service able to sign its own tokens can
-// mint itself any principal. Go cannot express "test code only" across modules,
-// so TestNoServiceImportsTheMinter enforces it by walking the service modules
-// and failing on any non-test file that imports this package. The verification
-// path does not import it either, which the same test would catch.
+// Nothing that ships may import it — anything able to sign its own tokens can
+// mint itself any principal, the verifier included. Go cannot express "test
+// code only" across modules, so the rule is enforced by a workspace check
+// (tools/workspace-checks/test-only-go-packages.spec.ts) that walks every Go
+// file in the repository and fails on any non-test file importing this package.
+// It lives there rather than here because the offending import would sit in
+// another project, which a test inside this library is not selected to see.
 package authtest
 
 import (

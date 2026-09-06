@@ -299,43 +299,94 @@ func TestMiddlewareDoesNotReportRequestsThatCarriedNoToken(t *testing.T) {
 	}
 }
 
-// A browser never attaches Authorization to a preflight, and Spring's CorsFilter
-// answers it ahead of the JWT filter. Measured on a booted usersrole: an
-// unauthenticated preflight returns 200. Refusing it here would break every
-// cross-origin call the frontends make at cutover.
-func TestMiddlewareLetsCorsPreflightThrough(t *testing.T) {
-	reached := false
-	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reached = true })
-	recorder := httptest.NewRecorder()
+func preflightRequest() *http.Request {
 	request := httptest.NewRequest(http.MethodOptions, "/api/users/42", nil)
 	request.Header.Set("Origin", "http://localhost:4200")
 	request.Header.Set("Access-Control-Request-Method", "GET")
+	return request
+}
 
-	middleware(t).Handler(next).ServeHTTP(recorder, request)
+// A browser never attaches Authorization to a preflight, and Spring's CorsFilter
+// answers it ahead of the JWT filter. Measured on a booted usersrole: an
+// unauthenticated preflight returns 200. Refusing it would break every
+// cross-origin call the frontends make at cutover.
+func TestMiddlewareHandsCorsPreflightToTheCorsHandler(t *testing.T) {
+	handledPreflight := false
+	reachedNext := false
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reachedNext = true })
+	recorder := httptest.NewRecorder()
 
-	if !reached {
-		t.Error("the preflight was refused; every cross-origin request would fail")
+	m := middleware(t)
+	m.Preflight = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		handledPreflight = true
+		w.WriteHeader(http.StatusOK)
+	})
+	m.Handler(next).ServeHTTP(recorder, preflightRequest())
+
+	if !handledPreflight {
+		t.Error("the preflight did not reach the CORS handler")
+	}
+	if reachedNext {
+		t.Error("the preflight reached the wrapped handler; an unauthenticated request must not get there")
 	}
 	if recorder.Code != http.StatusOK {
 		t.Errorf("status = %d, want 200", recorder.Code)
 	}
 }
 
-// Only a real preflight is exempt. A plain OPTIONS request carries no
-// Access-Control-Request-Method and must still be authenticated, or the
-// exemption becomes a way to reach a handler without a token.
-func TestMiddlewareStillAuthenticatesPlainOptions(t *testing.T) {
+// The exemption is opt-in. Without a CORS handler the middleware is the inner
+// layer, the CORS layer outside it has already answered the preflight, and
+// anything still arriving here is authenticated like any other request.
+func TestMiddlewareAuthenticatesPreflightWhenNoCorsHandlerIsSet(t *testing.T) {
 	reached := false
 	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reached = true })
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodOptions, "/api/users/42", nil)
 
-	middleware(t).Handler(next).ServeHTTP(recorder, request)
+	middleware(t).Handler(next).ServeHTTP(recorder, preflightRequest())
 
 	if reached {
-		t.Error("a plain OPTIONS request reached the handler unauthenticated")
+		t.Error("a preflight reached the handler with no principal and no CORS handler configured")
 	}
 	assertRefusalShape(t, recorder, http.StatusUnauthorized, "Authentication Required")
+}
+
+// Spring's CorsUtils.isPreFlightRequest needs all three conditions. A request
+// missing any of them is not a preflight, and must not be able to use the
+// exemption to reach a handler without a token.
+func TestMiddlewareOnlyExemptsARealPreflight(t *testing.T) {
+	tests := []struct {
+		name    string
+		method  string
+		headers map[string]string
+	}{
+		{"plain options", http.MethodOptions, nil},
+		{"options without origin", http.MethodOptions, map[string]string{"Access-Control-Request-Method": "GET"}},
+		{"options without the request-method header", http.MethodOptions, map[string]string{"Origin": "http://localhost:4200"}},
+		{"get carrying preflight headers", http.MethodGet, map[string]string{
+			"Origin": "http://localhost:4200", "Access-Control-Request-Method": "GET",
+		}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			reachedNext, reachedPreflight := false, false
+			next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reachedNext = true })
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(tc.method, "/api/users/42", nil)
+			for name, value := range tc.headers {
+				request.Header.Set(name, value)
+			}
+
+			m := middleware(t)
+			m.Preflight = http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reachedPreflight = true })
+			m.Handler(next).ServeHTTP(recorder, request)
+
+			if reachedNext || reachedPreflight {
+				t.Error("the request was treated as a preflight and skipped authentication")
+			}
+			assertRefusalShape(t, recorder, http.StatusUnauthorized, "Authentication Required")
+		})
+	}
 }
 
 func TestNewMiddlewareRejectsANilVerifier(t *testing.T) {

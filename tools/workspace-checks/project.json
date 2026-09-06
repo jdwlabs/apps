@@ -4,6 +4,12 @@
   "projectType": "library",
   "sourceRoot": "tools/workspace-checks",
   "tags": ["type:util", "scope:shared", "framework:node"],
+  // These checks police the whole workspace, so `nx affected` has to select
+  // them whenever anything changes. Without this a rule that spans projects —
+  // an import ban, say — is silently skipped by the very PR that breaks it,
+  // for the same reason `cache: false` is set below: a guard that does not run
+  // withholds nothing. Nothing depends on this project, so the edges are safe.
+  "implicitDependencies": ["*"],
   "targets": {
     "test": {
       "executor": "@nx/vitest:test",
