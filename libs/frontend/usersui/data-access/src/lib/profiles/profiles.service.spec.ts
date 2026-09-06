@@ -1,11 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 
-import { ProfilesService } from './profiles.service';
+import { isProfileNotFoundError, ProfilesService } from './profiles.service';
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpHeaders,
+  provideHttpClient,
+} from '@angular/common/http';
 import { AuthService, SnackbarService } from '@jdw/frontend-shared-data-access';
 import {
   AddProfile,
@@ -14,7 +18,6 @@ import {
   ENVIRONMENT,
   Profile,
 } from '@jdw/frontend-shared-util';
-import { EMPTY } from 'rxjs';
 
 const authServiceMock = {
   getToken: vi.fn(),
@@ -115,7 +118,8 @@ describe('ProfilesService', () => {
       service.getProfiles().subscribe({
         next: () => fail('Expected an error, but got success'),
         error: (error) => {
-          expect(error).toBe(EMPTY);
+          expect(error).toBeInstanceOf(HttpErrorResponse);
+          expect(error.status).toBe(500);
         },
       });
 
@@ -165,6 +169,83 @@ describe('ProfilesService', () => {
       expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
 
       req.flush(mockProfile);
+    });
+
+    it('propagates a genuine no-profile 404 without showing a snackbar', () => {
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+      // The mocks in this file are shared across `it` blocks and never
+      // reset, so isolate this negative assertion from calls other tests
+      // already made.
+      snackbarServiceMock.error.mockClear();
+
+      service.getProfile('1').subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error.status).toBe(404);
+          expect(isProfileNotFoundError(error)).toBe(true);
+        },
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/1`,
+      );
+      req.flush('Profile not found with id 1', {
+        status: 404,
+        statusText: 'Not Found',
+        headers: new HttpHeaders({ 'content-type': 'text/plain' }),
+      });
+
+      expect(snackbarServiceMock.error).not.toHaveBeenCalled();
+    });
+
+    it('shows a snackbar and propagates a routing 404 as an error', () => {
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getProfile('1').subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(isProfileNotFoundError(error)).toBe(false);
+          expect(error.status).toBe(404);
+        },
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/1`,
+      );
+      req.flush(
+        { error: 'Not Found' },
+        {
+          status: 404,
+          statusText: 'Not Found',
+          headers: new HttpHeaders({ 'content-type': 'application/json' }),
+        },
+      );
+
+      expect(snackbarServiceMock.error).toHaveBeenCalled();
+    });
+
+    it('shows a snackbar and propagates a 500 as an error', () => {
+      const token = 'mockJwtToken';
+      authServiceMock.getToken.mockReturnValue(token);
+
+      service.getProfile('1').subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error.status).toBe(500);
+        },
+      });
+
+      const req = httpMock.expectOne(
+        `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/1`,
+      );
+      req.flush(
+        { message: 'Internal Server Error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+
+      expect(snackbarServiceMock.error).toHaveBeenCalled();
     });
   });
 
@@ -301,7 +382,9 @@ describe('ProfilesService', () => {
       expect(req.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
 
       req.flush(
-        { message: 'Address Not Found' },
+        {
+          message: `Address with ID ${addressId} not found for profile ${profileId}`,
+        },
         { status: 404, statusText: 'Not Found' },
       );
     });
@@ -561,13 +644,17 @@ describe('ProfilesService', () => {
       req.flush({ id: profileId, icon: mockIcon });
     });
 
-    it('should handle errors and return null if profile not found', () => {
+    it('should propagate an error if the underlying profile is not found', () => {
       const profileId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getIcon(profileId).subscribe((icon) => {
-        expect(icon).toBeNull();
+      service.getIcon(profileId).subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(HttpErrorResponse);
+          expect(error.status).toBe(404);
+        },
       });
 
       const req = httpMock.expectOne(
@@ -577,6 +664,8 @@ describe('ProfilesService', () => {
         { message: 'Profile Not Found' },
         { status: 404, statusText: 'Not Found' },
       );
+
+      expect(snackbarServiceMock.error).toHaveBeenCalled();
     });
 
     it('should handle unexpected HTTP errors and call handleError', () => {
@@ -635,6 +724,56 @@ describe('ProfilesService', () => {
         { variant: 'filled', autoClose: false },
         true,
       );
+    });
+
+    it('propagates the original error to subscribers instead of completing silently', () => {
+      const mockError = new HttpErrorResponse({
+        status: 500,
+        error: { message: 'Internal Server Error' },
+      });
+
+      service.handleError(mockError).subscribe({
+        next: () => fail('Expected an error, but got success'),
+        error: (error) => {
+          expect(error).toBe(mockError);
+        },
+      });
+    });
+  });
+
+  describe('isProfileNotFoundError', () => {
+    it('is true for a 404 with a text/plain body (the ResourceNotFoundException contract)', () => {
+      const error = new HttpErrorResponse({
+        status: 404,
+        headers: new HttpHeaders({ 'content-type': 'text/plain' }),
+        error: 'Profile not found with id 1',
+      });
+
+      expect(isProfileNotFoundError(error)).toBe(true);
+    });
+
+    it('is false for a 404 with a different body (e.g. a routing 404)', () => {
+      const error = new HttpErrorResponse({
+        status: 404,
+        headers: new HttpHeaders({ 'content-type': 'application/json' }),
+        error: { error: 'Not Found' },
+      });
+
+      expect(isProfileNotFoundError(error)).toBe(false);
+    });
+
+    it('is false for non-404 statuses', () => {
+      const error = new HttpErrorResponse({
+        status: 500,
+        headers: new HttpHeaders({ 'content-type': 'text/plain' }),
+        error: 'Internal Server Error',
+      });
+
+      expect(isProfileNotFoundError(error)).toBe(false);
+    });
+
+    it('is false for non-HttpErrorResponse values', () => {
+      expect(isProfileNotFoundError(new Error('boom'))).toBe(false);
     });
   });
 });

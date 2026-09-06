@@ -54,7 +54,12 @@ export class ProfilesActionButtonCellRendererComponent implements ICellRendererA
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.profilesService.deleteProfile(result.userId).subscribe();
+        this.profilesService.deleteProfile(result.userId).subscribe({
+          // ProfilesService already surfaces a snackbar on failure; this
+          // just keeps a failed delete from going unhandled now that
+          // errors are no longer swallowed silently.
+          error: () => undefined,
+        });
       }
     });
   }

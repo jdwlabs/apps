@@ -177,8 +177,12 @@ export class UserComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result && this.user) {
-        this.profilesService.deleteProfile(this.user.id).subscribe(() => {
-          this.reloadPage();
+        this.profilesService.deleteProfile(this.user.id).subscribe({
+          next: () => this.reloadPage(),
+          // ProfilesService already surfaces a snackbar on failure; this
+          // just keeps a failed delete from going unhandled now that
+          // errors are no longer swallowed silently.
+          error: () => undefined,
         });
       }
     });
@@ -213,11 +217,13 @@ export class UserComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result && profileId && addressId) {
-        this.profilesService
-          .deleteAddress(profileId, addressId)
-          .subscribe(() => {
-            this.reloadPage();
-          });
+        this.profilesService.deleteAddress(profileId, addressId).subscribe({
+          next: () => this.reloadPage(),
+          // ProfilesService already surfaces a snackbar on failure; this
+          // just keeps a failed delete from going unhandled now that
+          // errors are no longer swallowed silently.
+          error: () => undefined,
+        });
       }
     });
   }
@@ -234,8 +240,12 @@ export class UserComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result && profileId) {
-        this.profilesService.deleteIcon(profileId).subscribe(() => {
-          this.reloadPage();
+        this.profilesService.deleteIcon(profileId).subscribe({
+          next: () => this.reloadPage(),
+          // ProfilesService already surfaces a snackbar on failure; this
+          // just keeps a failed delete from going unhandled now that
+          // errors are no longer swallowed silently.
+          error: () => undefined,
         });
       }
     });
