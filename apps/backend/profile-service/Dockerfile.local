@@ -1,0 +1,21 @@
+# Self-contained build for local iteration (no prior `nx build` needed).
+# The build context is the repo root, because this module compiles against the
+# shared auth library through the workspace rather than through a published
+# version of it.
+FROM golang:1.27-bookworm AS build
+WORKDIR /src
+COPY libs/backend/shared/auth ./libs/backend/shared/auth
+COPY libs/backend/shared/util ./libs/backend/shared/util
+COPY apps/backend/profile-service ./apps/backend/profile-service
+# A workspace of just these three, rather than the repository's go.work: that
+# file names every Go module in the repository and workspace mode fails on any
+# one of them being absent from the image.
+RUN go work init ./apps/backend/profile-service ./libs/backend/shared/auth ./libs/backend/shared/util
+RUN CGO_ENABLED=0 go build -o /out/profile-service ./apps/backend/profile-service
+
+FROM gcr.io/distroless/base-debian12:nonroot AS runner
+WORKDIR /app
+COPY --from=build /out/profile-service .
+USER 65532:65532
+EXPOSE 8080
+ENTRYPOINT ["/app/profile-service"]
