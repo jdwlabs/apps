@@ -91,7 +91,8 @@ The suites are three:
 
 - **Authorization parity** (`parity_test.go`) — every operation against every
   principal its rule admits and refuses, driven from the contract's own
-  `x-authorization` values.
+  `x-authorization` values, including the two refusal shapes: an empty 401 and a
+  403 carrying Boot's error body.
 - **Contract drift** (`contract_test.go`) — the served route set against the
   document, in both directions.
 - **Storage and end-to-end** (`*_integration_test.go`) — the deployed
