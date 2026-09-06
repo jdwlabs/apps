@@ -87,6 +87,11 @@ func outcomeOf(status int) string {
 	}
 }
 
+// statusRecorder observes the status a handler sets. It deliberately does not
+// wrap Write: a handler that writes a body without setting a status leaves the
+// zero value below, which is initialised to 200 — the status the standard
+// library would send for it anyway. Wrapping Write would put a second copy of
+// every response body on a path that has no reason to see one.
 type statusRecorder struct {
 	http.ResponseWriter
 	status  int
@@ -99,9 +104,4 @@ func (s *statusRecorder) WriteHeader(status int) {
 		s.written = true
 	}
 	s.ResponseWriter.WriteHeader(status)
-}
-
-func (s *statusRecorder) Write(body []byte) (int, error) {
-	s.written = true
-	return s.ResponseWriter.Write(body)
 }
