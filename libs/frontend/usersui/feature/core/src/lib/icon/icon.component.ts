@@ -41,6 +41,10 @@ export class IconComponent implements OnInit {
             this.type = 'Add';
           }
         },
+        // ProfilesService already surfaces a snackbar on failure; this
+        // just keeps a failed lookup from going unhandled now that errors
+        // are no longer swallowed silently.
+        error: () => undefined,
       });
     }
   }
@@ -117,6 +121,10 @@ export class IconComponent implements OnInit {
                 relativeTo: this.route,
               });
             },
+            // ProfilesService already surfaces a snackbar on failure; this
+            // just keeps a failed submit from going unhandled now that
+            // errors are no longer swallowed silently.
+            error: () => undefined,
           });
       } else {
         this.profilesService
@@ -127,6 +135,7 @@ export class IconComponent implements OnInit {
                 relativeTo: this.route,
               });
             },
+            error: () => undefined,
           });
       }
     }

@@ -136,6 +136,12 @@ export class ProfilesComponent implements OnInit {
         this.profiles = response;
         this.loading = false;
       },
+      // ProfilesService already surfaces a snackbar on failure; this only
+      // stops the grid from spinning forever and the error from going
+      // unhandled now that failures are no longer swallowed silently.
+      error: () => {
+        this.loading = false;
+      },
     });
   }
 }

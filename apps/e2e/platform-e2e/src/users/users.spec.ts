@@ -18,6 +18,17 @@ test.describe('Users', () => {
 
   test.describe('Profile Form', () => {
     test.beforeEach(async ({ page }) => {
+      // No backend runs in this suite, so the real "no profile yet" 404
+      // (a text/plain ResourceNotFoundException body, per the
+      // profile-service contract) is mocked rather than left to a bare
+      // connection failure, which the app must not read as "no profile".
+      await page.route('**/api/profiles/by-user/*', async (route) => {
+        await route.fulfill({
+          status: 404,
+          contentType: 'text/plain',
+          body: 'Profile not found with id new',
+        });
+      });
       await page.goto('/users/profile/new');
     });
 

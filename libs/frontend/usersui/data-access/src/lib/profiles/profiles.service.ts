@@ -10,7 +10,7 @@ import {
   Environment,
   getErrorMessage,
 } from '@jdw/frontend-shared-util';
-import { catchError, EMPTY, map, Observable, tap } from 'rxjs';
+import { catchError, map, Observable, tap, throwError } from 'rxjs';
 import {
   AddProfile,
   Address,
@@ -51,7 +51,17 @@ export class ProfilesService {
           headers: headers,
         },
       )
-      .pipe(catchError((error) => this.handleError(error)));
+      .pipe(
+        catchError((error: HttpErrorResponse) =>
+          // A genuine "no profile yet" 404 (ResourceNotFoundException's
+          // text/plain body, per the profile-service contract) must reach the
+          // caller distinguishably from a routing 404, a 401 or a 500, so the
+          // profile page can show the Add form only for the former.
+          isProfileNotFoundError(error)
+            ? throwError(() => error)
+            : this.handleError(error),
+        ),
+      );
   }
 
   addProfile(profile: AddProfile): Observable<Profile> {
@@ -348,18 +358,31 @@ export class ProfilesService {
       );
   }
 
-  handleError(error: HttpErrorResponse) {
+  handleError(error: HttpErrorResponse): Observable<never> {
     const errorMessage = getErrorMessage(error);
-    if (error.status != 404) {
-      this.snackbarService.error(
-        errorMessage,
-        {
-          variant: 'filled',
-          autoClose: false,
-        },
-        true,
-      );
-    }
-    return EMPTY;
+    this.snackbarService.error(
+      errorMessage,
+      {
+        variant: 'filled',
+        autoClose: false,
+      },
+      true,
+    );
+    return throwError(() => error);
   }
+}
+
+/**
+ * A genuine "profile not found" response, per the profile-service contract:
+ * `GET /api/profiles/by-user/{userId}` answers 404 with the
+ * `ResourceNotFoundException` message as a `text/plain` body. Anything else
+ * that happens to carry a 404 (a routing failure, a gateway error page) does
+ * not match this shape and must not be read as "no profile".
+ */
+export function isProfileNotFoundError(error: unknown): boolean {
+  return (
+    error instanceof HttpErrorResponse &&
+    error.status === 404 &&
+    (error.headers.get('content-type') ?? '').includes('text/plain')
+  );
 }

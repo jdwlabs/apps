@@ -22,7 +22,10 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AddProfile, EditProfile, Profile } from '@jdw/frontend-shared-util';
-import { ProfilesService } from '@jdw/frontend-usersui-data-access';
+import {
+  isProfileNotFoundError,
+  ProfilesService,
+} from '@jdw/frontend-usersui-data-access';
 import { MomentDateAdapter } from '@angular/material-moment-adapter';
 import { dateFormats } from '@jdw/frontend-usersui-util';
 
@@ -87,6 +90,7 @@ export class ProfileComponent implements OnInit {
   };
   userId: string | null = null;
   profile: Profile | null = null;
+  loadError = false;
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private profileService = inject(ProfilesService);
@@ -99,6 +103,7 @@ export class ProfileComponent implements OnInit {
         next: (response) => {
           this.profile = response;
           this.type = 'Edit';
+          this.loadError = false;
           this.form.patchValue({
             firstName: response.firstName,
             middleName: response.middleName || '',
@@ -107,8 +112,13 @@ export class ProfileComponent implements OnInit {
           });
         },
         error: (error) => {
-          if (error.status == 404) {
+          // A genuine no-profile 404 means "Add"; anything else (a routing
+          // 404, a 401, a 500) is a failed lookup, not an empty one, so it
+          // must not fall through to the Add form.
+          if (isProfileNotFoundError(error)) {
             this.type = 'Add';
+          } else {
+            this.loadError = true;
           }
         },
       });
@@ -143,6 +153,10 @@ export class ProfileComponent implements OnInit {
               relativeTo: this.route,
             });
           },
+          // ProfilesService already surfaces a snackbar on failure; this
+          // just keeps a failed submit from going unhandled now that
+          // errors are no longer swallowed silently.
+          error: () => undefined,
         });
       } else {
         const profile: EditProfile = {
@@ -157,6 +171,7 @@ export class ProfileComponent implements OnInit {
               relativeTo: this.route,
             });
           },
+          error: () => undefined,
         });
       }
     }
