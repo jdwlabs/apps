@@ -3,6 +3,7 @@ go 1.26
 use (
 	./apps/backend/ai-sre-relay
 	./apps/backend/github-repo-health-exporter
+	./apps/backend/profile-service
 	./apps/backend/servicediscovery
 	./libs/backend/shared/auth
 	./libs/backend/shared/util
