@@ -520,3 +520,29 @@ func TestAPreflightIsAnsweredAheadOfAuthenticationOnALiveRoute(t *testing.T) {
 		t.Errorf("Access-Denied-Reason = %q; the preflight reached the authentication layer", got)
 	}
 }
+
+func TestARefusedCallerSeesTheContainerErrorBodyForTheRequestedPath(t *testing.T) {
+	// The 403 body comes from the shared library's writer, not from here. What
+	// this pins is that the path it reports is the one the caller asked for,
+	// which is the field a support ticket is read against.
+	service := newLiveService(t)
+	_, pool := newTestStore(t)
+	stranger := seedUser(t, pool, "forbidden-path@jdw.com")
+	token := mint(t, authtest.Claims{
+		Subject: "stranger@jdw.com", Roles: []string{"USER"},
+		UserID: &stranger, ProfileID: &stranger,
+	})
+
+	response := service.getJSON(t, "/api/profiles/424242", token)
+
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d (body %q)", response.Code, http.StatusForbidden, response.Body.String())
+	}
+	var body map[string]any
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatalf("the 403 body is not JSON: %v", err)
+	}
+	if body["path"] != "/api/profiles/424242" {
+		t.Errorf("path = %v, want the requested path", body["path"])
+	}
+}
