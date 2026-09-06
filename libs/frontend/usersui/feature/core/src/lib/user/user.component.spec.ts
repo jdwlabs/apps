@@ -9,8 +9,10 @@ import { of } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { ENVIRONMENT, Role } from '@jdw/frontend-shared-util';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { ProfilesService } from '@jdw/frontend-usersui-data-access';
 
 const mockUser: User = {
   id: 1,
@@ -88,6 +90,19 @@ const mockRolesService = {
   getRole: vi.fn(() => of(mockRole)),
 };
 
+const mockProfilesService = {
+  deleteProfile: vi.fn(() => of(undefined)),
+  deleteAddress: vi.fn(() => of(undefined)),
+  deleteIcon: vi.fn(() => of(undefined)),
+};
+
+// Bypasses the real MatDialog/CDK overlay so `afterClosed()` can be driven
+// deterministically, as if the user had confirmed the action.
+const mockDialogRef = { afterClosed: () => of(true) };
+const mockDialog = {
+  open: vi.fn(() => mockDialogRef),
+};
+
 describe('UserComponent', () => {
   let component: UserComponent;
   let fixture: ComponentFixture<UserComponent>;
@@ -99,6 +114,8 @@ describe('UserComponent', () => {
         FormBuilder,
         { provide: UsersService, useValue: mockUsersService },
         { provide: RolesService, useValue: mockRolesService },
+        { provide: ProfilesService, useValue: mockProfilesService },
+        { provide: MatDialog, useValue: mockDialog },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -159,5 +176,97 @@ describe('UserComponent', () => {
       By.css('input[formControlName="emailAddress"]'),
     );
     expect(emailInput.nativeElement.value).toBe('user@jdwkube.com');
+  });
+
+  describe('delete actions on a failed request', () => {
+    const httpError = new HttpErrorResponse({
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+
+    // A real `throwError(...)` observable reports an unhandled error
+    // asynchronously (RxJS schedules it via a macrotask), which a
+    // synchronous `expect(...).not.toThrow()` around the call site would
+    // never observe — so a regression to `.subscribe(nextFn)` (no error
+    // handler) would pass silently. Capturing the exact argument passed to
+    // `subscribe` instead lets the test assert directly on what the
+    // component code registered: an object with a real `error` function,
+    // not a bare next callback.
+    function capturingObservable() {
+      const captured: {
+        observer?: Partial<Record<'next' | 'error', unknown>>;
+      } = {};
+      return {
+        subscribe: (observer: unknown) => {
+          captured.observer =
+            typeof observer === 'function' ? { next: observer } : observer;
+        },
+        captured,
+      };
+    }
+
+    it('deleteProfile registers a real error handler and it does not throw', () => {
+      const { subscribe, captured } = capturingObservable();
+      mockProfilesService.deleteProfile.mockReturnValueOnce({ subscribe });
+      const reloadSpy = vi.spyOn(
+        component as unknown as { reloadPage: () => void },
+        'reloadPage',
+      );
+
+      component.deleteProfile();
+
+      expect(mockProfilesService.deleteProfile).toHaveBeenCalledWith(
+        mockUser.id,
+      );
+      expect(typeof captured.observer?.error).toBe('function');
+      expect(() =>
+        (captured.observer!.error as (e: unknown) => void)(httpError),
+      ).not.toThrow();
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(component.user).toEqual(mockUser);
+    });
+
+    it('deleteAddress registers a real error handler and it does not throw', () => {
+      const { subscribe, captured } = capturingObservable();
+      mockProfilesService.deleteAddress.mockReturnValueOnce({ subscribe });
+      const reloadSpy = vi.spyOn(
+        component as unknown as { reloadPage: () => void },
+        'reloadPage',
+      );
+
+      component.deleteAddress(0);
+
+      expect(mockProfilesService.deleteAddress).toHaveBeenCalledWith(
+        mockUser.profile!.id,
+        mockUser.profile!.addresses[0].id,
+      );
+      expect(typeof captured.observer?.error).toBe('function');
+      expect(() =>
+        (captured.observer!.error as (e: unknown) => void)(httpError),
+      ).not.toThrow();
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(component.user).toEqual(mockUser);
+    });
+
+    it('deleteIcon registers a real error handler and it does not throw', () => {
+      const { subscribe, captured } = capturingObservable();
+      mockProfilesService.deleteIcon.mockReturnValueOnce({ subscribe });
+      const reloadSpy = vi.spyOn(
+        component as unknown as { reloadPage: () => void },
+        'reloadPage',
+      );
+
+      component.deleteIcon();
+
+      expect(mockProfilesService.deleteIcon).toHaveBeenCalledWith(
+        mockUser.profile!.id,
+      );
+      expect(typeof captured.observer?.error).toBe('function');
+      expect(() =>
+        (captured.observer!.error as (e: unknown) => void)(httpError),
+      ).not.toThrow();
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(component.user).toEqual(mockUser);
+    });
   });
 });

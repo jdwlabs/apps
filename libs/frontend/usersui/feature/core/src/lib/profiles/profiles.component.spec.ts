@@ -2,9 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ProfilesComponent } from './profiles.component';
 import { ProfilesService } from '@jdw/frontend-usersui-data-access';
 import { Profile } from '@jdw/frontend-shared-util';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ProfilesActionButtonCellRendererComponent } from '../profiles-action-button-cell-renderer/profiles-action-button-cell-renderer.component';
 
 describe('ProfilesComponent', () => {
@@ -109,6 +109,22 @@ describe('ProfilesComponent', () => {
   it('should call getProfiles on initialization and populate profiles', () => {
     expect(profilesService.getProfiles).toHaveBeenCalled();
     expect(component.profiles).toEqual(mockProfiles);
+  });
+
+  it('stops the loading state and does not throw when getProfiles fails', () => {
+    const httpError = new HttpErrorResponse({
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+    vi.mocked(profilesService.getProfiles).mockReturnValueOnce(
+      throwError(() => httpError),
+    );
+
+    const errorFixture = TestBed.createComponent(ProfilesComponent);
+    expect(() => errorFixture.detectChanges()).not.toThrow();
+
+    expect(errorFixture.componentInstance.loading).toBe(false);
+    expect(errorFixture.componentInstance.profiles).toEqual([]);
   });
 
   it('should have the correct column definitions', () => {
