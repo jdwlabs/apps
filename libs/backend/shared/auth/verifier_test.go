@@ -266,10 +266,53 @@ func TestVerifyAcceptsAnyIssuerAndAudienceOnlyWhenAskedTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewVerifier: %v", err)
 	}
-	token := mint(t, authtest.Claims{Subject: "user@jdw.com", UserID: ptr(42)})
+	// A foreign origin, so the test fails if the value checks still run. Minting
+	// with the expected origin would pass either way and prove nothing.
+	foreign := authtest.Minter{
+		SecretKeyBase64: paritySecret,
+		IssuerOrigin:    "http://other.example",
+		Now:             func() time.Time { return mintedAt },
+	}
+	token, err := foreign.Mint(authtest.Claims{Subject: "user@jdw.com", UserID: ptr(42)})
+	if err != nil {
+		t.Fatalf("Mint: %v", err)
+	}
 
-	if _, err := v.Verify(token); err != nil {
+	p, err := v.Verify(token)
+	if err != nil {
 		t.Fatalf("Verify: %v", err)
+	}
+
+	if p.Issuer != "http://other.example/auth/authenticate" {
+		t.Errorf("Issuer = %q, want the foreign issuer to have been accepted", p.Issuer)
+	}
+}
+
+// The flag and an expected value state opposite intentions. Honouring one
+// silently would leave the configuration reading as though the other applied.
+func TestNewVerifierRejectsTheAnyFlagAlongsideAnExpectedValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		issuer   string
+		audience string
+	}{
+		{"with an issuer", issuerClaim, ""},
+		{"with an audience", "", issuerOrigin},
+		{"with both", issuerClaim, issuerOrigin},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := auth.NewVerifier(auth.Config{
+				SecretKeyBase64:           paritySecret,
+				ExpectedIssuer:            tc.issuer,
+				ExpectedAudience:          tc.audience,
+				AllowAnyIssuerAndAudience: true,
+			})
+			if !errors.Is(err, auth.ErrConflictingExpectedClaims) {
+				t.Errorf("error = %v, want %v", err, auth.ErrConflictingExpectedClaims)
+			}
+		})
 	}
 }
 

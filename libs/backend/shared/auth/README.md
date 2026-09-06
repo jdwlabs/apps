@@ -98,20 +98,38 @@ be present. It returns a `*auth.Principal` carrying the subject email, roles,
 ```go
 import "libs/backend/shared/auth/authhttp"
 
-mux := http.NewServeMux()
-handler := authhttp.Middleware{
-  Verifier: verifier,
-  Public:   func(r *http.Request) bool { return strings.HasPrefix(r.URL.Path, "/auth/") },
-}.Handler(mux)
+middleware, err := authhttp.NewMiddleware(verifier)
+if err != nil {
+  return err
+}
+// The operations the contract freezes as PUBLIC, reachable without a token.
+middleware.Public = func(r *http.Request) bool {
+  return strings.HasPrefix(r.URL.Path, "/auth/")
+}
+
+handler := middleware.Handler(mux)
 ```
+
+This snippet is compiled and run as `Example` in `authhttp/example_test.go`, so
+a rename or a signature change fails the build rather than leaving a README that
+no longer works.
 
 Refusals carry the `Access-Denied-Reason` header and **no body**:
 `Authentication Required` with 401 from the middleware, `Not Authorized` with
 403 from `WriteForbidden`. See the note on the error body below.
 
-A CORS preflight is never authenticated. Browsers do not attach `Authorization`
-to one, and Spring's `CorsFilter` answers it ahead of the JWT filter, so
-refusing it here would break every cross-origin call the frontends make.
+**Mount the CORS layer outside this middleware**, the ordering Spring uses,
+where `CorsFilter` runs ahead of the JWT filter. A browser never attaches
+`Authorization` to a preflight, so a preflight that reaches authentication is
+refused, and every cross-origin call the frontends make would fail.
+
+If this middleware has to be the outer layer instead, set `Preflight` to the
+CORS handler. Preflights are then handed to it and never to the wrapped
+handler — a request shaped like a preflight must not reach a business handler
+without a principal, which matters on a `net/http` mux whose patterns carry no
+method and therefore match `OPTIONS` too. The exemption is off by default, and
+matches the three conditions Spring's `CorsUtils.isPreFlightRequest` requires:
+`OPTIONS`, an `Origin`, and `Access-Control-Request-Method`.
 
 ### Deciding a rule
 
@@ -239,12 +257,16 @@ AUTH_PARITY_PRINT_TOKEN=1 go test . -run TestPrintGoMintedToken -v
 ## 📌 Notes
 
 - Token issuance stays on the JVM. `authtest` mints only so that tests need no
-  running identity service, and `TestNoServiceImportsTheMinter` walks the
-  service modules and fails if any non-test file imports it — a service that can
-  sign its own tokens can mint itself any principal.
-- `NewVerifier` requires an expected issuer and audience. A service that
-  genuinely accepts several origins sets `AllowAnyIssuerAndAudience`, because an
-  unset field is far more often an oversight than a decision.
+  running identity service, and a workspace check
+  (`tools/workspace-checks/test-only-go-packages.spec.ts`) fails if any non-test
+  Go file in the repository imports it — anything that can sign its own tokens
+  can mint itself any principal. It lives there because the offending import
+  would sit in another project, and because `nx affected` would not select a
+  test in this library to catch it.
+- `NewVerifier` requires an expected issuer and audience, and refuses
+  `AllowAnyIssuerAndAudience` alongside either — the two state opposite
+  intentions. A service that genuinely accepts several origins sets the flag and
+  leaves both values empty.
 - The only external dependency is `github.com/golang-jwt/jwt/v5`.
 
 ---

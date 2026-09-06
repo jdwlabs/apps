@@ -57,6 +57,16 @@ type Middleware struct {
 	// filter returns early on those without logging, and treating every
 	// anonymous request as an error would bury the real failures.
 	OnError func(*http.Request, error)
+	// Preflight answers CORS preflight requests, which carry no Authorization
+	// header and so cannot be authenticated. Leaving it nil authenticates them
+	// like anything else, which is correct when the CORS layer is mounted
+	// outside this middleware — the ordering Spring uses, where CorsFilter runs
+	// ahead of the JWT filter and answers the preflight before it arrives.
+	//
+	// Set it only when this middleware is the outer layer. The preflight is
+	// handed to this handler and never to the wrapped one, so a request shaped
+	// like a preflight cannot reach a business handler without a principal.
+	Preflight http.Handler
 }
 
 // NewMiddleware returns a Middleware, refusing a nil verifier.
@@ -72,11 +82,11 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// A CORS preflight carries no Authorization header — browsers never put
 		// one on it — so authenticating it would refuse every cross-origin
-		// request the frontends make. Spring never reaches this point: its
-		// CorsFilter sits ahead of the JWT filter and answers the preflight
-		// itself, which is why the deployed service returns 200 here.
-		if isCorsPreflight(r) {
-			next.ServeHTTP(w, r)
+		// request the frontends make. It goes to the configured CORS handler
+		// rather than to next: an unauthenticated request must not reach a
+		// handler just because it is shaped like a preflight.
+		if m.Preflight != nil && isCorsPreflight(r) {
+			m.Preflight.ServeHTTP(w, r)
 			return
 		}
 
@@ -99,10 +109,14 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 	})
 }
 
-// isCorsPreflight matches the two properties that make a request a preflight:
-// the OPTIONS method and the header the browser only sends on one.
+// isCorsPreflight matches the three conditions Spring's
+// CorsUtils.isPreFlightRequest requires, so the two agree on what a preflight
+// is: the OPTIONS method, an Origin, and the request-method header a browser
+// sends only on a preflight.
 func isCorsPreflight(r *http.Request) bool {
-	return r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != ""
+	return r.Method == http.MethodOptions &&
+		r.Header.Get("Origin") != "" &&
+		r.Header.Get("Access-Control-Request-Method") != ""
 }
 
 // WithPrincipal stores a verified principal in a context. Exported so a test

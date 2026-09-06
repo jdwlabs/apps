@@ -32,19 +32,20 @@ const (
 )
 
 var (
-	ErrMissingSecretKey      = errors.New("jwt secret key is not set")
-	ErrMissingExpectedClaims = errors.New("expected issuer and audience are not configured")
-	ErrInvalidSecretKey      = errors.New("jwt secret key is unusable")
-	ErrMissingBearerToken    = errors.New("no bearer token in the authorization header")
-	ErrMalformedToken        = errors.New("token is malformed")
-	ErrUnexpectedAlgorithm   = errors.New("token is not signed with " + signingAlgorithm)
-	ErrInvalidSignature      = errors.New("token signature does not verify")
-	ErrTokenExpired          = errors.New("token has expired")
-	ErrTokenNotYetValid      = errors.New("token is not yet valid")
-	ErrMissingClaim          = errors.New("token is missing a required claim")
-	ErrInvalidClaim          = errors.New("token claim has the wrong type")
-	ErrInvalidIssuer         = errors.New("token issuer is not the expected one")
-	ErrInvalidAudience       = errors.New("token audience is not the expected one")
+	ErrMissingSecretKey          = errors.New("jwt secret key is not set")
+	ErrMissingExpectedClaims     = errors.New("expected issuer and audience are not configured")
+	ErrConflictingExpectedClaims = errors.New("expected issuer or audience is set alongside AllowAnyIssuerAndAudience")
+	ErrInvalidSecretKey          = errors.New("jwt secret key is unusable")
+	ErrMissingBearerToken        = errors.New("no bearer token in the authorization header")
+	ErrMalformedToken            = errors.New("token is malformed")
+	ErrUnexpectedAlgorithm       = errors.New("token is not signed with " + signingAlgorithm)
+	ErrInvalidSignature          = errors.New("token signature does not verify")
+	ErrTokenExpired              = errors.New("token has expired")
+	ErrTokenNotYetValid          = errors.New("token is not yet valid")
+	ErrMissingClaim              = errors.New("token is missing a required claim")
+	ErrInvalidClaim              = errors.New("token claim has the wrong type")
+	ErrInvalidIssuer             = errors.New("token issuer is not the expected one")
+	ErrInvalidAudience           = errors.New("token audience is not the expected one")
 )
 
 // Config configures a Verifier.
@@ -62,6 +63,10 @@ type Config struct {
 	// tokens from several origins needs a way to say so out loud; leaving the
 	// two fields empty is not that way, because an unset field is far more often
 	// an oversight than a decision, and the failure it causes is silent.
+	//
+	// It is refused alongside a populated ExpectedIssuer or ExpectedAudience:
+	// the two state opposite intentions, and silently honouring one of them
+	// would leave the configuration reading as though the other applied.
 	AllowAnyIssuerAndAudience bool
 	// Leeway absorbs clock skew between the minting and verifying hosts.
 	Leeway time.Duration
@@ -103,7 +108,10 @@ func NewVerifier(cfg Config) (*Verifier, error) {
 		return nil, fmt.Errorf("%w: %d bytes, which makes the JVM sign with a stronger HMAC variant than %s", ErrInvalidSecretKey, len(key), signingAlgorithm)
 	}
 
-	if !cfg.AllowAnyIssuerAndAudience && (cfg.ExpectedIssuer == "" || cfg.ExpectedAudience == "") {
+	switch {
+	case cfg.AllowAnyIssuerAndAudience && (cfg.ExpectedIssuer != "" || cfg.ExpectedAudience != ""):
+		return nil, fmt.Errorf("%w: AllowAnyIssuerAndAudience is set alongside an expected value", ErrConflictingExpectedClaims)
+	case !cfg.AllowAnyIssuerAndAudience && (cfg.ExpectedIssuer == "" || cfg.ExpectedAudience == ""):
 		return nil, fmt.Errorf("%w: set both, or AllowAnyIssuerAndAudience to accept any", ErrMissingExpectedClaims)
 	}
 
