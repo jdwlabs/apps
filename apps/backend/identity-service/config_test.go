@@ -100,8 +100,11 @@ func TestTheConfigurationReadsTheVariablesUsersroleReads(t *testing.T) {
 	if config.Address != ":8080" {
 		t.Errorf("address = %q, want :8080", config.Address)
 	}
-	if config.MaxConnections < 1 || config.MaxConnections > 10 {
-		t.Errorf("max connections = %d, want a bounded default", config.MaxConnections)
+	if config.MaxConnections != defaultMaxConnections {
+		t.Errorf("max connections = %d, want %d", config.MaxConnections, defaultMaxConnections)
+	}
+	if config.MinConnections != defaultMinConnections {
+		t.Errorf("min connections = %d, want %d", config.MinConnections, defaultMinConnections)
 	}
 	if len(config.CORS.AllowedOriginPatterns) != 2 {
 		t.Errorf("origin patterns = %v, want the two SecurityConfig registers", config.CORS.AllowedOriginPatterns)
