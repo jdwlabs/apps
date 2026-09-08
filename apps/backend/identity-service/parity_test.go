@@ -76,6 +76,10 @@ func (stubStore) UserByEmailAddress(context.Context, string) (User, error) {
 	return fixtureUser(), nil
 }
 
+// UserExists reports no collision, so the create cases measure their own rule
+// rather than the conflict. The conflict has its own tests.
+func (stubStore) UserExists(context.Context, string) (bool, error) { return false, nil }
+
 func (stubStore) CredentialByEmailAddress(_ context.Context, emailAddress string) (Credential, error) {
 	if emailAddress != selfEmail {
 		return Credential{}, ErrUserNotFound

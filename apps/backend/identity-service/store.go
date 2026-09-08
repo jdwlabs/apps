@@ -19,6 +19,7 @@ type Store interface {
 	ListUsers(ctx context.Context, limit, offset int) ([]User, error)
 	UserByID(ctx context.Context, userID int64) (User, error)
 	UserByEmailAddress(ctx context.Context, emailAddress string) (User, error)
+	UserExists(ctx context.Context, emailAddress string) (bool, error)
 	CredentialByEmailAddress(ctx context.Context, emailAddress string) (Credential, error)
 	CreateUser(ctx context.Context, emailAddress, passwordHash string, actorUserID int64) (User, error)
 	UpdateUser(ctx context.Context, userID int64, emailAddress, passwordHash string, actorUserID int64) (User, error)
@@ -95,6 +96,14 @@ func (s *PostgresStore) UserByID(ctx context.Context, userID int64) (User, error
 func (s *PostgresStore) UserByEmailAddress(ctx context.Context, emailAddress string) (User, error) {
 	return loadUser(ctx, s.pool,
 		`SELECT `+userColumns+` FROM auth.users WHERE email_address = $1`, emailAddress)
+}
+
+// UserExists answers whether an address is taken without loading the row. It is
+// the pre-check UserService makes before it encodes a password, and it is a
+// separate method from UserByEmailAddress because the caller wants the answer
+// rather than the user.
+func (s *PostgresStore) UserExists(ctx context.Context, emailAddress string) (bool, error) {
+	return rowExists(ctx, s.pool, `SELECT 1 FROM auth.users WHERE email_address = $1`, emailAddress)
 }
 
 // CredentialByEmailAddress reads the one row authentication needs. It is a
