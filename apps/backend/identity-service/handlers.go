@@ -475,7 +475,10 @@ func (h *handlers) getAllRoles(w http.ResponseWriter, r *http.Request) {
 	// Paginated and ordered, where the JVM reads the whole table unordered. The
 	// contract records the change: pagination without a total order returns
 	// overlapping pages, and the three role-list callers pass no parameters, so
-	// they receive the first hundred rows.
+	// they receive the first hundred rows. Declaring the parameters is also what
+	// brings the 400 above — the JVM's handler takes no arguments and so never
+	// looks at the query string, where this one converts it as the user listing
+	// has always converted its own.
 	roles, err := h.store.ListRoles(r.Context(), size, page*size)
 	if err != nil {
 		h.fail(w, r, err)

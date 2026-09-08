@@ -24,6 +24,9 @@ func TestThePageBoundsClampRatherThanRefuse(t *testing.T) {
 		{query: "?size=-1", page: defaultPage, size: minimumSize},
 		{query: "?page=-5", page: defaultPage, size: defaultSize},
 		{query: "?page=3&size=25", page: 3, size: 25},
+		// Spring hands an empty value to the default rather than to the
+		// converter, so it is the absent case rather than a refusal.
+		{query: "?page=&size=", page: defaultPage, size: defaultSize},
 	} {
 		t.Run(tc.query, func(t *testing.T) {
 			response := httptest.NewRecorder()
@@ -41,5 +44,32 @@ func TestThePageBoundsClampRatherThanRefuse(t *testing.T) {
 				t.Errorf("size = %d, want %d", size, tc.size)
 			}
 		})
+	}
+}
+
+func TestAPagingParameterThatIsNotANumberIsRefused(t *testing.T) {
+	// Both listings convert `page` and `size` as an int32, so a value that is
+	// not one fails before the handler runs. On /api/roles that is part of the
+	// behaviour change the contract records: the JVM handler declares no
+	// arguments and never looks at the query string, so it serves 200 for the
+	// same request. Serving the first hundred rows while ignoring the paging a
+	// caller asked for is the worse half of that pair.
+	server := parityServer(t, stubStore{})
+
+	for _, surface := range []string{"/api/users", "/api/roles"} {
+		for _, query := range []string{"?page=abc", "?size=abc", "?page=1.5", "?size=1e3"} {
+			t.Run(surface+query, func(t *testing.T) {
+				request := httptest.NewRequest(http.MethodGet, surface+query, nil)
+				request.Header.Set("Authorization", "Bearer "+mint(t, admin().claims))
+				response := httptest.NewRecorder()
+
+				server.ServeHTTP(response, request)
+
+				if response.Code != http.StatusBadRequest {
+					t.Errorf("status = %d, want %d (body %q)",
+						response.Code, http.StatusBadRequest, response.Body.String())
+				}
+			})
+		}
 	}
 }
