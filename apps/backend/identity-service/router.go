@@ -32,9 +32,12 @@ type Route struct {
 // refuses at registration any two patterns where neither matches a strict
 // subset of the other, which the sibling profile service does register.
 //
-// One router across both Go services is the point: their path resolution,
-// refusal shapes and metric labels cannot drift apart if there is only one
-// implementation of them.
+// This file, cors.go and metrics.go are the same code as profile-service's —
+// byte-identical once comments are stripped — because the two services have to
+// resolve paths, refuse requests and label metrics identically or a client and a
+// dashboard see the split. Copied rather than shared for now: extracting them
+// into libs/backend is its own change, and until it lands an edit here is an
+// edit that has to be made twice.
 type Router struct {
 	routes []compiledRoute
 }

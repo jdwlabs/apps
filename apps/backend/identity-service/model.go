@@ -107,9 +107,15 @@ func (r Role) MarshalJSON() ([]byte, error) {
 }
 
 // Credential is the row authentication reads: the stored hash together with the
-// claims a token is minted from. It exists as its own type, with no JSON tags
-// and with both redaction hooks below, so the hash has no path to a response
-// body or a log line.
+// claims a token is minted from. It is its own type, separate from User, so the
+// hash has one call site rather than riding along on the payload every read
+// returns.
+//
+// The two hooks below are what keep it out of a log line. Nothing in the type
+// keeps it out of a response body: the fields are exported, and an untagged
+// exported field marshals under its Go name, so writeJSON on a Credential would
+// send PasswordHash. What holds that line is that no handler marshals this type,
+// asserted by driving every operation and reading the responses.
 type Credential struct {
 	UserID       int64
 	EmailAddress string
@@ -259,10 +265,11 @@ type RoleIDList struct{ IDs []int64 }
 func (l *RoleIDList) UnmarshalJSON(data []byte) error { return json.Unmarshal(data, &l.IDs) }
 
 // Validate reproduces the @NotEmpty the controllers declare on these bodies.
-// The contract gives both list schemas minItems: 1 and lists 400 in the
-// response set, so an empty array is refused here rather than reaching the
-// service, where the JVM reads the first element of the list it built and
-// answers 500 for an empty one.
+// The contract gives both list schemas minItems: 1 and lists 400 in the response
+// set, and 400 is what the JVM answers: a constraint annotation sitting directly
+// on a controller parameter triggers built-in method validation, which raises
+// HandlerMethodValidationException before the handler body runs. The empty list
+// never reaches the service.
 func (l RoleIDList) Validate() map[string]string {
 	if len(l.IDs) == 0 {
 		return map[string]string{"roleIds": "must not be empty"}
