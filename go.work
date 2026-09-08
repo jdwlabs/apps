@@ -1,4 +1,9 @@
-go 1.26
+go 1.26.0
+
+// The workflows resolve their Go from this file, and a three-part go directive
+// reads as an exact version there — without this line they would all drop to
+// go1.26.0, the release the directive names, from the newest 1.26 patch.
+toolchain go1.26.8
 
 use (
 	./apps/backend/ai-sre-relay
