@@ -4,7 +4,7 @@ Canonical context for AI agents (Claude Code, OpenAI Codex, Gemini CLI, GitHub C
 
 ## What This Repo Is
 
-jdwlabs `apps` is an Nx 23 monorepo containing the full application stack for the jdwlabs platform. Angular 22 micro-frontends, Go services, a Spring Boot/Kotlin service, PostgreSQL migration runners, and shared libraries. Package manager is **pnpm 11**. CI runs on GitHub-hosted runners (`ubuntu-latest`).
+jdwlabs `apps` is an Nx 23 monorepo containing the full application stack for the jdwlabs platform. Angular 22 micro-frontends, Go services, a Spring Boot service (Java sources, Kotlin DSL build), PostgreSQL migration runners, and shared libraries. Package manager is **pnpm 11**. CI runs on GitHub-hosted runners (`ubuntu-latest`).
 
 - **Auth UI** (`apps/frontend/authui`) — login, registration, session management
 - **Roles UI** (`apps/frontend/rolesui`) — role assignment and management
@@ -13,7 +13,10 @@ jdwlabs `apps` is an Nx 23 monorepo containing the full application stack for th
 - **Platform E2E** (`apps/e2e/platform-e2e`) — Playwright end-to-end test suite
 - **Service Discovery** (`apps/backend/servicediscovery`) — Go backend service registry
 - **AI-SRE Relay** (`apps/backend/ai-sre-relay`) — Go alert-relay service for the AI-SRE stack
-- **Users/Role service** (`apps/backend/usersrole`) — Spring Boot/Kotlin user-role assignment API
+- **Repo Health Exporter** (`apps/backend/github-repo-health-exporter`) — Go Prometheus exporter for repository and CI health
+- **Identity service** (`apps/backend/identity-service`) — Go auth, users and roles API; the `/auth`, `/api/users` and `/api/roles` half of the `usersrole` split
+- **Profile service** (`apps/backend/profile-service`) — Go profiles API; the `/api/profiles` half of the same split
+- **Users/Role service** (`apps/backend/usersrole`) — Spring Boot user-role assignment API, being replaced by the two Go services above; still the source of the frozen contracts in `apps/backend/usersrole/docs/contracts`
 - **Auth DB** (`apps/database/authdb`) — database migration management
 
 ## Directory Map
@@ -21,7 +24,8 @@ jdwlabs `apps` is an Nx 23 monorepo containing the full application stack for th
 ```
 apps/
   frontend/     # Angular micro-frontend apps (authui, container, rolesui, usersui)
-  backend/      # Go (servicediscovery, ai-sre-relay) + Spring Boot (usersrole) services
+  backend/      # Go (servicediscovery, ai-sre-relay, github-repo-health-exporter,
+                #     identity-service, profile-service) + Spring Boot (usersrole) services
   database/     # DB migration runners (authdb — PostgreSQL)
   e2e/          # Playwright E2E tests (platform-e2e)
 libs/

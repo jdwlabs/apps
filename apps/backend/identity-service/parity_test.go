@@ -593,8 +593,9 @@ func TestGrantingTheElevatedRoleNeedsTheCallerToHoldIt(t *testing.T) {
 }
 
 func TestAnEmptyGrantListIsRefusedRatherThanServed(t *testing.T) {
-	// The contract gives both list bodies minItems: 1. The JVM reads the first
-	// element of the list it built from them and answers 500 for an empty one.
+	// The contract gives both list bodies minItems: 1, and 400 is what the JVM
+	// answers: the @NotEmpty sits directly on the controller parameter, so
+	// built-in method validation refuses the call before the handler body runs.
 	server := parityServer(t, stubStore{})
 
 	for _, tc := range []struct {
