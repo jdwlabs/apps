@@ -40,7 +40,7 @@ docs/           # architecture, conventions, workflows, onboarding
 
 - **Module Federation:** frontends are micro-frontends composed at runtime via Webpack Module Federation — each Angular app is independently deployable but the `container` app assembles them
 - **NX affected:** CI only builds/tests code touched by a PR — understand the dependency graph before assuming a change is isolated (`npx nx graph` to visualize)
-- **go.work:** a Go workspace at the repo root covers `apps/backend/servicediscovery`, `apps/backend/ai-sre-relay`, and `libs/backend/shared/util` — always run `go` commands from the repo root
+- **go.work:** a Go workspace at the repo root lists every Go module — `go.work` is the source of truth for that list, and CI resolves its Go version from the same file. Always run `go` commands from the repo root
 
 ## Worktree Location (Windows — CRITICAL)
 
@@ -83,11 +83,13 @@ docker compose -f scripts/docker/compose.yaml up -d   # start local stack
 
 Go build/test from the repo root must name module roots. The workspace root is not
 itself a module, so `./...` matches nothing there and fails with `directory prefix .
-does not contain modules listed in go.work`. Keep this list in sync with `go.work`:
+does not contain modules listed in go.work`:
 
 ```bash
-go build ./apps/backend/servicediscovery/... ./apps/backend/ai-sre-relay/... ./libs/backend/shared/util/...
-go test ./apps/backend/servicediscovery/... ./apps/backend/ai-sre-relay/... ./libs/backend/shared/util/...
+# Expands the `use` list in go.work, so it cannot go stale when a module is added.
+modules=$(sed -n '/^use (/,/^)/p' go.work | grep -oE '\./\S+' | sed 's|$|/...|')
+go build $modules
+go test $modules
 ```
 
 ## Nx Project Tags
