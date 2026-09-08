@@ -190,6 +190,29 @@ func TestCreatingAUserWithAnEmailAddressAlreadyTaken(t *testing.T) {
 	}
 }
 
+func TestReadingWhetherAnEmailAddressIsTaken(t *testing.T) {
+	// The pre-check the registration makes before it encodes a password.
+	store, _ := newTestStore(t)
+	createUserFor(t, store, "occupied@jdw.com")
+	ctx := context.Background()
+
+	taken, err := store.UserExists(ctx, "occupied@jdw.com")
+	if err != nil {
+		t.Fatalf("UserExists: %v", err)
+	}
+	if !taken {
+		t.Error("an address a user holds was reported free")
+	}
+
+	free, err := store.UserExists(ctx, "unoccupied@jdw.com")
+	if err != nil {
+		t.Fatalf("UserExists: %v", err)
+	}
+	if free {
+		t.Error("an address nobody holds was reported taken")
+	}
+}
+
 func TestReadingAUserThatIsNotThere(t *testing.T) {
 	store, _ := newTestStore(t)
 	ctx := context.Background()

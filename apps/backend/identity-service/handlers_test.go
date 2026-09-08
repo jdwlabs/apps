@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestThePageBoundsClampRatherThanRefuse(t *testing.T) {
@@ -71,5 +74,53 @@ func TestAPagingParameterThatIsNotANumberIsRefused(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+// occupiedStore reports every address as taken, so the registration refuses
+// before it reaches the write.
+type occupiedStore struct{ stubStore }
+
+func (occupiedStore) UserExists(context.Context, string) (bool, error) { return true, nil }
+
+func TestARegistrationForATakenAddressRefusesBeforeItEncodes(t *testing.T) {
+	// /auth/user takes no token, so an anonymous caller sets how often this path
+	// runs. Encoding first makes every attempt at an address already registered
+	// cost a full bcrypt round before anything refuses it, which is a flood
+	// amplifier a public endpoint should not carry. UserService checks first and
+	// only then encodes.
+	//
+	// Asserted by cost rather than by call order, because the cost is the point:
+	// the floor is far below one bcrypt round at the cost this service encodes
+	// at and far above what a refusal without one takes, and the shortest of
+	// several runs keeps a shared runner's noise out of it.
+	const bcryptRoundFloor = 5 * time.Millisecond
+	server := parityServer(t, occupiedStore{})
+
+	shortest := time.Hour
+	for range 3 {
+		request := httptest.NewRequest(http.MethodPost, "/auth/user",
+			strings.NewReader(`{"emailAddress":"taken@jdw.com","password":"`+fixturePassword+`"}`))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+
+		start := time.Now()
+		server.ServeHTTP(response, request)
+		if elapsed := time.Since(start); elapsed < shortest {
+			shortest = elapsed
+		}
+
+		if response.Code != http.StatusConflict {
+			t.Fatalf("status = %d, want %d (body %q)",
+				response.Code, http.StatusConflict, response.Body.String())
+		}
+		if got := response.Body.String(); got != "User already exists with email address taken@jdw.com" {
+			t.Errorf("body = %q, want the message the JVM composes", got)
+		}
+	}
+
+	if shortest >= bcryptRoundFloor {
+		t.Errorf("a taken address was refused in %s, which is a bcrypt round; "+
+			"the encode is running before the check", shortest)
 	}
 }

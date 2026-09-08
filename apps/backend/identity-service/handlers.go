@@ -210,6 +210,24 @@ func (h *handlers) createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) create(w http.ResponseWriter, r *http.Request, request UserRequest, actorUserID int64) {
+	// The existence check comes first, as UserService.createUser makes it before
+	// it encodes. Reversed, every attempt at an address already registered costs
+	// a full bcrypt round before anything refuses it — and /auth/user takes no
+	// token, so an anonymous caller sets that cost.
+	//
+	// It narrows the window rather than closing it. The write below re-checks
+	// inside its transaction and the unique constraint holds the rule whatever
+	// either check saw.
+	taken, err := h.store.UserExists(r.Context(), *request.EmailAddress)
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
+	if taken {
+		writeConflict(w, "User already exists with email address "+*request.EmailAddress)
+		return
+	}
+
 	hash, err := hashPassword(*request.Password)
 	if err != nil {
 		h.fail(w, r, err)
