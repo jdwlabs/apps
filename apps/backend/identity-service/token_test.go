@@ -94,6 +94,16 @@ func TestATokenMintedHereHasTheClaimLayoutTheJvmWrites(t *testing.T) {
 			decodeSegment(t, mineParts[0]), decodeSegment(t, theirParts[0]))
 	}
 	mineClaims, theirClaims := decodeSegment(t, mineParts[1]), decodeSegment(t, theirParts[1])
+	// Two empty maps agree with each other. The set is named rather than
+	// counted so a claim that silently stopped being written fails here.
+	for _, claim := range []string{"sub", "roles", "iat", "nbf", "exp", "aud", "iss", "jti", "user_id", "profile_id"} {
+		if _, present := theirClaims[claim]; !present {
+			t.Fatalf("the JVM layout carries no %s claim, so comparing against it asserts nothing", claim)
+		}
+		if _, present := mineClaims[claim]; !present {
+			t.Errorf("%s is in the JVM layout and not minted here", claim)
+		}
+	}
 	for claim, want := range theirClaims {
 		if got := mineClaims[claim]; !reflect.DeepEqual(got, want) {
 			t.Errorf("%s = %v, want %v", claim, got, want)

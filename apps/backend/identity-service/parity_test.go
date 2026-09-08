@@ -217,6 +217,12 @@ func allowedBy(rule authz.Rule) []principal {
 	case authz.RulePublic:
 		// Named for the assertion it drives: a public operation is reached with
 		// no Authorization header at all, which is what the empty claims give.
+		// This is the half the @PreAuthorize annotations cannot state — PUBLIC
+		// and AUTHENTICATED both carry no predicate, and only the filter chain's
+		// permitAll matchers separate them, so flipping that matcher list would
+		// turn sign-in and registration private with nothing else noticing. The
+		// allow suite catches it because it asserts the operation's own success
+		// status here, not merely that the answer is not a 401.
 		return []principal{{name: "an anonymous caller"}}
 	case authz.RuleAuthenticated:
 		return []principal{admin(), manager(), self(), stranger()}
@@ -439,29 +445,6 @@ func TestEveryAuthenticatedOperationRefusesARequestWithNoToken(t *testing.T) {
 				t.Errorf("status = %d, want %d", response.Code, http.StatusUnauthorized)
 			}
 			assertUnauthorizedShape(t, response)
-		})
-	}
-}
-
-func TestEveryPublicOperationIsReachedWithNoToken(t *testing.T) {
-	// The half the @PreAuthorize annotations cannot state: PUBLIC and
-	// AUTHENTICATED both carry no predicate, and only the filter chain's
-	// permitAll matchers separate them. Flipping that matcher list would turn
-	// sign-in and registration private with every other check still green.
-	server := parityServer(t, stubStore{})
-
-	for _, tc := range parityCases() {
-		if tc.rule != authz.RulePublic {
-			continue
-		}
-		t.Run(tc.operation, func(t *testing.T) {
-			response := httptest.NewRecorder()
-
-			server.ServeHTTP(response, tc.request(t, ""))
-
-			if response.Code == http.StatusUnauthorized {
-				t.Errorf("status = %d; a public operation must be reachable without a token", response.Code)
-			}
 		})
 	}
 }
