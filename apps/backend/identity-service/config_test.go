@@ -1,0 +1,264 @@
+package main
+
+import (
+	"strings"
+	"testing"
+	"time"
+)
+
+func TestTheDatasourceUrlIsReadInTheFormSpringReadsIt(t *testing.T) {
+	// The chart hands this service the same three variables it hands usersrole,
+	// so the value arrives as a JDBC URL with the credentials alongside it
+	// rather than embedded.
+	cases := []struct {
+		name     string
+		url      string
+		username string
+		password string
+		want     string
+	}{
+		{
+			name: "a deployed JDBC url", url: "jdbc:postgresql://authdb:5432/jdw",
+			username: "jdw", password: "secret",
+			want: "postgresql://jdw:secret@authdb:5432/jdw",
+		},
+		{
+			name: "query parameters survive", url: "jdbc:postgresql://authdb:5432/jdw?sslmode=require",
+			username: "jdw", password: "secret",
+			want: "postgresql://jdw:secret@authdb:5432/jdw?sslmode=require",
+		},
+		{
+			name: "a password needing escaping", url: "jdbc:postgresql://authdb:5432/jdw",
+			username: "jdw", password: "p@ss/word",
+			want: "postgresql://jdw:p%40ss%2Fword@authdb:5432/jdw",
+		},
+		{
+			name: "a url already in libpq form is left alone", url: "postgresql://authdb:5432/jdw",
+			username: "jdw", password: "secret",
+			want: "postgresql://jdw:secret@authdb:5432/jdw",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := datasourceDSN(tc.url, tc.username, tc.password)
+
+			if err != nil {
+				t.Fatalf("datasourceDSN: %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("dsn = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestADatasourceUrlForAnotherDatabaseIsRefused(t *testing.T) {
+	// Failing at startup beats connecting to nothing and reporting healthy.
+	if _, err := datasourceDSN("jdbc:mysql://authdb:3306/jdw", "jdw", "secret"); err == nil {
+		t.Error("datasourceDSN accepted a URL for another database")
+	}
+}
+
+func minimalEnvironment(t *testing.T) {
+	t.Helper()
+	t.Setenv("UR_JWT_SECRET_KEY", paritySecret)
+	t.Setenv("UR_PG_DATASOURCE_URL", "jdbc:postgresql://authdb:5432/jdw")
+	t.Setenv("UR_PG_USERNAME", "jdw")
+	t.Setenv("UR_PG_PASSWORD", "secret")
+	t.Setenv("ID_JWT_ISSUER_ORIGIN", "https://auth.example.com")
+}
+
+func TestTheConfigurationReadsTheVariablesUsersroleReads(t *testing.T) {
+	// Sharing the names is what lets the chart work downstream reuse the secret
+	// and the datasource block it already has rather than inventing a second set.
+	minimalEnvironment(t)
+
+	config, err := configFromEnvironment()
+
+	if err != nil {
+		t.Fatalf("configFromEnvironment: %v", err)
+	}
+	if config.SecretKeyBase64 != paritySecret {
+		t.Error("the JWT secret was not read from UR_JWT_SECRET_KEY")
+	}
+	if config.DatabaseDSN != "postgresql://jdw:secret@authdb:5432/jdw" {
+		t.Errorf("dsn = %q, want the one built from the UR_PG_* variables", config.DatabaseDSN)
+	}
+	if config.IssuerOrigin != "https://auth.example.com" {
+		t.Errorf("issuer origin = %q, want the configured one", config.IssuerOrigin)
+	}
+	if config.ExpectedIssuer != "https://auth.example.com/auth/authenticate" {
+		t.Errorf("issuer = %q, want the origin with the authenticate path", config.ExpectedIssuer)
+	}
+	if config.ExpectedAudience != "https://auth.example.com" {
+		t.Errorf("audience = %q, want the origin", config.ExpectedAudience)
+	}
+	if config.TokenTTL != 2*time.Hour {
+		t.Errorf("token ttl = %s, want the JVM default of two hours", config.TokenTTL)
+	}
+	if config.Address != ":8080" {
+		t.Errorf("address = %q, want :8080", config.Address)
+	}
+	if config.MaxConnections < 1 || config.MaxConnections > 10 {
+		t.Errorf("max connections = %d, want a bounded default", config.MaxConnections)
+	}
+	if len(config.CORS.AllowedOriginPatterns) != 2 {
+		t.Errorf("origin patterns = %v, want the two SecurityConfig registers", config.CORS.AllowedOriginPatterns)
+	}
+	if strings.Join(config.CORS.AllowedMethods, ",") != "GET,POST,PUT,DELETE,HEAD,PATCH,OPTIONS" {
+		t.Errorf("methods = %v, want the seven SecurityConfig registers", config.CORS.AllowedMethods)
+	}
+	if strings.Join(config.CORS.AllowedHeaders, ",") != "Authorization,Content-Type" {
+		t.Errorf("headers = %v, want the two SecurityConfig registers", config.CORS.AllowedHeaders)
+	}
+}
+
+func TestTheTokenLifetimeComesFromTheVariableSpringReadsIt(t *testing.T) {
+	// The same value feeds both sides through the cutover, so a deployment that
+	// shortened the lifetime does not silently get it back.
+	minimalEnvironment(t)
+	t.Setenv("UR_JWT_EXPIRATION_TIME_MS", "600000")
+
+	config, err := configFromEnvironment()
+
+	if err != nil {
+		t.Fatalf("configFromEnvironment: %v", err)
+	}
+	if config.TokenTTL != 10*time.Minute {
+		t.Errorf("token ttl = %s, want ten minutes", config.TokenTTL)
+	}
+}
+
+func TestTheConfigurationRefusesToStartWithNoSecret(t *testing.T) {
+	minimalEnvironment(t)
+	t.Setenv("UR_JWT_SECRET_KEY", "")
+
+	if _, err := configFromEnvironment(); err == nil {
+		t.Error("configFromEnvironment accepted an empty secret")
+	}
+}
+
+func TestTheConfigurationRefusesToStartWithNoIssuerOrigin(t *testing.T) {
+	// This service is the one that mints, so the origin is required whatever
+	// the verification settings say: there would be nothing to stamp.
+	minimalEnvironment(t)
+	t.Setenv("ID_JWT_ISSUER_ORIGIN", "")
+
+	if _, err := configFromEnvironment(); err == nil {
+		t.Error("configFromEnvironment accepted a service with no origin to mint from")
+	}
+
+	t.Setenv("ID_JWT_ALLOW_ANY_ISSUER_AND_AUDIENCE", "true")
+	if _, err := configFromEnvironment(); err == nil {
+		t.Error("accepting any issuer on the way in does not supply one on the way out")
+	}
+}
+
+func TestAcceptingAnyIssuerRelaxesVerificationAndNotMinting(t *testing.T) {
+	minimalEnvironment(t)
+	t.Setenv("ID_JWT_ALLOW_ANY_ISSUER_AND_AUDIENCE", "true")
+
+	config, err := configFromEnvironment()
+
+	if err != nil {
+		t.Fatalf("configFromEnvironment: %v", err)
+	}
+	if !config.AllowAnyIssuerAndAudience {
+		t.Error("the flag was set and the configuration did not carry it")
+	}
+	if config.ExpectedIssuer != "" || config.ExpectedAudience != "" {
+		t.Error("an expected issuer was kept alongside the flag; the verifier refuses that pairing")
+	}
+	if config.IssuerOrigin != "https://auth.example.com" {
+		t.Errorf("issuer origin = %q; the flag must not take away what tokens are stamped with",
+			config.IssuerOrigin)
+	}
+}
+
+func TestATrailingSlashOnTheOriginDoesNotDoubleUpInTheIssuer(t *testing.T) {
+	minimalEnvironment(t)
+	t.Setenv("ID_JWT_ISSUER_ORIGIN", "https://auth.example.com/")
+
+	config, err := configFromEnvironment()
+
+	if err != nil {
+		t.Fatalf("configFromEnvironment: %v", err)
+	}
+	if config.ExpectedIssuer != "https://auth.example.com/auth/authenticate" {
+		t.Errorf("issuer = %q, want no doubled separator", config.ExpectedIssuer)
+	}
+}
+
+func TestTheCorsListsCanBeOverriddenForADeploymentThatNarrowsThem(t *testing.T) {
+	minimalEnvironment(t)
+	t.Setenv("ID_CORS_ALLOWED_ORIGIN_PATTERNS", "https://app.example.com:[443]")
+	t.Setenv("ID_CORS_ALLOWED_METHODS", "GET,POST")
+	t.Setenv("ID_CORS_ALLOWED_HEADERS", "Authorization")
+
+	config, err := configFromEnvironment()
+
+	if err != nil {
+		t.Fatalf("configFromEnvironment: %v", err)
+	}
+	if strings.Join(config.CORS.AllowedOriginPatterns, ",") != "https://app.example.com:[443]" {
+		t.Errorf("origin patterns = %v, want the overridden one", config.CORS.AllowedOriginPatterns)
+	}
+	if strings.Join(config.CORS.AllowedMethods, ",") != "GET,POST" {
+		t.Errorf("methods = %v, want the overridden pair", config.CORS.AllowedMethods)
+	}
+	if strings.Join(config.CORS.AllowedHeaders, ",") != "Authorization" {
+		t.Errorf("headers = %v, want the overridden one", config.CORS.AllowedHeaders)
+	}
+}
+
+func TestAPoolSizeWiderThanTheFieldItIsStoredInFallsBack(t *testing.T) {
+	// Reading these as int and converting to int32 truncates on a 64-bit host,
+	// so 2^32+7 arrives as a pool of 7 and 2^31 as a negative one — both
+	// plausible enough to reach pgx instead of falling back to the default.
+	cases := []struct {
+		name string
+		max  string
+		min  string
+	}{
+		{name: "a value one word too wide", max: "4294967303", min: "4294967300"},
+		{name: "a value that truncates to a negative pool", max: "2147483648", min: "2147483648"},
+		{name: "a value far above any word", max: "184467440737095516150", min: "184467440737095516150"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			minimalEnvironment(t)
+			t.Setenv("ID_DB_MAX_CONNECTIONS", tc.max)
+			t.Setenv("ID_DB_MIN_CONNECTIONS", tc.min)
+
+			config, err := configFromEnvironment()
+
+			if err != nil {
+				t.Fatalf("configFromEnvironment: %v", err)
+			}
+			if config.MaxConnections != defaultMaxConnections {
+				t.Errorf("max connections = %d, want the default %d", config.MaxConnections, defaultMaxConnections)
+			}
+			if config.MinConnections != defaultMinConnections {
+				t.Errorf("min connections = %d, want the default %d", config.MinConnections, defaultMinConnections)
+			}
+		})
+	}
+}
+
+func TestAPoolSizeInsideTheFieldIsStillHonoured(t *testing.T) {
+	minimalEnvironment(t)
+	t.Setenv("ID_DB_MAX_CONNECTIONS", "20")
+	t.Setenv("ID_DB_MIN_CONNECTIONS", "4")
+
+	config, err := configFromEnvironment()
+
+	if err != nil {
+		t.Fatalf("configFromEnvironment: %v", err)
+	}
+	if config.MaxConnections != 20 || config.MinConnections != 4 {
+		t.Errorf("pool = %d/%d, want the 20/4 that was asked for",
+			config.MaxConnections, config.MinConnections)
+	}
+}
