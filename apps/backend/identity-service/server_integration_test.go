@@ -514,6 +514,29 @@ func TestTheListingsClampOutOfRangePagingRatherThanRejectingIt(t *testing.T) {
 	}
 }
 
+func TestAPageIndexWiderThanSpringsIntIsRefusedRatherThanOverflowed(t *testing.T) {
+	// The clamp only raises a floor, so a page index that survives it still gets
+	// multiplied by the page size. Read at 64 bits that product wraps negative,
+	// Postgres refuses the OFFSET and the caller reads a 500 for what the
+	// contract calls a 400. Both listings, because /api/roles is reachable by any
+	// authenticated principal.
+	service := newLiveService(t)
+	token := service.adminToken(t)
+
+	for _, surface := range []string{"/api/users", "/api/roles"} {
+		for _, query := range []string{"?page=9223372036854775807", "?page=2147483648", "?size=9223372036854775807"} {
+			t.Run(surface+query, func(t *testing.T) {
+				response := service.getJSON(t, surface+query, token)
+
+				if response.Code != http.StatusBadRequest {
+					t.Errorf("status = %d, want %d (body %q)",
+						response.Code, http.StatusBadRequest, response.Body.String())
+				}
+			})
+		}
+	}
+}
+
 func TestAPageParameterThatIsNotANumberIsRefused(t *testing.T) {
 	service := newLiveService(t)
 

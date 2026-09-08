@@ -279,3 +279,21 @@ func TestTheIssuerTheServiceMintsIsTheIssuerItVerifies(t *testing.T) {
 		t.Errorf("the service cannot verify its own token: %v", err)
 	}
 }
+
+func TestTheDecoyIsAsExpensiveToCompareAgainstAsAStoredHash(t *testing.T) {
+	// What closes the timing oracle: an address with no row has to cost what an
+	// address with one costs, or the two identical responses still say which is
+	// which. The assertion is on the cost recorded in the hash rather than on a
+	// measured duration, which would be a coin flip on a shared runner.
+	cost, err := bcrypt.Cost([]byte(decoyHash))
+
+	if err != nil {
+		t.Fatalf("the decoy is not a readable hash: %v", err)
+	}
+	if cost != bcrypt.DefaultCost {
+		t.Errorf("decoy cost = %d, want the %d a stored hash carries", cost, bcrypt.DefaultCost)
+	}
+	if passwordMatches(decoyHash, fixturePassword) {
+		t.Error("a password a caller could present matched the decoy")
+	}
+}

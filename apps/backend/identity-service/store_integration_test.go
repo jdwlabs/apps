@@ -360,6 +360,31 @@ func TestDeletingAUserTakesItsGrantsAndItsWholeProfileTreeWithIt(t *testing.T) {
 	assertRowCount(t, pool, "SELECT count(*) FROM auth.users_roles WHERE user_id = $1", user.ID, 0)
 }
 
+func TestDeletingAUserWithMoreThanOneProfileRowStillSucceeds(t *testing.T) {
+	// One profile per user is an application rule the sibling service enforces
+	// with a read before the insert, and auth.profiles.user_id carries a plain
+	// index rather than a unique one — so a lost race leaves two rows. Clearing
+	// only the first would break the profile delete's foreign key and leave the
+	// user undeletable behind a 500 from then on.
+	store, pool := newTestStore(t)
+	ctx := context.Background()
+	user := createUserFor(t, store, "two-profiles@jdw.com")
+	for range 2 {
+		profileID := seedProfile(t, pool, user.ID)
+		seedProfileSubresources(t, pool, profileID, user.ID)
+	}
+	assertRowCount(t, pool, "SELECT count(*) FROM auth.profiles WHERE user_id = $1", user.ID, 2)
+
+	if err := store.DeleteUser(ctx, user.ID); err != nil {
+		t.Fatalf("DeleteUser: %v", err)
+	}
+
+	assertRowCount(t, pool, "SELECT count(*) FROM auth.profiles WHERE user_id = $1", user.ID, 0)
+	if _, err := store.UserByID(ctx, user.ID); !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("the user survived the delete: %v", err)
+	}
+}
+
 func TestDeletingAUserThatIsNotThereIsNotAnError(t *testing.T) {
 	// The handler issues the deletes without checking for the row first, which
 	// is why the operation has no 404 in its response set at all.

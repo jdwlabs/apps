@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -107,8 +108,8 @@ func (r Role) MarshalJSON() ([]byte, error) {
 
 // Credential is the row authentication reads: the stored hash together with the
 // claims a token is minted from. It exists as its own type, with no JSON tags
-// and a redacting String, so the hash has no path to a response body or a log
-// line.
+// and with both redaction hooks below, so the hash has no path to a response
+// body or a log line.
 type Credential struct {
 	UserID       int64
 	EmailAddress string
@@ -119,6 +120,18 @@ type Credential struct {
 
 func (c Credential) String() string {
 	return fmt.Sprintf("Credential[userId=%d, emailAddress=%s, passwordHash=***]", c.UserID, c.EmailAddress)
+}
+
+// LogValue is what actually holds the redaction. The service installs a JSON
+// slog handler, and that handler marshals an Any value with encoding/json — it
+// never consults Stringer, so String alone would let slog.Any("credential", c)
+// write the hash out in full. Every handler resolves a LogValuer.
+func (c Credential) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Int64("userId", c.UserID),
+		slog.String("emailAddress", c.EmailAddress),
+		slog.String("passwordHash", "***"),
+	)
 }
 
 // UserRequest is the registration, creation and update body. Both fields are
@@ -135,11 +148,24 @@ type UserRequest struct {
 // once already, and a struct printed with %v or logged as a value would put it
 // back.
 func (r UserRequest) String() string {
-	email := ""
-	if r.EmailAddress != nil {
-		email = *r.EmailAddress
+	return "UserRequest[emailAddress=" + r.emailAddress() + ", password=***]"
+}
+
+// LogValue redacts for the JSON handler, which reaches for encoding/json rather
+// than Stringer and would otherwise write the cleartext password out under the
+// field name this type's own json tag supplies.
+func (r UserRequest) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("emailAddress", r.emailAddress()),
+		slog.String("password", "***"),
+	)
+}
+
+func (r UserRequest) emailAddress() string {
+	if r.EmailAddress == nil {
+		return ""
 	}
-	return "UserRequest[emailAddress=" + email + ", password=***]"
+	return *r.EmailAddress
 }
 
 // emailPattern is the @Email regexp the DTO declares, which is looser than

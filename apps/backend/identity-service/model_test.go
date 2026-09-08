@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"log/slog"
 	"reflect"
 	"strings"
 	"testing"
@@ -44,6 +46,33 @@ func TestTheTypesThatHoldACredentialRedactItWhenFormatted(t *testing.T) {
 		if !strings.Contains(formatted, "***") {
 			t.Errorf("a formatted value did not mark the redaction: %s", formatted)
 		}
+	}
+}
+
+func TestTheJsonLogHandlerThisServiceInstallsAlsoRedactsThem(t *testing.T) {
+	// String is not enough on its own. slog's JSON handler marshals an Any value
+	// with encoding/json and never consults Stringer, so a debug line written as
+	// slog.Any("request", request) would print the cleartext under the field name
+	// the struct tag supplies. Driven through the same handler main installs,
+	// because that is the one whose behaviour matters.
+	var written bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&written, nil))
+
+	logger.Info("a line somebody adds later",
+		"credential", Credential{UserID: 1, EmailAddress: "self@jdw.com", PasswordHash: "$2a$10$notarealhash"},
+		"request", UserRequest{EmailAddress: ptr("self@jdw.com"), Password: ptr("Password1!")})
+
+	line := written.String()
+	for _, secret := range []string{"notarealhash", "Password1!"} {
+		if strings.Contains(line, secret) {
+			t.Errorf("the log line disclosed %q: %s", secret, line)
+		}
+	}
+	if !strings.Contains(line, "***") {
+		t.Errorf("the log line did not mark the redaction: %s", line)
+	}
+	if !strings.Contains(line, "self@jdw.com") {
+		t.Errorf("the log line dropped the field worth logging: %s", line)
 	}
 }
 

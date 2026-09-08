@@ -20,6 +20,10 @@ const (
 	defaultSize = 100
 	minimumSize = 1
 	maximumSize = 500
+	// maxRequestBytes bounds a JSON body. It is generous next to the largest
+	// body any operation takes and small next to what an anonymous caller could
+	// otherwise make this process allocate.
+	maxRequestBytes = 1 << 20
 )
 
 // registrationRequesterID is the requester the public registration audits its
@@ -142,9 +146,12 @@ func (h *handlers) authenticate(w http.ResponseWriter, r *http.Request) {
 	credential, err := h.store.CredentialByEmailAddress(r.Context(), *request.EmailAddress)
 	switch {
 	case errors.Is(err, ErrUserNotFound):
-		// Answered exactly as a wrong password is. The contract permits either
-		// shape here; sending one for both is what stops an anonymous caller
-		// enumerating which addresses are registered.
+		// Answered exactly as a wrong password is, and after the same work: the
+		// contract permits either shape here, and sending one for both is what
+		// stops an anonymous caller enumerating which addresses are registered.
+		// The response shape alone would not — returning in microseconds where a
+		// known address costs a bcrypt round says the same thing out loud.
+		spendAComparison(*request.Password)
 		h.refuseCredentials(w, r, *request.EmailAddress)
 		return
 	case err != nil:
@@ -314,9 +321,9 @@ func (h *handlers) deleteUser(w http.ResponseWriter, r *http.Request) {
 	if !h.authorize(w, r, authz.RuleAdminOrSelfByUserID, authz.Subject{UserID: &userID}) {
 		return
 	}
-	if _, ok := actingUser(w, r); !ok {
-		return
-	}
+	// No acting user is resolved here, unlike every other write: the delete
+	// records nothing, so UserService.deleteUser takes the requester's address
+	// only to log it. Looking one up would add a 404 the contract does not list.
 
 	// A no-op for an id that does not exist, and still 204: the repository
 	// deletes without reading first, which is why this operation has no 404 in
@@ -571,9 +578,7 @@ func (h *handlers) deleteRole(w http.ResponseWriter, r *http.Request) {
 	if !h.authorize(w, r, authz.RuleAdmin, authz.Subject{}) {
 		return
 	}
-	if _, ok := actingUser(w, r); !ok {
-		return
-	}
+	// As with the user delete: nothing is audited, so nothing is resolved.
 
 	if err := h.store.DeleteRole(r.Context(), roleID); err != nil {
 		h.fail(w, r, err)
@@ -655,17 +660,23 @@ func pathID(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {
 
 // queryInt reads a numeric query parameter the way Spring converts one, and
 // refuses text that is not a number before the handler runs.
+//
+// The width is the one Spring's int has, not the host's. Parsing at 64 bits
+// would accept a page index that survives the clamp — the clamp only raises a
+// floor — and then overflow when multiplied by the page size, leaving Postgres
+// to refuse a negative OFFSET and the caller to read a 500 for what the contract
+// says is a 400.
 func queryInt(w http.ResponseWriter, r *http.Request, name string, fallback int) (int, bool) {
 	raw := r.URL.Query().Get(name)
 	if raw == "" {
 		return fallback, true
 	}
-	value, err := strconv.Atoi(raw)
+	value, err := strconv.ParseInt(raw, 10, 32)
 	if err != nil {
 		writeUnconvertablePathVariable(w)
 		return 0, false
 	}
-	return value, true
+	return int(value), true
 }
 
 // decode reads and validates a JSON body, answering as the two handlers that
@@ -674,7 +685,12 @@ func queryInt(w http.ResponseWriter, r *http.Request, name string, fallback int)
 // the operation's rule would refuse.
 func decode[T interface{ Validate() map[string]string }](w http.ResponseWriter, r *http.Request) (T, bool) {
 	var request T
-	decoder := json.NewDecoder(r.Body)
+	// Bounded because two of these operations are reachable without a token, and
+	// nothing else on the path caps a request body. Every body this service
+	// accepts is a handful of fields or a list of ids, so the cap is far above
+	// anything a client sends and an oversized one is refused as unreadable —
+	// the same status a malformed one gets.
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxRequestBytes))
 	if err := decoder.Decode(&request); err != nil {
 		writeUnreadableBody(w)
 		return request, false
