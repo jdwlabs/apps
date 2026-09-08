@@ -167,3 +167,58 @@ func TestTheCorsListsCanBeOverriddenForADeploymentThatNarrowsThem(t *testing.T) 
 		t.Errorf("headers = %v, want the overridden one", config.CORS.AllowedHeaders)
 	}
 }
+
+func TestAPoolSizeWiderThanTheFieldItIsStoredInFallsBack(t *testing.T) {
+	// Reading these as int and converting to int32 truncates on a 64-bit host,
+	// so 2^32+7 arrives as a pool of 7 and 2^31 as a negative one — both
+	// plausible enough to reach pgx instead of falling back to the default.
+	cases := []struct {
+		name string
+		max  string
+		min  string
+	}{
+		{name: "a value one word too wide", max: "4294967303", min: "4294967300"},
+		{name: "a value that truncates to a negative pool", max: "2147483648", min: "2147483648"},
+		{name: "a value far above any word", max: "184467440737095516150", min: "184467440737095516150"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("UR_JWT_SECRET_KEY", paritySecret)
+			t.Setenv("UR_PG_DATASOURCE_URL", "jdbc:postgresql://authdb:5432/jdw")
+			t.Setenv("PS_JWT_ISSUER_ORIGIN", "https://auth.example.com")
+			t.Setenv("PS_DB_MAX_CONNECTIONS", tc.max)
+			t.Setenv("PS_DB_MIN_CONNECTIONS", tc.min)
+
+			config, err := configFromEnvironment()
+
+			if err != nil {
+				t.Fatalf("configFromEnvironment: %v", err)
+			}
+			if config.MaxConnections != defaultMaxConnections {
+				t.Errorf("max connections = %d, want the default %d", config.MaxConnections, defaultMaxConnections)
+			}
+			if config.MinConnections != defaultMinConnections {
+				t.Errorf("min connections = %d, want the default %d", config.MinConnections, defaultMinConnections)
+			}
+		})
+	}
+}
+
+func TestAPoolSizeInsideTheFieldIsStillHonoured(t *testing.T) {
+	t.Setenv("UR_JWT_SECRET_KEY", paritySecret)
+	t.Setenv("UR_PG_DATASOURCE_URL", "jdbc:postgresql://authdb:5432/jdw")
+	t.Setenv("PS_JWT_ISSUER_ORIGIN", "https://auth.example.com")
+	t.Setenv("PS_DB_MAX_CONNECTIONS", "20")
+	t.Setenv("PS_DB_MIN_CONNECTIONS", "4")
+
+	config, err := configFromEnvironment()
+
+	if err != nil {
+		t.Fatalf("configFromEnvironment: %v", err)
+	}
+	if config.MaxConnections != 20 || config.MinConnections != 4 {
+		t.Errorf("pool = %d/%d, want the 20/4 that was asked for",
+			config.MaxConnections, config.MinConnections)
+	}
+}
