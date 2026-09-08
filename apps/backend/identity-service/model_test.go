@@ -134,10 +134,32 @@ func TestATimestampRendersInTheShapeJacksonWrites(t *testing.T) {
 }
 
 func TestTheEmailConstraintIsTheOneTheDtoDeclares(t *testing.T) {
-	// Transcribed rather than idealised: a Go service that validated more
-	// strictly would refuse addresses this system already has users under.
-	accepted := []string{"a@b.co", "first.last@example.com", "a-b@sub.domain.example", "_x@y.info"}
-	refused := []string{"nobody", "a@b", "a@b.c", "a b@c.com", "@b.com", "a@.com"}
+	// @Email is one constraint with two halves: EmailValidator runs Hibernate's
+	// shared address checks and applies the DTO's regexp only to an address that
+	// already passed them. Transcribing the regexp alone was looser than the JVM,
+	// which is the direction that matters — it would let this service create rows
+	// the system it replaces refuses.
+	//
+	// Every expectation below is measured against hibernate-validator 9.1.3, the
+	// version Boot 4.1.1 resolves, driving the DTO's own annotation.
+	accepted := []string{
+		"a@b.co", "first.last@example.com", "a-b@sub.domain.example", "_x@y.info",
+		// A hyphen bounds a domain label and not a local-part atom, and an
+		// underscore is a domain character.
+		"a-@b.co", "-a@b.co", "a@_b.co", "a@ex--ample.com",
+		"A@B.CO",
+		strings.Repeat("a", 64) + "@example.com",
+		"a@" + strings.Repeat("b", 63) + ".com",
+	}
+	refused := []string{
+		"nobody", "a@b", "a@b.c", "a b@c.com", "@b.com", "a@.com",
+		// The four the regexp alone accepted.
+		"a..b@example.com", strings.Repeat("a", 65) + "@example.com",
+		"a@-example.com", "a@b..c.com",
+		".a@example.com", "a.@example.com", "a@example-.com",
+		"a@" + strings.Repeat("b", 64) + ".com",
+		"a@" + strings.Repeat(strings.Repeat("x", 63)+".", 4) + "com",
+	}
 
 	for _, address := range accepted {
 		if got := (UserRequest{EmailAddress: &address, Password: ptr("Password1!")}).Validate(); got["emailAddress"] != "" {

@@ -174,11 +174,75 @@ func (r UserRequest) emailAddress() string {
 	return *r.EmailAddress
 }
 
-// emailPattern is the @Email regexp the DTO declares, which is looser than
-// RFC 5322. Transcribed rather than idealised: a Go service that validated more
-// strictly would reject addresses the JVM accepts, and existing users could not
-// sign in.
+// emailPattern is the regexp the DTO's @Email declares. It is half the
+// constraint, not the whole of it: Hibernate Validator's EmailValidator runs the
+// shared address checks below first and applies this pattern only to an address
+// that already passed them. Matching the pattern alone accepted a..b@x.co, a
+// 65-character local part, x@-b.co and x@b..c.co — all of which the JVM answers
+// 400 for, on all four operations that take a UserRequest.
 var emailPattern = regexp.MustCompile(`^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$`)
+
+// The bounds AbstractEmailValidator and DomainNameUtil apply. The domain label
+// bound is java.net.IDN's rather than either pattern's: DomainNameUtil converts
+// the domain before matching it, and IDN refuses a label outside 1 to 63
+// characters.
+const (
+	maximumLocalPartLength   = 64
+	maximumDomainLength      = 255
+	maximumDomainLabelLength = 63
+)
+
+// emailIsValid decides @Email the way the JVM decides it: the shared address
+// checks, then the declared pattern.
+//
+// The shared checks are transcribed only as far as the pattern leaves room for.
+// An address that matches it is ASCII, carries exactly one @ and holds nothing
+// outside [A-Za-z0-9_.-], so the quoted local part, the bracketed IP-literal
+// domain and the non-ASCII ranges Hibernate's own patterns also admit are all
+// unreachable here and are not written out. What survives is the length bounds
+// and the shape of the dot-separated parts.
+func emailIsValid(address string) bool {
+	if !emailPattern.MatchString(address) {
+		return false
+	}
+	at := strings.LastIndex(address, "@")
+	return localPartIsValid(address[:at]) && domainIsValid(address[at+1:])
+}
+
+// localPartIsValid applies LOCAL_PART_PATTERN, which is one or more
+// dot-separated atoms. Every character the pattern above admits is an atom
+// character, so the only way to fail it is to leave an atom empty: a leading
+// dot, a trailing dot or a doubled one. A hyphen at either end is fine, which is
+// where this differs from the domain rule below.
+func localPartIsValid(localPart string) bool {
+	if len(localPart) > maximumLocalPartLength {
+		return false
+	}
+	for atom := range strings.SplitSeq(localPart, ".") {
+		if atom == "" {
+			return false
+		}
+	}
+	return true
+}
+
+// domainIsValid applies DOMAIN_LABEL: a label is a run of domain characters that
+// may hold hyphens inside it but may not begin or end with one, and no label may
+// be empty.
+func domainIsValid(domain string) bool {
+	if len(domain) > maximumDomainLength {
+		return false
+	}
+	for label := range strings.SplitSeq(domain, ".") {
+		if label == "" || len(label) > maximumDomainLabelLength {
+			return false
+		}
+		if strings.HasPrefix(label, "-") || strings.HasSuffix(label, "-") {
+			return false
+		}
+	}
+	return true
+}
 
 // passwordSymbols is the character class the @Pattern constraint allows outside
 // letters and digits, and the set at least one character must come from.
@@ -200,7 +264,7 @@ func (r UserRequest) Validate() map[string]string {
 		// @Email constraint would fire on a whitespace-only value as well. One
 		// entry rather than a race between three.
 		errors["emailAddress"] = "emailAddress is mandatory"
-	case !emailPattern.MatchString(*r.EmailAddress):
+	case !emailIsValid(*r.EmailAddress):
 		errors["emailAddress"] = "emailAddress is not valid"
 	}
 	switch {

@@ -429,6 +429,31 @@ the one shape is load-bearing — answering an unknown address differently is ho
 an anonymous caller enumerates which addresses are registered. Recorded as
 `x-transcription-correction` on the operation.
 
+### A clause that described half a constraint: the email pattern
+
+`UserRequestDTO.emailAddress` is specified as the pattern below **and** the
+address checks Hibernate Validator runs ahead of it. An earlier revision
+described the `@Email` regexp as the whole constraint.
+
+`@Email` is decided by `EmailValidator`, which calls
+`AbstractEmailValidator.isValid` first and applies the declared `regexp` only to
+an address that already passed it. The first half bounds the local part at 64
+characters and requires dot-separated non-empty atoms, and hands the domain to
+`DomainNameUtil.isValidEmailDomainAddress` — at most 255 characters, converted
+with `java.net.IDN` so each label is 1 to 63 characters, each label a run of
+domain characters that may hold hyphens inside it but not at either end.
+
+Measured against hibernate-validator 9.1.3, the version Boot 4.1.1 resolves,
+driving the DTO's own annotation: `a..b@example.com`, a 65-character local part,
+`a@-example.com`, `a@example-.com`, `a@b..c.com` and a 64-character domain label
+are refused; `a-@b.co`, `-a@b.co`, `a@_b.co` and `a@ex--ample.com` are accepted.
+
+This is not one of the six changes in the table above — it is what the
+application has always done. It is recorded because OpenAPI has no way to state
+the rest of the constraint, and a service built from the `pattern` alone accepts
+addresses the JVM answers 400 for, on all four operations that take this body.
+Recorded as `x-transcription-correction` on the schema.
+
 ### A correction that has since become a transcription
 
 `DELETE /api/profiles/{profileId}/address/{addressId}` is specified scoped to the
