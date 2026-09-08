@@ -35,7 +35,7 @@
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED). springdoc reports the declared return type, not the status the body carries."
     },
     "GET /api/users": {
-      "errorStatuses": ["401", "403"]
+      "errorStatuses": ["400", "401", "403"]
     },
     "POST /api/users": {
       "errorStatuses": ["400", "401", "409"],
@@ -73,7 +73,7 @@
       "errorStatuses": ["400", "401", "403", "404"]
     },
     "GET /api/roles": {
-      "errorStatuses": ["401"],
+      "errorStatuses": ["400", "401"],
       "parametersAdded": ["page", "size"],
       "reason": "Intended behaviour change, not a transcription. The endpoint is unpaginated today and its fan-out is 1 + N over the whole roles table. Paginated here on the same page/size contract as the user and profile listings, over a stable role_id ordering. Recorded as x-behaviour-change on the operation."
     },

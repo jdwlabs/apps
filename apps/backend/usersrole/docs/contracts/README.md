@@ -211,6 +211,18 @@ parameters, so they receive the first 100 roles rather than all of them. The
 deployed catalogue holds 3 rows, so nothing changes today; a workspace past 100
 roles would notice, and recording it here is the point.
 
+**Declaring the parameters brings a 400 with them.** `getAllRoles()` takes no
+arguments today, so Spring never looks at the query string and `?page=abc` is
+served 200. Once `page` and `size` are declared as `int32` they are converted,
+and an unconvertible value fails argument resolution — the same 400
+`GET /api/users` has always answered, its controller having declared them all
+along. Refusing is the right half of the pair: the alternative is a listing that
+silently ignores the paging a caller asked for. Nothing in the frontends sends a
+non-numeric `page`, so no client sees it.
+
+`GET /api/users` answers that 400 in both implementations and this document did
+not list it either. It is listed now, as a transcription rather than a change.
+
 Recorded as `x-behaviour-change` on `GET /api/roles`.
 
 ### 5. Role enumeration stays open to any authenticated principal

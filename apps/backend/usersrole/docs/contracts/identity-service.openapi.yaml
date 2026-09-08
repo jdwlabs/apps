@@ -217,6 +217,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/UnconvertableParameter'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -521,13 +523,27 @@ paths:
           `ORDER BY role_id LIMIT :size OFFSET :page * :size`. The ordering is
           part of the change: pagination without a total order returns
           overlapping pages.
+        alsoRefuses: |
+          Declaring the parameters is what brings the 400 above with them.
+          `RolesController.getAllRoles()` takes no arguments, so Spring never
+          looks at the query string and `?page=abc` is served 200 today. Once
+          `page` and `size` are declared as `int32` they are converted, and an
+          unconvertible value fails argument resolution exactly as it already
+          does on `GET /api/users`, whose controller has declared them all
+          along. Refusing is the right half of the pair: the alternative is a
+          listing that silently ignores the paging a caller asked for.
         clientImpact: |
           The three role-list callers in the frontends
           (`libs/frontend/rolesui/feature/core/**`) request no query parameters,
           so they receive the first 100 roles instead of all of them. The
           deployed catalogue holds 3 rows, so no client sees a difference today;
           a workspace that grows past 100 roles would, and that is the point of
-          recording it here rather than discovering it later.
+          recording it here rather than discovering it later. Nothing sends a
+          non-numeric `page`, so the refusal is invisible to them.
+        relatedOmission: |
+          `GET /api/users` answers the same 400 in both implementations and this
+          document did not list it either. Added there in the same change; that
+          one is a transcription rather than a behaviour change.
       x-authorization-decision:
         decision: Frozen as `authenticated`. Not tightened in this contract.
         reasoning: |
@@ -558,6 +574,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/UnconvertableParameter'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
@@ -849,6 +867,15 @@ components:
         type: string
 
   responses:
+    UnconvertableParameter:
+      description: |
+        `page` or `size` was not convertible to an `int32`. Spring's argument
+        resolution fails before the handler runs and nothing in
+        `GlobalExceptionHandler` catches the resulting exception, so the status
+        comes from the container rather than from a composed response. Distinct
+        from `BadRequest`, which is what the two body handlers produce; no
+        client reads either body, and `http-error-message.util.ts` keys on the
+        status alone.
     BadRequest:
       description: |
         Two body shapes share this status. Bean-validation failures produce a
