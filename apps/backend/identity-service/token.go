@@ -126,6 +126,33 @@ func passwordMatches(hash, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), bcryptKey(password)) == nil
 }
 
+// decoyHash is compared against when there is no stored hash to compare
+// against. Answering an unknown address in the microseconds a lookup takes,
+// where a known one costs a full bcrypt round, tells an anonymous caller which
+// addresses are registered however identical the two responses look.
+// DaoAuthenticationProvider does the same thing under the name
+// mitigateAgainstTimingAttack.
+//
+// Encoded once at startup rather than held as a literal, so the cost tracks
+// whatever cost this build encodes at.
+var decoyHash = mustDecoyHash()
+
+func mustDecoyHash() string {
+	// The value is never a password anyone can present: it is discarded here and
+	// the comparison's result is thrown away by the only caller.
+	hash, err := bcrypt.GenerateFromPassword([]byte("no such account"), bcrypt.DefaultCost)
+	if err != nil {
+		panic("bcrypt could not encode the decoy: " + err.Error())
+	}
+	return string(hash)
+}
+
+// spendAComparison does the work a real comparison would have done, so that an
+// address with no row costs what an address with one costs.
+func spendAComparison(password string) {
+	_ = passwordMatches(decoyHash, password)
+}
+
 func bcryptKey(password string) []byte {
 	key := []byte(password)
 	if len(key) > bcryptKeyBytes {

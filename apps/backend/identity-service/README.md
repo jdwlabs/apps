@@ -64,6 +64,16 @@ already in `auth.users` verify unchanged. A password longer than 72 bytes is
 truncated rather than refused, because Spring's BCrypt truncates silently and
 refusing would lock out an account the JVM created.
 
+A sign-in for an address with no row compares against a decoy hash and throws
+the result away, so it costs what a real check costs. Without it the two
+identical refusals would still be told apart by their durations, which is
+`DaoAuthenticationProvider.mitigateAgainstTimingAttack` reproduced.
+
+Neither the stored hash nor a cleartext password can reach a log line: both
+types that hold one implement `LogValue`, which is what the JSON handler this
+service installs actually consults — it marshals with `encoding/json` and never
+looks for a `Stringer`.
+
 ## Configuration
 
 The datasource, signing key and token lifetime are read from the variables
@@ -164,9 +174,10 @@ Deliberate departures, each with its reason:
   contract; keeping the aggregate would make every user read a synchronous call
   into `profile-service`.
 - **A wrong password and an unknown email address answer identically** — an
-  empty 401 with the `Access-Denied-Reason` header. The contract's 401 permits
-  either shape on this operation, and answering them differently lets an
-  anonymous caller enumerate which addresses are registered.
+  empty 401 with the `Access-Denied-Reason` header, after the same amount of
+  work. The contract's 401 permits either shape on this operation, and answering
+  them differently — in shape or in timing — lets an anonymous caller enumerate
+  which addresses are registered.
 - **An empty grant or revoke list is 400**, matching the contract's `minItems: 1`
   and its 400 response, rather than the 500 the JVM reaches by reading the first
   element of an empty list.

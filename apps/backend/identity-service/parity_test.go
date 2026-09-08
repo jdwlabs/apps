@@ -671,3 +671,36 @@ func TestNoResponseBodyCarriesAPassword(t *testing.T) {
 }
 
 func ptr[T any](value T) *T { return &value }
+
+func TestASignInForAnUnknownAddressStillSpendsAComparison(t *testing.T) {
+	// The refusal shapes are identical; without the decoy comparison the two
+	// durations would not be, and an anonymous caller could enumerate registered
+	// addresses by timing alone. The floor is far below one bcrypt round at the
+	// cost this service encodes at and far above the microseconds a bare lookup
+	// takes, so a shared runner's noise cannot move it either way.
+	const bcryptRoundFloor = 5 * time.Millisecond
+	server := parityServer(t, stubStore{})
+
+	shortest := time.Hour
+	for range 3 {
+		request := httptest.NewRequest(http.MethodPost, "/auth/authenticate",
+			bytes.NewReader([]byte(`{"emailAddress":"nobody@jdw.com","password":"`+fixturePassword+`"}`)))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+
+		start := time.Now()
+		server.ServeHTTP(response, request)
+		if elapsed := time.Since(start); elapsed < shortest {
+			shortest = elapsed
+		}
+
+		if response.Code != http.StatusUnauthorized {
+			t.Fatalf("status = %d, want %d", response.Code, http.StatusUnauthorized)
+		}
+	}
+
+	if shortest < bcryptRoundFloor {
+		t.Errorf("an unknown address was refused in %s, faster than a password check costs; "+
+			"the two answers are distinguishable by timing", shortest)
+	}
+}

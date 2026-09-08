@@ -209,21 +209,27 @@ func (s *PostgresStore) UpdateUser(
 // deleted before its children fails the constraint.
 func (s *PostgresStore) DeleteUser(ctx context.Context, userID int64) error {
 	_, err := inTransaction(ctx, s.pool, func(tx pgx.Tx) (User, error) {
-		var profileID int64
-		err := tx.QueryRow(ctx, `SELECT profile_id FROM auth.profiles WHERE user_id = $1`, userID).Scan(&profileID)
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
-			// Nothing hangs off a user with no profile; the two profile-owned
-			// child deletes have nothing to clear.
-		case err != nil:
-			return User{}, fmt.Errorf("find profile of user %d: %w", userID, err)
-		default:
+		// Every profile row, not the first: one profile per user is an
+		// application rule that profile-service enforces with a read before the
+		// insert, and auth.profiles.user_id carries a plain index rather than a
+		// unique one. Clearing only the first would leave the second's children
+		// behind, the profile delete below would then break its foreign key, and
+		// the user would be undeletable behind a 500 from then on.
+		rows, err := tx.Query(ctx, `SELECT profile_id FROM auth.profiles WHERE user_id = $1`, userID)
+		if err != nil {
+			return User{}, fmt.Errorf("find profiles of user %d: %w", userID, err)
+		}
+		profileIDs, err := scanIDs(rows)
+		if err != nil {
+			return User{}, err
+		}
+		if len(profileIDs) > 0 {
 			for _, statement := range []string{
-				`DELETE FROM auth.addresses WHERE profile_id = $1`,
-				`DELETE FROM auth.profile_icons WHERE profile_id = $1`,
+				`DELETE FROM auth.addresses WHERE profile_id = ANY($1)`,
+				`DELETE FROM auth.profile_icons WHERE profile_id = ANY($1)`,
 			} {
-				if _, err := tx.Exec(ctx, statement, profileID); err != nil {
-					return User{}, fmt.Errorf("delete subresources of profile %d: %w", profileID, err)
+				if _, err := tx.Exec(ctx, statement, profileIDs); err != nil {
+					return User{}, fmt.Errorf("delete subresources of user %d: %w", userID, err)
 				}
 			}
 		}
@@ -254,13 +260,13 @@ func (s *PostgresStore) GrantRolesToUser(
 	ctx context.Context, userID int64, roleIDs []int64, actorUserID int64,
 ) (User, error) {
 	return inTransaction(ctx, s.pool, func(tx pgx.Tx) (User, error) {
-		if err := requireUser(ctx, tx, userID); err != nil {
+		if err := requireUsers(ctx, tx, []int64{userID}); err != nil {
 			return User{}, err
 		}
 		if err := requireRoles(ctx, tx, roleIDs); err != nil {
 			return User{}, err
 		}
-		if err := grant(ctx, tx, userID, roleIDs, actorUserID); err != nil {
+		if err := grantRoles(ctx, tx, userID, roleIDs, actorUserID); err != nil {
 			return User{}, err
 		}
 		return loadUser(ctx, tx, `SELECT `+userColumns+` FROM auth.users WHERE user_id = $1`, userID)
@@ -271,7 +277,7 @@ func (s *PostgresStore) RevokeRolesFromUser(
 	ctx context.Context, userID int64, roleIDs []int64, _ int64,
 ) (User, error) {
 	return inTransaction(ctx, s.pool, func(tx pgx.Tx) (User, error) {
-		if err := requireUser(ctx, tx, userID); err != nil {
+		if err := requireUsers(ctx, tx, []int64{userID}); err != nil {
 			return User{}, err
 		}
 		if err := requireRoles(ctx, tx, roleIDs); err != nil {
@@ -385,15 +391,11 @@ func (s *PostgresStore) GrantUsersToRole(
 		if err := requireRoles(ctx, tx, []int64{roleID}); err != nil {
 			return Role{}, err
 		}
-		for _, userID := range userIDs {
-			if err := requireUser(ctx, tx, userID); err != nil {
-				return Role{}, err
-			}
+		if err := requireUsers(ctx, tx, userIDs); err != nil {
+			return Role{}, err
 		}
-		for _, userID := range userIDs {
-			if err := grant(ctx, tx, userID, []int64{roleID}, actorUserID); err != nil {
-				return Role{}, err
-			}
+		if err := grantUsers(ctx, tx, roleID, userIDs, actorUserID); err != nil {
+			return Role{}, err
 		}
 		return loadRole(ctx, tx, `SELECT `+roleColumns+` FROM auth.roles WHERE role_id = $1`, roleID)
 	})
@@ -406,10 +408,8 @@ func (s *PostgresStore) RevokeUsersFromRole(
 		if err := requireRoles(ctx, tx, []int64{roleID}); err != nil {
 			return Role{}, err
 		}
-		for _, userID := range userIDs {
-			if err := requireUser(ctx, tx, userID); err != nil {
-				return Role{}, err
-			}
+		if err := requireUsers(ctx, tx, userIDs); err != nil {
+			return Role{}, err
 		}
 		if _, err := tx.Exec(ctx,
 			`DELETE FROM auth.users_roles WHERE role_id = $1 AND user_id = ANY($2)`, roleID, userIDs); err != nil {
@@ -419,18 +419,30 @@ func (s *PostgresStore) RevokeUsersFromRole(
 	})
 }
 
-// grant inserts the pairs that are not there already. ON CONFLICT DO NOTHING
-// does in one statement what the JVM does with a read before each insert, and
-// closes the race between the two.
-func grant(ctx context.Context, q querier, userID int64, roleIDs []int64, actorUserID int64) error {
-	now := time.Now().UTC()
-	for _, roleID := range roleIDs {
-		if _, err := q.Exec(ctx, `
-			INSERT INTO auth.users_roles (user_id, role_id, created_by_user_id, created_time)
-			VALUES ($1, $2, $3, $4)
-			ON CONFLICT (user_id, role_id) DO NOTHING`, userID, roleID, actorUserID, now); err != nil {
-			return fmt.Errorf("grant role %d to user %d: %w", roleID, userID, err)
-		}
+// grantRoles inserts every pair the request names that is not there already, in
+// one statement. ON CONFLICT DO NOTHING does what the JVM does with a read
+// before each insert, and closes the race between the two.
+func grantRoles(ctx context.Context, q querier, userID int64, roleIDs []int64, actorUserID int64) error {
+	_, err := q.Exec(ctx, `
+		INSERT INTO auth.users_roles (user_id, role_id, created_by_user_id, created_time)
+		SELECT $1, role_id, $3, $4 FROM unnest($2::bigint[]) AS role_id
+		ON CONFLICT (user_id, role_id) DO NOTHING`,
+		userID, roleIDs, actorUserID, time.Now().UTC())
+	if err != nil {
+		return fmt.Errorf("grant roles to user %d: %w", userID, err)
+	}
+	return nil
+}
+
+// grantUsers is the same insert from the role side.
+func grantUsers(ctx context.Context, q querier, roleID int64, userIDs []int64, actorUserID int64) error {
+	_, err := q.Exec(ctx, `
+		INSERT INTO auth.users_roles (user_id, role_id, created_by_user_id, created_time)
+		SELECT user_id, $1, $3, $4 FROM unnest($2::bigint[]) AS user_id
+		ON CONFLICT (user_id, role_id) DO NOTHING`,
+		roleID, userIDs, actorUserID, time.Now().UTC())
+	if err != nil {
+		return fmt.Errorf("grant role %d to users: %w", roleID, err)
 	}
 	return nil
 }
@@ -463,30 +475,71 @@ func inTransaction[T any](ctx context.Context, pool *pgxpool.Pool, body func(pgx
 	return result, nil
 }
 
-func requireUser(ctx context.Context, q querier, userID int64) error {
-	exists, err := rowExists(ctx, q, `SELECT 1 FROM auth.users WHERE user_id = $1`, userID)
+// requireUsers and requireRoles check every id a request named in one query and
+// report the first that is absent, because the message the caller reads carries
+// that id. One query rather than one per id: a grant body carries no declared
+// upper bound, so a per-id check would let a caller choose how many round trips
+// a single request costs.
+func requireUsers(ctx context.Context, q querier, userIDs []int64) error {
+	return requireAll(ctx, q, `SELECT user_id FROM auth.users WHERE user_id = ANY($1)`, userIDs, ErrUserNotFound)
+}
+
+func requireRoles(ctx context.Context, q querier, roleIDs []int64) error {
+	return requireAll(ctx, q, `SELECT role_id FROM auth.roles WHERE role_id = ANY($1)`, roleIDs, ErrRoleNotFound)
+}
+
+func requireAll(ctx context.Context, q querier, query string, ids []int64, sentinel error) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	rows, err := q.Query(ctx, query, ids)
+	if err != nil {
+		return fmt.Errorf("existence check: %w", err)
+	}
+	present, err := scanIDSet(rows)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		return &notFound{sentinel: ErrUserNotFound, id: userID}
+	// Reported in the order the request named them, so the id in the message is
+	// the one a caller reading their own payload would expect.
+	for _, id := range ids {
+		if !present[id] {
+			return &notFound{sentinel: sentinel, id: id}
+		}
 	}
 	return nil
 }
 
-// requireRoles checks every id the request named, and reports the first missing
-// one, because the message the caller sees carries that id.
-func requireRoles(ctx context.Context, q querier, roleIDs []int64) error {
-	for _, roleID := range roleIDs {
-		exists, err := rowExists(ctx, q, `SELECT 1 FROM auth.roles WHERE role_id = $1`, roleID)
-		if err != nil {
-			return err
+func scanIDs(rows pgx.Rows) ([]int64, error) {
+	defer rows.Close()
+	ids := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan id: %w", err)
 		}
-		if !exists {
-			return &notFound{sentinel: ErrRoleNotFound, id: roleID}
-		}
+		ids = append(ids, id)
 	}
-	return nil
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read ids: %w", err)
+	}
+	return ids, nil
+}
+
+func scanIDSet(rows pgx.Rows) (map[int64]bool, error) {
+	defer rows.Close()
+	present := map[int64]bool{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan id: %w", err)
+		}
+		present[id] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("existence check: %w", err)
+	}
+	return present, nil
 }
 
 func rowExists(ctx context.Context, q querier, query string, arguments ...any) (bool, error) {
