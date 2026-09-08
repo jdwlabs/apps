@@ -123,14 +123,20 @@ nx test identity-service        # go test -race
 go test ./... -short            # skips the suites that need Docker
 ```
 
-The suites are three:
+The suites are four:
 
 - **Authorization parity** (`parity_test.go`) — every operation against every
   principal its rule admits and refuses, driven from the contract's own
   `x-authorization` values, including the two refusal shapes: an empty 401 and a
-  403 carrying Boot's error body. The two public operations are driven the other
-  way — they must _not_ answer 401 — because `PUBLIC` and `AUTHENTICATED` both
-  carry no predicate and only the filter chain's matcher list separates them.
+  403 carrying Boot's error body. The two public operations are driven with no
+  token at all and asserted on their own success status, which is what separates
+  `PUBLIC` from `AUTHENTICATED`: both carry no predicate, and only the filter
+  chain's matcher list tells them apart.
+- **Credential disclosure** (`logging_test.go`) — the default logger redirected
+  into a buffer while the whole surface is driven over every outcome it has,
+  asserting no line carries a cleartext password or a bcrypt prefix. The type
+  redactions do not cover a handler that dereferences the password pointer into
+  a log call, and this does.
 - **Contract drift** (`contract_test.go`) — the served route set against the
   document, in both directions, plus the rule each operation is served under.
 - **Storage and end-to-end** (`*_integration_test.go`) — the deployed
@@ -164,28 +170,48 @@ on them would change at cutover:
 - Granting or revoking role id 1 requires the caller to already hold it, checked
   against `auth.users_roles` rather than against the token's roles claim,
   because the guard is written in terms of an id and the claim carries names.
+- `@Email` is two checks rather than one regexp: Hibernate Validator's own
+  address checks run before the pattern the DTO declares, so a 65-character
+  local part, `a..b@x.co` and `a@-b.co` are all 400. Reproducing the pattern
+  alone would let this service create rows the JVM refuses.
 
 Deliberate departures, each with its reason:
 
 - **`GET /api/roles` is paginated**, where the JVM reads the whole table
   unordered. Specified in the contract as a behaviour change; the deployed
-  catalogue holds three rows, so no client sees a difference today.
+  catalogue holds three rows, so no client sees a difference today. Declaring
+  the parameters brings a 400 for a non-numeric `page` or `size` with them,
+  where the JVM handler declares no arguments and never looks at the query
+  string.
 - **`User` carries `profileId`, not the embedded profile.** Specified in the
   contract; keeping the aggregate would make every user read a synchronous call
   into `profile-service`.
-- **A wrong password and an unknown email address answer identically** — an
-  empty 401 with the `Access-Denied-Reason` header, after the same amount of
-  work. The contract's 401 permits either shape on this operation, and answering
-  them differently — in shape or in timing — lets an anonymous caller enumerate
-  which addresses are registered.
-- **An empty grant or revoke list is 400**, matching the contract's `minItems: 1`
-  and its 400 response, rather than the 500 the JVM reaches by reading the first
-  element of an empty list.
 - **The issuer origin is configured, not derived from the request.** The JVM
   builds it from the incoming `Host` and gets away with it because it never
   checks `iss` on the way back in. Here the claim is verified, so a
   caller-controlled header deciding it would let one request mint a token the
   next one refuses.
+- **The public registration checks the address before it encodes.** The JVM does
+  too; the order is called out because reversing it makes every attempt at an
+  address already registered cost a bcrypt round on an endpoint that takes no
+  token.
+
+Two behaviours here were once recorded as departures and are not: both were the
+contract being wrong about the JVM rather than this service diverging from it,
+and both corrections are in `docs/contracts/README.md`.
+
+- **A wrong password and an unknown email address answer identically** — an
+  empty 401 with the `Access-Denied-Reason` header, after the same amount of
+  work. The JVM has no second shape to offer: `SecurityConfig` builds its
+  `DaoAuthenticationProvider` without `setHideUserNotFoundExceptions(false)`, so
+  the default converts the unknown-user exception into a bad-credentials one
+  inside the provider and the entry point answers both. Answering them
+  differently, in shape or in timing, lets an anonymous caller enumerate which
+  addresses are registered.
+- **An empty grant or revoke list is 400**, matching the contract's
+  `minItems: 1`. So is the JVM's: the `@NotEmpty` sits directly on the
+  controller parameter, so built-in method validation refuses the call before
+  the handler body runs.
 
 ## 📚 Related Packages
 
