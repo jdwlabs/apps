@@ -25,6 +25,13 @@ info:
     with what each is visible to a client, is the table in
     `docs/contracts/README.md`. Anything not so marked is meant to be today's
     behaviour, and a mismatch there is a bug in this document.
+
+    A clause that was such a bug and has been corrected carries
+    `x-transcription-correction`, holding what it said before, what it says now
+    and the evidence for the change. That marker records no difference from the
+    application — it records a difference from an earlier revision of this
+    document, so a reader who remembers the old wording does not read the fix as
+    a regression.
   license:
     name: PolyForm-Noncommercial-1.0.0
     url: https://polyformproject.org/licenses/noncommercial/1.0.0/
@@ -108,6 +115,40 @@ paths:
         rule: PUBLIC
         preAuthorize: null
         note: Reachable without a token via the filter chain rule `.requestMatchers("/auth/**", "/actuator/**", "/openapi/**").permitAll()`.
+      x-transcription-correction:
+        corrected: |
+          Both 401 paths answer in one shape — empty body, no `Content-Type`,
+          `Access-Denied-Reason: Authentication Required` — rather than a wrong
+          password taking the entry point and an unknown address taking a
+          `text/plain` handler.
+        saidBefore: |
+          That the two paths share a status and nothing else: that an unknown
+          address raises `UsernameNotFoundException`, which
+          `GlobalExceptionHandler.handle(UsernameNotFoundException)` answers
+          directly as `text/plain` with the exception message.
+        why: |
+          `SecurityConfig.authenticationManager` builds
+          `new DaoAuthenticationProvider(jwtUserDetailService)` and never calls
+          `setHideUserNotFoundExceptions(false)`.
+          `AbstractUserDetailsAuthenticationProvider` initialises that flag to
+          `true`, and its `authenticate` catches `UsernameNotFoundException` and
+          rethrows it as `BadCredentialsException` while the flag is set. The
+          exception the advice is written for therefore never leaves the
+          provider, `AuthService.authenticate` only ever propagates
+          `BadCredentialsException`, and `ExceptionTranslationFilter` commences
+          the entry point for both. The advice method is dead code.
+        evidence: |
+          Read out of `spring-security-core-7.1.1.jar`, the version Spring Boot
+          4.1.1 resolves: the constructor stores `iconst_1` into
+          `hideUserNotFoundExceptions`, and `authenticate` has a handler for
+          `UsernameNotFoundException` that tests the same field and constructs a
+          `BadCredentialsException`.
+        status: |
+          Not a behaviour change. The Go service already answered both paths
+          through the shared unauthorized writer, and it was right to; this is
+          the document catching up with the application. Recorded rather than
+          quietly edited because a reader comparing an older revision would
+          otherwise read the change as a regression.
       requestBody:
         required: true
         content:
@@ -124,26 +165,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
-          description: |
-            Wrong password, or no user with that email address. A wrong password
-            raises `BadCredentialsException` inside the handler, which the
-            security filter chain translates through the authentication entry
-            point: no body, no `Content-Type`, only the `Access-Denied-Reason`
-            header — see `Unauthorized` below. An unknown email raises
-            `UsernameNotFoundException`, which `GlobalExceptionHandler` answers
-            directly as `text/plain` with the exception message, bypassing the
-            entry point entirely. The two paths share a status and nothing else.
-          headers:
-            Access-Denied-Reason:
-              description: '`Authentication Required`. Present only on the entry-point path.'
-              required: false
-              schema:
-                type: string
-          content:
-            text/plain:
-              schema:
-                type: string
-                description: Present only on the `UsernameNotFoundException` path.
+          $ref: '#/components/responses/Unauthorized'
 
   /auth/user:
     post:
