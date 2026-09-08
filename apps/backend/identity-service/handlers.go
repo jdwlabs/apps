@@ -146,11 +146,13 @@ func (h *handlers) authenticate(w http.ResponseWriter, r *http.Request) {
 	credential, err := h.store.CredentialByEmailAddress(r.Context(), *request.EmailAddress)
 	switch {
 	case errors.Is(err, ErrUserNotFound):
-		// Answered exactly as a wrong password is, and after the same work: the
-		// contract permits either shape here, and sending one for both is what
-		// stops an anonymous caller enumerating which addresses are registered.
-		// The response shape alone would not — returning in microseconds where a
-		// known address costs a bcrypt round says the same thing out loud.
+		// One shape for both refusals, after the same work. The JVM has no
+		// choice about the shape either: DaoAuthenticationProvider hides an
+		// unknown user behind BadCredentialsException by default, so both
+		// answers come from the entry point. The decoy comparison is what stops
+		// the duration saying what the response does not — returning in
+		// microseconds where a known address costs a bcrypt round enumerates
+		// the registered addresses on its own.
 		spendAComparison(*request.Password)
 		h.refuseCredentials(w, r, *request.EmailAddress)
 		return

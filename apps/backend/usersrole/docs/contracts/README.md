@@ -386,6 +386,37 @@ reasoned from the comparator; `x-path-precedence` in the profile contract carrie
 the measured routing for every method on both URIs, and each of the three
 operations carries an `x-behaviour-change`.
 
+### A clause that was wrong about the JVM: the sign-in 401
+
+`POST /auth/authenticate` is specified with one 401 shape for both refusals —
+empty body, no `Content-Type`, `Access-Denied-Reason: Authentication Required`.
+
+An earlier revision said the two paths shared a status and nothing else: that a
+wrong password reached the authentication entry point while an unknown address
+raised `UsernameNotFoundException` and was answered `text/plain` by
+`GlobalExceptionHandler`. That reads correctly off the two source files and is
+still wrong about what runs.
+
+`SecurityConfig.authenticationManager` builds
+`new DaoAuthenticationProvider(jwtUserDetailService)` and never calls
+`setHideUserNotFoundExceptions(false)`.
+`AbstractUserDetailsAuthenticationProvider` initialises that flag to `true` and
+its `authenticate` catches `UsernameNotFoundException` and rethrows it as
+`BadCredentialsException` while the flag is set — read out of
+`spring-security-core-7.1.1.jar`, the version Boot 4.1.1 resolves. So the
+exception the advice is written for never leaves the provider,
+`AuthService.authenticate` only ever propagates `BadCredentialsException`, and
+`ExceptionTranslationFilter` commences the entry point for both.
+`GlobalExceptionHandler.handle(UsernameNotFoundException)` is dead code.
+
+This is not one of the six changes in the table above: nothing about the
+application's behaviour differs from the document now, and the Go service always
+answered both paths through the same writer. It is recorded because a reader
+comparing revisions would otherwise read the fix as a regression, and because
+the one shape is load-bearing — answering an unknown address differently is how
+an anonymous caller enumerates which addresses are registered. Recorded as
+`x-transcription-correction` on the operation.
+
 ### A correction that has since become a transcription
 
 `DELETE /api/profiles/{profileId}/address/{addressId}` is specified scoped to the

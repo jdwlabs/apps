@@ -672,6 +672,45 @@ func TestNoResponseBodyCarriesAPassword(t *testing.T) {
 
 func ptr[T any](value T) *T { return &value }
 
+func TestBothSignInRefusalsAnswerInTheSameShape(t *testing.T) {
+	// The JVM has no second shape to offer here. SecurityConfig builds its
+	// DaoAuthenticationProvider without setHideUserNotFoundExceptions(false), so
+	// the default true converts UsernameNotFoundException into
+	// BadCredentialsException inside the provider and the entry point commences
+	// for both refusals; the advice written for the other exception never runs.
+	// A response that distinguished them would enumerate registered addresses.
+	server := parityServer(t, stubStore{})
+
+	for _, tc := range []struct {
+		name string
+		body string
+	}{
+		{
+			name: "a wrong password",
+			body: `{"emailAddress":"` + selfEmail + `","password":"` + mismatchedPassword + `"}`,
+		},
+		{
+			name: "an address nobody holds",
+			body: `{"emailAddress":"nobody@jdw.com","password":"` + fixturePassword + `"}`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/auth/authenticate",
+				bytes.NewReader([]byte(tc.body)))
+			request.Header.Set("Content-Type", "application/json")
+			response := httptest.NewRecorder()
+
+			server.ServeHTTP(response, request)
+
+			if response.Code != http.StatusUnauthorized {
+				t.Fatalf("status = %d, want %d (body %q)",
+					response.Code, http.StatusUnauthorized, response.Body.String())
+			}
+			assertUnauthorizedShape(t, response)
+		})
+	}
+}
+
 func TestASignInForAnUnknownAddressStillSpendsAComparison(t *testing.T) {
 	// The refusal shapes are identical; without the decoy comparison the two
 	// durations would not be, and an anonymous caller could enumerate registered
