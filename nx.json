@@ -167,6 +167,7 @@
       "rolesui",
       "usersui",
       "servicediscovery",
+      "identity-service",
       "profile-service",
       "usersrole",
       "authdb",
