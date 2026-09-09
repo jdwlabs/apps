@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"libs/backend/shared/auth/authtest"
 )
 
@@ -345,19 +347,65 @@ func TestAnUnparseableBodyIsRefusedWithTheFixedMessage(t *testing.T) {
 }
 
 func TestAnIdThatIsNotANumberIsRefusedBeforeAnythingElse(t *testing.T) {
+	// Over the wire, through the real router and a real token: the refusal is a
+	// 400 the container sets rather than a body the handler composed, so it
+	// carries what BasicErrorController renders on the forward the caller's own
+	// token authenticates. GET /api/users/abc against a booted usersrole
+	// answers exactly this.
 	service := newLiveService(t)
 	token := service.adminToken(t)
 
 	for _, path := range []string{"/api/users/not-a-number", "/api/roles/not-a-number"} {
 		t.Run(path, func(t *testing.T) {
+			assertContainerErrorBody(t, service.getJSON(t, path, token), http.StatusBadRequest, path)
+		})
+	}
+}
+
+func TestAPagingParameterThatIsNotANumberIsRefusedWithTheSameBody(t *testing.T) {
+	// The query half of the same conversion failure. It shares a writer with the
+	// path half because the JVM shares a mechanism: both fail argument
+	// resolution, neither is caught, and the container answers both.
+	service := newLiveService(t)
+	token := service.adminToken(t)
+
+	for _, path := range []string{"/api/users?page=abc", "/api/roles?size=abc"} {
+		t.Run(path, func(t *testing.T) {
 			response := service.getJSON(t, path, token)
 
-			if response.Code != http.StatusBadRequest {
-				t.Errorf("status = %d, want %d", response.Code, http.StatusBadRequest)
-			}
-			if body := response.Body.String(); body != "" {
-				t.Errorf("body = %q, want empty", body)
-			}
+			// The body names the path without the query string, as the JVM's does.
+			assertContainerErrorBody(t, response, http.StatusBadRequest, strings.Split(path, "?")[0])
+		})
+	}
+}
+
+func TestARequestThatRoutesToNothingAnswersAsTheContainerDoes(t *testing.T) {
+	service := newLiveService(t)
+	token := service.adminToken(t)
+
+	unmapped := service.getJSON(t, "/api/nothing", token)
+	assertContainerErrorBody(t, unmapped, http.StatusNotFound, "/api/nothing")
+
+	wrongMethod := service.do(t, http.MethodPatch, "/api/users", token, nil, "")
+	assertContainerErrorBody(t, wrongMethod, http.StatusMethodNotAllowed, "/api/users")
+	if got := wrongMethod.Header().Get("Allow"); got == "" {
+		t.Error("a 405 carries no Allow header")
+	}
+}
+
+func TestAnUnroutableRequestWithNoTokenAnswers401(t *testing.T) {
+	// Only a public path reaches the router without a token, and the JVM
+	// answers those 401 rather than 404: its forward to /error is refused a
+	// second time, and the entry point's status replaces the router's. Measured
+	// on a booted usersrole for /auth/nope and /actuator/nope alike, both of
+	// which sit inside a permitAll matcher.
+	service := newLiveService(t)
+
+	for _, path := range []string{"/auth/nothing", "/actuator/nothing"} {
+		t.Run(path, func(t *testing.T) {
+			response := service.getJSON(t, path, "")
+
+			assertUnauthorizedShape(t, response)
 		})
 	}
 }
@@ -692,4 +740,65 @@ func TestARefusedCallerSeesTheContainerErrorBodyForTheRequestedPath(t *testing.T
 	if body["path"] != "/api/users/424242" {
 		t.Errorf("path = %v, want the requested path", body["path"])
 	}
+}
+
+// unreachableStore is the production store over a pool that can never connect,
+// so the failure the handlers see is a real driver error rather than a
+// hand-written sentinel. pgxpool connects lazily, so building it costs nothing
+// and every statement fails the same way a database that has gone away does.
+func unreachableStore(t *testing.T) *PostgresStore {
+	t.Helper()
+	pool, err := pgxpool.New(t.Context(), "postgres://nobody:nobody@127.0.0.1:1/nothing")
+	if err != nil {
+		t.Fatalf("open a pool that cannot connect: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	return NewPostgresStore(pool)
+}
+
+func TestAStorageFailureCarriesTheContainerErrorBody(t *testing.T) {
+	// Nothing composes this response: the handler logs the cause and hands the
+	// status to the container, which renders its own body for a caller whose
+	// token survives the forward to /error. Measured on a booted usersrole by
+	// making the repository throw — 500 application/json, not 500 with nothing.
+	//
+	// Driven twice: through brokenStore, so every operation's failure path is
+	// the same shape, and through the production store over a dead pool, so the
+	// error that reaches the writer is one pgx actually produced.
+	for name, store := range map[string]Store{
+		"a store that reports failure": brokenStore{},
+		"the real store, unreachable":  unreachableStore(t),
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := parityServer(t, store)
+			request := httptest.NewRequest(http.MethodGet, "/api/users/42", nil)
+			request.Header.Set("Authorization", "Bearer "+mint(t, admin().claims))
+			response := httptest.NewRecorder()
+
+			server.ServeHTTP(response, request)
+
+			assertContainerErrorBody(t, response, http.StatusInternalServerError, "/api/users/42")
+		})
+	}
+}
+
+func TestAStorageFailureOnAPublicOperationAnswers401(t *testing.T) {
+	// The two /auth operations take no token, so their forward to /error carries
+	// none either and is refused a second time — the entry point's 401 replaces
+	// the 500 the container had set. Measured on a booted usersrole: a
+	// repository that throws under POST /auth/user answers 401 with
+	// Content-Length 0, never 500.
+	//
+	// It reads as an odd answer to an outage, and it is what the deployed
+	// service answers. Diverging here would move a status the frontends key
+	// their message off.
+	server := parityServer(t, brokenStore{})
+	request := httptest.NewRequest(http.MethodPost, "/auth/user",
+		strings.NewReader(credentialsBody("outage@jdw.com")))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+
+	server.ServeHTTP(response, request)
+
+	assertUnauthorizedShape(t, response)
 }
