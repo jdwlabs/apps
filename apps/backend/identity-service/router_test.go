@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"libs/backend/shared/servicehttp"
 )
 
 func recordingHandler(name string, seen *string) http.Handler {
@@ -17,9 +19,9 @@ func recordingHandler(name string, seen *string) http.Handler {
 	})
 }
 
-func identityShapedRouter(t *testing.T, seen *string) *Router {
+func identityShapedRouter(t *testing.T, seen *string) *servicehttp.Router {
 	t.Helper()
-	router, err := NewRouter([]Route{
+	router, err := servicehttp.NewRouter([]servicehttp.Route{
 		{Method: http.MethodGet, Pattern: "/api/users", Handler: recordingHandler("getAllUsers", seen)},
 		{Method: http.MethodPost, Pattern: "/api/users", Handler: recordingHandler("createUser", seen)},
 		{Method: http.MethodGet, Pattern: "/api/users/{userId}", Handler: recordingHandler("getUserById", seen)},
@@ -120,7 +122,7 @@ func TestRouterRefusesRoutesAtStartupWhenNothingSeparatesThem(t *testing.T) {
 	//
 	// These two carry one capture each and normalize to the same length, so
 	// neither outranks the other, and /api/users/email/roles/grant matches both.
-	_, err := NewRouter([]Route{
+	_, err := servicehttp.NewRouter([]servicehttp.Route{
 		{Method: http.MethodPut, Pattern: "/api/users/{userId}/roles/grant", Handler: http.NotFoundHandler()},
 		{Method: http.MethodPut, Pattern: "/api/users/email/{emailAddress}/grant", Handler: http.NotFoundHandler()},
 	})
@@ -131,7 +133,7 @@ func TestRouterRefusesRoutesAtStartupWhenNothingSeparatesThem(t *testing.T) {
 }
 
 func TestRouterRefusesTwoRegistrationsOfTheSameOperation(t *testing.T) {
-	_, err := NewRouter([]Route{
+	_, err := servicehttp.NewRouter([]servicehttp.Route{
 		{Method: http.MethodGet, Pattern: "/api/users", Handler: http.NotFoundHandler()},
 		{Method: http.MethodGet, Pattern: "/api/users", Handler: http.NotFoundHandler()},
 	})

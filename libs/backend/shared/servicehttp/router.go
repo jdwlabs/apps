@@ -1,10 +1,12 @@
-package main
+package servicehttp
 
 import (
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
+
+	"libs/backend/shared/auth/authhttp"
 )
 
 // Route is one operation: a method, a path pattern with {name} captures, and
@@ -25,19 +27,15 @@ type Route struct {
 // RequestMappingHandlerMapping resolves it, because the two have to agree on
 // paths where more than one pattern matches.
 //
-// net/http's ServeMux is not that. It cleans and redirects paths of its own
-// accord — a request to //api/users or /api/./users answers 301 to the tidied
-// form, where Spring routes it — so a client that built a URL by joining
-// strings would start being redirected at cutover instead of served. It also
-// refuses at registration any two patterns where neither matches a strict
-// subset of the other, which the sibling profile service does register.
-//
-// This file, cors.go and metrics.go are the same code as profile-service's —
-// byte-identical once comments are stripped — because the two services have to
-// resolve paths, refuse requests and label metrics identically or a client and a
-// dashboard see the split. Copied rather than shared for now: extracting them
-// into libs/backend is its own change, and until it lands an edit here is an
-// edit that has to be made twice.
+// net/http's ServeMux is not that, on two counts. It cleans and redirects paths
+// of its own accord — a request to //api/users or /api/./users answers 301 to
+// the tidied form, where Spring routes it — so a client that built a URL by
+// joining strings would start being redirected at cutover instead of served.
+// And it refuses at registration any two patterns where neither matches a
+// strict subset of the other: /api/profiles/by-user/{userId} against
+// /api/profiles/{profileId}/icon is exactly that shape, overlapping on
+// /api/profiles/by-user/icon with neither containing the other, so registering
+// the profile surface on a ServeMux panics before the service can start.
 type Router struct {
 	routes []compiledRoute
 }
@@ -114,7 +112,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 		// authenticates the forward to /error, and the empty 401 for one whose
 		// forward is refused a second time. An unauthenticated 404 is therefore
 		// a 401 here exactly as it is in the JVM.
-		writeContainerError(w, request, status)
+		authhttp.WriteContainerError(w, request, status)
 		return
 	}
 	for i, seg := range resolved.segments {

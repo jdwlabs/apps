@@ -12,5 +12,6 @@ use (
 	./apps/backend/profile-service
 	./apps/backend/servicediscovery
 	./libs/backend/shared/auth
+	./libs/backend/shared/servicehttp
 	./libs/backend/shared/util
 )

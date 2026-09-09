@@ -9,6 +9,7 @@ import (
 	"libs/backend/shared/auth"
 	"libs/backend/shared/auth/authhttp"
 	"libs/backend/shared/auth/authz"
+	"libs/backend/shared/servicehttp"
 	"libs/backend/shared/util"
 )
 
@@ -37,15 +38,15 @@ type ServerConfig struct {
 	Store    Store
 	Verifier *auth.Verifier
 	Minter   *minter
-	CORS     CORS
+	CORS     servicehttp.CORS
 	// Metrics is optional. A server built without one registers its own, so a
 	// test never has to and two servers in a process cannot collide.
-	Metrics *Metrics
+	Metrics *servicehttp.Metrics
 }
 
 type Server struct {
 	operations []Operation
-	metrics    *Metrics
+	metrics    *servicehttp.Metrics
 	handler    http.Handler
 }
 
@@ -66,7 +67,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	}
 	metrics := config.Metrics
 	if metrics == nil {
-		metrics = NewMetrics()
+		metrics = servicehttp.NewMetrics()
 	}
 
 	api := &handlers{
@@ -79,9 +80,9 @@ func NewServer(config ServerConfig) (*Server, error) {
 	}
 	operations := api.operations()
 
-	routes := make([]Route, 0, len(operations)+3)
+	routes := make([]servicehttp.Route, 0, len(operations)+3)
 	for _, operation := range operations {
-		routes = append(routes, Route{
+		routes = append(routes, servicehttp.Route{
 			Method:   operation.Method,
 			Pattern:  operation.Pattern,
 			Produces: operation.Produces,
@@ -89,12 +90,12 @@ func NewServer(config ServerConfig) (*Server, error) {
 		})
 	}
 	routes = append(routes,
-		Route{Method: http.MethodGet, Pattern: healthPath, Handler: http.HandlerFunc(health)},
-		Route{Method: http.MethodGet, Pattern: actuatorHealthPath, Handler: http.HandlerFunc(health)},
-		Route{Method: http.MethodGet, Pattern: actuatorMetricsPath, Handler: metrics.Handler()},
+		servicehttp.Route{Method: http.MethodGet, Pattern: healthPath, Handler: http.HandlerFunc(health)},
+		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorHealthPath, Handler: http.HandlerFunc(health)},
+		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorMetricsPath, Handler: metrics.Handler()},
 	)
 
-	router, err := NewRouter(routes)
+	router, err := servicehttp.NewRouter(routes)
 	if err != nil {
 		return nil, err
 	}

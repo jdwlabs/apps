@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"libs/backend/shared/servicehttp"
 )
 
 func recordingHandler(name string, seen *string) http.Handler {
@@ -18,9 +20,9 @@ func recordingHandler(name string, seen *string) http.Handler {
 	})
 }
 
-func profileShapedRouter(t *testing.T, seen *string) *Router {
+func profileShapedRouter(t *testing.T, seen *string) *servicehttp.Router {
 	t.Helper()
-	router, err := NewRouter([]Route{
+	router, err := servicehttp.NewRouter([]servicehttp.Route{
 		{Method: http.MethodGet, Pattern: "/api/profiles", Handler: recordingHandler("getProfiles", seen)},
 		{Method: http.MethodGet, Pattern: "/api/profiles/{profileId}", Handler: recordingHandler("getProfileById", seen)},
 		{Method: http.MethodGet, Pattern: "/api/profiles/by-user/{userId}", Handler: recordingHandler("getProfileByUserId", seen)},
@@ -141,7 +143,7 @@ func TestRouterRefusesRoutesAtStartupWhenNothingSeparatesThem(t *testing.T) {
 	// equal normalized length, overlapping on /api/profiles/user/icon. Spring
 	// answered 500 at request time for this; a startup refusal turns the same
 	// defect into a build failure.
-	_, err := NewRouter([]Route{
+	_, err := servicehttp.NewRouter([]servicehttp.Route{
 		{Method: http.MethodPut, Pattern: "/api/profiles/user/{userId}", Handler: http.NotFoundHandler()},
 		{Method: http.MethodPut, Pattern: "/api/profiles/{profileId}/icon", Handler: http.NotFoundHandler()},
 	})
@@ -152,7 +154,7 @@ func TestRouterRefusesRoutesAtStartupWhenNothingSeparatesThem(t *testing.T) {
 }
 
 func TestRouterRefusesTwoRegistrationsOfTheSameOperation(t *testing.T) {
-	_, err := NewRouter([]Route{
+	_, err := servicehttp.NewRouter([]servicehttp.Route{
 		{Method: http.MethodGet, Pattern: "/api/profiles", Handler: http.NotFoundHandler()},
 		{Method: http.MethodGet, Pattern: "/api/profiles", Handler: http.NotFoundHandler()},
 	})

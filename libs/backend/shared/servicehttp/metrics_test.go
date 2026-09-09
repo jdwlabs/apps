@@ -1,4 +1,4 @@
-package main
+package servicehttp
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// injectedSegment is what a caller can put where a profile id goes — the router
+// injectedSegment is what a caller can put where an id goes — the router
 // takes it as free text. Markup is what would matter if it reached a response,
 // and the newline is what would matter if it reached the exposition format.
 const injectedSegment = "<script>alert(1)\n"
@@ -16,7 +16,7 @@ const injectedSegment = "<script>alert(1)\n"
 func timedHandler(t *testing.T, handler http.Handler) (*Metrics, http.Handler) {
 	t.Helper()
 	router, err := NewRouter([]Route{
-		{Method: http.MethodGet, Pattern: "/api/profiles/{profileId}/icon", Handler: handler},
+		{Method: http.MethodGet, Pattern: "/api/resources/{resourceId}/parts", Handler: handler},
 	})
 	if err != nil {
 		t.Fatalf("NewRouter: %v", err)
@@ -43,8 +43,8 @@ func TestAPathSegmentACallerControlsNeverReachesTheExportedSeries(t *testing.T) 
 	}))
 	escaped := url.PathEscape(injectedSegment)
 	for _, path := range []string{
-		"/api/profiles/" + escaped + "/icon",
-		"/api/profiles/" + escaped + "/there-is-no-such-route",
+		"/api/resources/" + escaped + "/parts",
+		"/api/resources/" + escaped + "/there-is-no-such-route",
 	} {
 		request := httptest.NewRequest(http.MethodGet, path, nil)
 		if !strings.Contains(request.URL.Path, injectedSegment) {
@@ -58,7 +58,7 @@ func TestAPathSegmentACallerControlsNeverReachesTheExportedSeries(t *testing.T) 
 	if strings.Contains(exported, injectedSegment) || strings.Contains(exported, "<script>") {
 		t.Error("a caller-supplied path segment was exported as a label value")
 	}
-	if !strings.Contains(exported, `uri="/api/profiles/{profileId}/icon"`) {
+	if !strings.Contains(exported, `uri="/api/resources/{resourceId}/parts"`) {
 		t.Error("the matched request was not labelled by its route pattern")
 	}
 	if !strings.Contains(exported, `uri="`+unmatchedURI+`"`) {
@@ -80,7 +80,7 @@ func TestTimingARequestLeavesTheResponseExactlyAsTheHandlerWroteIt(t *testing.T)
 	}))
 
 	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/profiles/abc/icon", nil))
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/resources/abc/parts", nil))
 
 	if recorder.Code != http.StatusCreated {
 		t.Errorf("status = %d, want 201", recorder.Code)
@@ -106,7 +106,7 @@ func TestAHandlerThatWritesWithoutAStatusIsRecordedAsTheTwoHundredItSends(t *tes
 	}))
 
 	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/profiles/abc/icon", nil))
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/resources/abc/parts", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Errorf("status = %d, want the implicit 200", recorder.Code)

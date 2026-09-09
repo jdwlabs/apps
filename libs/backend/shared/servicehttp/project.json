@@ -1,0 +1,25 @@
+{
+  "name": "backend-shared-servicehttp",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/backend/shared/servicehttp",
+  "tags": ["type:util", "scope:shared", "framework:go"],
+  "targets": {
+    "test": {
+      "executor": "@nx-go/nx-go:test",
+      "options": {
+        "race": true
+      }
+    },
+    "lint": {
+      "executor": "@nx-go/nx-go:lint",
+      "options": {
+        "linter": "go",
+        "args": ["vet"]
+      }
+    },
+    "tidy": {
+      "executor": "@nx-go/nx-go:tidy"
+    }
+  }
+}

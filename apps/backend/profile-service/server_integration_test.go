@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"libs/backend/shared/auth/authtest"
+	"libs/backend/shared/servicehttp"
 )
 
 // The end-to-end half of the parity suite: the same handlers, router, CORS and
@@ -537,7 +538,7 @@ func TestTheScrapeEndpointCarriesTheRequestDurationHistogram(t *testing.T) {
 	response := service.getJSON(t, actuatorMetricsPath, "")
 
 	body := response.Body.String()
-	if !strings.Contains(body, requestDurationName+"_bucket") {
+	if !strings.Contains(body, servicehttp.RequestDurationName+"_bucket") {
 		t.Error("the scrape carries no histogram buckets; the percentile panels would be unfillable")
 	}
 	if !strings.Contains(body, `uri="/api/profiles/{profileId}"`) {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"libs/backend/shared/auth"
+	"libs/backend/shared/servicehttp"
 	"libs/backend/shared/util"
 )
 
@@ -66,7 +67,7 @@ type Config struct {
 	ExpectedIssuer            string
 	ExpectedAudience          string
 	AllowAnyIssuerAndAudience bool
-	CORS                      CORS
+	CORS                      servicehttp.CORS
 	ShutdownTimeoutSeconds    int
 }
 
@@ -92,7 +93,7 @@ func configFromEnvironment() (Config, error) {
 		MaxConnections:  envInt32(envMaxConnections, defaultMaxConnections),
 		MinConnections:  envInt32(envMinConnections, defaultMinConnections),
 		SecretKeyBase64: secret,
-		CORS: CORS{
+		CORS: servicehttp.CORS{
 			AllowedOriginPatterns: envList(envCORSOriginPatterns, defaultCORSOriginPattern),
 			AllowedMethods:        envList(envCORSAllowedMethods, defaultCORSMethods),
 			AllowedHeaders:        envList(envCORSAllowedHeaders, defaultCORSHeaders),

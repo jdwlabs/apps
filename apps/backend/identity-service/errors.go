@@ -106,10 +106,11 @@ func writeUnconvertableParameter(w http.ResponseWriter, r *http.Request) {
 // writeContainerError writes Boot's error representation, which the JVM
 // produces for every status it reaches by throwing or by sendError rather than
 // by composing a response: an argument that would not convert, a storage
-// failure, an authorization rule that could not be decided, and every refusal
-// the router makes. The shared writer decides between that body and the empty
-// 401, because the JVM decides it from the same thing — whether the caller's
-// token survives the internal forward to /error.
+// failure, an authorization rule that could not be decided. The shared writer
+// decides between that body and the empty 401, because the JVM decides it from
+// the same thing — whether the caller's token survives the internal forward to
+// /error. The shared router answers its own refusals through the same writer,
+// so a 404 and a storage failure carry the same shape.
 func writeContainerError(w http.ResponseWriter, r *http.Request, status int) {
 	authhttp.WriteContainerError(w, r, status)
 }
