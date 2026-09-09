@@ -117,9 +117,11 @@ func TestARoleWithNoGrantsSerializesAnEmptyArray(t *testing.T) {
 }
 
 func TestATimestampRendersInTheShapeJacksonWrites(t *testing.T) {
-	// Milliseconds always present, an explicit numeric offset, and UTC whatever
+	// Milliseconds always present, the zero offset written "Z", and UTC whatever
 	// the host's zone: Jackson's default time zone is UTC, so the JVM's own zone
-	// never reaches the wire.
+	// never reaches the wire. Measured off a booted usersrole with its default
+	// zone forced to Asia/Kolkata, which changed neither the offset nor the
+	// instant.
 	zone := time.FixedZone("UTC+5", 5*60*60)
 	stamp := Timestamp{time.Date(2026, 9, 8, 9, 30, 0, 123_000_000, zone)}
 
@@ -128,7 +130,7 @@ func TestATimestampRendersInTheShapeJacksonWrites(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
-	if got, want := string(encoded), `"2026-09-08T04:30:00.123+00:00"`; got != want {
+	if got, want := string(encoded), `"2026-09-08T04:30:00.123Z"`; got != want {
 		t.Errorf("timestamp = %s, want %s", got, want)
 	}
 }

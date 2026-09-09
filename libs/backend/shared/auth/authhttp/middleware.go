@@ -185,11 +185,11 @@ type containerError struct {
 	Path      string `json:"path"`
 }
 
-// bootTimestampLayout renders millisecond precision with an explicit numeric
-// zone offset, matching Boot's Jackson configuration. It deliberately does
-// not use Go's "Z07:00" verb, which prints the literal "Z" for a zero offset:
-// the measured JVM output always writes "+00:00".
-const bootTimestampLayout = "2006-01-02T15:04:05.000-07:00"
+// bootTimestampLayout renders millisecond precision — DefaultErrorAttributes
+// stamps a java.util.Date, which carries no finer resolution — and the "Z" a
+// zero offset is written with. Jackson serializes in UTC whatever zone the JVM
+// runs in, so the offset is always zero and the suffix always that letter.
+const bootTimestampLayout = "2006-01-02T15:04:05.000Z07:00"
 
 // WriteForbidden answers as CustomAccessDeniedHandler does. Unlike
 // WriteUnauthorized, the caller here already holds a verified token — only
