@@ -29,18 +29,21 @@ apps/backend/identity-service/
 ├── Dockerfile.local        # Self-contained build for local iteration
 ├── project.json            # Nx project definition and targets
 ├── config.go               # Environment resolution, done once at startup
-├── cors.go                 # The CorsFilter SecurityConfig installs, reproduced
 ├── errors.go               # Status and media type per failure the JVM maps
 ├── handlers.go             # The eighteen operations and the rule each carries
 ├── main.go                 # Entry point, pool, graceful shutdown
-├── metrics.go              # http_server_requests_seconds, as Micrometer names it
 ├── model.go                # Wire types and the constraints the DTOs declare
-├── router.go               # Spring's path specificity and refusal ordering
 ├── server.go               # Layer order: CORS, logging, metrics, auth, router
 ├── store.go                # auth.users, auth.roles, auth.users_roles
 ├── token.go                # Minting and bcrypt, the JVM's JwtService reproduced
 └── go.mod                  # Go module dependencies
 ```
+
+The router, the CORS layer and the metrics registry are not here: both Go
+services serve through the one copy in
+[`libs/backend/shared/servicehttp`](../../../libs/backend/shared/servicehttp),
+so neither can resolve a path, refuse a request or label a series the other
+would not.
 
 ## Minting lives here and nowhere else
 
@@ -229,5 +232,7 @@ and both corrections are in `docs/contracts/README.md`.
 - [`profile-service`](../profile-service): the other Go half of the same split.
 - [`backend-shared-auth`](../../../libs/backend/shared/auth): verification and
   the authorization rules both services decide from.
+- [`backend-shared-servicehttp`](../../../libs/backend/shared/servicehttp): the
+  router, CORS layer and metrics both services serve through.
 - [`usersrole`](../usersrole): the Spring service whose behaviour this
   reproduces, and the home of the frozen contracts.

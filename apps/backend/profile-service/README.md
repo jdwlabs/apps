@@ -28,17 +28,20 @@ apps/backend/profile-service/
 ├── Dockerfile.local        # Self-contained build for local iteration
 ├── project.json            # Nx project definition and targets
 ├── config.go               # Environment resolution, done once at startup
-├── cors.go                 # The CorsFilter SecurityConfig installs, reproduced
 ├── errors.go               # Status and media type per failure the JVM maps
 ├── handlers.go             # The fifteen operations and the rule each carries
 ├── main.go                 # Entry point, pool, graceful shutdown
-├── metrics.go              # http_server_requests_seconds, as Micrometer names it
 ├── model.go                # Wire types and the two date formats Jackson writes
-├── router.go               # Spring's path specificity, which ServeMux cannot express
 ├── server.go               # Layer order: CORS, logging, metrics, auth, router
 ├── store.go                # auth.profiles, auth.addresses, auth.profile_icons
 └── go.mod                  # Go module dependencies
 ```
+
+The router, the CORS layer and the metrics registry are not here: both Go
+services serve through the one copy in
+[`libs/backend/shared/servicehttp`](../../../libs/backend/shared/servicehttp),
+so neither can resolve a path, refuse a request or label a series the other
+would not.
 
 ## Configuration
 
