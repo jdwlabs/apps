@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"libs/backend/shared/auth/authtest"
 )
@@ -183,16 +186,60 @@ func TestAnUnparseableBodyIsRefusedWithTheFixedMessage(t *testing.T) {
 }
 
 func TestAProfileIdThatIsNotANumberIsRefusedBeforeAnythingElse(t *testing.T) {
+	// Over the wire, through the real router and a real token: the refusal is a
+	// 400 the container sets rather than a body the handler composed, so it
+	// carries what BasicErrorController renders on the forward the caller's own
+	// token authenticates. GET /api/profiles/abc against a booted usersrole
+	// answers exactly this.
 	service := newLiveService(t)
 
 	response := service.getJSON(t, "/api/profiles/not-a-number", service.adminToken(t))
 
-	if response.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", response.Code, http.StatusBadRequest)
+	assertContainerErrorBody(t, response, http.StatusBadRequest, "/api/profiles/not-a-number")
+}
+
+func TestARequestThatRoutesToNothingAnswersAsTheContainerDoes(t *testing.T) {
+	service := newLiveService(t)
+	token := service.adminToken(t)
+
+	unmapped := service.getJSON(t, "/api/nothing", token)
+	assertContainerErrorBody(t, unmapped, http.StatusNotFound, "/api/nothing")
+
+	wrongMethod := service.do(t, http.MethodPatch, "/api/profiles", token, nil, "")
+	assertContainerErrorBody(t, wrongMethod, http.StatusMethodNotAllowed, "/api/profiles")
+	if got := wrongMethod.Header().Get("Allow"); got == "" {
+		t.Error("a 405 carries no Allow header")
 	}
-	if body := response.Body.String(); body != "" {
-		t.Errorf("body = %q, want empty", body)
-	}
+}
+
+func TestAnAcceptHeaderTheIconCannotSatisfyAnswersAsTheContainerDoes(t *testing.T) {
+	// The only produces condition in either service, and so the only 406 either
+	// can answer. Measured on a booted usersrole: GET /api/profiles/1/icon with
+	// Accept: application/json is refused before the handler runs, and the body
+	// is the container's — the caller asked for JSON and JSON is what /error
+	// renders.
+	service := newLiveService(t)
+	request := httptest.NewRequest(http.MethodGet, "/api/profiles/1/icon", nil)
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Authorization", "Bearer "+service.adminToken(t))
+	response := httptest.NewRecorder()
+
+	service.handler.ServeHTTP(response, request)
+
+	assertContainerErrorBody(t, response, http.StatusNotAcceptable, "/api/profiles/1/icon")
+}
+
+func TestAnUnroutableRequestWithNoTokenAnswers401(t *testing.T) {
+	// Only a public path reaches the router without a token, and the JVM
+	// answers those 401 rather than 404: its forward to /error is refused a
+	// second time, and the entry point's status replaces the router's. Measured
+	// on a booted usersrole for /actuator/nope, which sits inside a permitAll
+	// matcher and still answers 401.
+	service := newLiveService(t)
+
+	response := service.getJSON(t, "/actuator/nothing", "")
+
+	assertUnauthorizedShape(t, response)
 }
 
 func TestReadingAMissingProfileAnswersTheExceptionMessage(t *testing.T) {
@@ -241,13 +288,15 @@ func TestTheListingClampsOutOfRangePagingRatherThanRejectingIt(t *testing.T) {
 }
 
 func TestAPageParameterThatIsNotANumberIsRefused(t *testing.T) {
+	// The query half of the same conversion failure the path variable above
+	// answers. It shares a writer because the JVM shares a mechanism: both fail
+	// argument resolution, neither is caught, and the container answers both.
 	service := newLiveService(t)
 
 	response := service.getJSON(t, "/api/profiles?page=first", service.adminToken(t))
 
-	if response.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", response.Code, http.StatusBadRequest)
-	}
+	// The body names the path without the query string, as the JVM's does.
+	assertContainerErrorBody(t, response, http.StatusBadRequest, "/api/profiles")
 }
 
 func TestAnEmptyListingIsAnArrayRatherThanNull(t *testing.T) {
@@ -544,5 +593,131 @@ func TestARefusedCallerSeesTheContainerErrorBodyForTheRequestedPath(t *testing.T
 	}
 	if body["path"] != "/api/profiles/424242" {
 		t.Errorf("path = %v, want the requested path", body["path"])
+	}
+}
+
+// errStoreUnavailable stands in for any storage failure, so the handlers' 500
+// paths are driven with the same bodies as their success paths.
+var errStoreUnavailable = errors.New("the store is unavailable")
+
+// brokenStore reports failure from every method, mirroring identity-service's
+// double of the same name: the two services answer a storage failure
+// identically, so they are driven against the same shape of store.
+type brokenStore struct{}
+
+func (brokenStore) ListProfiles(context.Context, int, int) ([]Profile, error) {
+	return nil, errStoreUnavailable
+}
+
+func (brokenStore) ProfileByID(context.Context, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) ProfileByUserID(context.Context, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) ProfileIDForUser(context.Context, int64) (int64, bool, error) {
+	return 0, false, errStoreUnavailable
+}
+
+func (brokenStore) CreateProfile(context.Context, ProfileCreateRequest, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) UpdateProfileByID(context.Context, int64, ProfileUpdateRequest, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) UpdateProfileByUserID(context.Context, int64, ProfileUpdateRequest, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) DeleteProfileByID(context.Context, int64) error     { return errStoreUnavailable }
+func (brokenStore) DeleteProfileByUserID(context.Context, int64) error { return errStoreUnavailable }
+
+func (brokenStore) AddAddress(context.Context, int64, AddressRequest, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) UpdateAddress(context.Context, int64, int64, AddressRequest, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) DeleteAddress(context.Context, int64, int64) error { return errStoreUnavailable }
+
+func (brokenStore) Icon(context.Context, int64) (ProfileIcon, error) {
+	return ProfileIcon{}, errStoreUnavailable
+}
+
+func (brokenStore) AddIcon(context.Context, int64, []byte, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) ReplaceIcon(context.Context, int64, []byte, int64) (Profile, error) {
+	return Profile{}, errStoreUnavailable
+}
+
+func (brokenStore) DeleteIcon(context.Context, int64) error { return errStoreUnavailable }
+
+// unreachableStore is the production store over a pool that can never connect,
+// so the failure the handlers see is a real driver error rather than a
+// hand-written sentinel. pgxpool connects lazily, so building it costs nothing
+// and every statement fails the same way a database that has gone away does.
+func unreachableStore(t *testing.T) *PostgresStore {
+	t.Helper()
+	pool, err := pgxpool.New(t.Context(), "postgres://nobody:nobody@127.0.0.1:1/nothing")
+	if err != nil {
+		t.Fatalf("open a pool that cannot connect: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	return NewPostgresStore(pool)
+}
+
+func TestAStorageFailureCarriesTheContainerErrorBody(t *testing.T) {
+	// Nothing composes this response: the handler logs the cause and hands the
+	// status to the container, which renders its own body for a caller whose
+	// token survives the forward to /error. Measured on a booted usersrole by
+	// making the repository throw — 500 application/json, not 500 with nothing.
+	//
+	// Driven twice: through brokenStore, so every operation's failure path is
+	// the same shape, and through the production store over a dead pool, so the
+	// error that reaches the writer is one pgx actually produced.
+	for name, store := range map[string]Store{
+		"a store that reports failure": brokenStore{},
+		"the real store, unreachable":  unreachableStore(t),
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := parityServer(t, store)
+			request := httptest.NewRequest(http.MethodGet, "/api/profiles", nil)
+			request.Header.Set("Authorization", "Bearer "+mint(t, admin().claims))
+			response := httptest.NewRecorder()
+
+			server.ServeHTTP(response, request)
+
+			assertContainerErrorBody(t, response, http.StatusInternalServerError, "/api/profiles")
+		})
+	}
+}
+
+func TestARuleThatCannotBeDecidedCarriesTheContainerErrorBody(t *testing.T) {
+	// The profile fallback reads storage to decide a rule, so it is the one
+	// authorization decision an outage can take away. It answers 500 rather
+	// than 403 — a failed lookup says nothing about the caller's rights — and
+	// that 500 is a status the container sets, so it carries the same body as
+	// any other. The caller here holds a verified token with no profile_id
+	// claim, which is what sends the rule to the fallback.
+	server := parityServer(t, brokenStore{})
+	userID := int64(4242)
+	token := mint(t, authtest.Claims{Subject: "no-claim@jdw.com", Roles: []string{"USER"}, UserID: &userID})
+	request := httptest.NewRequest(http.MethodGet, "/api/profiles/7", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	response := httptest.NewRecorder()
+
+	server.ServeHTTP(response, request)
+
+	assertContainerErrorBody(t, response, http.StatusInternalServerError, "/api/profiles/7")
+	if got := response.Header().Get("Access-Denied-Reason"); got != "" {
+		t.Errorf("Access-Denied-Reason = %q; a lookup failure is not a refusal", got)
 	}
 }

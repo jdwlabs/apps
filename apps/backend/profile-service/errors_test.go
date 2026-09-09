@@ -1,10 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
+	"slices"
 	"testing"
+
+	"libs/backend/shared/auth"
+	"libs/backend/shared/auth/authhttp"
 )
 
 func TestErrorWritersReproduceTheStatusAndMediaTypeEachHandlerBuilds(t *testing.T) {
@@ -84,60 +90,48 @@ func TestValidationErrorsAreAJsonObjectOfFieldToMessage(t *testing.T) {
 	}
 }
 
-func TestAPathVariableThatIsNotANumberIsRefusedWithNoBody(t *testing.T) {
-	// Spring's type conversion fails before the handler runs, and nothing in
-	// GlobalExceptionHandler catches it, so the container writes the status
-	// with no message.
+func TestAnUnconvertableParameterCarriesTheContainerErrorBody(t *testing.T) {
+	// Spring's type conversion fails before the handler runs and nothing in
+	// GlobalExceptionHandler catches it, so this is a status the container sets
+	// through sendError — and the forward to /error that sendError triggers
+	// re-authenticates with the caller's own token, so BasicErrorController
+	// renders its body. Measured on a booted usersrole: GET /api/profiles/abc with a
+	// valid token answers 400 application/json, not 400 with nothing.
 	response := httptest.NewRecorder()
+	request := authenticatedRequest(http.MethodGet, "/api/profiles/abc")
 
-	writeUnconvertablePathVariable(response)
+	writeUnconvertableParameter(response, request)
 
-	if response.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", response.Code, http.StatusBadRequest)
+	assertContainerErrorBody(t, response, http.StatusBadRequest, "/api/profiles/abc")
+}
+
+func TestAnUnconvertableParameterAnswers401WithoutAToken(t *testing.T) {
+	// The same forward, refused a second time. No operation taking a numeric
+	// parameter is reachable anonymously today, so the writer decides the shape
+	// from the request rather than from the caller's promise — which is the
+	// property worth pinning.
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/profiles/abc", nil)
+
+	writeUnconvertableParameter(response, request)
+
+	if response.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", response.Code, http.StatusUnauthorized)
 	}
 	if body := response.Body.String(); body != "" {
 		t.Errorf("body = %q, want empty", body)
 	}
-	if contentType := response.Header().Get("Content-Type"); contentType != "" {
-		t.Errorf("Content-Type = %q, want unset", contentType)
-	}
 }
 
 func TestTheContainerErrorBodyCarriesTheStatusAndPath(t *testing.T) {
-	// The one status in this service that answers with the container's own
-	// error representation rather than a composed body.
+	// Every status this service does not compose a body for reaches the wire
+	// through this writer. The named one is the frozen 500: replacing an icon
+	// on a profile that has none.
 	response := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPut, "/api/profiles/7/icon", nil)
 
-	writeContainerError(response, request, http.StatusInternalServerError)
+	writeContainerError(response, authenticatedRequest(http.MethodPut, "/api/profiles/7/icon"), http.StatusInternalServerError)
 
-	if response.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want %d", response.Code, http.StatusInternalServerError)
-	}
-	if got, want := response.Header().Get("Content-Type"), "application/json"; got != want {
-		t.Errorf("Content-Type = %q, want %q", got, want)
-	}
-	var decoded struct {
-		Timestamp string `json:"timestamp"`
-		Status    int    `json:"status"`
-		Error     string `json:"error"`
-		Path      string `json:"path"`
-	}
-	if err := json.Unmarshal(response.Body.Bytes(), &decoded); err != nil {
-		t.Fatalf("body is not a JSON object: %v", err)
-	}
-	if decoded.Status != http.StatusInternalServerError {
-		t.Errorf("status field = %d, want 500", decoded.Status)
-	}
-	if decoded.Error != "Internal Server Error" {
-		t.Errorf("error field = %q, want %q", decoded.Error, "Internal Server Error")
-	}
-	if decoded.Path != "/api/profiles/7/icon" {
-		t.Errorf("path field = %q, want %q", decoded.Path, "/api/profiles/7/icon")
-	}
-	if decoded.Timestamp == "" {
-		t.Error("timestamp field is empty")
-	}
+	assertContainerErrorBody(t, response, http.StatusInternalServerError, "/api/profiles/7/icon")
 }
 
 func TestParsingAPathVariable(t *testing.T) {
@@ -167,4 +161,87 @@ func TestParsingAPathVariable(t *testing.T) {
 			}
 		})
 	}
+}
+
+// containerErrorKeys is the exact key set and order BasicErrorController writes
+// with server.error.include-message left at its default of never. message is
+// omitted entirely rather than present and blank.
+var containerErrorKeys = []string{"timestamp", "status", "error", "path"}
+
+// bootTimestampPattern matches the millisecond-precision, zero-offset stamp
+// Jackson renders for the java.util.Date DefaultErrorAttributes writes. The
+// instant is never asserted, only the shape: two implementations answering the
+// same request do so at different moments.
+var bootTimestampPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`)
+
+// authenticatedRequest carries a verified principal, which is what decides the
+// shape of every container-set status: in the JVM the forward to /error either
+// re-authenticates with the caller's token or is refused a second time, and the
+// principal on the context is this service's equivalent of holding one.
+func authenticatedRequest(method, path string) *http.Request {
+	request := httptest.NewRequest(method, path, nil)
+	principal := &auth.Principal{Subject: "admin@jdw.com", Roles: []string{"ADMIN"}}
+	return request.WithContext(authhttp.WithPrincipal(request.Context(), principal))
+}
+
+// assertContainerErrorBody pins the body against what a booted usersrole
+// answers an authenticated caller for a status the container set. status and
+// error are asserted by value; timestamp and path vary per request, so they are
+// asserted by shape.
+func assertContainerErrorBody(t *testing.T, response *httptest.ResponseRecorder, status int, path string) {
+	t.Helper()
+	if response.Code != status {
+		t.Errorf("status = %d, want %d", response.Code, status)
+	}
+	if got, want := response.Header().Get("Content-Type"), contentTypeJSON; got != want {
+		t.Errorf("Content-Type = %q, want %q", got, want)
+	}
+
+	body := response.Body.Bytes()
+	if keys := jsonKeysInOrder(t, body); !slices.Equal(keys, containerErrorKeys) {
+		t.Fatalf("body keys = %v, want %v in that order (message must be absent: include-message is never)",
+			keys, containerErrorKeys)
+	}
+
+	var fields map[string]any
+	if err := json.Unmarshal(body, &fields); err != nil {
+		t.Fatalf("body is not a JSON object: %v", err)
+	}
+	if fields["status"] != float64(status) {
+		t.Errorf("status field = %v, want %d", fields["status"], status)
+	}
+	if fields["error"] != http.StatusText(status) {
+		t.Errorf("error field = %v, want %q", fields["error"], http.StatusText(status))
+	}
+	if fields["path"] != path {
+		t.Errorf("path field = %v, want %q", fields["path"], path)
+	}
+	timestamp, ok := fields["timestamp"].(string)
+	if !ok || !bootTimestampPattern.MatchString(timestamp) {
+		t.Errorf("timestamp field = %v, want millisecond precision and a Z offset", fields["timestamp"])
+	}
+}
+
+// jsonKeysInOrder returns the top-level object keys of body in the order they
+// appear on the wire. Decoding into a map loses that order, and the order is
+// part of what is pinned.
+func jsonKeysInOrder(t *testing.T, body []byte) []string {
+	t.Helper()
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	if _, err := decoder.Token(); err != nil {
+		t.Fatalf("body is not a JSON object: %v", err)
+	}
+	keys := []string{}
+	for decoder.More() {
+		key, err := decoder.Token()
+		if err != nil {
+			t.Fatalf("reading the body's keys: %v", err)
+		}
+		keys = append(keys, key.(string))
+		var discard json.RawMessage
+		if err := decoder.Decode(&discard); err != nil {
+			t.Fatalf("reading the body's values: %v", err)
+		}
+	}
+	return keys
 }

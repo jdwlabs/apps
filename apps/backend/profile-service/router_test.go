@@ -115,7 +115,10 @@ func TestRouterReproducesTheMeasuredSpringRouting(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var seen string
 			router := profileShapedRouter(t, &seen)
-			request := httptest.NewRequest(tc.method, tc.path, nil)
+			// Authenticated, because a refusal's status now depends on it:
+			// the router sits inside the middleware in the served handler, and
+			// an anonymous refusal is a 401 rather than the status resolved.
+			request := authenticatedRequest(tc.method, tc.path)
 			if tc.accept != "" {
 				request.Header.Set("Accept", tc.accept)
 			}
@@ -159,9 +162,12 @@ func TestRouterRefusesTwoRegistrationsOfTheSameOperation(t *testing.T) {
 	}
 }
 
-func TestRouterSendsNoBodyOnARefusal(t *testing.T) {
-	// The deployed service writes every routing refusal through sendError with
-	// server.error.include-message unset, so the body is empty.
+func TestRouterAnswersARefusalTheWayTheContainerDoes(t *testing.T) {
+	// A routing refusal is a status the container sets, not one a handler
+	// composed, so it carries whatever the forward to /error renders. With a
+	// verified token that is Boot's error body; the router sits inside the
+	// authentication middleware, so the principal is on the request by the time
+	// it resolves. Measured on a booted usersrole for 404 and 405 alike.
 	var seen string
 	router := profileShapedRouter(t, &seen)
 
@@ -169,22 +175,41 @@ func TestRouterSendsNoBodyOnARefusal(t *testing.T) {
 		name   string
 		method string
 		path   string
+		status int
 	}{
-		{name: "not found", method: http.MethodGet, path: "/api/nothing"},
-		{name: "method not allowed", method: http.MethodPatch, path: "/api/profiles"},
+		{name: "not found", method: http.MethodGet, path: "/api/nothing", status: http.StatusNotFound},
+		{
+			name: "method not allowed", method: http.MethodPatch, path: "/api/profiles",
+			status: http.StatusMethodNotAllowed,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			response := httptest.NewRecorder()
 
-			router.ServeHTTP(response, httptest.NewRequest(tc.method, tc.path, nil))
+			router.ServeHTTP(response, authenticatedRequest(tc.method, tc.path))
 
-			if body := response.Body.String(); body != "" {
-				t.Errorf("body = %q, want empty", body)
-			}
-			if contentType := response.Header().Get("Content-Type"); contentType != "" {
-				t.Errorf("Content-Type = %q, want unset", contentType)
-			}
+			assertContainerErrorBody(t, response, tc.status, tc.path)
 		})
+	}
+}
+
+func TestRouterAnswers401ToARefusalWithNoToken(t *testing.T) {
+	// The other half of the same rule, and the one that changes a status rather
+	// than a body: an anonymous request that reaches the router at all is one on
+	// a public path, and the JVM answers it 401 — its forward to /error is
+	// refused a second time, and the entry point's status replaces the 404.
+	// Measured on a booted usersrole for /auth/nope and /actuator/nope alike.
+	var seen string
+	router := profileShapedRouter(t, &seen)
+	response := httptest.NewRecorder()
+
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/nothing", nil))
+
+	if response.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", response.Code, http.StatusUnauthorized)
+	}
+	if body := response.Body.String(); body != "" {
+		t.Errorf("body = %q, want empty", body)
 	}
 }
 
