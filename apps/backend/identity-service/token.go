@@ -2,13 +2,14 @@ package main
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+
+	"libs/backend/shared/auth"
 )
 
 // defaultTokenTTL is the deployed lifetime, matching the JVM's
@@ -46,7 +47,10 @@ func newMinter(secretKeyBase64, issuerOrigin string, ttl time.Duration) (*minter
 	if secretKeyBase64 == "" {
 		return nil, fmt.Errorf("%w: the secret is empty", ErrNoSigningKey)
 	}
-	key, err := base64.StdEncoding.DecodeString(secretKeyBase64)
+	// The verifier's decoder, not base64's: this service signs the tokens both
+	// services verify, so the key it derives from the shared secret has to be
+	// the key they derive from it.
+	key, err := auth.DecodeSecretKey(secretKeyBase64)
 	if err != nil {
 		return nil, fmt.Errorf("%w: not base64: %w", ErrNoSigningKey, err)
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +18,18 @@ import (
 
 // A published test key, not a credential: it signs nothing outside this suite.
 const paritySecret = "dGVzdC1zZWNyZXQtd2l0aC10aGlydHktdHdvLWJ5dGVzISE=" // gitleaks:allow
+
+// The deployed secret carries no final padding, which leaves its length 2 more
+// than a multiple of 4. Thirty-four key bytes encode to that same shape, so
+// these two forms of one key put the minter through what the cluster hands it.
+// Encoded from a plaintext rather than pasted, so neither reads as a credential
+// and neither can drift from the other.
+const parityKeyPlaintext = "thirty-four bytes of test key!!!!!"
+
+var (
+	parityUnpaddedSecret = base64.RawStdEncoding.EncodeToString([]byte(parityKeyPlaintext))
+	parityPaddedSecret   = base64.StdEncoding.EncodeToString([]byte(parityKeyPlaintext))
+)
 
 const parityIssuerOrigin = "http://localhost:8080"
 

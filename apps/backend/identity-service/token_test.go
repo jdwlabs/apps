@@ -307,3 +307,38 @@ func TestTheDecoyIsAsExpensiveToCompareAgainstAsAStoredHash(t *testing.T) {
 		t.Error("a password a caller could present matched the decoy")
 	}
 }
+
+// The minter derives its signing key from the same secret the verifier derives
+// its checking key from, so the two have to read an unpadded value the same
+// way. They would otherwise disagree silently: this service would sign with one
+// key and both services would check with another, and every sign-in would
+// succeed while every subsequent request was refused.
+func TestAMinterSigningWithAnUnpaddedSecretIsCheckedByThePaddedOne(t *testing.T) {
+	if got := len(parityUnpaddedSecret) % 4; got != 2 {
+		t.Fatalf("the unpadded fixture's length is %d more than a multiple of 4, want 2; it no longer has the deployed secret's shape", got)
+	}
+
+	made, err := newMinter(parityUnpaddedSecret, parityIssuerOrigin, defaultTokenTTL)
+	if err != nil {
+		t.Fatalf("newMinter refused the shape of the deployed secret: %v", err)
+	}
+	token, err := made.Mint(Credential{
+		UserID: selfUserID, EmailAddress: selfEmail, Roles: []string{"USER"},
+	})
+	if err != nil {
+		t.Fatalf("Mint: %v", err)
+	}
+
+	verifier, err := auth.NewVerifier(auth.Config{
+		SecretKeyBase64:  parityPaddedSecret,
+		ExpectedIssuer:   parityIssuerOrigin + "/auth/authenticate",
+		ExpectedAudience: parityIssuerOrigin,
+	})
+	if err != nil {
+		t.Fatalf("NewVerifier: %v", err)
+	}
+
+	if _, err := verifier.Verify(token); err != nil {
+		t.Errorf("a token signed from the unpadded secret did not verify against the padded form of the same key: %v", err)
+	}
+}

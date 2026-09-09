@@ -239,3 +239,57 @@ func decodeSegments(t *testing.T, token string) (header, claims map[string]any) 
 	}
 	return header, claims
 }
+
+// The padding half of the parity suite. The deployed secret carries no final
+// padding character and the JVM has always accepted it, so these assert the
+// same two directions as the fixtures above with the padding stripped from the
+// secret on this side.
+//
+// Stripping padding cannot change the key bytes, so a signature check is the
+// proof: HMAC over a different key produces a different signature, and the
+// tokens below were signed by the other implementation over the padded form.
+
+func TestATokenMintedByTheJvmVerifiesUnderTheUnpaddedSecret(t *testing.T) {
+	at := time.Unix(jvmMintedClaims.IssuedAt, 0).Add(time.Minute)
+	v, err := auth.NewVerifier(auth.Config{
+		SecretKeyBase64:  paritySecretUnpadded,
+		ExpectedIssuer:   jvmMintedClaims.Issuer,
+		ExpectedAudience: jvmMintedClaims.Audience,
+		Now:              func() time.Time { return at },
+	})
+	if err != nil {
+		t.Fatalf("NewVerifier: %v", err)
+	}
+
+	p, err := v.Verify(jvmMintedToken)
+	if err != nil {
+		t.Fatalf("a token minted by JwtService did not verify against the unpadded form of the secret it was signed with: %v", err)
+	}
+	if p.Subject != jvmMintedClaims.Subject {
+		t.Errorf("Subject = %q, want %q", p.Subject, jvmMintedClaims.Subject)
+	}
+}
+
+// The token JwtGoParityTests verifies, minted here from the unpadded secret.
+// Byte-identical output means the key bytes are identical, which is the whole
+// claim: the JVM half of this suite verifies the same string against the padded
+// form and against the unpadded one.
+func TestTheMinterProducesTheJvmSideFixtureFromTheUnpaddedSecret(t *testing.T) {
+	userID, profileID := int64(42), int64(7)
+	token, err := authtest.Minter{
+		SecretKeyBase64: paritySecretUnpadded,
+		IssuerOrigin:    issuerOrigin,
+		TTL:             goFixtureLifetime,
+		Now:             func() time.Time { return goFixtureIssuedAt },
+		TokenID:         func() string { return goFixtureTokenID },
+	}.Mint(authtest.Claims{
+		Subject: "parity@jdw.com", Roles: []string{"ADMIN"}, UserID: &userID, ProfileID: &profileID,
+	})
+	if err != nil {
+		t.Fatalf("Mint: %v", err)
+	}
+
+	if token != goMintedToken {
+		t.Errorf("minting from the unpadded secret produced a different token from the padded one.\ngot  %s\nwant %s", token, goMintedToken)
+	}
+}
