@@ -111,13 +111,10 @@ var containerErrorKeys = []string{"timestamp", "status", "error", "path"}
 // measured on a booted usersrole. status and error are asserted by value;
 // timestamp and path vary per request and per instant, so they are asserted
 // by shape instead.
-func assertContainerErrorBody(t *testing.T, recorder *httptest.ResponseRecorder, path string) {
+func assertContainerErrorBody(t *testing.T, recorder *httptest.ResponseRecorder, status int, path string) {
 	t.Helper()
-	if recorder.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d", recorder.Code, http.StatusForbidden)
-	}
-	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != authhttp.ReasonNotAuthorized {
-		t.Errorf("%s = %q, want %q", authhttp.HeaderAccessDeniedReason, got, authhttp.ReasonNotAuthorized)
+	if recorder.Code != status {
+		t.Errorf("status = %d, want %d", recorder.Code, status)
 	}
 	if got := recorder.Header().Get("Content-Type"); got != "application/json" {
 		t.Errorf("Content-Type = %q, want application/json", got)
@@ -133,19 +130,26 @@ func assertContainerErrorBody(t *testing.T, recorder *httptest.ResponseRecorder,
 	if err := json.Unmarshal(body, &fields); err != nil {
 		t.Fatalf("body did not decode as JSON: %v", err)
 	}
-	if fields["status"] != float64(http.StatusForbidden) {
-		t.Errorf("status field = %v, want %d", fields["status"], http.StatusForbidden)
+	if fields["status"] != float64(status) {
+		t.Errorf("status field = %v, want %d", fields["status"], status)
 	}
-	if fields["error"] != "Forbidden" {
-		t.Errorf("error field = %v, want Forbidden", fields["error"])
+	if fields["error"] != http.StatusText(status) {
+		t.Errorf("error field = %v, want %q", fields["error"], http.StatusText(status))
 	}
 	if fields["path"] != path {
 		t.Errorf("path field = %v, want %q", fields["path"], path)
 	}
 	timestamp, ok := fields["timestamp"].(string)
 	if !ok || !bootTimestampPattern.MatchString(timestamp) {
-		t.Errorf("timestamp field = %v, want RFC 3339 with millisecond precision and an explicit "+
-			"offset like 2026-09-06T04:20:00.123+00:00", fields["timestamp"])
+		t.Errorf("timestamp field = %v, want millisecond precision and a Z offset "+
+			"like 2026-09-06T04:20:00.123Z", fields["timestamp"])
+	}
+}
+
+func assertAccessDeniedReason(t *testing.T, recorder *httptest.ResponseRecorder) {
+	t.Helper()
+	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != authhttp.ReasonNotAuthorized {
+		t.Errorf("%s = %q, want %q", authhttp.HeaderAccessDeniedReason, got, authhttp.ReasonNotAuthorized)
 	}
 }
 
@@ -494,7 +498,8 @@ func TestWriteForbiddenMatchesTheAccessDeniedHandler(t *testing.T) {
 
 	authhttp.WriteForbidden(recorder, request)
 
-	assertContainerErrorBody(t, recorder, "/api/profiles/7")
+	assertAccessDeniedReason(t, recorder)
+	assertContainerErrorBody(t, recorder, http.StatusForbidden, "/api/profiles/7")
 }
 
 func TestPrincipalFromReportsAnEmptyContext(t *testing.T) {
@@ -514,7 +519,8 @@ func TestAuthorizeWritesTheAccessDeniedShapeOnDenial(t *testing.T) {
 	if allowed {
 		t.Fatal("Authorize allowed a caller reading another user")
 	}
-	assertContainerErrorBody(t, recorder, "/api/users/99")
+	assertAccessDeniedReason(t, recorder)
+	assertContainerErrorBody(t, recorder, http.StatusForbidden, "/api/users/99")
 }
 
 func TestAuthorizeWritesNothingWhenItAllows(t *testing.T) {
@@ -562,10 +568,52 @@ func TestAuthorizeAnswersServerErrorWhenTheRuleCannotBeDecided(t *testing.T) {
 	if allowed {
 		t.Fatal("Authorize allowed a request whose rule could not be decided")
 	}
-	if recorder.Code != http.StatusInternalServerError {
-		t.Errorf("status = %d, want 500; an undecidable rule is not a denial", recorder.Code)
-	}
 	if got := recorder.Header().Get(authhttp.HeaderAccessDeniedReason); got != "" {
 		t.Errorf("%s = %q; a lookup failure says nothing about the caller's rights", authhttp.HeaderAccessDeniedReason, got)
+	}
+	// 500 and not a denial, and the body the container renders for it: the
+	// caller holds a verified token, so the JVM's forward to /error
+	// re-authenticates and BasicErrorController runs.
+	assertContainerErrorBody(t, recorder, http.StatusInternalServerError, "/api/profiles/7")
+}
+
+func TestWriteContainerErrorRendersTheErrorBodyForEveryStatusTheContainerSets(t *testing.T) {
+	// The statuses a booted usersrole was driven through for this: an
+	// unconvertible path variable, a mapping that matched nothing, a mapping
+	// matched by an unmapped method, a produces condition that dropped every
+	// candidate, and a store that threw. All five carry the same body.
+	for _, status := range []int{
+		http.StatusBadRequest,
+		http.StatusNotFound,
+		http.StatusMethodNotAllowed,
+		http.StatusNotAcceptable,
+		http.StatusInternalServerError,
+	} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodGet, "/api/users/abc", nil)
+			principal := &auth.Principal{Subject: "user@jdw.com", Roles: []string{"USER"}, UserID: ptr(42)}
+			request = request.WithContext(authhttp.WithPrincipal(request.Context(), principal))
+
+			authhttp.WriteContainerError(recorder, request, status)
+
+			assertContainerErrorBody(t, recorder, status, "/api/users/abc")
+		})
+	}
+}
+
+func TestWriteContainerErrorAnswers401ToACallerWhoseForwardWouldBeRefused(t *testing.T) {
+	// No principal means no token on the request, and in the JVM that means the
+	// forward to /error is refused a second time: the entry point commences and
+	// its 401 replaces whatever status the first dispatch set.
+	for _, status := range []int{http.StatusBadRequest, http.StatusNotFound, http.StatusInternalServerError} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequest(http.MethodPost, "/auth/user", nil)
+
+			authhttp.WriteContainerError(recorder, request, status)
+
+			assertRefusalShape(t, recorder, http.StatusUnauthorized, authhttp.ReasonAuthenticationRequired)
+		})
 	}
 }

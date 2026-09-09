@@ -1,18 +1,26 @@
 // Package authhttp wires the verifier and the authorization rules into
 // net/http, and refuses requests the way the Spring application refuses them.
 //
-// The two refusals are not symmetric, and that is measured, not assumed.
-// CustomAuthenticationEntryPoint's sendError forwards to /error with no
-// token, so AuthorizationFilter refuses that forwarded dispatch too and
-// BasicErrorController never runs: 401 answers with Content-Length 0 and no
-// Content-Type, whatever the request's Accept header. CustomAccessDeniedHandler's
-// sendError forwards with the same verified token that got the caller past
-// authentication the first time, so that dispatch is let through and
-// BasicErrorController renders its standard error JSON: 403 carries a real
-// application/json body shaped like the frozen contract's ContainerError
-// schema, with message absent because server.error.include-message is never,
-// not merely unset to "". Reproducing each status's real behaviour — one
-// empty, one not — is what keeps the cutover invisible.
+// One rule decides every refusal shape, and it is measured rather than assumed.
+// A status the container sets — through sendError or through an exception
+// nobody caught — is not written to the wire directly: the container forwards
+// the request to /error, and that forward re-enters the whole filter chain,
+// JwtAuthenticationFilter included, because the filter overrides
+// shouldNotFilterErrorDispatch to false. So the caller's own Authorization
+// header decides what the forward finds. A verified token authenticates the
+// second dispatch as it did the first, BasicErrorController runs to completion,
+// and the response carries Boot's standard error JSON — the frozen contract's
+// ContainerError, with message absent because server.error.include-message is
+// never rather than merely unset to "". No token, and AuthorizationFilter
+// refuses the forward as well: BasicErrorController never runs, the entry point
+// commences instead, and whatever status the first dispatch set is replaced by
+// 401 with Content-Length 0 and no Content-Type.
+//
+// Measured against a booted usersrole on a real port, driving 400 from an
+// unconvertible path variable, 404 and 405 from the handler mapping, 406 from a
+// produces condition, 500 from a store that throws, and 403 from method
+// security: every one carries the JSON body with a token and answers 401 empty
+// without one. Reproducing both halves is what keeps the cutover invisible.
 package authhttp
 
 import (
@@ -142,13 +150,14 @@ func PrincipalFrom(ctx context.Context) (*auth.Principal, bool) {
 // A rule that cannot be decided — a failed profile lookup, say — answers 500
 // rather than 403: an infrastructure failure is not a statement about the
 // caller's rights, and reporting it as one hides an outage behind a plausible
-// refusal.
+// refusal. It goes out through WriteContainerError, so it carries the same
+// body the JVM renders for any status it reaches by throwing.
 func Authorize(w http.ResponseWriter, r *http.Request, a authz.Authorizer, rule authz.Rule, subject authz.Subject) bool {
 	principal, _ := PrincipalFrom(r.Context())
 	allowed, err := a.Allow(r.Context(), rule, principal, subject)
 	switch {
 	case err != nil:
-		w.WriteHeader(http.StatusInternalServerError)
+		WriteContainerError(w, r, http.StatusInternalServerError)
 		return false
 	case allowed:
 		return true
@@ -198,13 +207,36 @@ const bootTimestampLayout = "2006-01-02T15:04:05.000Z07:00"
 // response carries its standard error body instead of being empty.
 func WriteForbidden(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(HeaderAccessDeniedReason, ReasonNotAuthorized)
+	writeContainerErrorBody(w, r, http.StatusForbidden)
+}
+
+// WriteContainerError answers a status the container reaches rather than a
+// handler composes: an argument that would not convert, a mapping that matched
+// nothing, a store that failed, an authorization rule that could not be
+// decided. Which of the two shapes it writes is not the caller's decision —
+// it is the request's, as it is in the JVM, where the forward to /error either
+// re-authenticates or is refused a second time.
+//
+// The 401 it writes for an anonymous caller replaces the status it was asked
+// for. That is not a fallback: a caller with no token reads 401 from the
+// deployed service whatever went wrong behind it, and answering 500 here would
+// disclose more than the JVM does as well as diverge from it.
+func WriteContainerError(w http.ResponseWriter, r *http.Request, status int) {
+	if _, authenticated := PrincipalFrom(r.Context()); !authenticated {
+		WriteUnauthorized(w, r)
+		return
+	}
+	writeContainerErrorBody(w, r, status)
+}
+
+func writeContainerErrorBody(w http.ResponseWriter, r *http.Request, status int) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusForbidden)
+	w.WriteHeader(status)
 	// A failed write means the client is gone; there is nobody left to tell.
 	_ = json.NewEncoder(w).Encode(containerError{
 		Timestamp: time.Now().UTC().Format(bootTimestampLayout),
-		Status:    http.StatusForbidden,
-		Error:     http.StatusText(http.StatusForbidden),
+		Status:    status,
+		Error:     http.StatusText(status),
 		Path:      r.URL.Path,
 	})
 }

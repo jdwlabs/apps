@@ -117,7 +117,8 @@ no longer works.
 Refusals carry the `Access-Denied-Reason` header: `Authentication Required`
 with 401 from the middleware, `Not Authorized` with 403 from `WriteForbidden`.
 The 401 body is empty; the 403 body is not — see the note on the error body
-below.
+below, which is also where `WriteContainerError` belongs: every other status
+the container sets rather than a handler composes goes through it.
 
 **Mount the CORS layer outside this middleware**, the ordering Spring uses,
 where `CorsFilter` runs ahead of the JWT filter. A browser never attaches
@@ -162,11 +163,42 @@ build rather than being discovered by whoever writes the handler.
 
 ---
 
-## 📭 The error body: what the contract says, and what this library sends
+## 📭 The error body: one rule, measured, for every status the container sets
 
-The frozen contracts document a `ContainerError` JSON body on 403 and an empty
-body on 401. **The two statuses are not symmetric, and this library now
-reproduces both halves.**
+A status this library writes is one of two kinds. A handler that **composes** a
+response — a 404 carrying `User not found with id 42`, a 409, a validation
+map — writes exactly what it composed, and nothing below applies. A status the
+**container** sets — `sendError`, or an exception nobody caught — never reaches
+the wire directly: the container forwards the request to `/error`, and that
+forward re-enters the whole filter chain.
+
+**What the forward finds is what the caller sent.**
+`JwtAuthenticationFilter` overrides `shouldNotFilterErrorDispatch()` to `false`,
+so it runs on the error dispatch too, against the same `Authorization` header.
+A verified token authenticates the second dispatch as it did the first,
+`BasicErrorController` runs, and the response carries Boot's error JSON. No
+token, and `AuthorizationFilter` refuses the forward as well — `/error` is not
+one of the `permitAll` matchers — so the entry point commences instead and
+**its 401 replaces whatever status the first dispatch set.**
+
+`WriteContainerError` is that rule in one function: it takes the status the
+container would have set and decides the shape from the request's principal.
+`WriteForbidden` and `WriteUnauthorized` are the two named ends of the same
+rule, kept separate because each also sets `Access-Denied-Reason`.
+
+Measured against a booted `usersrole` on a real port, in
+`FilterChainContractParityTests`, driving 400 from an unconvertible path
+variable, 404 and 405 from the handler mapping, 406 from a `produces`
+condition, 500 from a store that throws, and 403 from method security:
+
+| Status the container sets | With a verified token          | With no token |
+| ------------------------- | ------------------------------ | ------------- |
+| 400, 404, 405, 406, 500   | that status + `ContainerError` | 401, empty    |
+| 403                       | 403 + `ContainerError`         | not reachable |
+
+The second column is not a fallback. It is what the deployed service answers,
+and answering `500` there instead would both diverge from it and tell an
+anonymous caller more than the JVM does.
 
 **401 (`WriteUnauthorized`) is genuinely empty.** `CustomAuthenticationEntryPoint`
 calls `sendError` with a message, `server.error.include-message` is set
@@ -188,13 +220,23 @@ real `application/json` body, shaped exactly like the frozen `ContainerError`
 schema (`timestamp`, `status`, `error`, `path` — no `message`, since
 `include-message` is `never`).
 
-**`WriteForbidden` sends that body.** It writes `Content-Type: application/json`
+**Both writers send that body.** They write `Content-Type: application/json`
 and a fixed-order JSON object — `timestamp`, `status`, `error`, `path`, with no
-`message` key at all rather than a blank one — matching what a 403 with a
-valid token actually sends. `timestamp` uses millisecond precision with an
-explicit numeric zone offset (`2026-09-06T04:20:00.123+00:00`), the shape
-Boot's Jackson configuration renders; a caller should compare it by shape, not
-by value, since the two implementations answer at different instants.
+`message` key at all rather than a blank one — matching what an authenticated
+caller actually reads. `timestamp` is millisecond precision — the
+`java.util.Date` `DefaultErrorAttributes` stamps holds no more — with a `Z`
+offset (`2026-09-06T04:20:00.123Z`); Jackson serializes in UTC whatever zone
+the JVM runs in, so the offset is always zero and always written as that
+letter. A caller should compare it by shape, not by value, since the two
+implementations answer at different instants.
+
+> An earlier revision of this file said the offset was written `+00:00`, and
+> `bootTimestampLayout` avoided Go's `Z07:00` verb on purpose to produce it.
+> That was Jackson 2's `StdDateFormat`. Boot 4.1.1 resolves Jackson 3, whose
+> ISO-8601 output writes `Z`, and a booted `usersrole` was re-measured to
+> confirm it — on error bodies and on the audit timestamps in every success
+> payload alike, with the JVM's default zone forced to `Asia/Kolkata` to prove
+> the zone plays no part.
 
 One consequence worth knowing about the JVM side: **setting
 `server.error.include-message`** would change the wire format of the 403 body
