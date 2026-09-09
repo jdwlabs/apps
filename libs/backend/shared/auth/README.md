@@ -334,6 +334,9 @@ AUTH_PARITY_PRINT_TOKEN=1 go test . -run TestPrintGoMintedToken -v
 
 ## 📚 Related Packages
 
+- [`backend-shared-servicehttp`](../servicehttp): the router, CORS layer and
+  metrics the two Go services serve through; its router writes refusals with
+  `WriteContainerError` from this library.
 - [`backend-shared-util`](../util): the other Go library shared across services.
 - [`usersrole`](../../../../apps/backend/usersrole): the Spring service whose
   behaviour this library reproduces, and the JVM half of the parity suite.
