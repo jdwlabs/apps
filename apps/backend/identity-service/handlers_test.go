@@ -124,3 +124,59 @@ func TestARegistrationForATakenAddressRefusesBeforeItEncodes(t *testing.T) {
 			"the encode is running before the check", shortest)
 	}
 }
+
+// missingUserStore reports the id in the path as absent from both the lookup
+// and the write, so the refusal is the same whichever of the two reaches it
+// first and only the cost separates them.
+type missingUserStore struct{ stubStore }
+
+func (missingUserStore) UserByID(context.Context, int64) (User, error) {
+	return User{}, ErrUserNotFound
+}
+
+func (missingUserStore) UpdateUser(context.Context, int64, string, string, int64) (User, error) {
+	return User{}, ErrUserNotFound
+}
+
+func TestAnUpdateToAMissingUserRefusesBeforeItEncodes(t *testing.T) {
+	// UserService.updateUser reads the row before it encodes, and the order is
+	// the whole difference: encoding first spends a bcrypt round on every update
+	// naming an id that is not there, for a 404 that was settled before the
+	// request arrived. The rule gates this path, so it is waste rather than the
+	// flood /auth/user would carry — but it is the same asymmetry the create
+	// already had fixed.
+	//
+	// Asserted by cost for the same reason as the registration above: the floor
+	// sits far below one bcrypt round at the cost this service encodes at and
+	// far above a refusal without one.
+	const bcryptRoundFloor = 5 * time.Millisecond
+	server := parityServer(t, missingUserStore{})
+	body := `{"emailAddress":"nobody@jdw.com","password":"` + fixturePassword + `"}`
+
+	shortest := time.Hour
+	for range 3 {
+		request := httptest.NewRequest(http.MethodPut, "/api/users/987654", strings.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Authorization", "Bearer "+mint(t, admin().claims))
+		response := httptest.NewRecorder()
+
+		start := time.Now()
+		server.ServeHTTP(response, request)
+		if elapsed := time.Since(start); elapsed < shortest {
+			shortest = elapsed
+		}
+
+		if response.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want %d (body %q)",
+				response.Code, http.StatusNotFound, response.Body.String())
+		}
+		if got := response.Body.String(); got != "User not found with id 987654" {
+			t.Errorf("body = %q, want the message the JVM composes", got)
+		}
+	}
+
+	if shortest >= bcryptRoundFloor {
+		t.Errorf("an update to a missing user was refused in %s, which is a bcrypt round; "+
+			"the encode is running before the lookup", shortest)
+	}
+}
