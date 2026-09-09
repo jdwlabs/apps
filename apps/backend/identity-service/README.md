@@ -194,7 +194,18 @@ Deliberate departures, each with its reason:
 - **The public registration checks the address before it encodes.** The JVM does
   too; the order is called out because reversing it makes every attempt at an
   address already registered cost a bcrypt round on an endpoint that takes no
-  token.
+  token. `PUT /api/users/{userId}` reads the row before it encodes for the same
+  reason — a rule gates it, so it is waste rather than a flood, but it is the
+  same asymmetry and `UserService.updateUser` does not have it.
+- **A status the container sets carries the container's body.** An argument that
+  will not convert, a path nothing routes, a method a path does not map, an
+  `Accept` a `produces` cannot satisfy, a storage failure, a rule that could not
+  be decided: none of these is a response a handler composed, so all of them
+  answer the way the JVM answers — Boot's error JSON for a caller holding a
+  verified token, and the empty 401 for one holding none, whatever status the
+  first dispatch set. The rule, and what was measured to establish it, is
+  `x-container-error` in the contract and the error-body section of
+  `libs/backend/shared/auth/README.md`.
 
 Two behaviours here were once recorded as departures and are not: both were the
 contract being wrong about the JVM rather than this service diverging from it,

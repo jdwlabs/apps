@@ -104,6 +104,53 @@ x-jwt-claims:
     nbf: Not-before, equal to the issue time.
     exp: Expiry, issue time plus the configured TTL.
 
+x-container-error:
+  rule: |
+    A status this service answers is one of two kinds, and the kind decides the
+    body. A handler that **composes** a response — `ResourceNotFoundException`
+    answering `text/plain`, a validation map, a success payload — writes exactly
+    what it composed. A status the **container** sets, through
+    `HttpServletResponse.sendError` or through an exception nobody caught, never
+    reaches the wire directly: the container forwards the request to `/error`,
+    and that forward re-enters the whole filter chain.
+  whatTheForwardFinds: |
+    `JwtAuthenticationFilter` overrides `shouldNotFilterErrorDispatch()` to
+    `false`, so it runs on the error dispatch too, against the same
+    `Authorization` header the caller sent. A verified token authenticates the
+    second dispatch as it did the first, `BasicErrorController` runs, and the
+    response carries the `ContainerError` body. With no token,
+    `AuthorizationFilter` refuses the forward as well — `/error` is not one of
+    the `permitAll` matchers — so `BasicErrorController` never runs, the
+    authentication entry point commences instead, and **its 401 replaces the
+    status the first dispatch had set.**
+  measured: |
+    Against a booted `usersrole` on a real port, in
+    `FilterChainContractParityTests`. With a verified token: 400 from an
+    unconvertible path variable or paging parameter, 404 from a path nothing
+    maps, 405 from a method a mapped path does not accept, 406 from a `produces`
+    condition, 500 from a repository that throws, and 403 from method security —
+    every one `application/json` carrying `timestamp`, `status`, `error` and
+    `path`, with no `message`, since `server.error.include-message` is `never`.
+    With no token, every one of them answers 401 with `Content-Length: 0` and no
+    `Content-Type`.
+  storageFailures: |
+    A failure of the datastore is the commonest status of this kind and the one
+    deliberately **not** listed on each operation: it is a property of the
+    container and the database rather than of any operation, and repeating it on
+    every operation would say nothing an implementer needs that this block does
+    not. It answers 500 with the `ContainerError` body on every operation
+    reachable only with a token, and 401 with no body on the two `/auth`
+    operations, which are reachable without one. The statuses that **are** listed
+    per operation are the ones an operation's own arguments or routing decide.
+  acceptText: |
+    `BasicErrorController` negotiates its own response against the request's
+    `Accept`. `application/json`, `*/*` and an absent `Accept` all render the
+    JSON above; `text/html` renders Boot's whitelabel HTML page instead, and an
+    `Accept` admitting neither renders nothing at all. The Go services always
+    answer JSON. No client is affected — the frontends never ask for `text/html`
+    from these paths — and reproducing a whitelabel page is not worth the code it
+    would take.
+
 paths:
   /auth/authenticate:
     post:
@@ -194,6 +241,8 @@ paths:
                 $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
 
@@ -274,6 +323,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/UnconvertableParameter'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -386,6 +437,8 @@ paths:
             Deleted, no body. springdoc reports `200` with a `User` body because
             the handler's declared return type is `ResponseEntity<User>`; the
             body it actually builds is `noContent()`.
+        '400':
+          $ref: '#/components/responses/UnconvertableParameter'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -627,6 +680,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/UnconvertableParameter'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -694,6 +749,8 @@ paths:
       responses:
         '204':
           description: Deleted, no body. springdoc reports 200; the handler builds `noContent()`.
+        '400':
+          $ref: '#/components/responses/UnconvertableParameter'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -869,24 +926,65 @@ components:
   responses:
     UnconvertableParameter:
       description: |
-        `page` or `size` was not convertible to an `int32`. Spring's argument
-        resolution fails before the handler runs and nothing in
-        `GlobalExceptionHandler` catches the resulting exception, so the status
-        comes from the container rather than from a composed response. Distinct
-        from `BadRequest`, which is what the two body handlers produce; no
-        client reads either body, and `http-error-message.util.ts` keys on the
-        status alone.
-    BadRequest:
-      description: |
-        Two body shapes share this status. Bean-validation failures produce a
-        JSON object of field name to message, from
-        `GlobalExceptionHandler.handle(MethodArgumentNotValidException)`. An
-        unparseable body produces the fixed `text/plain` string
-        `Request body is invalid. Please check the format and try again.`
+        A path variable or a `page`/`size` query parameter was not convertible to
+        the numeric type the handler declares. Spring's argument resolution fails
+        before the handler runs and nothing in `GlobalExceptionHandler` catches
+        the resulting exception, so this is a status the container sets through
+        `sendError` rather than one a handler composed — and it carries the body
+        the container renders, for the reason `x-container-error` sets out.
+        Distinct from `BadRequest`, which is what the two body handlers produce;
+        no client reads any of the three, and `http-error-message.util.ts` keys
+        on the status alone.
+      x-transcription-correction:
+        corrected: |
+          The response carries the `ContainerError` body, as every status the
+          container sets does for a caller holding a verified token. It is also
+          listed now on every operation that declares a numeric path variable,
+          not only on the listings that declare `page` and `size`.
+        saidBefore: |
+          That the status "comes from the container rather than from a composed
+          response", with no `content` declared at all — which in OpenAPI states
+          that there is no body. Both Go services matched it and wrote the
+          status alone.
+        why: |
+          `sendError` does not write a status to the wire; it forwards to
+          `/error`, and `JwtAuthenticationFilter` overrides
+          `shouldNotFilterErrorDispatch()` to `false`, so that forward
+          re-authenticates against the same `Authorization` header. A caller who
+          reached argument resolution held a valid token by definition — the
+          filter chain runs first — so the forward is let through and
+          `BasicErrorController` renders exactly what it renders for the 403.
+        evidence: |
+          Measured on a booted `usersrole` on a real port, in
+          `FilterChainContractParityTests`: `GET /api/roles/abc` and
+          `GET /api/users?page=abc` with a valid token both answer
+          `400 application/json` with `timestamp`, `status`, `error` and `path`,
+          and no `message`.
+        status: |
+          A behaviour change in both Go services, and a correction to this
+          document rather than to the application: the JVM has always answered
+          this way.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ValidationErrors'
+            $ref: '#/components/schemas/ContainerError'
+    BadRequest:
+      description: |
+        Three body shapes share this status on the operations that reference it.
+        Bean-validation failures produce a JSON object of field name to message,
+        from `GlobalExceptionHandler.handle(MethodArgumentNotValidException)`.
+        An unparseable body produces the fixed `text/plain` string
+        `Request body is invalid. Please check the format and try again.` And a
+        numeric path variable or paging parameter that will not convert produces
+        the container's own `ContainerError` — the same 400 that
+        `UnconvertableParameter` describes, merged in here because an operation
+        answers one status with one response object.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ValidationErrors'
+              - $ref: '#/components/schemas/ContainerError'
         text/plain:
           schema:
             type: string
@@ -898,6 +996,14 @@ components:
         applies and no error page renders: the response carries no body and no
         `Content-Type`, for every `Accept` value. Clients key off the status and
         the header; there is no body to key off.
+
+        A second route reaches this response, and it replaces a status rather
+        than raising one: any status the container sets on a request carrying no
+        token. `/error` is outside the `permitAll` matchers, so the forward
+        `sendError` makes is refused a second time and the entry point answers
+        instead — see `x-container-error`. That is why `POST /auth/user` lists a
+        401 although it takes no token, and why an unauthenticated request to an
+        unmapped path under `/auth/**` answers 401 rather than 404.
       headers:
         Access-Denied-Reason:
           description: '`Authentication Required`'
