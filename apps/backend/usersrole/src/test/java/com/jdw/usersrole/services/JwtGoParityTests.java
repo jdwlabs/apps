@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jdw.usersrole.models.SecurityUser;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.io.Decoders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,6 +53,17 @@ class JwtGoParityTests {
      * either verifies against the other without a shared environment.
      */
     private static final String PARITY_SECRET = "bXl0dGVzdHNlY3JldGtleWZvcmpzb253d2VidG9rZW4xMjM0NTY3ODkwIC1uCg==";
+    /**
+     * The same secret with its final padding removed, which is the shape the
+     * deployed secret has: a length two more than a multiple of four. jjwt's
+     * decoder sizes its output from the count of alphabet characters rather
+     * than demanding a whole final quantum, so this service has always accepted
+     * it — the Go library did not, and that asymmetry is what these tests pin.
+     *
+     * <p>Derived from the padded form rather than written out, so the two
+     * cannot drift into being different keys and make the assertions vacuous.
+     */
+    private static final String PARITY_SECRET_UNPADDED = PARITY_SECRET.replace("=", "");
     private static final String ISSUER_ORIGIN = "http://localhost:8080";
     private static final String EXPIRATION_TIME_MS = "7200000";
 
@@ -137,6 +150,52 @@ class JwtGoParityTests {
         assertEquals(Long.parseLong(EXPIRATION_TIME_MS),
                 jvmClaims.getExpiration().getTime() - jvmClaims.getIssuedAt().getTime(),
                 "the token lifetime moved off the configured expiration time");
+    }
+
+    @Test
+    void decodersBase64_shouldReadAnUnpaddedSecretAsTheSameKeyAsThePaddedOne() {
+        assertEquals(2, PARITY_SECRET_UNPADDED.length() % 4,
+                "the unpadded fixture no longer has the deployed secret's shape");
+
+        assertArrayEquals(Decoders.BASE64.decode(PARITY_SECRET), Decoders.BASE64.decode(PARITY_SECRET_UNPADDED),
+                "jjwt read the two forms of one secret as different keys");
+    }
+
+    /**
+     * The direction that matters for a cutover: the Go services mint under the
+     * deployed secret, and this service has to accept what they mint. The token
+     * is the one the Go side signed against the padded form, so verifying it
+     * with the unpadded form injected proves both decoders arrive at the same
+     * key bytes — nothing else makes an HMAC agree.
+     */
+    @Test
+    void extractAllClaims_shouldAcceptAGoMintedTokenWhenTheSecretIsUnpadded() throws Exception {
+        injectField(jwtService, "secretKey", PARITY_SECRET_UNPADDED);
+
+        Claims claims = assertDoesNotThrow(() -> jwtService.extractAllClaims(GO_MINTED_TOKEN),
+                "the Go library's token did not verify against the unpadded secret");
+
+        assertEquals(GO_MINTED_SUBJECT, claims.getSubject(), "sub");
+        assertEquals(GO_MINTED_TOKEN_ID, claims.getId(), "jti");
+    }
+
+    /**
+     * And the other direction, across the padding boundary rather than across
+     * the language one: a token this service mints with the unpadded secret
+     * still verifies under the padded form, which is the state a rotation that
+     * changed only the padding would leave two services in.
+     */
+    @Test
+    void generateToken_shouldMintUnderAnUnpaddedSecretATokenThePaddedSecretVerifies() throws Exception {
+        stubPrincipal();
+        injectField(jwtService, "secretKey", PARITY_SECRET_UNPADDED);
+        String token = jwtService.generateToken(userDetails, ISSUER_ORIGIN);
+
+        injectField(jwtService, "secretKey", PARITY_SECRET);
+
+        Claims claims = assertDoesNotThrow(() -> jwtService.extractAllClaims(token),
+                "a token minted under the unpadded secret did not verify under the padded one");
+        assertEquals(GO_MINTED_SUBJECT, claims.getSubject(), "sub");
     }
 
     /**

@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	"libs/backend/shared/auth"
 )
 
 // DefaultTTL is the deployed token lifetime, in sync with the JVM's
@@ -73,8 +75,12 @@ func (m Minter) tokenID() string {
 	return randomUUIDv4()
 }
 
+// key borrows the verifier's decoder rather than calling base64 directly, so a
+// secret this minter signs with is the one the verifier would derive. A minter
+// that decoded a padded secret and a verifier that decoded an unpadded one
+// would produce tokens neither could check.
 func (m Minter) key() ([]byte, error) {
-	key, err := base64.StdEncoding.DecodeString(m.SecretKeyBase64)
+	key, err := auth.DecodeSecretKey(m.SecretKeyBase64)
 	if err != nil {
 		return nil, fmt.Errorf("decode secret key: %w", err)
 	}

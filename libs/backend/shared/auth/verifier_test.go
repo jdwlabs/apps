@@ -1,8 +1,10 @@
 package auth_test
 
 import (
+	"bytes"
 	"encoding/base64"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +14,13 @@ import (
 
 // Byte-identical to the secret the JVM JwtService unit tests inject.
 const paritySecret = "bXl0dGVzdHNlY3JldGtleWZvcmpzb253d2VidG9rZW4xMjM0NTY3ODkwIC1uCg=="
+
+// paritySecretUnpadded is the same secret with its trailing "=" removed, which
+// leaves a length 2 more than a multiple of 4 — the shape the deployed secret
+// has. Derived from the padded form rather than written out so that the two
+// cannot drift into being different keys, which would make every assertion
+// below pass while proving nothing about padding.
+var paritySecretUnpadded = strings.TrimRight(paritySecret, "=")
 
 const (
 	issuerOrigin = "http://localhost:8080"
@@ -465,4 +474,157 @@ func mintRaw(t *testing.T, alg string, claims map[string]any) string {
 		t.Fatalf("MintRaw: %v", err)
 	}
 	return token
+}
+
+// deployedSecretLength is the length of the base64 secret the two Go services
+// found in UR_JWT_SECRET_KEY. It is 2 more than a multiple of 4 — an unpadded
+// final quantum — which is what every pod's startup error named when it
+// reported illegal base64 data at the byte that quantum begins on.
+const deployedSecretLength = 2046
+
+// deployedKeyBytes is what deployedSecretLength base64 characters carry:
+// 2046 * 6 bits, rounded down to whole bytes. The JVM has been signing with a
+// key this size for as long as the secret has existed.
+const deployedKeyBytes = 1534
+
+func TestAnUnpaddedSecretDecodesToTheSameKeyAsThePaddedOne(t *testing.T) {
+	if got := len(paritySecretUnpadded) % 4; got != 2 {
+		t.Fatalf("the unpadded fixture's length is %d more than a multiple of 4, want 2; it no longer has the deployed secret's shape", got)
+	}
+
+	padded, err := auth.DecodeSecretKey(paritySecret)
+	if err != nil {
+		t.Fatalf("DecodeSecretKey(padded): %v", err)
+	}
+	unpadded, err := auth.DecodeSecretKey(paritySecretUnpadded)
+	if err != nil {
+		t.Fatalf("DecodeSecretKey(unpadded): %v", err)
+	}
+
+	if !bytes.Equal(padded, unpadded) {
+		t.Fatalf("the two forms of one secret decoded to different keys: %d bytes and %d bytes", len(padded), len(unpadded))
+	}
+}
+
+// The two forms decoding alike is necessary but not sufficient: what matters is
+// that a service configured with one can verify a token minted by a service
+// configured with the other, which is the situation a half-finished rotation
+// leaves behind.
+func TestATokenMintedUnderOneFormOfTheSecretVerifiesUnderTheOther(t *testing.T) {
+	forms := map[string]string{"padded": paritySecret, "unpadded": paritySecretUnpadded}
+
+	for mintForm, mintSecret := range forms {
+		for verifyForm, verifySecret := range forms {
+			t.Run(mintForm+" mint, "+verifyForm+" verify", func(t *testing.T) {
+				token, err := authtest.Minter{
+					SecretKeyBase64: mintSecret,
+					IssuerOrigin:    issuerOrigin,
+					Now:             func() time.Time { return mintedAt },
+				}.Mint(authtest.Claims{Subject: "user@jdw.com", UserID: ptr(42)})
+				if err != nil {
+					t.Fatalf("Mint: %v", err)
+				}
+
+				v, err := auth.NewVerifier(auth.Config{
+					SecretKeyBase64:  verifySecret,
+					ExpectedIssuer:   issuerClaim,
+					ExpectedAudience: issuerOrigin,
+					Now:              func() time.Time { return mintedAt.Add(time.Minute) },
+				})
+				if err != nil {
+					t.Fatalf("NewVerifier: %v", err)
+				}
+
+				if _, err := v.Verify(token); err != nil {
+					t.Errorf("Verify: %v", err)
+				}
+			})
+		}
+	}
+}
+
+func TestDecodeSecretKeyToleratesWhitespaceAroundTheSecret(t *testing.T) {
+	want, err := auth.DecodeSecretKey(paritySecret)
+	if err != nil {
+		t.Fatalf("DecodeSecretKey: %v", err)
+	}
+
+	// A secret read from a file or echoed into an environment variable arrives
+	// with a trailing newline; jjwt ignores it, so this has to as well.
+	tests := map[string]string{
+		"trailing newline, padded":   paritySecret + "\n",
+		"trailing newline, unpadded": paritySecretUnpadded + "\n",
+		"surrounded by spaces":       " " + paritySecret + " ",
+		"trailing carriage return":   paritySecretUnpadded + "\r\n",
+	}
+
+	for name, secret := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := auth.DecodeSecretKey(secret)
+			if err != nil {
+				t.Fatalf("DecodeSecretKey: %v", err)
+			}
+			if !bytes.Equal(got, want) {
+				t.Errorf("decoded %d bytes, want the same %d the bare secret gives", len(got), len(want))
+			}
+		})
+	}
+}
+
+// Padding is the whole of the tolerance. Everything here would decode to
+// different bytes on the two sides of the boundary, or to a shortened key, and
+// a key that is merely wrong authorizes nobody without saying so.
+func TestDecodeSecretKeyStillRefusesWhatIsNotBase64(t *testing.T) {
+	tests := map[string]string{
+		"nothing like base64":       "!!!not base64!!!",
+		"interior space":            paritySecretUnpadded[:10] + " " + paritySecretUnpadded[11:],
+		"interior newline":          paritySecretUnpadded[:10] + "\n" + paritySecretUnpadded[11:],
+		"url-safe minus":            paritySecretUnpadded[:10] + "-" + paritySecretUnpadded[11:],
+		"url-safe underscore":       paritySecretUnpadded[:10] + "_" + paritySecretUnpadded[11:],
+		"trailing stray character":  paritySecretUnpadded + "!",
+		"length one past a quantum": paritySecretUnpadded + "AAA",
+	}
+
+	for name, secret := range tests {
+		t.Run(name, func(t *testing.T) {
+			if _, err := auth.DecodeSecretKey(secret); err == nil {
+				t.Error("DecodeSecretKey accepted a secret that is not standard base64")
+			}
+		})
+	}
+}
+
+// The shape the cluster actually holds. The decode is the first of two things
+// standing between these services and a start; the assertion below records the
+// second, so that fixing one and shipping is not mistaken for fixing both.
+func TestASecretOfTheDeployedShapeDecodesAndIsThenRefusedForItsLength(t *testing.T) {
+	// Content is irrelevant — only the length and the alphabet are — so this is
+	// built rather than copied from anywhere the real secret lives.
+	secret := strings.Repeat("A", deployedSecretLength)
+	if len(secret)%4 != 2 {
+		t.Fatalf("the fixture is %d characters, which is not the deployed shape", len(secret))
+	}
+
+	key, err := auth.DecodeSecretKey(secret)
+	if err != nil {
+		t.Fatalf("DecodeSecretKey: %v", err)
+	}
+	if len(key) != deployedKeyBytes {
+		t.Fatalf("decoded %d bytes, want %d", len(key), deployedKeyBytes)
+	}
+
+	_, err = auth.NewVerifier(auth.Config{
+		SecretKeyBase64:  secret,
+		ExpectedIssuer:   issuerClaim,
+		ExpectedAudience: issuerOrigin,
+	})
+	if !errors.Is(err, auth.ErrInvalidSecretKey) {
+		t.Fatalf("NewVerifier error = %v, want %v", err, auth.ErrInvalidSecretKey)
+	}
+	// A key this long makes jjwt sign HS512, so accepting it here would trade a
+	// startup failure for tokens no Go service can verify. The message has to
+	// say that rather than repeat the base64 complaint this change removed.
+	if strings.Contains(err.Error(), "not base64") {
+		t.Errorf("a decodable secret is still being refused as malformed base64: %v", err)
+	}
 }

@@ -92,12 +92,41 @@ func SecretKeyFromEnv() (string, error) {
 	return secret, nil
 }
 
+// DecodeSecretKey turns the base64 secret into the HMAC key bytes, matching the
+// decoder the JVM hands app.jwt.secret-key to.
+//
+// That decoder is jjwt's Decoders.BASE64, which sizes its output from the count
+// of alphabet characters rather than requiring a whole final quantum, so it
+// accepts a value whose trailing "=" was stripped. The deployed secret is one:
+// its length is 2 more than a multiple of 4. base64.StdEncoding requires the
+// padding, which is why the JVM has run on this secret for as long as it has
+// existed while every Go service refused to start against it.
+//
+// Padding and surrounding whitespace are the only tolerances. Anything outside
+// the standard alphabet — a URL-safe -/_, interior whitespace, a stray
+// character — still fails here, because two decoders that disagree about a
+// secret's bytes produce services that verify none of each other's tokens, and
+// that failure is silent where this one is not.
+//
+// Two deliberate divergences, both in the strict direction: jjwt drops
+// non-alphabet characters at either end rather than only whitespace, and jjwt
+// silently discards a trailing character that leaves a length 1 more than a
+// multiple of 4. No base64 encoder emits either, so accepting them would only
+// let a corrupted secret through as a shortened key.
+func DecodeSecretKey(secret string) ([]byte, error) {
+	trimmed := strings.TrimSpace(secret)
+	if strings.HasSuffix(trimmed, "=") {
+		return base64.StdEncoding.DecodeString(trimmed)
+	}
+	return base64.RawStdEncoding.DecodeString(trimmed)
+}
+
 // NewVerifier validates the configuration and returns a ready Verifier.
 func NewVerifier(cfg Config) (*Verifier, error) {
 	if cfg.SecretKeyBase64 == "" {
 		return nil, fmt.Errorf("%w: SecretKeyBase64 is empty", ErrMissingSecretKey)
 	}
-	key, err := base64.StdEncoding.DecodeString(cfg.SecretKeyBase64)
+	key, err := DecodeSecretKey(cfg.SecretKeyBase64)
 	if err != nil {
 		return nil, fmt.Errorf("%w: not base64: %w", ErrInvalidSecretKey, err)
 	}

@@ -50,23 +50,41 @@ operation: the key that verifies is the key that signs.
   length, so a secret of 48 bytes or more makes the JVM sign HS384 or HS512 and
   every Go verification fails at once. `NewVerifier` refuses a key outside the
   HS256 band at construction, turning that outage into a startup error.
+- **Padding is optional, and the deployed value has none.** jjwt's
+  `Decoders.BASE64` sizes its output from the count of alphabet characters
+  rather than requiring a whole final quantum, so it accepts a secret whose
+  trailing `=` was stripped. `base64.StdEncoding` does not. `DecodeSecretKey`
+  is the one decoder every Go call site goes through, and it accepts both forms
+  and refuses everything else — a URL-safe `-`/`_`, interior whitespace, a
+  length no base64 encoder emits.
 
 ### Before cutover: measure the deployed key length
 
-Nothing in this repository knows how long the live `UR_JWT_SECRET_KEY` is, and
-a key of 48 decoded bytes or more means the JVM has been signing HS384 all
-along — every Go verification would fail on the first request after cutover.
-Measure it before switching traffic, without printing it:
+A key of 48 decoded bytes or more means the JVM has been signing HS384 or HS512
+all along, and every Go verification would fail on the first request after
+cutover. Measure it without printing it:
 
 ```bash
-# Byte length only. The secret itself never reaches a terminal, a log or a
-# shell history: base64 -d and wc -c both read from the pipe.
-kubectl -n <namespace> get secret <secret>   -o jsonpath='{.data.UR_JWT_SECRET_KEY}' | base64 -d | base64 -d | wc -c
+# Length only. The secret itself never reaches a terminal, a log or a shell
+# history: every stage reads from the pipe. Padding is restored before the
+# decode because coreutils base64 has no tolerant mode that also exits clean —
+# even -i prints "invalid input" and returns 1 on the value deployed today.
+kubectl -n <namespace> get secret <secret>   -o jsonpath='{.data.UR_JWT_SECRET_KEY}' | base64 -d   | python3 -c 'import base64,sys; s=sys.stdin.read().strip(); print(len(base64.b64decode(s + "=" * (-len(s) % 4))))'
 ```
 
 Expect a number from 32 to 47. Anything else is a cutover blocker rather than a
 tuning question: 31 or less and the JVM refuses the key outright, 48 or more and
 it signs with an algorithm this library will not accept.
+
+**Measured, and it is the second of those.** Every `UR_JWT_SECRET_KEY` in both
+environments holds the same 2046-character unpadded value, which decodes to
+1534 bytes — 12272 bits. `Keys.hmacShaKeyFor` maps that to `HmacSHA512` and
+`Jwts.builder().signWith(...)` writes `{"alg":"HS512"}`, so the JVM is not
+minting HS256 tokens and `NewVerifier` will refuse the key on length. Making
+the decode padding-tolerant is necessary to reach that check but does not clear
+it. Clearing it is a decision about the deployed secret, not about this
+library: rotate `UR_JWT_SECRET_KEY` to a value in the HS256 band across every
+minting and verifying service at once, per the rotation rule above.
 
 ---
 
