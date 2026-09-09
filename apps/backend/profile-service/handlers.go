@@ -553,12 +553,12 @@ func (h *handlers) authorize(w http.ResponseWriter, r *http.Request, rule authz.
 	return authhttp.Authorize(w, r, h.authorizer, rule, subject)
 }
 
-// fail answers a storage failure. It is a 500 with no body, and the cause goes
-// to the log rather than to the caller: an error message from a database is a
-// disclosure, not a diagnosis a client can act on.
+// fail answers a storage failure. The cause goes to the log rather than to the
+// caller: an error message from a database is a disclosure, not a diagnosis a
+// client can act on, and the container's own body names no cause either.
 func (h *handlers) fail(w http.ResponseWriter, r *http.Request, err error) {
 	slog.Error("the request could not be served", "error", err, "method", r.Method, "path", r.URL.Path)
-	w.WriteHeader(http.StatusInternalServerError)
+	writeContainerError(w, r, http.StatusInternalServerError)
 }
 
 // failProfile answers the outcome every profile-scoped operation shares before
@@ -592,7 +592,7 @@ func actingUser(w http.ResponseWriter, r *http.Request) (int64, bool) {
 func pathID(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {
 	value, ok := parseID(r.PathValue(name))
 	if !ok {
-		writeUnconvertablePathVariable(w)
+		writeUnconvertableParameter(w, r)
 		return 0, false
 	}
 	return value, true
@@ -607,7 +607,7 @@ func queryInt(w http.ResponseWriter, r *http.Request, name string, fallback int)
 	}
 	value, err := strconv.Atoi(raw)
 	if err != nil {
-		writeUnconvertablePathVariable(w)
+		writeUnconvertableParameter(w, r)
 		return 0, false
 	}
 	return value, true

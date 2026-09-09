@@ -101,9 +101,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 		if status == http.StatusMethodNotAllowed {
 			w.Header().Set("Allow", strings.Join(r.methodsFor(request.URL.Path), ", "))
 		}
-		// No body and no Content-Type: the deployed service writes these
-		// through sendError, and server.error.include-message is unset.
-		w.WriteHeader(status)
+		// These are the container's statuses, not a handler's, so they carry
+		// what the container renders: the error body for a caller whose token
+		// authenticates the forward to /error, and the empty 401 for one whose
+		// forward is refused a second time. An unauthenticated 404 is therefore
+		// a 401 here exactly as it is in the JVM.
+		writeContainerError(w, request, status)
 		return
 	}
 	for i, seg := range resolved.segments {

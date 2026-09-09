@@ -6,7 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"time"
+
+	"libs/backend/shared/auth/authhttp"
 )
 
 // The sentinels the store reports, one per outcome GlobalExceptionHandler maps
@@ -79,29 +80,24 @@ func writeValidationErrors(w http.ResponseWriter, fields map[string]string) {
 	}
 }
 
-// writeUnconvertablePathVariable answers a path variable that is not a number.
-// Spring's argument resolution fails before the handler is invoked and nothing
-// in GlobalExceptionHandler catches the resulting exception, so the container
-// writes the status alone.
-func writeUnconvertablePathVariable(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadRequest)
+// writeUnconvertableParameter answers a path variable or a query parameter that
+// is not a number. Spring's argument resolution fails before the handler is
+// invoked and nothing in GlobalExceptionHandler catches the resulting
+// exception, so the status is one the container sets rather than a handler
+// composes — and carries the body the container renders with it.
+func writeUnconvertableParameter(w http.ResponseWriter, r *http.Request) {
+	writeContainerError(w, r, http.StatusBadRequest)
 }
 
 // writeContainerError writes Boot's error representation, which the JVM
-// produces for a status it reaches by throwing rather than by composing a
-// response. Only the icon replacement with no icon to replace lands here.
+// produces for every status it reaches by throwing or by sendError rather than
+// by composing a response: an argument that would not convert, a storage
+// failure, an authorization rule that could not be decided, and every refusal
+// the router makes. The shared writer decides between that body and the empty
+// 401, because the JVM decides it from the same thing — whether the caller's
+// token survives the internal forward to /error.
 func writeContainerError(w http.ResponseWriter, r *http.Request, status int) {
-	w.Header().Set("Content-Type", contentTypeJSON)
-	w.WriteHeader(status)
-	body := map[string]any{
-		"timestamp": time.Now().UTC().Format(timestampLayout),
-		"status":    status,
-		"error":     http.StatusText(status),
-		"path":      r.URL.Path,
-	}
-	if err := json.NewEncoder(w).Encode(body); err != nil {
-		slog.Error("could not write the container error body", "error", err)
-	}
+	authhttp.WriteContainerError(w, r, status)
 }
 
 // writeJSON answers with a composed body, as every successful operation does.
