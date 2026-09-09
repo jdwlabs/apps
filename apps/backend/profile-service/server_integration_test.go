@@ -116,8 +116,8 @@ func TestAProfileTravelsTheWireInTheShapeTheFrontendsParse(t *testing.T) {
 		t.Errorf("addresses = %v, want an empty array", body["addresses"])
 	}
 	createdTime, _ := body["createdTime"].(string)
-	if !strings.HasSuffix(createdTime, "+00:00") || !strings.Contains(createdTime, "T") {
-		t.Errorf("createdTime = %q, want an ISO-8601 stamp in UTC", createdTime)
+	if !strings.HasSuffix(createdTime, "Z") || !strings.Contains(createdTime, "T") {
+		t.Errorf("createdTime = %q, want an ISO-8601 stamp at the zero offset Jackson writes", createdTime)
 	}
 }
 

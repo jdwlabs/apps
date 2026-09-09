@@ -91,12 +91,13 @@ func assertRefusalShape(t *testing.T, recorder *httptest.ResponseRecorder, statu
 	}
 }
 
-// bootTimestampPattern matches the millisecond-precision, explicit-offset
-// timestamp Boot's Jackson configuration renders for java.util.Date — e.g.
-// 2026-09-06T04:20:00.123+00:00. The exact instant is never asserted, only
-// the shape: two servers answering the same request at different moments
-// still agree on it.
-var bootTimestampPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$`)
+// bootTimestampPattern matches the timestamp Boot's Jackson configuration
+// renders for the java.util.Date that DefaultErrorAttributes stamps — e.g.
+// 2026-09-06T04:20:00.123Z. Milliseconds because a Date holds no more, and the
+// zero-offset letter because Jackson serializes in UTC whatever zone the JVM
+// runs in. The exact instant is never asserted, only the shape: two servers
+// answering the same request at different moments still agree on it.
+var bootTimestampPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`)
 
 // containerErrorKeys is the exact key set and order BasicErrorController
 // writes with server.error.include-message left at its default of never:

@@ -42,10 +42,10 @@ func TestProfileMarshalsTheShapeTheFrontendsAlreadyParse(t *testing.T) {
 	want := `{"id":2,"firstName":"Ada","middleName":null,"lastName":"Lovelace",` +
 		`"birthdate":"1815-12-10","userId":1,"addresses":[],` +
 		`"icon":{"id":5,"profileId":2,"icon":"iVBORw==","createdByUserId":1,` +
-		`"createdTime":"2024-12-01T00:00:00.000+00:00","modifiedByUserId":1,` +
-		`"modifiedTime":"2024-12-01T00:00:00.000+00:00"},` +
-		`"createdByUserId":1,"createdTime":"2024-12-01T00:00:00.000+00:00",` +
-		`"modifiedByUserId":1,"modifiedTime":"2024-12-01T00:00:00.000+00:00"}`
+		`"createdTime":"2024-12-01T00:00:00.000Z","modifiedByUserId":1,` +
+		`"modifiedTime":"2024-12-01T00:00:00.000Z"},` +
+		`"createdByUserId":1,"createdTime":"2024-12-01T00:00:00.000Z",` +
+		`"modifiedByUserId":1,"modifiedTime":"2024-12-01T00:00:00.000Z"}`
 	if got := string(encoded); got != want {
 		t.Errorf("profile JSON\ngot  %s\nwant %s", got, want)
 	}
@@ -73,9 +73,10 @@ func TestAnEmptyAddressSetMarshalsAsAnArrayRatherThanNull(t *testing.T) {
 }
 
 func TestATimestampMarshalsInUtcWhateverZoneItCarries(t *testing.T) {
-	// Jackson's default time zone is UTC, so the JVM renders every stamp with a
-	// +00:00 offset regardless of the JVM's own zone. A Go service that let the
-	// host zone through would change every audit stamp on the wire.
+	// Jackson's default time zone is UTC, so the JVM renders every stamp at a
+	// zero offset — written "Z" by Jackson 3, which Boot 4.1 resolves —
+	// regardless of the JVM's own zone. A Go service that let the host zone
+	// through would change every audit stamp on the wire.
 	zone := time.FixedZone("UTC+5", 5*60*60)
 
 	encoded, err := json.Marshal(Timestamp{time.Date(2024, 12, 1, 5, 0, 0, 0, zone)})
@@ -83,7 +84,7 @@ func TestATimestampMarshalsInUtcWhateverZoneItCarries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
-	if got, want := string(encoded), `"2024-12-01T00:00:00.000+00:00"`; got != want {
+	if got, want := string(encoded), `"2024-12-01T00:00:00.000Z"`; got != want {
 		t.Errorf("timestamp = %s, want %s", got, want)
 	}
 }

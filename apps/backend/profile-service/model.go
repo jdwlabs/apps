@@ -12,10 +12,13 @@ import (
 // Date.toString(), which is the ISO calendar date alone.
 const dateLayout = "2006-01-02"
 
-// timestampLayout is StdDateFormat's ISO-8601 form, which is what Jackson's
-// DateSerializer writes for a java.sql.Timestamp under the same setting.
-// Milliseconds are always present and the offset always carries a colon.
-const timestampLayout = "2006-01-02T15:04:05.000-07:00"
+// timestampLayout is the ISO-8601 form Jackson's DateSerializer writes for a
+// java.sql.Timestamp under the same setting. Milliseconds are always present,
+// and the zero offset is written "Z" rather than "+00:00": that is Jackson 3's
+// output, which Boot 4.1 resolves, where Jackson 2 wrote the numeric form.
+// Measured off a booted usersrole with the JVM's default zone forced away from
+// UTC, since Jackson serializes in UTC regardless of it.
+const timestampLayout = "2006-01-02T15:04:05.000Z07:00"
 
 // Date is a calendar date on the wire and in Postgres, with no zone of its own.
 type Date struct{ time.Time }
