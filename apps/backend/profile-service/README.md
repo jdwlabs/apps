@@ -115,6 +115,17 @@ client keyed on them would change at cutover:
 - Replacing an icon on a profile that has none answers **500**, not 404.
 - Deleting a profile that does not exist answers **204**.
 
+A fourth is reproduced for the same reason and is a rule rather than a case: **a
+status the container sets carries the container's body.** An argument that will
+not convert, a path nothing routes, a method a path does not map, an `Accept`
+the icon's `produces` cannot satisfy, a storage failure, a profile lookup that
+failed and left the rule undecidable: none of these is a response a handler
+composed, so all of them answer the way the JVM answers — Boot's error JSON for
+a caller holding a verified token, and the empty 401 for one holding none,
+whatever status the first dispatch set. The rule, and what was measured to
+establish it, is `x-container-error` in the contract and the error-body section
+of `libs/backend/shared/auth/README.md`.
+
 One is corrected rather than reproduced: replacing an icon stamps
 `modified_by_user_id` with the acting user. The JVM writes the icon's original
 creator there instead, which is a false audit record in a column this service's

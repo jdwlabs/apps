@@ -27,7 +27,7 @@
       "errorStatuses": ["400", "401"]
     },
     "POST /auth/user": {
-      "errorStatuses": ["400", "409"],
+      "errorStatuses": ["400", "401", "409"],
       "successStatus": {
         "served": "200",
         "frozen": "201"
@@ -46,13 +46,13 @@
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
     },
     "GET /api/users/{userId}": {
-      "errorStatuses": ["401", "403", "404"]
+      "errorStatuses": ["400", "401", "403", "404"]
     },
     "PUT /api/users/{userId}": {
       "errorStatuses": ["400", "401", "403", "404", "500"]
     },
     "DELETE /api/users/{userId}": {
-      "errorStatuses": ["401", "403"],
+      "errorStatuses": ["400", "401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
@@ -86,13 +86,13 @@
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
     },
     "GET /api/roles/{roleId}": {
-      "errorStatuses": ["401", "404"]
+      "errorStatuses": ["400", "401", "404"]
     },
     "PUT /api/roles/{roleId}": {
       "errorStatuses": ["400", "401", "403", "404", "500"]
     },
     "DELETE /api/roles/{roleId}": {
-      "errorStatuses": ["401", "403"],
+      "errorStatuses": ["400", "401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
@@ -109,7 +109,7 @@
       "errorStatuses": ["400", "401", "403", "404"]
     },
     "GET /api/profiles": {
-      "errorStatuses": ["401", "403"]
+      "errorStatuses": ["400", "401", "403"]
     },
     "POST /api/profiles": {
       "errorStatuses": ["400", "401", "403", "404", "409"],
@@ -120,13 +120,13 @@
       "reason": "The handler builds ResponseEntity.status(HttpStatus.CREATED)."
     },
     "GET /api/profiles/{profileId}": {
-      "errorStatuses": ["401", "403", "404"]
+      "errorStatuses": ["400", "401", "403", "404"]
     },
     "PUT /api/profiles/{profileId}": {
       "errorStatuses": ["400", "401", "403", "404"]
     },
     "DELETE /api/profiles/{profileId}": {
-      "errorStatuses": ["401", "403"],
+      "errorStatuses": ["400", "401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
@@ -138,13 +138,13 @@
       "reason": "The handler is declared ResponseEntity<Profile> but builds noContent()."
     },
     "GET /api/profiles/by-user/{userId}": {
-      "errorStatuses": ["401", "403", "404"]
+      "errorStatuses": ["400", "401", "403", "404"]
     },
     "PUT /api/profiles/by-user/{userId}": {
       "errorStatuses": ["400", "401", "403", "404"]
     },
     "DELETE /api/profiles/by-user/{userId}": {
-      "errorStatuses": ["401", "403"],
+      "errorStatuses": ["400", "401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
@@ -162,7 +162,7 @@
       "errorStatuses": ["400", "401", "403", "404"]
     },
     "DELETE /api/profiles/{profileId}/address/{addressId}": {
-      "errorStatuses": ["401", "403", "404"],
+      "errorStatuses": ["400", "401", "403", "404"],
       "successStatus": {
         "served": "200",
         "frozen": "204"
@@ -174,7 +174,7 @@
       "reason": "The handler is declared ResponseEntity<Profile> but builds noContent(). The 404 this operation carries is a transcription: the delete is scoped to the profile in the path by AddressDaoPostgres.deleteByProfileIdAndAddressId, and ProfileService.deleteAddress raises ResourceNotFoundException when it matches no row."
     },
     "GET /api/profiles/{profileId}/icon": {
-      "errorStatuses": ["401", "403", "404"],
+      "errorStatuses": ["400", "401", "403", "404", "406"],
       "responseShape": {
         "served": "image/png=string/byte",
         "frozen": "image/png=string/binary"
@@ -198,7 +198,7 @@
       "reason": "The handler takes @RequestParam(\"icon\") MultipartFile and consumes multipart. springdoc renders the MultipartFile as a JSON object with a binary property, which is not a request the service accepts."
     },
     "DELETE /api/profiles/{profileId}/icon": {
-      "errorStatuses": ["401", "403"],
+      "errorStatuses": ["400", "401", "403"],
       "successStatus": {
         "served": "200",
         "frozen": "204"

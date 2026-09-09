@@ -429,6 +429,70 @@ the one shape is load-bearing — answering an unknown address differently is ho
 an anonymous caller enumerates which addresses are registered. Recorded as
 `x-transcription-correction` on the operation.
 
+### A clause that stated no body where there is one: the unconvertable parameter
+
+`UnconvertableParameter` is specified carrying the `ContainerError` body, and it
+is now referenced by every operation that declares a numeric path variable
+rather than only by the two listings that declare `page` and `size`.
+
+An earlier revision declared the response with no `content` at all, which in
+OpenAPI states that there is no body, and described the status as coming "from
+the container rather than from a composed response" as if that settled it. Both
+Go services matched the document and wrote the status alone.
+
+`sendError` does not write a status to the wire. It forwards the request to
+`/error`, and `JwtAuthenticationFilter` overrides `shouldNotFilterErrorDispatch()`
+to `false`, so the forward re-enters the filter chain and re-authenticates
+against the same `Authorization` header. A caller who reached argument
+resolution held a valid token by definition — the filter chain runs first — so
+the forward is let through, `BasicErrorController` runs, and the response
+carries exactly what the 403 carries.
+
+That is one instance of a rule that governs six statuses, and the rule is now
+stated once, at the top of each document, as `x-container-error`. Measured
+against a booted `usersrole` on a real port in `FilterChainContractParityTests`,
+with a verified token: 400 from an unconvertible path variable or paging
+parameter, 404 from a path nothing maps, 405 from a method a mapped path does
+not accept, 406 from a `produces` condition, 500 from a repository that throws,
+and 403 from method security — all `application/json`, all `timestamp`,
+`status`, `error`, `path`, no `message`. With no token, every one answers 401
+with `Content-Length: 0` and no `Content-Type`, because `/error` sits outside
+the `permitAll` matchers and the entry point's status replaces the first
+dispatch's.
+
+Two consequences are worth reading twice, because both move a status rather than
+a body:
+
+- **An unauthenticated request that fails on a permitted path answers 401.**
+  `GET /auth/nope` is 401, not 404. A storage failure under `POST /auth/user` is
+  401, not 500 — which is why that operation now lists a 401 although it takes
+  no token. It reads as an odd answer to an outage and it is what the deployed
+  service answers; the frontends' shared helper keys their message off the
+  status, so diverging would change what a user reads during an incident.
+- **A storage failure is not listed per operation.** It is a property of the
+  container and the database rather than of any operation, and repeating it on
+  31 response sets would say nothing an implementer needs. `x-container-error`
+  carries it instead, together with what it answers on the two operations that
+  take no token.
+
+Recorded as `x-transcription-correction` on the response component, and as
+`x-container-error` at the root of both documents.
+
+### The timestamp's zero offset is written `Z`
+
+Not a contract clause — both documents say `format: date-time`, which admits
+either spelling — but it changed in both Go services alongside the above, so it
+is recorded here rather than nowhere.
+
+The Go services rendered every timestamp with an explicit `+00:00`, on audit
+stamps in success payloads as well as in the error body, from a comment
+asserting that Jackson's `StdDateFormat` never writes the bare letter. That was
+Jackson 2. Boot 4.1.1 resolves Jackson 3, and a booted `usersrole` writes
+`2026-09-08T19:25:37.258Z` — on `createdTime` in a success payload and on
+`timestamp` in an error body alike. Re-measured with the JVM's default zone
+forced to `Asia/Kolkata`, which changed neither the offset nor the instant:
+Jackson serializes in UTC whatever zone the JVM runs in.
+
 ### A clause that described half a constraint: the email pattern
 
 `UserRequestDTO.emailAddress` is specified as the pattern below **and** the
