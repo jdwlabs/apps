@@ -1,4 +1,4 @@
-package main
+package servicehttp
 
 import (
 	"log/slog"

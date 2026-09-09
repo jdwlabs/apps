@@ -1,4 +1,4 @@
-package main
+package servicehttp
 
 import (
 	"net/http"
@@ -29,7 +29,7 @@ func TestAPreflightIsAnsweredWithoutReachingTheWrappedHandler(t *testing.T) {
 	// filter runs. A browser never puts an Authorization header on a preflight,
 	// so anything that authenticated it would refuse every cross-origin call.
 	reached := false
-	request := httptest.NewRequest(http.MethodOptions, "/api/profiles/1", nil)
+	request := httptest.NewRequest(http.MethodOptions, "/api/resources/1", nil)
 	request.Header.Set("Origin", "http://localhost:4200")
 	request.Header.Set("Access-Control-Request-Method", "GET")
 	request.Header.Set("Access-Control-Request-Headers", "authorization,content-type")
@@ -70,7 +70,7 @@ func TestEveryResponseVariesOnTheCorsRequestHeaders(t *testing.T) {
 	// Spring adds all three unconditionally, so a shared cache cannot serve one
 	// origin's response to another.
 	reached := false
-	request := httptest.NewRequest(http.MethodGet, "/api/profiles/1", nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/resources/1", nil)
 	response := httptest.NewRecorder()
 
 	corsHandler(&reached).ServeHTTP(response, request)
@@ -85,7 +85,7 @@ func TestEveryResponseVariesOnTheCorsRequestHeaders(t *testing.T) {
 
 func TestARequestWithNoOriginPassesThroughUntouched(t *testing.T) {
 	reached := false
-	request := httptest.NewRequest(http.MethodGet, "/api/profiles/1", nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/resources/1", nil)
 	response := httptest.NewRecorder()
 
 	corsHandler(&reached).ServeHTTP(response, request)
@@ -100,7 +100,7 @@ func TestARequestWithNoOriginPassesThroughUntouched(t *testing.T) {
 
 func TestAnActualCrossOriginRequestIsAllowedAndStillServed(t *testing.T) {
 	reached := false
-	request := httptest.NewRequest(http.MethodGet, "/api/profiles/1", nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/resources/1", nil)
 	request.Header.Set("Origin", "https://app.example.com:8443")
 	response := httptest.NewRecorder()
 
@@ -158,7 +158,7 @@ func TestACorsRequestThatFailsACheckIsRefused(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			reached := false
-			request := httptest.NewRequest(tc.method, "/api/profiles/1", nil)
+			request := httptest.NewRequest(tc.method, "/api/resources/1", nil)
 			for name, value := range tc.headers {
 				request.Header.Set(name, value)
 			}

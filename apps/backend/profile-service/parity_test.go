@@ -13,6 +13,7 @@ import (
 	"libs/backend/shared/auth"
 	"libs/backend/shared/auth/authtest"
 	"libs/backend/shared/auth/authz"
+	"libs/backend/shared/servicehttp"
 )
 
 // A published test key, not a credential: it signs nothing outside this suite.
@@ -33,6 +34,16 @@ const (
 // success, so an operation's status depends on nothing but its authorization
 // outcome. Storage behaviour is covered against a real Postgres in the
 // integration suites.
+func springShapedCORS() servicehttp.CORS {
+	// The three lists SecurityConfig's CorsConfigurationSource registers for
+	// "/**", transcribed verbatim.
+	return servicehttp.CORS{
+		AllowedOriginPatterns: []string{"http://*:[*]", "https://*:[*]"},
+		AllowedMethods:        []string{"GET", "POST", "PUT", "DELETE", "HEAD", "PATCH", "OPTIONS"},
+		AllowedHeaders:        []string{"Authorization", "Content-Type"},
+	}
+}
+
 type stubStore struct{}
 
 func fixtureProfile() Profile {
