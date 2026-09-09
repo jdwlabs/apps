@@ -312,6 +312,20 @@ func (h *handlers) updateUser(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
+	// The existence check comes first, as UserService.updateUser makes it before
+	// it encodes. Reversed, every update naming an id that is not there costs a
+	// full bcrypt round before the 404 that was always going to be the answer.
+	// The rule gates this path, so it is a waste rather than the flood the
+	// public registration would carry — the same asymmetry either way.
+	//
+	// It narrows the window rather than closing it: the write below still
+	// reports a row that disappeared between the two statements.
+	if _, err := h.store.UserByID(r.Context(), userID); err != nil {
+		h.failUser(w, r, err, userID)
+		return
+	}
+
 	hash, err := hashPassword(*request.Password)
 	if err != nil {
 		h.fail(w, r, err)
