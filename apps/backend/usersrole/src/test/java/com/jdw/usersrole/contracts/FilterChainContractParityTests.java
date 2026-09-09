@@ -197,6 +197,75 @@ class FilterChainContractParityTests {
     }
 
     /**
+     * Every other status the container sets, and the same body on all of them.
+     *
+     * `sendError` and an uncaught exception both forward to `/error`, and
+     * `JwtAuthenticationFilter` overrides `shouldNotFilterErrorDispatch()` to
+     * `false`, so that forward re-authenticates with the caller's own header.
+     * A verified token therefore reaches `BasicErrorController` for a 400 the
+     * argument resolver raised, a 404 or 405 the handler mapping raised, and a
+     * 500 the repository threw, exactly as it does for the 403 above. The two
+     * Go services reproduce this; without a case here, the only thing keeping
+     * them honest would be a reading of the framework.
+     */
+    @Test
+    void everyStatusTheContainerSetsCarriesItsErrorBodyForAnAuthenticatedCaller() throws IOException {
+        String token = jwtService.generateToken(principalWithNoAuthorities(), "https://parity-test.invalid");
+
+        record Case(String label, HttpMethod method, String path, int status, String error) {
+        }
+        List<Case> cases = List.of(
+                new Case("a path variable that will not convert", HttpMethod.GET, "/api/roles/abc", 400, "Bad Request"),
+                new Case("a query parameter that will not convert", HttpMethod.GET, "/api/users?page=abc", 400, "Bad Request"),
+                new Case("a path nothing maps", HttpMethod.GET, "/api/nothing", 404, "Not Found"),
+                new Case("a method the path does not map", HttpMethod.PATCH, "/api/roles/1", 405, "Method Not Allowed"));
+
+        for (Case testCase : cases) {
+            RawResponse response = call(testCase.method(), testCase.path(), token);
+
+            assertEquals(testCase.status(), response.status().value(), testCase.label());
+            assertEquals(MediaType.APPLICATION_JSON, response.headers().getContentType(), testCase.label());
+            Map<?, ?> body = new ObjectMapper().readValue(response.body(), Map.class);
+            assertEquals(testCase.status(), body.get("status"), testCase.label());
+            assertEquals(testCase.error(), body.get("error"), testCase.label());
+            assertFalse(body.containsKey("message"),
+                    testCase.label() + ": server.error.include-message is never, but message is present");
+            assertTrue(String.valueOf(body.get("timestamp")).endsWith("Z"),
+                    testCase.label() + ": the timestamp is " + body.get("timestamp")
+                            + ", and Jackson writes the zero offset it always serializes at as Z");
+        }
+    }
+
+    /**
+     * The other half of the rule, and the half that moves a status rather than
+     * a body.
+     *
+     * `/error` is not one of the `permitAll` matchers, so a forward carrying no
+     * token is refused a second time and the entry point's 401 replaces
+     * whatever the first dispatch set. That makes an unauthenticated 404 under
+     * `/auth/**` a 401, and an unhandled exception in the public registration a
+     * 401 as well — an odd answer to an outage, and the one the deployed
+     * service gives.
+     */
+    @Test
+    void aFailureOnAPermittedPathWithNoTokenAnswers401RatherThanItsOwnStatus() {
+        when(userRepository.findByEmailAddress("outage@example.com"))
+                .thenThrow(new IllegalStateException("the store is unavailable"));
+
+        List<RawResponse> refusals = List.of(
+                call(HttpMethod.GET, "/auth/nothing", null),
+                call(HttpMethod.GET, "/actuator/nothing", null),
+                post("/auth/user", "{\"emailAddress\":\"outage@example.com\",\"password\":\"Password1!\"}"));
+
+        for (RawResponse response : refusals) {
+            assertEquals(HttpStatus.UNAUTHORIZED.value(), response.status().value(),
+                    "a permitted path that failed answered its own status, not the entry point's");
+            assertEquals(0, response.body().length, "the refusal carries a body");
+            assertNull(response.headers().getContentType(), "the refusal carries a Content-Type");
+        }
+    }
+
+    /**
      * A body is sent wherever the operation declares one, so a permitted request
      * fails validation rather than the body being missing — either way it is not
      * a 401, which is the only thing under test. Path variables are filled with a
@@ -224,6 +293,17 @@ class FilterChainContractParityTests {
                 });
         return request.exchange((sent, response) -> new RawResponse(
                 response.getStatusCode(), response.getHeaders(), response.getBody().readAllBytes()), true);
+    }
+
+    /** An unauthenticated POST, for the one refusal that needs the handler to run before it fails. */
+    private RawResponse post(String path, String body) {
+        return RestClient.create()
+                .method(HttpMethod.POST)
+                .uri("http://localhost:" + port + path)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .exchange((sent, response) -> new RawResponse(
+                        response.getStatusCode(), response.getHeaders(), response.getBody().readAllBytes()), false);
     }
 
     /**
