@@ -10,6 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,6 +25,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -196,6 +200,88 @@ class JwtGoParityTests {
         Claims claims = assertDoesNotThrow(() -> jwtService.extractAllClaims(token),
                 "a token minted under the unpadded secret did not verify under the padded one");
         assertEquals(GO_MINTED_SUBJECT, claims.getSubject(), "sub");
+    }
+
+    /**
+     * One key per HMAC variant jjwt can select, plus the deployed shape: 1534
+     * bytes, encoded unpadded to 2046 characters. Each key comes from the same
+     * arithmetic as the Go suite's parityBandKey, so neither side carries a key
+     * literal and the two cannot drift apart. Each row carries the variant
+     * Keys.hmacShaKeyFor selects for that length and the token the Go minter
+     * produced under the same key; refresh the tokens with the command in the
+     * library's README.
+     */
+    static Stream<Arguments> bands() {
+        return Stream.of(
+                Arguments.of("HS256", 32, "HS256",
+                        "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.oURFk6r6xXfZpGWxhCn8f_QYaRmWi6sEBvlNB9tzpew"), // gitleaks:allow
+                Arguments.of("HS384", 48, "HS384",
+                        "eyJhbGciOiJIUzM4NCJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.F2LTul5M2rwV48OH0FDSb27NOIDKneKu80CWlPPi8KbBmwgckmHvUr1PVF5o9b9L"), // gitleaks:allow
+                Arguments.of("HS512", 64, "HS512",
+                        "eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.7arF5v8mQ33OOYZi_lLcc9-VMmSZkLddYm7VjX2BjHvrrow_cri8HCW7huKDRQRx7gHs_r4smwcmVSuyNIZoKg"), // gitleaks:allow
+                Arguments.of("deployed", 1534, "HS512",
+                        "eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.VVo34tIkRkzj8Iu5qAtQHizjv8EGQQU1djVmtZDu48uVApfn7o-DSxsiCTFtraEu40kRKHAvc9jIcmaez6TdvQ") // gitleaks:allow
+        );
+    }
+
+    private static String bandSecret(int keyBytes) {
+        byte[] key = new byte[keyBytes];
+        for (int i = 0; i < keyBytes; i++) {
+            key[i] = (byte) (i * 7 + keyBytes);
+        }
+        return Base64.getEncoder().withoutPadding().encodeToString(key);
+    }
+
+    /**
+     * A verify alone would not prove the Go side chose the right variant: jjwt's
+     * parser accepts any HMAC variant the header names so long as the key is long
+     * enough for it. The header assertion is what pins the Go minter to the
+     * variant this service would have signed with.
+     */
+    @ParameterizedTest(name = "{0} band, {1}-byte key")
+    @MethodSource("bands")
+    void extractAllClaims_shouldAcceptTheGoLibrarysTokenInEveryKeyLengthBand(
+            String band, int keyBytes, String alg, String goToken) throws Exception {
+        injectField(jwtService, "secretKey", bandSecret(keyBytes));
+
+        assertEquals(alg, headerOf(goToken).get("alg").asText(),
+                "the Go minter signed with a different variant than jjwt derives from this key");
+        Claims claims = assertDoesNotThrow(() -> jwtService.extractAllClaims(goToken),
+                "the Go library's " + band + " token did not verify");
+        assertEquals(GO_MINTED_SUBJECT, claims.getSubject(), "sub");
+        assertEquals(GO_MINTED_TOKEN_ID, claims.getId(), "jti");
+    }
+
+    /**
+     * The variant this service signs with is the one the Go verifier will insist
+     * on, so it has to be the one derived from the key length — which this
+     * asserts against jjwt itself rather than against a copy of its thresholds.
+     * The minted token is written out for the Go suite to verify.
+     */
+    @ParameterizedTest(name = "{0} band, {1}-byte key")
+    @MethodSource("bands")
+    void generateToken_shouldSignWithTheVariantTheKeyLengthSelects(
+            String band, int keyBytes, String alg, String goToken) throws Exception {
+        stubPrincipal();
+        injectField(jwtService, "secretKey", bandSecret(keyBytes));
+
+        String jvmToken = jwtService.generateToken(userDetails, ISSUER_ORIGIN);
+
+        assertEquals(alg, headerOf(jvmToken).get("alg").asText(), "jjwt signed " + band + " with an unexpected variant");
+        assertEquals(headerOf(goToken), headerOf(jvmToken), "the two implementations write different JOSE headers");
+        dumpBandFixture(band, keyBytes, jvmToken);
+    }
+
+    private void dumpBandFixture(String band, int keyBytes, String token) throws Exception {
+        Claims claims = jwtService.extractAllClaims(token);
+        ObjectNode fixture = MAPPER.createObjectNode();
+        fixture.put("band", band);
+        fixture.put("keyBytes", keyBytes);
+        fixture.put("token", token);
+        fixture.put("iat", claims.getIssuedAt().toInstant().getEpochSecond());
+        Path dump = JVM_FIXTURE_DUMP.resolveSibling("jvm-minted-band-" + band + ".json");
+        Files.createDirectories(dump.getParent());
+        Files.write(dump, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(fixture));
     }
 
     /**

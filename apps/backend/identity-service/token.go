@@ -37,6 +37,7 @@ var ErrNoSigningKey = errors.New("the minter needs a signing key")
 // services import would hand it to the one that must never have it.
 type minter struct {
 	key          []byte
+	method       *jwt.SigningMethodHMAC
 	issuerOrigin string
 	ttl          time.Duration
 	now          func() time.Time
@@ -54,13 +55,19 @@ func newMinter(secretKeyBase64, issuerOrigin string, ttl time.Duration) (*minter
 	if err != nil {
 		return nil, fmt.Errorf("%w: not base64: %w", ErrNoSigningKey, err)
 	}
+	// Signing with anything but the variant the key derives would mint tokens
+	// both services' verifiers refuse, since they derive it the same way.
+	method, err := auth.SigningMethodForKey(key)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrNoSigningKey, err)
+	}
 	if issuerOrigin == "" {
 		return nil, fmt.Errorf("%w: no issuer origin to stamp", ErrNoSigningKey)
 	}
 	if ttl <= 0 {
 		ttl = defaultTokenTTL
 	}
-	return &minter{key: key, issuerOrigin: issuerOrigin, ttl: ttl}, nil
+	return &minter{key: key, method: method, issuerOrigin: issuerOrigin, ttl: ttl}, nil
 }
 
 func (m *minter) clock() time.Time {
@@ -100,11 +107,11 @@ func (m *minter) Mint(credential Credential) (string, error) {
 		"user_id":    credential.UserID,
 		"profile_id": nullableInt(credential.ProfileID),
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(m.method, claims)
 	// jjwt writes the algorithm and nothing else. Dropping the typ header
 	// golang-jwt adds by default keeps a token minted here byte-identical to a
 	// JVM one, which is what lets either side verify the other's fixtures.
-	token.Header = map[string]any{"alg": "HS256"}
+	token.Header = map[string]any{"alg": m.method.Alg()}
 	signed, err := token.SignedString(m.key)
 	if err != nil {
 		return "", fmt.Errorf("sign token: %w", err)

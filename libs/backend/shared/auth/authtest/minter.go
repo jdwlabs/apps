@@ -110,7 +110,17 @@ func (m Minter) Mint(c Claims) (string, error) {
 		"user_id":    nullableInt(c.UserID),
 		"profile_id": nullableInt(c.ProfileID),
 	}
-	return m.MintRaw("HS256", claims)
+	// The variant the verifier will insist on, derived the same way, so a token
+	// minted here is byte-identical to one the JVM mints under the same key.
+	key, err := m.key()
+	if err != nil {
+		return "", err
+	}
+	method, err := auth.SigningMethodForKey(key)
+	if err != nil {
+		return "", err
+	}
+	return m.MintRaw(method.Alg(), claims)
 }
 
 // MintRaw signs an arbitrary claim set with an arbitrary algorithm, for the

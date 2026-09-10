@@ -594,14 +594,12 @@ func TestDecodeSecretKeyStillRefusesWhatIsNotBase64(t *testing.T) {
 	}
 }
 
-// The shape the cluster actually holds. The decode is the first of two things
-// standing between these services and a start; the assertion below records the
-// second, so that fixing one and shipping is not mistaken for fixing both.
-func TestASecretOfTheDeployedShapeDecodesAndIsThenRefusedForItsLength(t *testing.T) {
-	// Content is irrelevant — only the length and the alphabet are — so this is
-	// built rather than copied from anywhere the real secret lives.
-	secret := strings.Repeat("A", deployedSecretLength)
-	if len(secret)%4 != 2 {
+// The shape the cluster actually holds, built with the same arithmetic as the
+// parity fixtures rather than copied from anywhere the real secret lives: only
+// its length and alphabet matter, and jjwt signs a key this long HS512.
+func TestASecretOfTheDeployedShapeDerivesHS512AndVerifiesWhatItSigns(t *testing.T) {
+	secret := parityBandSecret(deployedKeyBytes)
+	if len(secret) != deployedSecretLength || len(secret)%4 != 2 {
 		t.Fatalf("the fixture is %d characters, which is not the deployed shape", len(secret))
 	}
 
@@ -612,19 +610,148 @@ func TestASecretOfTheDeployedShapeDecodesAndIsThenRefusedForItsLength(t *testing
 	if len(key) != deployedKeyBytes {
 		t.Fatalf("decoded %d bytes, want %d", len(key), deployedKeyBytes)
 	}
+	method, err := auth.SigningMethodForKey(key)
+	if err != nil {
+		t.Fatalf("SigningMethodForKey: %v", err)
+	}
+	if method.Alg() != "HS512" {
+		t.Fatalf("derived %s, want HS512, which is what the JVM signs this key with", method.Alg())
+	}
 
-	_, err = auth.NewVerifier(auth.Config{
+	token, err := minterFor(secret).Mint(authtest.Claims{Subject: "user@jdw.com", UserID: ptr(42)})
+	if err != nil {
+		t.Fatalf("Mint: %v", err)
+	}
+	if header, _ := decodeSegments(t, token); header["alg"] != "HS512" {
+		t.Errorf("minted with %v, want HS512", header["alg"])
+	}
+	if _, err := verifierFor(t, secret).Verify(token); err != nil {
+		t.Errorf("Verify: %v", err)
+	}
+}
+
+// Every row is the byte count either side of a jjwt boundary, read off
+// Keys.hmacShaKeyFor in jjwt-api 0.13.0 and then confirmed by signing with it.
+func TestSigningMethodForKeyFollowsJjwtsThresholds(t *testing.T) {
+	tests := []struct {
+		keyBytes int
+		want     string
+	}{
+		{31, ""},
+		{32, "HS256"},
+		{47, "HS256"},
+		{48, "HS384"},
+		{63, "HS384"},
+		{64, "HS512"},
+		{deployedKeyBytes, "HS512"},
+	}
+
+	for _, tc := range tests {
+		method, err := auth.SigningMethodForKey(make([]byte, tc.keyBytes))
+		if tc.want == "" {
+			if !errors.Is(err, auth.ErrInvalidSecretKey) {
+				t.Errorf("%d bytes: error = %v, want %v, as jjwt refuses the key", tc.keyBytes, err, auth.ErrInvalidSecretKey)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("%d bytes: %v", tc.keyBytes, err)
+			continue
+		}
+		if method.Alg() != tc.want {
+			t.Errorf("%d bytes: derived %s, want %s", tc.keyBytes, method.Alg(), tc.want)
+		}
+	}
+}
+
+// The property that makes deriving the algorithm safe: the key is handed to one
+// variant and no other, whatever the header asks for. The HMAC tokens below are
+// signed over the verifier's own key bytes, so each would verify if the pin
+// were gone — the refusal is the only thing standing between them and a
+// principal. A positive control per key shows the verifier is not simply
+// refusing everything.
+func TestVerifyRefusesEveryAlgorithmButTheOneTheKeyDerives(t *testing.T) {
+	keys := []struct {
+		name    string
+		secret  string
+		derived string
+	}{
+		{"HS256-band key", paritySecret, "HS256"},
+		{"HS384-band key", parityBandSecret(48), "HS384"},
+		{"HS512-band key", parityBandSecret(64), "HS512"},
+		{"deployed-shape key", parityBandSecret(deployedKeyBytes), "HS512"},
+	}
+	claims := func() map[string]any {
+		return map[string]any{
+			"sub": "user@jdw.com", "roles": []string{"ADMIN"}, "user_id": 42,
+			"iss": issuerClaim, "aud": issuerOrigin, "jti": "a-token-id",
+			"nbf": mintedAt.Unix(), "exp": mintedAt.Add(time.Hour).Unix(),
+		}
+	}
+
+	for _, k := range keys {
+		v := verifierFor(t, k.secret)
+		m := minterFor(k.secret)
+
+		t.Run(k.name+", "+k.derived+" accepted", func(t *testing.T) {
+			token, err := m.MintRaw(k.derived, claims())
+			if err != nil {
+				t.Fatalf("MintRaw: %v", err)
+			}
+			if _, err := v.Verify(token); err != nil {
+				t.Errorf("Verify: %v", err)
+			}
+		})
+
+		for _, alg := range []string{"HS256", "HS384", "HS512", "none"} {
+			if alg == k.derived {
+				continue
+			}
+			t.Run(k.name+", "+alg+" refused", func(t *testing.T) {
+				token, err := m.MintRaw(alg, claims())
+				if err != nil {
+					t.Fatalf("MintRaw: %v", err)
+				}
+				if _, err := v.Verify(token); !errors.Is(err, auth.ErrUnexpectedAlgorithm) {
+					t.Errorf("Verify error = %v, want %v", err, auth.ErrUnexpectedAlgorithm)
+				}
+			})
+		}
+
+		t.Run(k.name+", RS256 refused", func(t *testing.T) {
+			if _, err := v.Verify(asymmetricHeaderToken()); !errors.Is(err, auth.ErrUnexpectedAlgorithm) {
+				t.Errorf("Verify error = %v, want %v", err, auth.ErrUnexpectedAlgorithm)
+			}
+		})
+	}
+}
+
+func asymmetricHeaderToken() string {
+	enc := base64.RawURLEncoding
+	header := enc.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
+	payload := enc.EncodeToString([]byte(`{"sub":"user@jdw.com","iss":"` +
+		issuerClaim + `","aud":"` + issuerOrigin + `","jti":"id","nbf":1,"exp":99999999999}`))
+	return header + "." + payload + "." + enc.EncodeToString([]byte("not-a-signature"))
+}
+
+func minterFor(secret string) authtest.Minter {
+	return authtest.Minter{
+		SecretKeyBase64: secret,
+		IssuerOrigin:    issuerOrigin,
+		Now:             func() time.Time { return mintedAt },
+	}
+}
+
+func verifierFor(t *testing.T, secret string) *auth.Verifier {
+	t.Helper()
+	v, err := auth.NewVerifier(auth.Config{
 		SecretKeyBase64:  secret,
 		ExpectedIssuer:   issuerClaim,
 		ExpectedAudience: issuerOrigin,
+		Now:              func() time.Time { return mintedAt.Add(time.Minute) },
 	})
-	if !errors.Is(err, auth.ErrInvalidSecretKey) {
-		t.Fatalf("NewVerifier error = %v, want %v", err, auth.ErrInvalidSecretKey)
+	if err != nil {
+		t.Fatalf("NewVerifier: %v", err)
 	}
-	// A key this long makes jjwt sign HS512, so accepting it here would trade a
-	// startup failure for tokens no Go service can verify. The message has to
-	// say that rather than repeat the base64 complaint this change removed.
-	if strings.Contains(err.Error(), "not base64") {
-		t.Errorf("a decodable secret is still being refused as malformed base64: %v", err)
-	}
+	return v
 }
