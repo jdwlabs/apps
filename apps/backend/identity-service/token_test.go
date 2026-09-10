@@ -342,3 +342,49 @@ func TestAMinterSigningWithAnUnpaddedSecretIsCheckedByThePaddedOne(t *testing.T)
 		t.Errorf("a token signed from the unpadded secret did not verify against the padded form of the same key: %v", err)
 	}
 }
+
+// This is the service that signs, so it has to sign with the variant both
+// verifiers derive from the same key — HS512 for a key the deployed secret's
+// length, which is what the JVM it replaces signs with today. Signing HS256
+// under that key would mint tokens the shared verifier refuses outright.
+func TestAMinterSignsWithTheVariantTheDeployedKeyLengthSelects(t *testing.T) {
+	key := make([]byte, 1534)
+	for i := range key {
+		key[i] = byte(i*7 + 1)
+	}
+	secret := base64.RawStdEncoding.EncodeToString(key)
+	if len(secret) != 2046 {
+		t.Fatalf("the fixture is %d characters, not the deployed shape", len(secret))
+	}
+
+	made, err := newMinter(secret, parityIssuerOrigin, defaultTokenTTL)
+	if err != nil {
+		t.Fatalf("newMinter refused the deployed shape: %v", err)
+	}
+	token, err := made.Mint(Credential{UserID: selfUserID, EmailAddress: selfEmail, Roles: []string{"USER"}})
+	if err != nil {
+		t.Fatalf("Mint: %v", err)
+	}
+	if header := decodeSegment(t, strings.Split(token, ".")[0]); header["alg"] != "HS512" {
+		t.Errorf("minted with %v, want HS512", header["alg"])
+	}
+
+	verifier, err := auth.NewVerifier(auth.Config{
+		SecretKeyBase64:  secret,
+		ExpectedIssuer:   parityIssuerOrigin + "/auth/authenticate",
+		ExpectedAudience: parityIssuerOrigin,
+	})
+	if err != nil {
+		t.Fatalf("NewVerifier: %v", err)
+	}
+	if _, err := verifier.Verify(token); err != nil {
+		t.Errorf("Verify: %v", err)
+	}
+}
+
+func TestAMinterRefusesAKeyJjwtWouldRefuse(t *testing.T) {
+	short := base64.StdEncoding.EncodeToString(make([]byte, 31))
+	if _, err := newMinter(short, parityIssuerOrigin, defaultTokenTTL); err == nil {
+		t.Error("newMinter accepted a 31-byte key, which no JVM could have signed a token with")
+	}
+}

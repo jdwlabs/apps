@@ -293,3 +293,136 @@ func TestTheMinterProducesTheJvmSideFixtureFromTheUnpaddedSecret(t *testing.T) {
 		t.Errorf("minting from the unpadded secret produced a different token from the padded one.\ngot  %s\nwant %s", token, goMintedToken)
 	}
 }
+
+// The algorithm half of the parity suite: one key per HMAC variant jjwt can
+// select, plus the deployed shape, each round-tripped in both directions.
+//
+// parityBandKey builds an n-byte key from a fixed pattern. JwtGoParityTests
+// builds the same bytes with the same arithmetic, so neither side carries a
+// key literal and the two cannot drift into different keys. The secrets are
+// encoded without padding, as the deployed one is.
+func parityBandKey(n int) []byte {
+	key := make([]byte, n)
+	for i := range key {
+		key[i] = byte(i*7 + n)
+	}
+	return key
+}
+
+func parityBandSecret(n int) string {
+	return base64.RawStdEncoding.EncodeToString(parityBandKey(n))
+}
+
+var parityBands = []struct {
+	name     string
+	keyBytes int
+	alg      string
+}{
+	{"HS256", 32, "HS256"},
+	{"HS384", 48, "HS384"},
+	{"HS512", 64, "HS512"},
+	{"deployed", deployedKeyBytes, "HS512"},
+}
+
+func goBandMinter(keyBytes int) authtest.Minter {
+	return authtest.Minter{
+		SecretKeyBase64: parityBandSecret(keyBytes),
+		IssuerOrigin:    issuerOrigin,
+		TTL:             goFixtureLifetime,
+		Now:             func() time.Time { return goFixtureIssuedAt },
+		TokenID:         func() string { return goFixtureTokenID },
+	}
+}
+
+func mintGoBandToken(t *testing.T, keyBytes int) string {
+	t.Helper()
+	userID, profileID := int64(42), int64(7)
+	token, err := goBandMinter(keyBytes).Mint(authtest.Claims{
+		Subject: "parity@jdw.com", Roles: []string{"ADMIN"}, UserID: &userID, ProfileID: &profileID,
+	})
+	if err != nil {
+		t.Fatalf("Mint: %v", err)
+	}
+	return token
+}
+
+// TestPrintGoMintedBandTokens regenerates JwtGoParityTests.GO_MINTED_BAND_TOKENS.
+//
+//	AUTH_PARITY_PRINT_TOKEN=1 go test . -run TestPrintGoMintedBandTokens -v
+func TestPrintGoMintedBandTokens(t *testing.T) {
+	if os.Getenv("AUTH_PARITY_PRINT_TOKEN") != "1" {
+		t.Skip("set AUTH_PARITY_PRINT_TOKEN=1 to print replacements for the JVM side's band fixtures")
+	}
+	for _, band := range parityBands {
+		t.Logf("%s (%d-byte key): %s", band.name, band.keyBytes, mintGoBandToken(t, band.keyBytes))
+	}
+}
+
+// jvmMintedBandTokens were minted by JwtService.generateToken under each band's
+// key, and are refreshed from build/parity/jvm-minted-band-*.json by the gradle
+// command in the README. The JVM stamps the wall clock, so each carries the
+// moment it was minted and is verified with the clock pinned just after it.
+var jvmMintedBandTokens = map[string]struct {
+	token    string
+	issuedAt int64
+}{
+	"HS256":    {token: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJuYmYiOjE3ODkwNjQ4MDMsInVzZXJfaWQiOjQyLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvYXV0aC9hdXRoZW50aWNhdGUiLCJqdGkiOiJlMzQ0YWNmMi03MWZlLTQwOGYtYTkyMy1hMzI4ZWU1ZTVkZTQiLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsImlhdCI6MTc4OTA2NDgwMywiZXhwIjoxNzg5MDcyMDAzfQ.G9ksyRohAgs5eIpj_HUl3KJt8eYKMUsYqS5MSMpiE_k", issuedAt: 1789064803},                                            // gitleaks:allow
+	"HS384":    {token: "eyJhbGciOiJIUzM4NCJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJuYmYiOjE3ODkwNjQ4MDMsInVzZXJfaWQiOjQyLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvYXV0aC9hdXRoZW50aWNhdGUiLCJqdGkiOiJmYTI3YzZjZS03OTljLTQ1ZDEtYTMxZi1iOGIyZTUwMTE5ODUiLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsImlhdCI6MTc4OTA2NDgwMywiZXhwIjoxNzg5MDcyMDAzfQ.iELxkb3oYHXbCKK0OWBHeJ6MFP9ypX_MZ_sEg51m0bYDnLpNoFuXJMYRaQoH3xJ1", issuedAt: 1789064803},                       // gitleaks:allow
+	"HS512":    {token: "eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJuYmYiOjE3ODkwNjQ4MDMsInVzZXJfaWQiOjQyLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvYXV0aC9hdXRoZW50aWNhdGUiLCJqdGkiOiI5YzlkOTRmNS04YjkyLTRiOGYtYjcyZC1lOTQzMzI1OTJmZTkiLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsImlhdCI6MTc4OTA2NDgwMywiZXhwIjoxNzg5MDcyMDAzfQ.0xUYbaka4oYiaKOivyn1qRrB9c-hdBcXOvSALZNba5L3KcU6tIDpv1rsn1MZv9QOL4tj0MoKby6hFV9OIoENLA", issuedAt: 1789064803}, // gitleaks:allow
+	"deployed": {token: "eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJuYmYiOjE3ODkwNjQ4MDMsInVzZXJfaWQiOjQyLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvYXV0aC9hdXRoZW50aWNhdGUiLCJqdGkiOiIyM2Y3Yjk1Ny0wMTU5LTQxOGYtYjY2NC04ZmQzNmFhNzQyYTAiLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsImlhdCI6MTc4OTA2NDgwMywiZXhwIjoxNzg5MDcyMDAzfQ.Mqr66psPVr_zntXGflxCp7DORUU1t9zfMmQ6Q3SXM8qgfI2iH2Nb4zZYdD-l01d38XvHI5JUJ4JX9q03o6XaWQ", issuedAt: 1789064803}, // gitleaks:allow
+}
+
+// goMintedBandTokens are the tokens JwtGoParityTests holds, duplicated here so a
+// minter change fails on this side too.
+var goMintedBandTokens = map[string]string{
+	"HS256":    "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.oURFk6r6xXfZpGWxhCn8f_QYaRmWi6sEBvlNB9tzpew",                                            // gitleaks:allow
+	"HS384":    "eyJhbGciOiJIUzM4NCJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.F2LTul5M2rwV48OH0FDSb27NOIDKneKu80CWlPPi8KbBmwgckmHvUr1PVF5o9b9L",                       // gitleaks:allow
+	"HS512":    "eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.7arF5v8mQ33OOYZi_lLcc9-VMmSZkLddYm7VjX2BjHvrrow_cri8HCW7huKDRQRx7gHs_r4smwcmVSuyNIZoKg", // gitleaks:allow
+	"deployed": "eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJleHAiOjMzMTI0ODk2MDAsImlhdCI6MTczNTY4OTYwMCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL2F1dGgvYXV0aGVudGljYXRlIiwianRpIjoiNmEyZjFjMzQtOWI3ZS00ZDUxLThmMGEtMmM2ZDVlNGIzYTE5IiwibmJmIjoxNzM1Njg5NjAwLCJwcm9maWxlX2lkIjo3LCJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJwYXJpdHlAamR3LmNvbSIsInVzZXJfaWQiOjQyfQ.VVo34tIkRkzj8Iu5qAtQHizjv8EGQQU1djVmtZDu48uVApfn7o-DSxsiCTFtraEu40kRKHAvc9jIcmaez6TdvQ", // gitleaks:allow
+}
+
+func TestATokenMintedByTheJvmVerifiesHereInEveryKeyLengthBand(t *testing.T) {
+	for _, band := range parityBands {
+		t.Run(band.name, func(t *testing.T) {
+			fixture, ok := jvmMintedBandTokens[band.name]
+			if !ok {
+				t.Fatalf("no JVM fixture for the %s band", band.name)
+			}
+			if header, _ := decodeSegments(t, fixture.token); header["alg"] != band.alg {
+				t.Fatalf("the JVM signed with %v, want %s; the fixture no longer shows what jjwt derives", header["alg"], band.alg)
+			}
+
+			at := time.Unix(fixture.issuedAt, 0).Add(time.Minute)
+			v, err := auth.NewVerifier(auth.Config{
+				SecretKeyBase64:  parityBandSecret(band.keyBytes),
+				ExpectedIssuer:   issuerClaim,
+				ExpectedAudience: issuerOrigin,
+				Now:              func() time.Time { return at },
+			})
+			if err != nil {
+				t.Fatalf("NewVerifier: %v", err)
+			}
+
+			p, err := v.Verify(fixture.token)
+			if err != nil {
+				t.Fatalf("a %s token minted by JwtService did not verify: %v", band.name, err)
+			}
+			if p.Subject != "parity@jdw.com" || p.UserID == nil || *p.UserID != 42 {
+				t.Errorf("principal = %s / %v, want parity@jdw.com / 42", p.Subject, p.UserID)
+			}
+		})
+	}
+}
+
+// Same inputs, same fixed clock and token id: a live mint must be byte-identical
+// to the token the JVM side holds for the band, which pins both the variant the
+// minter derives and the key bytes it derives it from.
+func TestTheMinterStillProducesTheBandFixtures(t *testing.T) {
+	for _, band := range parityBands {
+		t.Run(band.name, func(t *testing.T) {
+			if got, want := mintGoBandToken(t, band.keyBytes), goMintedBandTokens[band.name]; got != want {
+				t.Errorf("the minter no longer reproduces the %s token JwtGoParityTests holds.\ngot  %s\nwant %s\nRegenerate both sides: see the README.", band.name, got, want)
+			}
+		})
+	}
+}

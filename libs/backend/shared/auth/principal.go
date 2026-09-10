@@ -1,4 +1,4 @@
-// Package auth verifies the HS256 tokens the JVM identity service mints and
+// Package auth verifies the HMAC-signed tokens the JVM identity service mints and
 // turns their claims into a principal the authz package can decide on.
 //
 // It is the only place either Go service parses a token, so the two cannot

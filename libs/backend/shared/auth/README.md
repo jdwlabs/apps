@@ -3,7 +3,7 @@
 ![Build](https://img.shields.io/github/actions/workflow/status/jdwlabs/apps/ci.yml?branch=main)
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
-Verifies the HS256 tokens the Spring `usersrole` service mints, and decides the
+Verifies the HMAC-signed tokens the Spring `usersrole` service mints, and decides the
 authorization rules the frozen service contracts name. One implementation, two
 consumers: `identity-service` and `profile-service` enforce the same rules from
 the same code, so neither can drift from the other or from the contract.
@@ -23,7 +23,7 @@ names the rule it is decided by.
 libs/backend/shared/auth/
 ├── go.mod                     # module libs/backend/shared/auth
 ├── principal.go               # claim names and the verified principal
-├── verifier.go                # HS256 parsing, signature and claim validation
+├── verifier.go                # HMAC parsing, signature and claim validation
 ├── authz/rules.go             # one function per contract rule
 ├── authhttp/middleware.go     # net/http authentication and refusal shapes
 ├── authtest/minter.go         # test-only minter reproducing JwtService
@@ -46,10 +46,21 @@ operation: the key that verifies is the key that signs.
   restart of every service that mints or verifies, not a rolling one. Tokens
   minted under the old key stop verifying the moment it is withdrawn — up to a
   full token lifetime of callers forced to re-authenticate.
-- **Key length is load-bearing.** jjwt picks the HMAC variant from the key
-  length, so a secret of 48 bytes or more makes the JVM sign HS384 or HS512 and
-  every Go verification fails at once. `NewVerifier` refuses a key outside the
-  HS256 band at construction, turning that outage into a startup error.
+- **The algorithm follows the key length, never the token.** jjwt's
+  `Keys.hmacShaKeyFor` picks the HMAC variant from the decoded key, and
+  `signWith` writes that choice into the header: 32–47 bytes is HS256, 48–63 is
+  HS384, 64 and over is HS512, and under 32 it refuses the key. There is no
+  upper bound. `SigningMethodForKey` reproduces those thresholds, and the
+  verifier and both Go minters take the variant from it — so a rotation to a key
+  of any length keeps every implementation agreeing without a code change.
+- **The header is compared, never consulted.** The verifier hands its key to
+  the one variant the key derives and refuses every other `alg` with
+  `ErrUnexpectedAlgorithm`: a different HMAC variant, `none`, or anything
+  asymmetric. Letting the header choose is how algorithm-confusion forgeries
+  start, and it would buy nothing, since nothing in this system signs with any
+  variant but the derived one. jjwt's own parser is looser here — it verifies
+  whichever HMAC variant the header names if the key is long enough for it —
+  and matching that looseness is not the goal of parity.
 - **Padding is optional, and the deployed value has none.** jjwt's
   `Decoders.BASE64` sizes its output from the count of alphabet characters
   rather than requiring a whole final quantum, so it accepts a secret whose
@@ -58,11 +69,11 @@ operation: the key that verifies is the key that signs.
   and refuses everything else — a URL-safe `-`/`_`, interior whitespace, a
   length no base64 encoder emits.
 
-### Before cutover: measure the deployed key length
+### Which variant the deployed key selects
 
-A key of 48 decoded bytes or more means the JVM has been signing HS384 or HS512
-all along, and every Go verification would fail on the first request after
-cutover. Measure it without printing it:
+The variant is derived at startup, so nothing has to be configured, but it is
+worth knowing which one a key selects before a rotation. Measure the decoded
+length without printing the key:
 
 ```bash
 # Length only. The secret itself never reaches a terminal, a log or a shell
@@ -72,19 +83,10 @@ cutover. Measure it without printing it:
 kubectl -n <namespace> get secret <secret>   -o jsonpath='{.data.UR_JWT_SECRET_KEY}' | base64 -d   | python3 -c 'import base64,sys; s=sys.stdin.read().strip(); print(len(base64.b64decode(s + "=" * (-len(s) % 4))))'
 ```
 
-Expect a number from 32 to 47. Anything else is a cutover blocker rather than a
-tuning question: 31 or less and the JVM refuses the key outright, 48 or more and
-it signs with an algorithm this library will not accept.
-
-**Measured, and it is the second of those.** Every `UR_JWT_SECRET_KEY` in both
-environments holds the same 2046-character unpadded value, which decodes to
-1534 bytes — 12272 bits. `Keys.hmacShaKeyFor` maps that to `HmacSHA512` and
-`Jwts.builder().signWith(...)` writes `{"alg":"HS512"}`, so the JVM is not
-minting HS256 tokens and `NewVerifier` will refuse the key on length. Making
-the decode padding-tolerant is necessary to reach that check but does not clear
-it. Clearing it is a decision about the deployed secret, not about this
-library: rotate `UR_JWT_SECRET_KEY` to a value in the HS256 band across every
-minting and verifying service at once, per the rotation rule above.
+31 or less is refused by the JVM and by `NewVerifier` alike. Every
+`UR_JWT_SECRET_KEY` in both environments currently holds the same
+2046-character unpadded value, which decodes to 1534 bytes, so the JVM signs
+HS512 and so does everything here.
 
 ---
 
@@ -106,7 +108,7 @@ verifier, err := auth.NewVerifier(auth.Config{
 })
 ```
 
-`Verify` checks the signature, refuses any algorithm but HS256, enforces the
+`Verify` checks the signature, refuses any algorithm but the one the key derives, enforces the
 `nbf`/`exp` window, and requires `sub`, `iss`, `aud`, `jti`, `nbf` and `exp` to
 be present. It returns a `*auth.Principal` carrying the subject email, roles,
 `user_id` and `profile_id`.
@@ -303,8 +305,11 @@ and wiring all four Go projects is worth its own change.
 
 ### Cross-implementation parity
 
-One token minted by each implementation is checked in, and each side asserts the
-other's. Each fixture lives in the source of the side that consumes it rather
+Tokens minted by each implementation are checked in, and each side asserts the
+other's: one pair under the original padded test key, and one pair per HMAC
+variant jjwt can select — a 32-, 48- and 64-byte key, plus a 1534-byte key
+encoded unpadded to 2046 characters, the deployed shape. The band keys are
+built from the same arithmetic on both sides rather than written out. Each fixture lives in the source of the side that consumes it rather
 than in a shared data file, so the directive telling the secrets gate that a
 token signed with a published test key is not a credential sits on the line a
 reviewer reads.
@@ -322,13 +327,15 @@ Refreshing them after a claim-layout change — each command produces a
 replacement to paste into the other side:
 
 ```bash
-# JVM side, writes build/parity/jvm-minted-token.json
+# JVM side, writes build/parity/jvm-minted-token.json and one
+# build/parity/jvm-minted-band-<band>.json per band
 cd apps/backend/usersrole
 bash gradlew test --tests com.jdw.usersrole.services.JwtGoParityTests
 
-# Go side, prints a replacement for JwtGoParityTests.GO_MINTED_TOKEN
+# Go side, prints replacements for JwtGoParityTests.GO_MINTED_TOKEN and for the
+# tokens in JwtGoParityTests.bands()
 cd libs/backend/shared/auth
-AUTH_PARITY_PRINT_TOKEN=1 go test . -run TestPrintGoMintedToken -v
+AUTH_PARITY_PRINT_TOKEN=1 go test . -run 'TestPrintGoMinted' -v
 ```
 
 ---

@@ -11,7 +11,7 @@
 A Go service serving the eighteen `/auth`, `/api/users` and `/api/roles`
 operations of the jdwlabs auth surface: sign-in, self-registration, user records
 and the role catalogue with its grants. It reads and writes the same `auth`
-schema the JVM `usersrole` service uses, issues the HS256 tokens the rest of the
+schema the JVM `usersrole` service uses, issues the HMAC-signed tokens the rest of the
 platform verifies, and stores passwords bcrypt-encoded. Built on distroless for a
 minimal attack surface, running as a numeric non-root uid.
 

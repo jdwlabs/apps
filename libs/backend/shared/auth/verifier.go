@@ -16,20 +16,38 @@ import (
 // services read the same variable so a rotation is one change, not three.
 const SecretKeyEnvVar = "UR_JWT_SECRET_KEY"
 
-// signingAlgorithm is the only algorithm accepted. Anything else — including
-// "none" and an RS256 header pointing at a public key — is a forgery attempt or
-// a misconfiguration, never a token this system minted.
-const signingAlgorithm = "HS256"
+// minKeyBytes is the shortest HMAC key jjwt will sign with. Below it
+// Keys.hmacShaKeyFor throws WeakKeyException, so the JVM could not have minted
+// anything a shorter key would verify.
+const minKeyBytes = 32
 
-// jjwt picks the HMAC variant from the key length: 256 bits up to 383 gives
-// HS256, 384 up to 511 gives HS384, 512 and over gives HS512. A key outside the
-// HS256 band therefore makes the JVM sign with an algorithm this verifier
-// refuses, which would reject every live token at once. Failing at construction
-// turns that outage into a startup error.
-const (
-	minKeyBytes = 32
-	maxKeyBytes = 47
-)
+// SigningMethodForKey returns the one HMAC variant a key of this length signs
+// and verifies with. It reproduces jjwt's Keys.hmacShaKeyFor, which the JVM
+// hands the decoded secret to and whose choice Jwts.builder().signWith writes
+// into the header: 512 bits and over is HS512, 384 up to 511 is HS384, 256 up to
+// 383 is HS256, and anything shorter is refused. There is no upper bound; the
+// deployed key is 1534 bytes and the JVM signs it HS512.
+//
+// The variant is derived from the key because the key is the one input an
+// attacker cannot choose. Letting the token's header choose instead is the root
+// of the algorithm-confusion family — "none", or an asymmetric algorithm whose
+// public key is handed to HMAC as a secret — so the header is only ever compared
+// against this answer, never consulted for it. jjwt's own parser is looser: it
+// verifies any HMAC variant the header names so long as the key is long enough
+// for it. Refusing that here costs nothing, because the JVM and the Go minter
+// both only ever sign with the variant their key derives.
+func SigningMethodForKey(key []byte) (*jwt.SigningMethodHMAC, error) {
+	switch bits := len(key) * 8; {
+	case bits >= 512:
+		return jwt.SigningMethodHS512, nil
+	case bits >= 384:
+		return jwt.SigningMethodHS384, nil
+	case bits >= 256:
+		return jwt.SigningMethodHS256, nil
+	default:
+		return nil, fmt.Errorf("%w: %d bytes, and jjwt refuses any HMAC key under %d", ErrInvalidSecretKey, len(key), minKeyBytes)
+	}
+}
 
 var (
 	ErrMissingSecretKey          = errors.New("jwt secret key is not set")
@@ -38,7 +56,7 @@ var (
 	ErrInvalidSecretKey          = errors.New("jwt secret key is unusable")
 	ErrMissingBearerToken        = errors.New("no bearer token in the authorization header")
 	ErrMalformedToken            = errors.New("token is malformed")
-	ErrUnexpectedAlgorithm       = errors.New("token is not signed with " + signingAlgorithm)
+	ErrUnexpectedAlgorithm       = errors.New("token is not signed with the algorithm the key derives")
 	ErrInvalidSignature          = errors.New("token signature does not verify")
 	ErrTokenExpired              = errors.New("token has expired")
 	ErrTokenNotYetValid          = errors.New("token is not yet valid")
@@ -77,6 +95,7 @@ type Config struct {
 // safe for concurrent use.
 type Verifier struct {
 	key              []byte
+	method           *jwt.SigningMethodHMAC
 	parser           *jwt.Parser
 	expectedIssuer   string
 	expectedAudience string
@@ -130,11 +149,9 @@ func NewVerifier(cfg Config) (*Verifier, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: not base64: %w", ErrInvalidSecretKey, err)
 	}
-	if len(key) < minKeyBytes {
-		return nil, fmt.Errorf("%w: %d bytes, %s needs at least %d", ErrInvalidSecretKey, len(key), signingAlgorithm, minKeyBytes)
-	}
-	if len(key) > maxKeyBytes {
-		return nil, fmt.Errorf("%w: %d bytes, which makes the JVM sign with a stronger HMAC variant than %s", ErrInvalidSecretKey, len(key), signingAlgorithm)
+	method, err := SigningMethodForKey(key)
+	if err != nil {
+		return nil, err
 	}
 
 	switch {
@@ -150,7 +167,7 @@ func NewVerifier(cfg Config) (*Verifier, error) {
 		// the authoritative one — no key is ever handed to a different
 		// algorithm — but a parser option that cannot be reached by a code path
 		// that forgets to check is cheap insurance.
-		jwt.WithValidMethods([]string{signingAlgorithm}),
+		jwt.WithValidMethods([]string{method.Alg()}),
 	}
 	if cfg.Leeway > 0 {
 		options = append(options, jwt.WithLeeway(cfg.Leeway))
@@ -160,6 +177,7 @@ func NewVerifier(cfg Config) (*Verifier, error) {
 	}
 	return &Verifier{
 		key:              key,
+		method:           method,
 		parser:           jwt.NewParser(options...),
 		expectedIssuer:   cfg.ExpectedIssuer,
 		expectedAudience: cfg.ExpectedAudience,
@@ -187,7 +205,7 @@ func (v *Verifier) Verify(token string) (*Principal, error) {
 		// runs, and reports it as a signature failure. Reading the algorithm off
 		// the partially parsed token recovers the specific error without
 		// matching on the library's message text.
-		if parsed != nil && parsed.Method != nil && parsed.Method.Alg() != signingAlgorithm {
+		if parsed != nil && parsed.Method != nil && parsed.Method.Alg() != v.method.Alg() {
 			return nil, fmt.Errorf("%w: header says %q", ErrUnexpectedAlgorithm, parsed.Method.Alg())
 		}
 		return nil, translateParseError(err)
@@ -195,11 +213,12 @@ func (v *Verifier) Verify(token string) (*Principal, error) {
 	return v.principalFrom(claims)
 }
 
-// keyFunc is the authoritative algorithm pin: the key is handed only to
-// HS256, so no other algorithm can reach signature verification even if the
+// keyFunc is the authoritative algorithm pin: the key is handed only to the one
+// variant its length derives, so no other algorithm — another HMAC variant,
+// "none", anything asymmetric — can reach signature verification even if the
 // parser option above were dropped.
 func (v *Verifier) keyFunc(token *jwt.Token) (any, error) {
-	if token.Method.Alg() != signingAlgorithm {
+	if token.Method.Alg() != v.method.Alg() {
 		return nil, fmt.Errorf("%w: header says %q", ErrUnexpectedAlgorithm, token.Method.Alg())
 	}
 	return v.key, nil
