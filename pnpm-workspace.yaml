@@ -16,7 +16,7 @@ overrides:
   memfs: '4.69.1'
   '@babel/core@<7.29.6': '^7.29.6'
   '@hono/node-server@<2.0.5': '^2.0.5'
-  'adm-zip@<0.6.0': '^0.6.0'
+  'adm-zip@<0.6.0': '^0.6.1'
   'axios@<1.18.0': '^1.18.0'
   # 1.x and 2.x reach patched releases on their own; only the 3.x+ line is stuck
   # below a parent range, and its consumers share the 5.x API.
