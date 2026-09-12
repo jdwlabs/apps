@@ -2,7 +2,7 @@
   "name": "@jdw/source",
   "version": "0.0.0",
   "license": "MIT",
-  "packageManager": "pnpm@11.25.0",
+  "packageManager": "pnpm@12.4.1",
   "scripts": {
     "prepare": "husky",
     "commit": "cz"
