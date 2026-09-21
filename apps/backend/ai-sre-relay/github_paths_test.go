@@ -40,13 +40,15 @@ func scriptedGitHub(t *testing.T, fileStatus, branchStatus int, hasExistingPR ..
 		switch {
 		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/git/ref/heads/main"):
 			_ = json.NewEncoder(w).Encode(map[string]any{"object": map[string]string{"sha": "basesha"}})
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/tenant.yaml"):
+			_ = json.NewEncoder(w).Encode(contentsStub())
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/contents/"):
 			if r.URL.Query().Get("ref") != baseBranch {
 				t.Errorf("file existence checked against %q, want %s", r.URL.Query().Get("ref"), baseBranch)
 			}
 			w.WriteHeader(fileStatus)
 			if fileStatus == http.StatusOK {
-				_ = json.NewEncoder(w).Encode(map[string]string{"sha": "filesha", "type": "file"})
+				_ = json.NewEncoder(w).Encode(contentsStub())
 			}
 		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/git/refs"):
 			w.WriteHeader(branchStatus)
@@ -98,6 +100,25 @@ func TestGitHubOpenPRRejectsUnwatchedPaths(t *testing.T) {
 		"tenants/platform/services/vault/postInstall/nested/x.yaml",
 		"README.md",
 		".github/workflows/validate.yml",
+		// A later batch: one placeholder Secret fanned out across every
+		// directory the model could imagine, and a store "fix" in another.
+		"apps/jdwillmsen-prd/minecraft-fwb-console-bridge-secret.yaml",
+		"apps/jdwillmsen/minecraft-fwb-prd/secret-minecraft-fwb-console-bridge.yaml",
+		"cluster-fixes.yaml",
+		"cluster/csi-snapshot-crds.yaml",
+		"cluster/jdwillmsen-prd/minecraft-fwb-console-bridge-secret.yaml",
+		"cluster/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"clusters/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"clusters/prod/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"clusters/prod/namespaces/jdwillmsen-prd/minecraft-fwb-console-bridge.yaml",
+		"clusters/prod/namespaces/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"clusters/production/namespaces/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"manifests/jdwillmsen-prd/minecraft-fwb-console-bridge-secret.yaml",
+		"manifests/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"manifests/namespaces/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"namespaces/jdwillmsen-prd/minecraft-fwb-console-bridge.yaml",
+		"namespaces/jdwillmsen-prd/secrets/minecraft-fwb-console-bridge.yaml",
+		"clusters/prod/external-secrets/vault-clustersecretstore.yaml",
 	} {
 		t.Run(bad, func(t *testing.T) {
 			*calls = nil
@@ -119,7 +140,7 @@ func TestGitHubOpenPRRejectsNonexistentFile(t *testing.T) {
 	srv, calls := scriptedGitHub(t, http.StatusNotFound, http.StatusCreated)
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/nope/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/postInstall/missing.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9})
 	_, err := constrainedClient(srv).OpenPR(context.Background(), p, "JDWLABS-500")
 	if !errors.Is(err, ErrPathNotAllowed) {
 		t.Fatalf("want ErrPathNotAllowed, got %v", err)
@@ -133,7 +154,7 @@ func TestGitHubOpenPRRefusesExistingBranch(t *testing.T) {
 	srv, calls := scriptedGitHub(t, http.StatusOK, http.StatusUnprocessableEntity, true)
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9})
 	_, err := constrainedClient(srv).OpenPR(context.Background(), p, "JDWLABS-500")
 	if !errors.Is(err, ErrBranchExists) {
 		t.Fatalf("want ErrBranchExists, got %v", err)
@@ -158,7 +179,7 @@ func TestGitHubOpenPRFlagsOrphanedBranchWhenNoPRExists(t *testing.T) {
 	srv, calls := scriptedGitHub(t, http.StatusOK, http.StatusUnprocessableEntity, false)
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9})
 	_, err := constrainedClient(srv).OpenPR(context.Background(), p, "JDWLABS-500")
 	if !errors.Is(err, ErrBranchOrphaned) {
 		t.Fatalf("want ErrBranchOrphaned, got %v", err)
@@ -187,7 +208,7 @@ func TestGitHubOpenPRErrorsWhenPRCreationFailsAfterCommit(t *testing.T) {
 			_ = json.NewEncoder(w).Encode(map[string]any{"object": map[string]string{"sha": "basesha"}})
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/contents/"):
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"sha": "filesha", "type": "file"})
+			_ = json.NewEncoder(w).Encode(contentsStub())
 		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/git/refs"):
 			w.WriteHeader(http.StatusCreated)
 		case r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/contents/"):
@@ -200,7 +221,7 @@ func TestGitHubOpenPRErrorsWhenPRCreationFailsAfterCommit(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9})
 	_, err := constrainedClient(srv).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err == nil {
 		t.Fatal("expected an error when pull request creation fails")
@@ -222,7 +243,7 @@ func TestGitHubOpenPRUpdatesExistingFileInPlace(t *testing.T) {
 	srv, calls := scriptedGitHub(t, http.StatusOK, http.StatusCreated)
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/postInstall/externalsecret.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/postInstall/externalsecret.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9})
 	if _, err := constrainedClient(srv).OpenPR(context.Background(), p, "JDWLABS-500"); err != nil {
 		t.Fatal(err)
 	}
@@ -250,7 +271,7 @@ func TestGitHubOpenPRDenylistWinsOverAllowlist(t *testing.T) {
 
 	deny := []string{"tenants/*/services/arc-systems/*.yaml", "tenants/*/services/arc-systems/postInstall/*.yaml"}
 	g := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, deny, srv.Client())
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/arc-systems/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/arc-systems/values.yaml", NewContent: "x", Rationale: "r", Confidence: 0.9})
 	_, err := g.OpenPR(context.Background(), p, "JDWLABS-500")
 	if !errors.Is(err, ErrPathDenied) {
 		t.Fatalf("want ErrPathDenied, got %v", err)
@@ -269,7 +290,7 @@ func TestGitHubOpenPRDisabledWithoutPathAllowlist(t *testing.T) {
 	srv, calls := scriptedGitHub(t, http.StatusOK, http.StatusCreated)
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x"}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x"})
 	_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, nil, nil, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err == nil || errors.Is(err, ErrPathNotAllowed) {
 		t.Fatalf("want a disabled-arm error, got %v", err)

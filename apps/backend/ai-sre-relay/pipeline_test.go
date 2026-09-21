@@ -1486,3 +1486,48 @@ func TestCountersExposeReopenAndTrackingOutcomes(t *testing.T) {
 		}
 	}
 }
+
+type refusingGH struct{ err error }
+
+func (r refusingGH) OpenPR(context.Context, Patch, IssueKey) (PRLink, error) { return "", r.err }
+
+// A refused body and an uncited defect are each counted on their own, apart
+// from path refusals, and neither reports a PR.
+func TestPipelineContentAndVerificationRefusalsAreCounted(t *testing.T) {
+	for name, tc := range map[string]struct {
+		err  error
+		read func(*counters) int64
+		log  string
+	}{
+		"content":    {fmt.Errorf("%w: a kind: Secret manifest", ErrContentRefused), func(c *counters) int64 { return c.contentRejected.Load() }, "patch content is refused outright"},
+		"unverified": {fmt.Errorf("%w: no citation", ErrUnverified), func(c *counters) int64 { return c.unverifiedRejected.Load() }, "no live-state verification"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var buf bytes.Buffer
+			log := slog.New(slog.NewJSONHandler(&buf, nil))
+			patch := &Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "c", Confidence: 0.9}
+			d := &fakeDiscord{}
+			p := NewPipeline(fakeHolmes{an: Analysis{RootCause: "x"}}, fakePatcher{p: patch}, &fakeJira{key: "JDWLABS-9"}, refusingGH{tc.err}, d, log)
+			if err := p.Handle(context.Background(), Alert{Fingerprint: "fp"}); err != nil {
+				t.Fatal(err)
+			}
+			if got := tc.read(p.Counters()); got != 1 {
+				t.Fatalf("counter = %d, want 1", got)
+			}
+			if got := p.Counters().pathsRejected.Load(); got != 0 {
+				t.Fatalf("pathsRejected = %d, want 0", got)
+			}
+			if !strings.Contains(buf.String(), tc.log) {
+				t.Fatalf("log omits %q:\n%s", tc.log, buf.String())
+			}
+			if d.pr != nil {
+				t.Fatal("no PR link may be reported for a refused remediation")
+			}
+			var m bytes.Buffer
+			p.Counters().writeTo(&m)
+			if !strings.Contains(m.String(), "ai_sre_relay_"+map[string]string{"content": "content", "unverified": "unverified"}[name]+"_rejections_total 1") {
+				t.Fatalf("counter not exposed:\n%s", m.String())
+			}
+		})
+	}
+}

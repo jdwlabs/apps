@@ -53,8 +53,20 @@ The repository is an ArgoCD GitOps tree. The ONLY files you may propose editing 
 - tenants/<tenant>/services/<release>/values.yaml — that release's Helm values;
 - tenants/<tenant>/services/<release>/postInstall/<name>.yaml — raw manifests applied after the release.
 "file_path" MUST be one of those existing files, edited in place with its full new contents. NEVER invent another layout, NEVER create a new file or a new top-level directory. NEVER propose tenants/<tenant>/tenant.yaml itself, even though it is also reconciled: it is that tenant's whole service list, generated with prune and self-heal, and a hallucinated or truncated rewrite of it deletes every workload ArgoCD deploys for the tenant — the boundary refuses it either way, so proposing it only wastes the attempt. Find the release that owns the failing resource from that tenant's tenant.yaml service names and the namespace in the analysis. If you are not certain which existing file owns the resource, respond with {"confidence":0} instead of guessing.`
+	// patchPromptRules restates, for the model's benefit, refusals the relay
+	// enforces in code before any write (see OpenPR). Stating them saves the
+	// attempt; it is not what stops the change.
+	patchPromptRules = `
+NEVER propose a kind: Secret manifest, and NEVER write a credential value of any kind — no "change-me", no placeholder, no example value. Secret material lives in Vault behind an ExternalSecret; if a Secret is missing, the fix is never to commit one, so respond {"confidence":0}.
+"verification" is REQUIRED. Before proposing a change, find the live read below that shows the defect you are fixing as it is right now: set "tool_call_id" to that read's id and "observed" to an excerpt copied character-for-character from its output that shows the defect. The relay checks the excerpt against the read and refuses the change if it does not appear there. If no live read shows the defect — or a read shows the thing you would change is already correct — respond {"confidence":0}; never fix a condition you have not seen.`
 	patchPromptTail = `
 If no safe single-file change exists, respond with exactly: {"confidence":0}`
+
+	// patchContract is the JSON the model fills in. The verification object is
+	// the citation vetVerification checks.
+	patchContract       = `"file_path":"...","new_content":"<full file>","rationale":"...","verification":{"tool_call_id":"...","observed":"<excerpt copied from that read's output>"},"confidence":0.0-1.0}`
+	maxEvidencePrompted = 12 << 10
+	maxEvidencePreview  = 2 << 10
 )
 
 // patchSystemPrompt renders the instruction for one configured target set. The
@@ -65,10 +77,11 @@ If no safe single-file change exists, respond with exactly: {"confidence":0}`
 func patchSystemPrompt(targets []string) string {
 	if len(targets) > 1 {
 		return patchPromptHead +
-			`{"repo":"...","file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}` + "\n" +
+			`{"repo":"...",` + patchContract + "\n" +
 			`"repo" MUST be copied verbatim from this list and may be nothing else: ` + strings.Join(targets, ", ") + ".\n" +
 			`"file_path" is relative to the root of that repository.` +
 			patchPromptLayout +
+			patchPromptRules +
 			patchPromptTail
 	}
 	// Zero targets means the PR arm is switched off, so a repository name would
@@ -78,9 +91,10 @@ func patchSystemPrompt(targets []string) string {
 		where = "the " + targets[0] + " repository"
 	}
 	return patchPromptHead +
-		`{"file_path":"...","new_content":"<full file>","rationale":"...","confidence":0.0-1.0}` + "\n" +
+		`{` + patchContract + "\n" +
 		"The change will be applied to " + where + `. Do not name a repository; "file_path" is relative to its root.` +
 		patchPromptLayout +
+		patchPromptRules +
 		patchPromptTail
 }
 
@@ -105,7 +119,7 @@ func (g *PatchGenerator) Generate(ctx context.Context, an Analysis) (*Patch, err
 		Model: g.model,
 		Messages: []openAIMessage{
 			{Role: "system", Content: patchSystemPrompt(g.targets)},
-			{Role: "user", Content: an.RootCause},
+			{Role: "user", Content: patchUserPrompt(an)},
 		},
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, g.baseURL+"/chat/completions", bytes.NewReader(reqBody))
@@ -131,9 +145,17 @@ func (g *PatchGenerator) Generate(ctx context.Context, an Analysis) (*Patch, err
 	}
 	content := strings.TrimSpace(or.Choices[0].Message.Content)
 
-	// Malformed / refusal → no patch (not an error). Only accept strict JSON.
+	// Malformed / refusal → no patch (not an error). Only accept strict JSON:
+	// exactly one object with only the contract's fields. A second object, or
+	// a field such as "files" the contract does not have, is a proposal to
+	// change more than one file, and the arm never writes more than one.
 	var p Patch
-	if err := json.Unmarshal([]byte(content), &p); err != nil {
+	dec := json.NewDecoder(strings.NewReader(content))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&p); err != nil || dec.More() {
+		if err == nil {
+			g.log.Warn("discarding remediation: model returned more than one proposal")
+		}
 		return nil, nil
 	}
 	// Repo is deliberately absent from this gate: it is the relay's to set, not
@@ -144,7 +166,32 @@ func (g *PatchGenerator) Generate(ctx context.Context, an Analysis) (*Patch, err
 	if !g.resolveRepo(&p) {
 		return nil, nil
 	}
+	p.Evidence = an.Evidence
 	return &p, nil
+}
+
+// patchUserPrompt puts the investigation's live reads beside its prose, since
+// the proposal must cite one of them. Each read is previewed, not dumped: a
+// citation needs the lines that show the defect, and the whole set has to fit
+// the smallest context window in the fallback chain.
+func patchUserPrompt(an Analysis) string {
+	var b strings.Builder
+	b.WriteString(an.RootCause)
+	b.WriteString("\n\n## Live reads made during the investigation\n")
+	if len(an.Evidence) == 0 {
+		b.WriteString("None. No change can be verified, so respond {\"confidence\":0}.\n")
+		return b.String()
+	}
+	budget := maxEvidencePrompted
+	for _, ev := range an.Evidence {
+		preview := truncateUTF8(ev.Output, min(maxEvidencePreview, budget))
+		if preview == "" {
+			break
+		}
+		budget -= len(preview)
+		fmt.Fprintf(&b, "\n### id: %s\ntool: %s\nread: %s\n```\n%s\n```\n", ev.ID, ev.Tool, ev.Description, preview)
+	}
+	return b.String()
 }
 
 // resolveRepo sets the destination on a proposal and reports whether it is
