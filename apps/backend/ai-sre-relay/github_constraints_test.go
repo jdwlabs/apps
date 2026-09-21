@@ -186,6 +186,15 @@ func TestGitHubOpenPRSanitizesRationale(t *testing.T) {
 				continue
 			}
 			checked++
+			// The commit message's only extra line is the fixed co-author
+			// trailer; everything the model can influence is in the subject.
+			if field == "message" {
+				subject, rest, _ := strings.Cut(v, "\n\n")
+				if !strings.HasPrefix(rest, "Co-Authored-By: ai-sre-relay (") || strings.ContainsAny(rest, "\n\r") {
+					t.Fatalf("message body is not just the co-author trailer: %q", rest)
+				}
+				v = subject
+			}
 			if strings.ContainsAny(v, "\n\r") {
 				t.Fatalf("%s is not single-line: %q", field, v)
 			}
