@@ -8,9 +8,14 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 )
+
+// Matches what platform's co-author-check accepts: a whole trailer line with
+// an address, here naming the model that wrote the patch.
+var trailer = regexp.MustCompile(`(?mi)^Co-Authored-By:[ \t]*ai-sre-relay \(sre-investigator\) <[^<>@\s]+@[^<>@\s]+>$`)
 
 func TestGitHubOpenPR(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +34,10 @@ func TestGitHubOpenPR(t *testing.T) {
 			if _, err := base64.StdEncoding.DecodeString(m["content"].(string)); err != nil {
 				t.Errorf("content not base64: %v", err)
 			}
+			msg, _ := m["message"].(string)
+			if !trailer.MatchString(msg) {
+				t.Errorf("commit message lacks a co-author trailer naming the model: %q", msg)
+			}
 			w.WriteHeader(http.StatusCreated)
 		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/pulls"):
 			_ = json.NewEncoder(w).Encode(map[string]string{"html_url": "https://github.com/jdwlabs/platform/pull/9"})
@@ -39,7 +48,9 @@ func TestGitHubOpenPR(t *testing.T) {
 	defer srv.Close()
 
 	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "limits:\n  memory: 512Mi\n", Rationale: "raise", Confidence: 0.9})
-	link, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, nil, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
+	link, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, nil, srv.Client()).
+		WithModel("sre-investigator").
+		OpenPR(context.Background(), p, "JDWLABS-500")
 	if err != nil {
 		t.Fatal(err)
 	}

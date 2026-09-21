@@ -123,7 +123,8 @@ func main() {
 	// allowlist.yaml by a CI assertion there; empty is fine, it just means no
 	// exceptions are known yet.
 	deniedPaths := splitList(os.Getenv("GITHUB_PATH_DENYLIST"))
-	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, allowedPaths, deniedPaths, hc)
+	github := NewGitHubClient(githubAPI, githubTokens, allowedRepos, allowedPaths, deniedPaths, hc).
+		WithModel(env("LITELLM_MODEL", "claude-sonnet"))
 
 	// How long an alert must stay resolved before the relay closes the ticket
 	// it opened for it.

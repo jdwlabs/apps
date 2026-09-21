@@ -138,7 +138,29 @@ type GitHubClient struct {
 	// the platform repo by a CI assertion there) so a plausible, allow-glob-
 	// passing patch to one of them is still refused.
 	deniedPaths []string
-	hc          *http.Client
+	// model names the LLM behind the patch in each commit's co-author
+	// trailer. The App identity only says a change is agent-authored; the
+	// trailer is what says which agent, and platform's co-author-check fails
+	// an App-authored PR that carries none.
+	model string
+	hc    *http.Client
+}
+
+// WithModel records the model that writes this client's patches, for the
+// co-author trailer on every commit it makes.
+func (g *GitHubClient) WithModel(model string) *GitHubClient {
+	g.model = model
+	return g
+}
+
+// commitMessage is the remediation commit's message, ending in a co-author
+// trailer naming the relay and its model.
+func (g *GitHubClient) commitMessage(summary string, issue IssueKey) string {
+	model := strings.TrimSpace(g.model)
+	if model == "" {
+		model = "unknown model"
+	}
+	return fmt.Sprintf("fix(ai-sre): %s (%s)\n\nCo-Authored-By: ai-sre-relay (%s) <ai-sre-relay@noreply.jdwlabs.com>", summary, issue, model)
 }
 
 func NewGitHubClient(apiBase string, tokens GitHubTokenSource, allowedRepos, allowedPaths, deniedPaths []string, hc *http.Client) *GitHubClient {
@@ -455,7 +477,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	}
 
 	put := map[string]any{
-		"message": fmt.Sprintf("fix(ai-sre): %s (%s)", summary, issue),
+		"message": g.commitMessage(summary, issue),
 		"content": base64.StdEncoding.EncodeToString([]byte(p.NewContent)),
 		"branch":  branch,
 		"sha":     existing.SHA,
