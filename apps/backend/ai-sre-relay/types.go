@@ -24,9 +24,10 @@ func (a Alert) Name() string      { return a.Labels["alertname"] }
 func (a Alert) Namespace() string { return a.Labels["namespace"] }
 func (a Alert) Severity() string  { return a.Labels["severity"] }
 
-// Analysis is Holmes' prose root-cause output.
+// Analysis is Holmes' prose root-cause output and the live reads behind it.
 type Analysis struct {
 	RootCause string // full markdown analysis
+	Evidence  []ToolEvidence
 }
 
 // Patch is a machine-readable, single-file remediation proposal.
@@ -36,6 +37,12 @@ type Patch struct {
 	NewContent string  `json:"new_content"` // full new file contents
 	Rationale  string  `json:"rationale"`
 	Confidence float64 `json:"confidence"` // 0..1
+	// Verification is the model's citation of the live read showing the
+	// defect; OpenPR refuses a proposal without a valid one.
+	Verification *Verification `json:"verification,omitempty"`
+	// Evidence is attached by the relay from the investigation, never decoded
+	// from model output, so the model cannot supply the reads it cites.
+	Evidence []ToolEvidence `json:"-"`
 }
 
 // IssueKey is a Jira issue identifier, e.g. "ABC-123".

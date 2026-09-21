@@ -21,7 +21,7 @@ func TestGitHubOpenPR(t *testing.T) {
 			w.WriteHeader(http.StatusCreated)
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/contents/"):
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"sha": "filesha", "type": "file"})
+			_ = json.NewEncoder(w).Encode(contentsStub())
 		case r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/contents/"):
 			raw, _ := io.ReadAll(r.Body)
 			var m map[string]any
@@ -38,7 +38,7 @@ func TestGitHubOpenPR(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "limits:\n  memory: 512Mi\n", Rationale: "raise", Confidence: 0.9}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "limits:\n  memory: 512Mi\n", Rationale: "raise", Confidence: 0.9})
 	link, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, nil, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +134,7 @@ func TestGitHubOpenPRSurfacesBaseRefStatus(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x"}
+	p := verified(Patch{Repo: "jdwlabs/platform", FilePath: "tenants/platform/services/vault/values.yaml", NewContent: "x"})
 	_, err := NewGitHubClient(srv.URL, StaticGitHubToken("ghtok"), []string{"jdwlabs/platform"}, testPathGlobs, nil, srv.Client()).OpenPR(context.Background(), p, "JDWLABS-500")
 	if err == nil {
 		t.Fatal("expected an error")
@@ -145,11 +145,26 @@ func TestGitHubOpenPRSurfacesBaseRefStatus(t *testing.T) {
 }
 
 func TestSafeFilePathEscapesSegments(t *testing.T) {
-	_, got, err := safeFilePath("tenants/platform/my values.yaml")
+	_, got, err := safeFilePath("tenants/platform/my%values?.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "tenants/platform/my%20values.yaml" {
+	if got != "tenants/platform/my%25values%3F.yaml" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+// One proposal names one file. The fan-out shapes a model uses to name
+// several — a list, a second line — are refused rather than split.
+func TestSafeFilePathRefusesSeveralFiles(t *testing.T) {
+	for _, bad := range []string{
+		"tenants/a/services/b/values.yaml,cluster/jdwillmsen-prd/secret.yaml",
+		"tenants/a/services/b/values.yaml\nmanifests/secret.yaml",
+		"tenants/a/services/b/values.yaml; namespaces/x.yaml",
+		"tenants/a/services/b/my values.yaml",
+	} {
+		if _, _, err := safeFilePath(bad); err == nil {
+			t.Fatalf("accepted %q", bad)
+		}
 	}
 }

@@ -125,3 +125,48 @@ func TestHolmesInvestigateServerError(t *testing.T) {
 		t.Fatal("want error on 500, got nil")
 	}
 }
+
+// Holmes' tool calls become the evidence a remediation must cite. Only reads
+// that succeeded and returned something are kept, and each is bounded.
+func TestHolmesInvestigateKeepsLiveReads(t *testing.T) {
+	long := strings.Repeat("y", maxEvidenceOutputBytes+100)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"analysis": "store is fine",
+			"tool_calls": []map[string]any{
+				{"tool_call_id": "a", "tool_name": "kubectl_get_by_name", "description": "kubectl get clustersecretstore vault",
+					"result": map[string]any{"status": "success", "data": "version: v2"}},
+				{"tool_call_id": "b", "tool_name": "kubectl_describe", "description": "kubectl describe pod x",
+					"result": map[string]any{"status": "error", "error": "not found"}},
+				{"tool_call_id": "c", "tool_name": "prometheus_query", "description": "up",
+					"result": map[string]any{"status": "success", "data": map[string]any{"value": 1}}},
+				{"tool_call_id": "d", "tool_name": "fetch_logs", "description": "logs",
+					"result": map[string]any{"status": "no_data"}},
+				{"tool_call_id": "e", "tool_name": "fetch_logs", "description": "long logs",
+					"result": map[string]any{"status": "success", "data": long}},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	got, err := NewHolmesClient(srv.URL, "m", srv.Client()).Investigate(context.Background(), Alert{Fingerprint: "fp"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for _, ev := range got.Evidence {
+		ids = append(ids, ev.ID)
+	}
+	if strings.Join(ids, ",") != "a,c,e" {
+		t.Fatalf("evidence ids = %v, want a,c,e", ids)
+	}
+	if got.Evidence[0].Output != "version: v2" || got.Evidence[0].Description != "kubectl get clustersecretstore vault" {
+		t.Fatalf("read not kept verbatim: %+v", got.Evidence[0])
+	}
+	if !strings.Contains(got.Evidence[1].Output, `"value":1`) {
+		t.Fatalf("structured data not kept: %q", got.Evidence[1].Output)
+	}
+	if len(got.Evidence[2].Output) != maxEvidenceOutputBytes {
+		t.Fatalf("long read kept at %d bytes, want %d", len(got.Evidence[2].Output), maxEvidenceOutputBytes)
+	}
+}

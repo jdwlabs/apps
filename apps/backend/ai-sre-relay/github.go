@@ -256,6 +256,12 @@ func safeFilePath(p string) (clean, escaped string, err error) {
 	if strings.HasPrefix(p, "/") {
 		return "", "", fmt.Errorf("github: absolute file path %q", p)
 	}
+	// One proposal names one file. A separator or whitespace in the name is
+	// how several guessed locations get packed into one field, and nothing
+	// under the watched layout needs either.
+	if strings.ContainsAny(p, ",; \t\r\n") {
+		return "", "", fmt.Errorf("github: file path %q names more than one file or contains whitespace", p)
+	}
 	clean = path.Clean(p)
 	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
 		return "", "", fmt.Errorf("github: file path %q escapes the repository root", p)
@@ -327,6 +333,14 @@ func (g *GitHubClient) req(ctx context.Context, method, path string, body any) (
 // that already exist on baseBranch and matches the path allowlist; it never
 // creates one, because a new file is exactly what a model with no view of
 // the tree produces when it guesses.
+//
+// Three further refusals sit here rather than in the prompt, because a model
+// told not to do something still does it: the body may not be a Secret
+// manifest or carry a placeholder credential (vetManifest); the release that
+// owns the file must be listed in its tenant.yaml on baseBranch, reading that
+// part of its directory (checkReconciled); and the proposal must cite a live
+// read from the investigation that shows the defect (vetVerification), which
+// is quoted into the PR body.
 func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRLink, error) {
 	if err := g.checkRepo(p.Repo); err != nil {
 		return "", err
@@ -340,6 +354,15 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 	}
 	if n := len(p.NewContent); n == 0 || n > maxPatchBytes {
 		return "", fmt.Errorf("github: patch body is %d bytes, want 1..%d", n, maxPatchBytes)
+	}
+	// Content and citation are checked before any request, so a refused
+	// proposal leaves no branch, commit or API call behind.
+	if err := vetManifest(p.NewContent); err != nil {
+		return "", err
+	}
+	evidence, err := vetVerification(p)
+	if err != nil {
+		return "", err
 	}
 	branch := remediationBranch(p, issue)
 	// An invariant, not a possibility. Asserted rather than assumed so that
@@ -375,7 +398,13 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 		return "", fmt.Errorf("github: empty base sha (repo %s)", p.Repo)
 	}
 
-	// 2. the file must already exist on the base branch. Read before the
+	// 2. the release that owns the file must be one the tenant's tenant.yaml
+	// lists, reading that part of its directory; a glob cannot know that.
+	if err := g.checkReconciled(ctx, p.Repo, cleanPath); err != nil {
+		return "", err
+	}
+
+	// 3. the file must already exist on the base branch. Read before the
 	// branch is created so a refusal leaves nothing behind. The blob SHA is
 	// also what the Contents API needs to update rather than create.
 	fResp, err := g.req(ctx, http.MethodGet, repoPath+"/contents/"+filePath+"?ref="+baseBranch, nil)
@@ -394,7 +423,7 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 		return "", fmt.Errorf("%w: %q is not an existing file on %s (status %d)", ErrPathNotAllowed, cleanPath, baseBranch, fResp.StatusCode)
 	}
 
-	// 3. create branch. 422 means it already exists, which is one of two
+	// 4. create branch. 422 means it already exists, which is one of two
 	// things: a previous run's PR is (or was) open from it, in which case
 	// this proposal is a separate, unrelated patch that must not be appended
 	// to it (ErrBranchExists); or no PR was ever opened from it, because an
@@ -440,10 +469,10 @@ func (g *GitHubClient) OpenPR(ctx context.Context, p Patch, issue IssueKey) (PRL
 		return "", fmt.Errorf("github put contents: status %d", pResp.StatusCode)
 	}
 
-	// 4. open PR
+	// 5. open PR
 	prBody := fmt.Sprintf(
-		"Automated AI-SRE remediation for %s.\n\nSingle file changed: `%s`\n\n%s\n\n**Human review required — do not auto-merge.**",
-		issue, filePath, safeSummary(p.Rationale, maxRationaleBodyRunes))
+		"Automated AI-SRE remediation for %s.\n\nSingle file changed: `%s`\n\n%s\n\n%s\n**Human review required — do not auto-merge.** Check the observed output above against the claim before approving.",
+		issue, filePath, safeSummary(p.Rationale, maxRationaleBodyRunes), renderVerification(evidence, p.Verification.Observed))
 	prResp, err := g.req(ctx, http.MethodPost, repoPath+"/pulls", map[string]string{
 		"title": fmt.Sprintf("fix(ai-sre): %s [%s]", summary, issue),
 		"head":  branch,

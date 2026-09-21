@@ -109,22 +109,75 @@ Until that flag is on, everything below this line is inert.
 
 ---
 
+## Remediation guards
+
+A remediation PR is a model's proposal built from alert text and an
+investigation, so the relay treats its path, its body and its claim as
+untrusted and checks each in code at the commit path (`OpenPR`), before any
+branch, commit or API call. The prompt states the same rules, but only to save
+wasted attempts; a model told not to do something has done it anyway.
+
+| Guard                   | Refuses                                                                                                                                                                                                                                                                                                                                                                                                                    | Error               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| One file                | A reply with more than one proposal, or a field the contract lacks (`files`, extra paths); a file path containing a comma, semicolon or whitespace. One ticket gets one branch, and a branch that already exists is never written again                                                                                                                                                                                    | none (dropped)      |
+| Watched layout          | A path outside `GITHUB_PATH_ALLOWLIST`, or on `GITHUB_PATH_DENYLIST`                                                                                                                                                                                                                                                                                                                                                       | `ErrPathNotAllowed` |
+| Reconciled by ArgoCD    | A file whose release is not listed in `tenants/<tenant>/tenant.yaml` on `main`, a `values.yaml` of a `rawManifests` release, or a `postInstall/` file of a release without `postInstall: true` — the same rules the services ApplicationSet and the platform repo's orphaned-manifest check apply. An unreadable tenant.yaml refuses                                                                                       | `ErrPathNotAllowed` |
+| Existing file           | A file that does not already exist on `main`; the arm edits, it never creates                                                                                                                                                                                                                                                                                                                                              | `ErrPathNotAllowed` |
+| No secret material      | Any `kind: Secret` object — top level, later document, `List` item, a values file's extra objects, YAML or JSON embedded in a string, behind an anchor — and any credential-named key holding a placeholder (`change-me`, `<your-token>`, `REPLACE_ME`, …). A `kind: Secret` _reference_ (kind and name only, as in a Gateway `certificateRef`) and template references such as `{{ .key }}` are allowed. Non-YAML refuses | `ErrContentRefused` |
+| Live-state verification | A proposal that does not cite one of the investigation's own live reads (Holmes tool calls that succeeded) by id, with an excerpt of at least 12 characters that appears in that read's output, whitespace aside. A read of Secret objects cannot be cited                                                                                                                                                                 | `ErrUnverified`     |
+
+The cited read and the quoted output go into the PR body under **Live-state
+verification**. The check proves the excerpt is real cluster output from this
+investigation; it does not prove the model drew the right conclusion from it.
+That judgement is the reviewer's, and the quote is there so it is made against
+the cluster rather than against the model's prose.
+
+A secret that is missing is never fixed by committing one: the sanctioned
+shape is an ExternalSecret over a Vault path, which a human seeds.
+
+---
+
 ## Metrics
 
 Prometheus text exposition on `GET /metrics`, unauthenticated.
 
-| Metric                                      | Read it as                                                                      |
-| ------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ai_sre_relay_investigations_run_total`     | Alerts investigated                                                             |
-| `ai_sre_relay_repeats_skipped_total`        | Repeat notifications absorbed by an open ticket                                 |
-| `ai_sre_relay_tickets_auto_closed_total`    | Tickets the relay transitioned to Done after their alert stayed resolved        |
-| `ai_sre_relay_repo_rejections_total`        | Remediations dropped at the repository allowlist                                |
-| `ai_sre_relay_path_rejections_total`        | Remediations dropped at the path allowlist                                      |
-| `ai_sre_relay_branches_skipped_total`       | Remediations dropped because the ticket's PR branch existed                     |
-| `ai_sre_relay_branches_orphaned_total`      | Branches found with no pull request — a previous run failed mid-way             |
-| `ai_sre_relay_ticket_reopens_total`         | Closes that raced a re-fire and were undone, by `result` — `failed` is terminal |
-| `ai_sre_relay_fingerprints_untracked_total` | Alerts past the tracking ceiling; each loses repeat suppression and auto-close  |
-| `ai_sre_relay_alerts_rejected_total`        | Refusal responses (503) — retry pressure, not distinct alerts                   |
+| Metric                                      | Read it as                                                                       |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| `ai_sre_relay_investigations_run_total`     | Alerts investigated                                                              |
+| `ai_sre_relay_repeats_skipped_total`        | Repeat notifications absorbed by an open ticket                                  |
+| `ai_sre_relay_tickets_auto_closed_total`    | Tickets the relay transitioned to Done after their alert stayed resolved         |
+| `ai_sre_relay_repo_rejections_total`        | Remediations dropped at the repository allowlist                                 |
+| `ai_sre_relay_path_rejections_total`        | Remediations dropped at the path allowlist or because nothing reconciles them    |
+| `ai_sre_relay_content_rejections_total`     | Remediations dropped for their body: a Secret manifest or placeholder credential |
+| `ai_sre_relay_unverified_rejections_total`  | Remediations dropped for not citing a live read that shows the defect            |
+| `ai_sre_relay_branches_skipped_total`       | Remediations dropped because the ticket's PR branch existed                      |
+| `ai_sre_relay_branches_orphaned_total`      | Branches found with no pull request — a previous run failed mid-way              |
+| `ai_sre_relay_ticket_reopens_total`         | Closes that raced a re-fire and were undone, by `result` — `failed` is terminal  |
+| `ai_sre_relay_fingerprints_untracked_total` | Alerts past the tracking ceiling; each loses repeat suppression and auto-close   |
+| `ai_sre_relay_alerts_rejected_total`        | Refusal responses (503) — retry pressure, not distinct alerts                    |
+
+---
+
+## Runbook: a remediation was dropped
+
+Each refusal logs at Error with the proposed repo, file path and issue, and
+ticks one counter. Read the counter to know which guard, the log line to know
+why.
+
+- **`ai_sre_relay_path_rejections_total`** — the proposal aimed at a file
+  nothing reconciles. The error names the reason: outside the globs, on the
+  denylist, a release not listed in its tenant.yaml, or a file not on `main`.
+  A steady rate means the model is guessing layouts again; the prompt's
+  layout section in `patch.go` is the place to look.
+- **`ai_sre_relay_content_rejections_total`** — the body was a Secret manifest,
+  carried a placeholder credential, or was not YAML. Nothing to retry: the
+  change itself was wrong. If the alert really is a missing Secret, check the
+  ExternalSecret and the Vault path it reads.
+- **`ai_sre_relay_unverified_rejections_total`** — the proposal could not quote
+  a live read showing the defect. The log carries `live_reads`: `0` means
+  Holmes returned no successful tool calls, so nothing could be verified;
+  a nonzero count means the model cited a read that did not show what it
+  claimed, which is the case this guard exists for.
 
 ---
 

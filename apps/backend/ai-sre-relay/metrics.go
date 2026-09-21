@@ -25,6 +25,12 @@ type counters struct {
 	// right and the file was not — unwatched by ArgoCD or nonexistent. Every
 	// unusable PR before this gate existed would have counted here.
 	pathsRejected atomic.Int64
+	// contentRejected counts remediations refused for what they would commit
+	// — a Secret manifest or a placeholder credential — wherever they aimed.
+	contentRejected atomic.Int64
+	// unverifiedRejected counts remediations refused because they could not
+	// cite a live read from the investigation showing the defect they fix.
+	unverifiedRejected atomic.Int64
 	// branchesSkipped counts proposals dropped because the ticket's PR branch
 	// already existed. Expected to tick on refires; a burst means a ticket is
 	// generating a new proposal every cycle and its PR should be looked at.
@@ -75,6 +81,12 @@ func (c *counters) writeTo(w io.Writer) {
 	fmt.Fprint(w, "# HELP ai_sre_relay_path_rejections_total Remediations discarded because the proposed file was not a watched, existing manifest.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_path_rejections_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_path_rejections_total %d\n", c.pathsRejected.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_content_rejections_total Remediations discarded because the patch body was a Secret manifest, carried a placeholder credential, or was not YAML.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_content_rejections_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_content_rejections_total %d\n", c.contentRejected.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_unverified_rejections_total Remediations discarded because they cited no live read from the investigation showing the defect.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_unverified_rejections_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_unverified_rejections_total %d\n", c.unverifiedRejected.Load())
 	fmt.Fprint(w, "# HELP ai_sre_relay_branches_skipped_total Remediations dropped because a PR branch for the ticket already existed.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_branches_skipped_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_branches_skipped_total %d\n", c.branchesSkipped.Load())

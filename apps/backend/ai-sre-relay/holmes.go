@@ -32,7 +32,47 @@ type chatRequest struct {
 }
 
 type chatResponse struct {
-	Analysis string `json:"analysis"`
+	Analysis  string         `json:"analysis"`
+	ToolCalls []chatToolCall `json:"tool_calls"`
+}
+
+// chatToolCall is Holmes' ToolCallResult. result is its StructuredToolResult,
+// whose data is usually the tool's text output but may be any JSON value.
+type chatToolCall struct {
+	ID          string `json:"tool_call_id"`
+	Name        string `json:"tool_name"`
+	Description string `json:"description"`
+	Result      struct {
+		Status string          `json:"status"`
+		Data   json.RawMessage `json:"data"`
+	} `json:"result"`
+}
+
+// toolEvidence keeps the reads that succeeded and returned something, which
+// are the only ones a remediation can cite. Output is bounded per read and
+// the number of reads is capped; see maxEvidenceCalls.
+func toolEvidence(calls []chatToolCall) []ToolEvidence {
+	var out []ToolEvidence
+	for _, c := range calls {
+		if len(out) == maxEvidenceCalls {
+			break
+		}
+		if c.ID == "" || c.Result.Status != "success" {
+			continue
+		}
+		var data string
+		if err := json.Unmarshal(c.Result.Data, &data); err != nil {
+			data = string(c.Result.Data)
+		}
+		if data = strings.TrimSpace(data); data == "" || data == "null" {
+			continue
+		}
+		out = append(out, ToolEvidence{
+			ID: c.ID, Tool: c.Name, Description: c.Description,
+			Output: truncateUTF8(data, maxEvidenceOutputBytes),
+		})
+	}
+	return out
 }
 
 // buildAsk flattens the alert into a single investigation prompt, since
@@ -67,37 +107,37 @@ const investigateAttempts = 2
 func (c *HolmesClient) Investigate(ctx context.Context, a Alert) (Analysis, error) {
 	var lastErr error
 	for range investigateAttempts {
-		raw, err := c.chat(ctx, a)
+		cr, err := c.chat(ctx, a)
 		if err != nil {
 			return Analysis{}, err
 		}
-		clean, serr := sanitizeAnalysis(raw)
+		clean, serr := sanitizeAnalysis(cr.Analysis)
 		if serr == nil {
-			return Analysis{RootCause: clean}, nil
+			return Analysis{RootCause: clean, Evidence: toolEvidence(cr.ToolCalls)}, nil
 		}
 		lastErr = serr
 	}
 	return Analysis{}, fmt.Errorf("holmes: unusable analysis after %d attempts: %w", investigateAttempts, lastErr)
 }
 
-func (c *HolmesClient) chat(ctx context.Context, a Alert) (string, error) {
+func (c *HolmesClient) chat(ctx context.Context, a Alert) (chatResponse, error) {
 	body, _ := json.Marshal(chatRequest{Ask: buildAsk(a), Model: c.model, Stream: false})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/chat", bytes.NewReader(body))
 	if err != nil {
-		return "", err
+		return chatResponse{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.hc.Do(req)
 	if err != nil {
-		return "", err
+		return chatResponse{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("holmes: status %d", resp.StatusCode)
+		return chatResponse{}, fmt.Errorf("holmes: status %d", resp.StatusCode)
 	}
 	var cr chatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&cr); err != nil {
-		return "", fmt.Errorf("holmes: decode: %w", err)
+		return chatResponse{}, fmt.Errorf("holmes: decode: %w", err)
 	}
-	return cr.Analysis, nil
+	return cr, nil
 }

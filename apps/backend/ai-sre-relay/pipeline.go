@@ -577,6 +577,23 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 			p.counters.pathsRejected.Add(1)
 			log.Error("remediation discarded: proposed file is not a watched, existing manifest",
 				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
+		case errors.Is(gerr, ErrContentRefused):
+			// The file was the right kind of place and the change itself was
+			// the defect: a Secret manifest or a placeholder credential. No
+			// better path exists for it, so it is counted apart from path
+			// refusals — a nonzero rate means the model is still reaching for
+			// committed secrets and the prompt has drifted.
+			p.counters.contentRejected.Add(1)
+			log.Error("remediation discarded: patch content is refused outright",
+				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue, "err", gerr)
+		case errors.Is(gerr, ErrUnverified):
+			// A proposal that could not quote a live read showing the defect.
+			// Counted on its own because it is the signal that separates a
+			// quiet arm from one fixing conditions it never observed.
+			p.counters.unverifiedRejected.Add(1)
+			log.Error("remediation discarded: asserted defect has no live-state verification",
+				"proposed_repo", patch.Repo, "file_path", patch.FilePath, "issue", issue,
+				"live_reads", len(patch.Evidence), "err", gerr)
 		case errors.Is(gerr, ErrBranchExists):
 			// A PR for this ticket already carries an earlier proposal; this
 			// one is dropped rather than pushed onto it. Not an error state:
