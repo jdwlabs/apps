@@ -84,6 +84,9 @@
         "parallel": false
       }
     },
+    "update-app": {
+      "command": "bash scripts/update-app.sh charts/profile-service/Chart.yaml \"$(bash scripts/resolve-version.sh profile-service)\" {projectName}"
+    },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/profile-service {projectRoot}/README.docker.md"
     },

@@ -85,6 +85,9 @@
         "parallel": false
       }
     },
+    "update-app": {
+      "command": "bash scripts/update-app.sh charts/identity-service/Chart.yaml \"$(bash scripts/resolve-version.sh identity-service)\" {projectName}"
+    },
     "update-description": {
       "command": "bash scripts/update-description.sh jdwlabs/identity-service {projectRoot}/README.docker.md"
     },
