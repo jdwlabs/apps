@@ -44,7 +44,8 @@ describe('ThemeDialogComponent', () => {
     const options: NodeListOf<HTMLElement> =
       fixture.nativeElement.querySelectorAll('[data-cy="theme-option"]');
     const checked = Array.from(options).filter(
-      (option) => option.querySelector('input[type="radio"]')?.['checked'],
+      (option) =>
+        option.querySelector<HTMLInputElement>('input[type="radio"]')?.checked,
     );
 
     expect(checked).toHaveLength(1);

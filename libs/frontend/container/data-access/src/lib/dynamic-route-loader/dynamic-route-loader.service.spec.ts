@@ -6,6 +6,7 @@ import { ENVIRONMENT } from '@jdw/frontend-shared-util';
 import { MicroFrontendService } from '../micro-frontend/micro-frontend.service';
 import { Router, Route } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import type { Mock } from 'vitest';
 import { loadRemoteModule, setRemoteDefinitions } from '@nx/angular/mf';
 /* eslint-disable @nx/enforce-module-boundaries */
 import { FallbackComponent } from '@jdw/frontend-shared-ui';
@@ -67,7 +68,7 @@ describe('DynamicRouteLoaderService', () => {
         url: 'http://example.com',
       },
     ];
-    (mockMfService.getRoutes as vi.Mock).mockReturnValue(of(routes));
+    (mockMfService.getRoutes as Mock).mockReturnValue(of(routes));
 
     await service.loadRoutes();
 
@@ -85,8 +86,8 @@ describe('DynamicRouteLoaderService', () => {
         url: 'http://example.com',
       },
     ];
-    (mockMfService.getRoutes as vi.Mock).mockReturnValue(of(routes));
-    (loadRemoteModule as vi.Mock).mockResolvedValue({ remoteRoutes: [] });
+    (mockMfService.getRoutes as Mock).mockReturnValue(of(routes));
+    (loadRemoteModule as Mock).mockResolvedValue({ remoteRoutes: [] });
 
     await service.loadRoutes();
 
@@ -108,14 +109,14 @@ describe('DynamicRouteLoaderService', () => {
         url: 'http://example.com',
       },
     ];
-    (mockMfService.getRoutes as vi.Mock).mockReturnValue(of(routes));
-    (loadRemoteModule as vi.Mock).mockRejectedValue(
+    (mockMfService.getRoutes as Mock).mockReturnValue(of(routes));
+    (loadRemoteModule as Mock).mockRejectedValue(
       new Error('Failed to load remote module'),
     );
 
     await service.loadRoutes();
 
-    const configCallArgs = (mockRouter.resetConfig as vi.Mock).mock.calls[0][0];
+    const configCallArgs = (mockRouter.resetConfig as Mock).mock.calls[0][0];
     const exampleRoute = configCallArgs.find(
       (route: any) => route.path === 'example',
     );
@@ -141,7 +142,7 @@ describe('DynamicRouteLoaderService', () => {
     ])(
       'settles and serves fallback when the payload is %s',
       async (_label, payload) => {
-        (mockMfService.getRoutes as vi.Mock).mockReturnValue(of(payload));
+        (mockMfService.getRoutes as Mock).mockReturnValue(of(payload));
 
         await expect(settles(service.loadRoutes())).resolves.toBe('settled');
 
@@ -153,7 +154,7 @@ describe('DynamicRouteLoaderService', () => {
     );
 
     it('settles when getRoutes errors instead of emitting', async () => {
-      (mockMfService.getRoutes as vi.Mock).mockReturnValue(
+      (mockMfService.getRoutes as Mock).mockReturnValue(
         throwError(() => new Error('service discovery unreachable')),
       );
 
@@ -162,7 +163,7 @@ describe('DynamicRouteLoaderService', () => {
     });
 
     it('preserves bootstrap definitions when the route list is empty', async () => {
-      (mockMfService.getRoutes as vi.Mock).mockReturnValue(of([]));
+      (mockMfService.getRoutes as Mock).mockReturnValue(of([]));
 
       await service.loadRoutes();
 
@@ -170,7 +171,7 @@ describe('DynamicRouteLoaderService', () => {
     });
 
     it('drops individual malformed routes and keeps the usable ones', async () => {
-      (mockMfService.getRoutes as vi.Mock).mockReturnValue(
+      (mockMfService.getRoutes as Mock).mockReturnValue(
         of([
           {
             path: 'example',
@@ -194,7 +195,7 @@ describe('DynamicRouteLoaderService', () => {
       expect(setRemoteDefinitions).toHaveBeenCalledWith({
         exampleRemote: 'http://example.com',
       });
-      const config = (mockRouter.resetConfig as vi.Mock).mock.calls[0][0];
+      const config = (mockRouter.resetConfig as Mock).mock.calls[0][0];
       expect(config.map((route: Route) => route.path)).toEqual([
         'example',
         '**',

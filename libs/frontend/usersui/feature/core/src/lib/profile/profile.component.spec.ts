@@ -5,6 +5,7 @@ import { HttpHeaders, provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
+  TestRequest,
 } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/frontend-shared-util';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -42,7 +43,7 @@ describe('ProfileComponent', () => {
   });
 
   function flushProfileLookup(
-    body: unknown,
+    body: Parameters<TestRequest['flush']>[0],
     opts: { status: number; statusText: string; headers?: HttpHeaders },
   ) {
     const req = httpMock.expectOne((request) =>

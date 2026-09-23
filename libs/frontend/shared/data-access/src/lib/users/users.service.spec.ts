@@ -11,7 +11,7 @@ import {
   TestRequest,
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { EMPTY } from 'rxjs';
+import { Observable } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from './users.service';
 import { SnackbarService } from '../snackbar/snackbar.service';
@@ -28,6 +28,21 @@ const mockSnackbarService = {
 const environmentMock = {
   AUTH_BASE_URL: 'http://localhost:8080',
 };
+
+// RxJS reports errors thrown in subscribe callbacks async; they cannot fail a test.
+function record<T>(source: Observable<T>) {
+  const outcome: { values: T[]; error: unknown; completed: boolean } = {
+    values: [],
+    error: undefined,
+    completed: false,
+  };
+  source.subscribe({
+    next: (value) => outcome.values.push(value),
+    error: (error) => (outcome.error = error),
+    complete: () => (outcome.completed = true),
+  });
+  return outcome;
+}
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -112,12 +127,7 @@ describe('UsersService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.getUsers().subscribe({
-        next: () => fail('Expected an error, but got a success response'),
-        error: (error) => {
-          expect(error).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.getUsers());
 
       const req = httpTesting.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/users`,
@@ -126,6 +136,12 @@ describe('UsersService', () => {
         { message: 'Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
@@ -172,17 +188,18 @@ describe('UsersService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.getUser('1').subscribe({
-        next: () => fail('Expected an error, but got a success response'),
-        error: (error) => {
-          expect(error).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.getUser('1'));
 
       const req = httpTesting.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/users/1`,
       );
       req.flush({ message: 'Error' }, { status: 404, statusText: 'Not Found' });
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
@@ -228,12 +245,7 @@ describe('UsersService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.deleteUser(userId).subscribe({
-        next: () => fail('Expected an error, but got a success response'),
-        error: (error) => {
-          expect(error).toBeInstanceOf(HttpErrorResponse);
-        },
-      });
+      const outcome = record(service.deleteUser(userId));
 
       const req = httpTesting.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/users/${userId}`,
@@ -242,6 +254,12 @@ describe('UsersService', () => {
         { message: 'Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
@@ -305,12 +323,7 @@ describe('UsersService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.addUser(mockUser).subscribe({
-        next: () => fail('Expected an error, but got a success response'),
-        error: (error) => {
-          expect(error).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.addUser(mockUser));
 
       const req = httpTesting.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/users`,
@@ -319,6 +332,12 @@ describe('UsersService', () => {
         { message: 'Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
@@ -384,12 +403,7 @@ describe('UsersService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.editUser(userId, mockUserUpdate).subscribe({
-        next: () => fail('Expected an error, but got a success response'),
-        error: (error) => {
-          expect(error).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.editUser(userId, mockUserUpdate));
 
       const req = httpTesting.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/users/${userId}`,
@@ -398,6 +412,12 @@ describe('UsersService', () => {
         { message: 'Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
