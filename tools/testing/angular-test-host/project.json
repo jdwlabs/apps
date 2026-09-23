@@ -1,0 +1,25 @@
+{
+  "name": "angular-test-host",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "tools/testing/angular-test-host",
+  "tags": ["type:util", "scope:shared", "framework:angular"],
+  "targets": {
+    "test-build-options": {
+      "executor": "@nx/angular:application",
+      "options": {
+        "outputPath": "dist/tools/angular-test-host",
+        "browser": "tools/testing/angular-test-host/main.ts",
+        "tsConfig": "tools/testing/angular-test-host/tsconfig.json",
+        "polyfills": ["zone.js"],
+        "inlineStyleLanguage": "scss",
+        "stylePreprocessorOptions": {
+          "includePaths": ["libs/frontend/shared/ui/src/lib/styles"]
+        }
+      },
+      "configurations": {
+        "development": {}
+      }
+    }
+  }
+}

@@ -34,7 +34,29 @@ No barrel files (`index.ts`) at the app level. Import directly from the source f
 
 ### Testing
 
-- Vitest for unit tests (`.spec.ts` alongside the file)
+- Vitest for unit tests (`.spec.ts` alongside the file), run by Angular's own
+  unit-test builder through `@nx/angular:unit-test`. A project's `test` target
+  is just that executor; `buildTarget`, `isolate: true`, `watch: false`, the
+  coverage output and the cache inputs all come from its `targetDefaults` in
+  `nx.json`
+- The builder only takes build options from an esbuild application or
+  ng-packagr target, and the apps build with webpack for module federation
+  while most libs have no build target. So `buildTarget` points at one
+  options-only target, `angular-test-host:test-build-options`
+  (`tools/testing/angular-test-host`), which is never built. Each tested
+  project lists `angular-test-host` in `implicitDependencies` so a change
+  there re-runs their tests
+- A project with no specs has no `test` target: the builder fails on zero
+  test files. Add the target together with the first spec
+- The builder type-checks specs, so a spec that does not compile fails the run
+- `vi.mock` cannot replace a `@jdw/*` workspace import: the builder bundles
+  workspace libraries into the test, so there is no module left to intercept.
+  Mock npm packages only; for a workspace function, assert on its real output
+  or inject a fake through DI
+- Never assert inside an RxJS `subscribe` callback: RxJS catches what the
+  callback throws and reports it asynchronously, so it cannot fail the test.
+  Record the stream's values, error and completion, then assert after the
+  flush
 - Playwright for E2E (all tests in `apps/e2e/platform-e2e/`)
 - No `TestBed` bootstrapping shortcuts — configure properly with `TestBed.configureTestingModule`
 

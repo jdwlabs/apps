@@ -15,14 +15,12 @@ views, supporting consistent and modular frontend architecture.
 libs/frontend/usersui/feature/core/
 ├── src
 │   ├── index.ts                    # Public API export for the library
-│   ├── lib
+│   └── lib
 │   │   ├── user/                   # Standalone component for user view
 │   │   ├── profile/                # Standalone component for profile view
 │   │   ├── dashboard/              # Dashboard layout and features
 │   │   ├── account/                # Account management UI
 │   │   └── lib.routes.ts           # Route definitions for the feature
-│   └── test-setup.ts               # Test setup configuration
-├── vite.config.ts                  # Vitest configuration for unit testing
 ├── cypress.config.ts               # Cypress configuration for component testing
 ├── tsconfig.json                   # Base TypeScript configuration
 ├── tsconfig.lib.json               # Library-specific TypeScript configuration

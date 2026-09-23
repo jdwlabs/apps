@@ -11,8 +11,6 @@
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/vite.config.[jt]s",
-      "!{projectRoot}/src/test-setup.[jt]s",
-      "!{projectRoot}/test-setup.[jt]s",
       "!{projectRoot}/**/*.spec.[jt]s?(x)",
       "!{projectRoot}/playwright.config.[jt]s"
     ],
@@ -39,9 +37,19 @@
         "{workspaceRoot}/tools/eslint-rules/**/*"
       ]
     },
-    "@analogjs/vitest-angular:test": {
+    "@nx/angular:unit-test": {
       "cache": true,
-      "inputs": ["default", "^production"]
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/tools/testing/angular-test-host/**/*"
+      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectName}"],
+      "options": {
+        "buildTarget": "angular-test-host:test-build-options:development",
+        "watch": false,
+        "isolate": true
+      }
     },
     "@nx/vitest:test": {
       "cache": true,

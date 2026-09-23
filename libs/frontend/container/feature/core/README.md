@@ -17,11 +17,9 @@ libs/frontend/container/feature/core/
 │   ├── lib
 │   │   ├── dashboard      # Dashboard UI component
 │   │   └── main           # Main layout UI component
-│   ├── index.ts
-│   └── test-setup.ts
+│   └── index.ts
 ├── cypress/               # Cypress component test config & support files
 ├── cypress.config.ts      # Cypress component test configuration
-├── vite.config.ts         # Vitest unit test configuration
 ├── tsconfig*.json         # TypeScript configuration
 └── README.md              # Project documentation
 ```

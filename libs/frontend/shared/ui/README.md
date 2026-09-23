@@ -32,8 +32,7 @@ libs/frontend/shared/ui/
 │   │   ├── navigation-layout/         # Main navigation layout container
 │   │   ├── navigation-tile/           # Dashboard tile-style navigation
 │   │   ├── snackbar/                  # Snackbar alert messages
-│   │   ├── styles/                    # Global SCSS styles and theming
-│   │   └── test-setup.ts
+│   │   └── styles/                    # Global SCSS styles and theming
 │   └── index.ts
 ├── styles/
 │   ├── themes/                        # Predefined theme files
@@ -41,7 +40,6 @@ libs/frontend/shared/ui/
 │   ├── _custom-palettes.scss          # Generated M3 tonal palettes (schematic output)
 │   ├── _nav-geometry.scss             # Shared rail/drawer widths (see invariant within)
 │   └── _theming.scss                  # Theme mixin (mat.theme + extra semantic roles)
-├── vite.config.ts
 ├── ng-package.json
 ├── tsconfig.*.json
 ├── cypress/                          # Cypress component test setup

@@ -23,15 +23,13 @@ apps/frontend/usersui/
 │   ├── config.json              # Runtime configuration
 │   ├── index.html               # Main HTML entry point
 │   ├── main.ts                  # Angular main entry
-│   ├── styles.scss              # Global styles
-│   └── test-setup.ts            # Vitest test setup
+│   └── styles.scss              # Global styles
 ├── Dockerfile                   # Docker configuration for containerized deployment
 ├── default.conf                 # Nginx config used in container
 ├── start-nginx.sh               # Entrypoint script for Nginx
 ├── module-federation.config.ts  # Module federation configuration
 ├── webpack.config.ts            # Webpack base configuration
 ├── webpack.prod.config.ts       # Webpack production configuration
-├── vite.config.ts               # Vite build and Vitest configuration
 ├── tsconfig*.json               # TypeScript configuration files
 └── project.json                 # Nx project configuration
 ```
@@ -64,9 +62,7 @@ nx build usersui
 
 ### Test
 
-```bash
-nx test usersui
-```
+No unit tests yet, so there is no `test` target: the unit-test builder fails a project with no specs. Adding the first spec means adding the target too; copy it from any project that has one.
 
 ---
 

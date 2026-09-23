@@ -18,9 +18,7 @@ libs/frontend/shared/data-access/
 │   │   ├── auth/                         # Auth-related services
 │   │   ├── roles/                        # Role management service
 │   │   └── snackbar/                     # UI toast/snackbar notifications
-│   ├── index.ts                          # Public exports
-│   └── test-setup.ts
-├── vite.config.ts                        # Vitest config
+│   └── index.ts                          # Public exports
 ├── tsconfig.json                         # Base TypeScript config
 ├── tsconfig.lib.json                     # Library-specific TypeScript config
 ├── tsconfig.spec.json                    # Spec/test TypeScript config

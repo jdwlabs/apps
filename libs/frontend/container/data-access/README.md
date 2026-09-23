@@ -18,7 +18,6 @@ libs/frontend/container/data-access/
 │   │   ├── dynamic-route-loader       # Service for dynamic route loading
 │   │   ├── micro-frontend             # Service for managing micro frontends
 │   │   └── version                    # Service for version management
-├── vite.config.ts                     # Vitest configuration for unit testing
 ├── tsconfig.json                      # TypeScript configuration
 └── README.md                          # Project documentation
 ```
