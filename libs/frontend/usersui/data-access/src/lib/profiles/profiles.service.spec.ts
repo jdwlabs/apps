@@ -18,6 +18,7 @@ import {
   ENVIRONMENT,
   Profile,
 } from '@jdw/frontend-shared-util';
+import { Observable } from 'rxjs';
 
 const authServiceMock = {
   getToken: vi.fn(),
@@ -31,6 +32,21 @@ const snackbarServiceMock = {
 const environmentMock = {
   AUTH_BASE_URL: 'http://localhost:8080',
 };
+
+// RxJS reports errors thrown in subscribe callbacks async; they cannot fail a test.
+function record<T>(source: Observable<T>) {
+  const outcome: { values: T[]; error: unknown; completed: boolean } = {
+    values: [],
+    error: undefined,
+    completed: false,
+  };
+  source.subscribe({
+    next: (value) => outcome.values.push(value),
+    error: (error) => (outcome.error = error),
+    complete: () => (outcome.completed = true),
+  });
+  return outcome;
+}
 
 describe('ProfilesService', () => {
   let service: ProfilesService;
@@ -112,20 +128,10 @@ describe('ProfilesService', () => {
     });
 
     it('should handle errors and call handleError', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(3);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getProfiles().subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error).toBeInstanceOf(HttpErrorResponse);
-          expect(error.status).toBe(500);
-        },
-      });
+      const outcome = record(service.getProfiles());
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles`,
@@ -134,6 +140,11 @@ describe('ProfilesService', () => {
         { message: 'Server Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(500);
 
       expect(snackbarServiceMock.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
@@ -176,10 +187,6 @@ describe('ProfilesService', () => {
     });
 
     it('propagates a genuine no-profile 404 without showing a snackbar', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(3);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
       // The mocks in this file are shared across `it` blocks and never
@@ -187,13 +194,7 @@ describe('ProfilesService', () => {
       // already made.
       snackbarServiceMock.error.mockClear();
 
-      service.getProfile('1').subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error.status).toBe(404);
-          expect(isProfileNotFoundError(error)).toBe(true);
-        },
-      });
+      const outcome = record(service.getProfile('1'));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/1`,
@@ -204,24 +205,20 @@ describe('ProfilesService', () => {
         headers: new HttpHeaders({ 'content-type': 'text/plain' }),
       });
 
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(404);
+      expect(isProfileNotFoundError(error)).toBe(true);
+
       expect(snackbarServiceMock.error).not.toHaveBeenCalled();
     });
 
     it('shows a snackbar and propagates a routing 404 as an error', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(3);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getProfile('1').subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(isProfileNotFoundError(error)).toBe(false);
-          expect(error.status).toBe(404);
-        },
-      });
+      const outcome = record(service.getProfile('1'));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/1`,
@@ -235,23 +232,20 @@ describe('ProfilesService', () => {
         },
       );
 
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(isProfileNotFoundError(error)).toBe(false);
+      expect(error.status).toBe(404);
+
       expect(snackbarServiceMock.error).toHaveBeenCalled();
     });
 
     it('shows a snackbar and propagates a 500 as an error', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(2);
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getProfile('1').subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error.status).toBe(500);
-        },
-      });
+      const outcome = record(service.getProfile('1'));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/1`,
@@ -260,6 +254,11 @@ describe('ProfilesService', () => {
         { message: 'Internal Server Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(500);
 
       expect(snackbarServiceMock.error).toHaveBeenCalled();
     });
@@ -375,25 +374,12 @@ describe('ProfilesService', () => {
     });
 
     it('should handle address not found (404) error', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(5);
       const profileId = 1;
       const addressId = 999; // Address ID that doesn't exist
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getAddress(profileId, addressId).subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error).toBeInstanceOf(HttpErrorResponse);
-          expect(error.status).toBe(404);
-          expect(error.error.message).toBe(
-            `Address with ID ${addressId} not found for profile ${profileId}`,
-          );
-        },
-      });
+      const outcome = record(service.getAddress(profileId, addressId));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
@@ -407,25 +393,23 @@ describe('ProfilesService', () => {
         },
         { status: 404, statusText: 'Not Found' },
       );
+
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(404);
+      expect(error.error.message).toBe(
+        `Address with ID ${addressId} not found for profile ${profileId}`,
+      );
     });
 
     it('should handle unexpected HTTP errors', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(4);
       const profileId = 1;
       const addressId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getAddress(profileId, addressId).subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error).toBeInstanceOf(HttpErrorResponse);
-          expect(error.status).toBe(500);
-        },
-      });
+      const outcome = record(service.getAddress(profileId, addressId));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
@@ -437,6 +421,11 @@ describe('ProfilesService', () => {
         { message: 'Internal Server Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(500);
     });
   });
 
@@ -625,22 +614,11 @@ describe('ProfilesService', () => {
     });
 
     it('should handle errors and call handleError on failure', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(3);
       const userId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.deleteProfile(userId).subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error).toBeInstanceOf(HttpErrorResponse);
-          expect(error.status).toBe(500);
-          expect(error.error.message).toBe('Internal Server Error');
-        },
-      });
+      const outcome = record(service.deleteProfile(userId));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/${userId}`,
@@ -649,6 +627,12 @@ describe('ProfilesService', () => {
         { message: 'Internal Server Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(500);
+      expect(error.error.message).toBe('Internal Server Error');
     });
   });
 
@@ -673,21 +657,11 @@ describe('ProfilesService', () => {
     });
 
     it('should propagate an error if the underlying profile is not found', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(3);
       const profileId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getIcon(profileId).subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error).toBeInstanceOf(HttpErrorResponse);
-          expect(error.status).toBe(404);
-        },
-      });
+      const outcome = record(service.getIcon(profileId));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
@@ -697,25 +671,20 @@ describe('ProfilesService', () => {
         { status: 404, statusText: 'Not Found' },
       );
 
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(404);
+
       expect(snackbarServiceMock.error).toHaveBeenCalled();
     });
 
     it('should handle unexpected HTTP errors and call handleError', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(4);
       const profileId = 1;
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
 
-      service.getIcon(profileId).subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error).toBeInstanceOf(HttpErrorResponse);
-          expect(error.status).toBe(500);
-        },
-      });
+      const outcome = record(service.getIcon(profileId));
 
       const req = httpMock.expectOne(
         `${environmentMock.AUTH_BASE_URL}/api/profiles/${profileId}`,
@@ -727,6 +696,11 @@ describe('ProfilesService', () => {
         { message: 'Internal Server Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBeInstanceOf(HttpErrorResponse);
+      expect(error.status).toBe(500);
     });
   });
 
@@ -763,21 +737,15 @@ describe('ProfilesService', () => {
     });
 
     it('propagates the original error to subscribers instead of completing silently', () => {
-      // Guards against handleError regressing to EMPTY: EMPTY completes
-      // without calling next or error, which would let this test pass
-      // green with none of the assertions below ever running.
-      expect.assertions(1);
       const mockError = new HttpErrorResponse({
         status: 500,
         error: { message: 'Internal Server Error' },
       });
 
-      service.handleError(mockError).subscribe({
-        next: () => fail('Expected an error, but got success'),
-        error: (error) => {
-          expect(error).toBe(mockError);
-        },
-      });
+      const outcome = record(service.handleError(mockError));
+      expect(outcome.values).toEqual([]);
+      const error = outcome.error as HttpErrorResponse;
+      expect(error).toBe(mockError);
     });
   });
 

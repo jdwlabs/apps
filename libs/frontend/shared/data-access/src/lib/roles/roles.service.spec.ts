@@ -7,7 +7,7 @@ import {
 } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { ENVIRONMENT, Role, User } from '@jdw/frontend-shared-util';
-import { EMPTY } from 'rxjs';
+import { Observable } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { SnackbarService } from '../snackbar/snackbar.service';
 
@@ -23,6 +23,21 @@ const mockSnackbarService = {
 const mockEnvironment = {
   AUTH_BASE_URL: 'http://localhost:8080',
 };
+
+// RxJS reports errors thrown in subscribe callbacks async; they cannot fail a test.
+function record<T>(source: Observable<T>) {
+  const outcome: { values: T[]; error: unknown; completed: boolean } = {
+    values: [],
+    error: undefined,
+    completed: false,
+  };
+  source.subscribe({
+    next: (value) => outcome.values.push(value),
+    error: (error) => (outcome.error = error),
+    complete: () => (outcome.completed = true),
+  });
+  return outcome;
+}
 
 describe('RolesService', () => {
   let service: RolesService;
@@ -96,12 +111,7 @@ describe('RolesService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.getRoles().subscribe({
-        next: () => fail('Expected an error, but got a success response'),
-        error: (error) => {
-          expect(error).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.getRoles());
 
       const req = httpTesting.expectOne(
         `${mockEnvironment.AUTH_BASE_URL}/api/roles`,
@@ -110,6 +120,12 @@ describe('RolesService', () => {
         { message: 'Error' },
         { status: 500, statusText: 'Internal Server Error' },
       );
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
@@ -158,17 +174,18 @@ describe('RolesService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.getRole('1').subscribe({
-        next: () => fail('Expected an error, but got a success response'),
-        error: (error) => {
-          expect(error).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.getRole('1'));
 
       const req = httpTesting.expectOne(
         `${mockEnvironment.AUTH_BASE_URL}/api/roles/1`,
       );
       req.flush({ message: 'Error' }, { status: 404, statusText: 'Not Found' });
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
         'An unexpected error occurred on our server. Please try again later.',
@@ -207,17 +224,18 @@ describe('RolesService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.deleteRole(roleId).subscribe({
-        next: () => fail('Expected error'),
-        error: (e) => {
-          expect(e).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.deleteRole(roleId));
 
       const req = httpTesting.expectOne(
         `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}`,
       );
       req.flush({}, { status: 500, statusText: 'Internal Server Error' });
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalled();
     });
@@ -270,17 +288,18 @@ describe('RolesService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.addRole(newRole).subscribe({
-        next: () => fail('Expected error'),
-        error: (e) => {
-          expect(e).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.addRole(newRole));
 
       const req = httpTesting.expectOne(
         `${mockEnvironment.AUTH_BASE_URL}/api/roles`,
       );
       req.flush({}, { status: 400, statusText: 'Bad Request' });
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalled();
     });
@@ -335,17 +354,18 @@ describe('RolesService', () => {
       const token = 'mockJwtToken';
       mockAuthService.getToken.mockReturnValue(token);
 
-      service.editRole(roleId, editData).subscribe({
-        next: () => fail('Expected error'),
-        error: (e) => {
-          expect(e).toBe(EMPTY);
-        },
-      });
+      const outcome = record(service.editRole(roleId, editData));
 
       const req = httpTesting.expectOne(
         `${mockEnvironment.AUTH_BASE_URL}/api/roles/${roleId}`,
       );
       req.flush({}, { status: 404, statusText: 'Not Found' });
+
+      expect(outcome).toEqual({
+        values: [],
+        error: undefined,
+        completed: true,
+      });
 
       expect(mockSnackbarService.error).toHaveBeenCalled();
     });

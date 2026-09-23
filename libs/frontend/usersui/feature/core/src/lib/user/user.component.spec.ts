@@ -5,7 +5,7 @@ import { FormBuilder } from '@angular/forms';
 import { UsersService } from '@jdw/frontend-shared-data-access';
 import { RolesService } from '@jdw/frontend-shared-data-access';
 import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { ENVIRONMENT, Role } from '@jdw/frontend-shared-util';
@@ -193,21 +193,22 @@ describe('UserComponent', () => {
     // component code registered: an object with a real `error` function,
     // not a bare next callback.
     function capturingObservable() {
-      const captured: {
-        observer?: Partial<Record<'next' | 'error', unknown>>;
-      } = {};
-      return {
+      type CapturedObserver = Partial<Record<'next' | 'error', unknown>>;
+      const captured: { observer?: CapturedObserver } = {};
+      const observable = {
         subscribe: (observer: unknown) => {
           captured.observer =
-            typeof observer === 'function' ? { next: observer } : observer;
+            typeof observer === 'function'
+              ? { next: observer }
+              : (observer as CapturedObserver);
         },
-        captured,
-      };
+      } as unknown as Observable<undefined>;
+      return { observable, captured };
     }
 
     it('deleteProfile registers a real error handler and it does not throw', () => {
-      const { subscribe, captured } = capturingObservable();
-      mockProfilesService.deleteProfile.mockReturnValueOnce({ subscribe });
+      const { observable, captured } = capturingObservable();
+      mockProfilesService.deleteProfile.mockReturnValueOnce(observable);
       const reloadSpy = vi.spyOn(
         component as unknown as { reloadPage: () => void },
         'reloadPage',
@@ -227,8 +228,8 @@ describe('UserComponent', () => {
     });
 
     it('deleteAddress registers a real error handler and it does not throw', () => {
-      const { subscribe, captured } = capturingObservable();
-      mockProfilesService.deleteAddress.mockReturnValueOnce({ subscribe });
+      const { observable, captured } = capturingObservable();
+      mockProfilesService.deleteAddress.mockReturnValueOnce(observable);
       const reloadSpy = vi.spyOn(
         component as unknown as { reloadPage: () => void },
         'reloadPage',
@@ -249,8 +250,8 @@ describe('UserComponent', () => {
     });
 
     it('deleteIcon registers a real error handler and it does not throw', () => {
-      const { subscribe, captured } = capturingObservable();
-      mockProfilesService.deleteIcon.mockReturnValueOnce({ subscribe });
+      const { observable, captured } = capturingObservable();
+      mockProfilesService.deleteIcon.mockReturnValueOnce(observable);
       const reloadSpy = vi.spyOn(
         component as unknown as { reloadPage: () => void },
         'reloadPage',
