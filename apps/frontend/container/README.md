@@ -22,14 +22,12 @@ apps/frontend/container/
 │   ├── index.html               # Main HTML entry point
 │   ├── main.ts                  # Angular main entry
 │   ├── module-federation.manifest.json  # Remote MFE definitions used at runtime
-│   ├── styles.scss              # Global styles
-│   └── test-setup.ts            # Vitest test setup
+│   └── styles.scss              # Global styles
 ├── Dockerfile                   # Docker configuration for containerized deployment
 ├── default.conf                 # Nginx configuration used in container
 ├── start-nginx.sh               # Entrypoint script for Nginx
 ├── module-federation.config.ts  # Module federation configuration (host setup)
 ├── webpack.config.ts            # Webpack base configuration
-├── vite.config.ts               # Vite build and Vitest configuration
 ├── tsconfig*.json               # TypeScript configuration files
 └── project.json                 # Nx project configuration
 ```

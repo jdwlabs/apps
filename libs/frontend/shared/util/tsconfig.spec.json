@@ -4,8 +4,7 @@
     "outDir": "../../../../dist/out-tsc",
     "module": "preserve",
     "types": ["vitest/globals", "node"],
-    "moduleResolution": "bundler",
-    "isolatedModules": true
+    "moduleResolution": "bundler"
   },
   "include": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/*.d.ts"]
 }

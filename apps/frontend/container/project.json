@@ -90,11 +90,7 @@
       "executor": "@nx/eslint:lint"
     },
     "test": {
-      "executor": "@analogjs/vitest-angular:test",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
-      "options": {
-        "configFile": "vite.config.ts"
-      }
+      "executor": "@nx/angular:unit-test"
     },
     "serve-static": {
       "executor": "@nx/web:file-server",
@@ -201,5 +197,6 @@
         ]
       }
     }
-  }
+  },
+  "implicitDependencies": ["angular-test-host"]
 }

@@ -18,9 +18,7 @@ libs/frontend/container/util/
 ├── src
 │   ├── lib
 │   │   └── routes.model.ts           # Common route-related models
-│   ├── index.ts                      # Library exports
-│   └── test-setup.ts
-├── vite.config.ts                    # Vitest configuration
+│   └── index.ts                      # Library exports
 ├── tsconfig.json                     # TypeScript base config
 ├── tsconfig.lib.json                 # Library-specific TypeScript config
 ├── tsconfig.spec.json                # Spec-specific TypeScript config
@@ -38,7 +36,6 @@ libs/frontend/container/util/
 - Node.js (LTS version recommended)
 - Nx CLI (for workspace and project management)
 - Angular
-- Vitest (for unit testing)
 - ESLint (for linting and code standards)
 
 ### Installation
@@ -53,11 +50,7 @@ npm install
 
 ## 🧪 Testing
 
-To run unit tests with Vitest:
-
-```bash
-nx test angular-container-util
-```
+No unit tests yet, so there is no `test` target: the unit-test builder fails a project with no specs. Adding the first spec means adding the target too; copy it from any project that has one.
 
 ---
 
@@ -99,4 +92,4 @@ The output will be placed in the `dist/` directory.
 
 - This library is designed to be lightweight and reusable across multiple features.
 - Models and utility functions are standalone and do not rely on Angular components or services.
-- It supports strict typing and unit tests for robust development.
+- It supports strict typing.

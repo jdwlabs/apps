@@ -39,11 +39,6 @@ const mockRoutes: MicroFrontendRoute[] = [
   },
 ];
 
-vi.mock('@jdw/frontend-shared-util', async () => ({
-  ...(await vi.importActual('@jdw/frontend-shared-util')),
-  getErrorMessage: vi.fn(),
-}));
-
 describe('MicroFrontendService', () => {
   let service: MicroFrontendService;
   let httpTesting: HttpTestingController;
@@ -116,14 +111,15 @@ describe('MicroFrontendService', () => {
         error: 'Error message',
         status: 500,
       });
-      const mockErrorMessage = 'Mock error message';
-      vi.mocked(getErrorMessage).mockReturnValue(mockErrorMessage);
+      // The real message, not a mock: the unit-test builder bundles
+      // workspace libraries, so vi.mock cannot intercept a @jdw/* import.
+      const expectedMessage = getErrorMessage(errorResponse);
+      expect(expectedMessage).toBeTruthy();
 
       const result = service.handleError(errorResponse);
 
-      expect(getErrorMessage).toHaveBeenCalledWith(errorResponse);
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
-        mockErrorMessage,
+        expectedMessage,
         { variant: 'filled', autoClose: false },
         true,
       );

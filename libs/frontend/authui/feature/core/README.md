@@ -20,7 +20,6 @@ libs/frontend/authui/feature/core/
 │   │   ├── forbidden
 │   │   ├── sign-in
 │   │   └── sign-up
-├── vite.config.ts              # Vitest configuration for unit tests
 ├── tsconfig.json               # TypeScript configuration
 └── README.md                   # Project documentation
 ```

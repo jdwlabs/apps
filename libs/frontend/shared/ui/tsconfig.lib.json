@@ -16,8 +16,7 @@
     "cypress.config.ts",
     "cypress/**/*",
     "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/test-setup.ts"
+    "src/**/*.test.ts"
   ],
   "include": ["src/**/*.ts"],
   "angularCompilerOptions": {

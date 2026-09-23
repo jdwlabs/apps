@@ -15,11 +15,9 @@ consistency and reduce duplication across the codebase.
 libs/frontend/usersui/util/
 ├── src
 │   ├── index.ts                    # Public API export for the library
-│   ├── lib
+│   └── lib
 │   │   ├── date.util.ts            # Utility functions for date manipulation
 │   │   └── date.util.spec.ts       # Unit tests for date utilities
-│   └── test-setup.ts               # Test setup configuration
-├── vite.config.ts                  # Vitest configuration for unit testing
 ├── tsconfig.json                   # Base TypeScript configuration
 ├── tsconfig.lib.json               # Library-specific TypeScript configuration
 ├── tsconfig.spec.json              # Test-specific TypeScript configuration

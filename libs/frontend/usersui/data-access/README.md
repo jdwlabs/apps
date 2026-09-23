@@ -15,12 +15,10 @@ operations, promoting reuse and consistency across the application.
 libs/frontend/usersui/data-access/
 ├── src
 │   ├── index.ts                       # Public API export for the library
-│   ├── lib
+│   └── lib
 │   │   └── profiles
 │   │       ├── profiles.service.ts    # Service for managing profile data
 │   │       └── profiles.service.spec.ts
-│   └── test-setup.ts                  # Test setup configuration
-├── vite.config.ts                     # Vitest configuration for unit testing
 ├── tsconfig.json                      # Base TypeScript configuration
 ├── tsconfig.lib.json                  # Library-specific TypeScript configuration
 └── tsconfig.spec.json                 # Test-specific TypeScript configuration
