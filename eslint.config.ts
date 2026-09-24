@@ -8,9 +8,8 @@ export default [
       '**/eslint.config.ts',
       '**/eslint.config.js',
       '**/eslint.config.mjs',
-      // vite.config.ts is read directly by Vite, outside Nx's module graph
-      // and before the tsconfig-paths plugin is active, so it cannot resolve
-      // a @jdw/* alias.
+      // vite.config.ts is loaded directly by Vitest, outside Nx's module
+      // graph, so it cannot resolve a @jdw/* alias.
       '**/vite.config.ts',
     ],
   },
