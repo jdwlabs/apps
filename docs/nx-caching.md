@@ -226,7 +226,6 @@ next `nx reset`; under a shared one, whoever can write a hash decides whether
 ```
 @nx/eslint:lint              cache: true
 @nx/angular:unit-test        cache: true
-@nx/vitest:test              cache: true
 @nx-go/nx-go:lint            cache: true
 @nx-go/nx-go:test            cache: true
 ```

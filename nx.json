@@ -51,10 +51,6 @@
         "isolate": true
       }
     },
-    "@nx/vitest:test": {
-      "cache": true,
-      "inputs": ["default", "^production"]
-    },
     "e2e": {
       "cache": false
     },

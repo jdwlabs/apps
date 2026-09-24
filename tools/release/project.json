@@ -6,9 +6,13 @@
   "tags": ["type:util", "scope:shared", "framework:node"],
   "targets": {
     "test": {
-      "executor": "@nx/vitest:test",
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default", "^production"],
       "outputs": ["{workspaceRoot}/coverage/tools/release"],
-      "options": { "configFile": "tools/release/vite.config.ts" }
+      "options": {
+        "command": "vitest run --root tools/release"
+      }
     }
   }
 }

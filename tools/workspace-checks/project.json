@@ -12,7 +12,7 @@
   "implicitDependencies": ["*"],
   "targets": {
     "test": {
-      "executor": "@nx/vitest:test",
+      "executor": "nx:run-commands",
       "outputs": ["{workspaceRoot}/coverage/tools/workspace-checks"],
       // This check asserts over the resolved project graph, whose real inputs
       // include every installed plugin under node_modules. No fileset can
@@ -20,7 +20,9 @@
       // the graph it polices has changed underneath — replaying the pass it
       // exists to withhold.
       "cache": false,
-      "options": { "configFile": "tools/workspace-checks/vite.config.ts" }
+      "options": {
+        "command": "vitest run --root tools/workspace-checks"
+      }
     }
   }
 }
