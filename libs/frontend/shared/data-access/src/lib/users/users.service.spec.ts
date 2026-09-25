@@ -202,7 +202,7 @@ describe('UsersService', () => {
       });
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
-        'An unexpected error occurred on our server. Please try again later.',
+        'The requested resource could not be found. Please verify the URL or resource and try again.',
         {
           variant: 'filled',
           autoClose: false,
