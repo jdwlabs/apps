@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { DynamicRouteLoaderService } from './dynamic-route-loader.service';
+import {
+  DynamicRouteLoaderService,
+  REMOTE_MODULE_FEDERATION,
+} from './dynamic-route-loader.service';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ENVIRONMENT } from '@jdw/frontend-shared-util';
@@ -7,15 +10,14 @@ import { MicroFrontendService } from '../micro-frontend/micro-frontend.service';
 import { Router, Route } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import type { Mock } from 'vitest';
-import { loadRemoteModule, setRemoteDefinitions } from '@nx/angular/mf';
 /* eslint-disable @nx/enforce-module-boundaries */
 import { FallbackComponent } from '@jdw/frontend-shared-ui';
 /* eslint-enable @nx/enforce-module-boundaries */
 
-vi.mock('@nx/angular/mf', () => ({
+const federation = {
   loadRemoteModule: vi.fn(),
   setRemoteDefinitions: vi.fn(),
-}));
+};
 
 const mockEnvironment = {
   SERVICE_DISCOVERY_BASE_URL: 'http://localhost:9000',
@@ -45,6 +47,7 @@ describe('DynamicRouteLoaderService', () => {
         { provide: Router, useValue: mockRouter },
         { provide: ENVIRONMENT, useValue: mockEnvironment },
         { provide: MicroFrontendService, useValue: mockMfService },
+        { provide: REMOTE_MODULE_FEDERATION, useValue: federation },
       ],
     });
     service = TestBed.inject(DynamicRouteLoaderService);
@@ -72,7 +75,7 @@ describe('DynamicRouteLoaderService', () => {
 
     await service.loadRoutes();
 
-    expect(setRemoteDefinitions).toHaveBeenCalledWith({
+    expect(federation.setRemoteDefinitions).toHaveBeenCalledWith({
       exampleRemote: 'http://example.com',
     });
   });
@@ -87,7 +90,7 @@ describe('DynamicRouteLoaderService', () => {
       },
     ];
     (mockMfService.getRoutes as Mock).mockReturnValue(of(routes));
-    (loadRemoteModule as Mock).mockResolvedValue({ remoteRoutes: [] });
+    federation.loadRemoteModule.mockResolvedValue({ remoteRoutes: [] });
 
     await service.loadRoutes();
 
@@ -110,7 +113,7 @@ describe('DynamicRouteLoaderService', () => {
       },
     ];
     (mockMfService.getRoutes as Mock).mockReturnValue(of(routes));
-    (loadRemoteModule as Mock).mockRejectedValue(
+    federation.loadRemoteModule.mockRejectedValue(
       new Error('Failed to load remote module'),
     );
 
@@ -146,7 +149,7 @@ describe('DynamicRouteLoaderService', () => {
 
         await expect(settles(service.loadRoutes())).resolves.toBe('settled');
 
-        expect(setRemoteDefinitions).not.toHaveBeenCalled();
+        expect(federation.setRemoteDefinitions).not.toHaveBeenCalled();
         expect(mockRouter.resetConfig).toHaveBeenCalledWith([
           { path: '**', component: FallbackComponent },
         ]);
@@ -159,7 +162,7 @@ describe('DynamicRouteLoaderService', () => {
       );
 
       await expect(settles(service.loadRoutes())).resolves.toBe('settled');
-      expect(setRemoteDefinitions).not.toHaveBeenCalled();
+      expect(federation.setRemoteDefinitions).not.toHaveBeenCalled();
     });
 
     it('preserves bootstrap definitions when the route list is empty', async () => {
@@ -167,7 +170,7 @@ describe('DynamicRouteLoaderService', () => {
 
       await service.loadRoutes();
 
-      expect(setRemoteDefinitions).not.toHaveBeenCalled();
+      expect(federation.setRemoteDefinitions).not.toHaveBeenCalled();
     });
 
     it('drops individual malformed routes and keeps the usable ones', async () => {
@@ -192,7 +195,7 @@ describe('DynamicRouteLoaderService', () => {
 
       await service.loadRoutes();
 
-      expect(setRemoteDefinitions).toHaveBeenCalledWith({
+      expect(federation.setRemoteDefinitions).toHaveBeenCalledWith({
         exampleRemote: 'http://example.com',
       });
       const config = (mockRouter.resetConfig as Mock).mock.calls[0][0];

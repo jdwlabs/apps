@@ -49,10 +49,13 @@ No barrel files (`index.ts`) at the app level. Import directly from the source f
 - A project with no specs has no `test` target: the builder fails on zero
   test files. Add the target together with the first spec
 - The builder type-checks specs, so a spec that does not compile fails the run
-- `vi.mock` cannot replace a `@jdw/*` workspace import: the builder bundles
-  workspace libraries into the test, so there is no module left to intercept.
-  Mock npm packages only; for a workspace function, assert on its real output
-  or inject a fake through DI
+- Do not use `vi.mock` in an Angular spec. The builder bundles each spec, so
+  a `vi.mock` call no longer sits at the module's top level: it cannot
+  replace a `@jdw/*` workspace import at all, and Vitest 5 rejects it
+  outright even for an npm package. Put the dependency behind an `InjectionToken` whose default factory
+  supplies the real thing, and provide a fake in the spec
+  (`REMOTE_MODULE_FEDERATION` in container data-access is the pattern), or
+  assert on a pure function's real output
 - Never assert inside an RxJS `subscribe` callback: RxJS catches what the
   callback throws and reports it asynchronously, so it cannot fail the test.
   Record the stream's values, error and completion, then assert after the

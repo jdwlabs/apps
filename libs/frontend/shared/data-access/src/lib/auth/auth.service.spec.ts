@@ -154,7 +154,7 @@ describe('AuthService', () => {
       req.flush({});
 
       expect(mockSnackbarService.success).toHaveBeenCalledWith(
-        'Sign in successful',
+        'Sign up successful',
         { variant: 'filled', autoClose: true },
         true,
       );
@@ -177,7 +177,7 @@ describe('AuthService', () => {
       );
 
       expect(mockSnackbarService.error).toHaveBeenCalledWith(
-        'Invalid email or password',
+        'There was an issue with your submission. Please check your input and try again.',
         { variant: 'filled', autoClose: false },
         true,
       );
