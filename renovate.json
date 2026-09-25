@@ -20,6 +20,16 @@
     },
     {
       "description": [
+        "vitest majors are held at 4 because Angular's own unit-test builder cannot run 5: @angular/build transforms specs before vitest sees them, and vitest 5's hoisting validator then rejects a top-level vi.mock in libs/frontend/container/data-access as 'defined outside the module's top level scope' — reproduced with the call as the literal first statement in the file, reported at 1:1, so no source-level fix exists.",
+        "@angular/build 22.2.0 widened its vitest peer range to include 5 but changed nothing: the same spec fails identically, so the peer range is advisory, not a signal that the combination works. The vitest-native tool projects pass on 5, so Nx is not the blocker.",
+        "Minors and patches inside 4.x stay enabled. Re-enable majors once an @angular/build release fixes its transform's interaction with the vitest:mocks plugin — verify by running the Angular unit-test target on vitest 5 before removing this rule."
+      ],
+      "matchPackageNames": ["vitest"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": [
         "@material/material-color-utilities is pinned exact at 0.3.0 (not a caret range) in package.json and libs/frontend/shared/util/package.json — see the comment above the import in libs/frontend/shared/util/src/lib/on-color.util.ts.",
         "0.4.0 ships nine scheme/*.js files (scheme_content, scheme_expressive, scheme_fidelity, scheme_fruit_salad, scheme_monochrome, scheme_neutral, scheme_rainbow, scheme_tonal_spot, scheme_vibrant) whose import of '../dynamiccolor/dynamic_scheme' is missing the .js extension. The package's own exports map only publishes the '.' barrel, so every consumer loads that broken chain through it.",
         "Node's strict ESM resolver (used by pnpm's isolated node_modules linking and by Vitest/Vite) cannot fall back to extension-probing for that specifier, so importing anything from the package barrel throws Cannot find module '.../dynamiccolor/dynamic_scheme' at test time — reproduced by unpacking the published 0.4.0 tarball directly; 0.3.0 has no such imports.",
