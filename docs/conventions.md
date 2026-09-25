@@ -46,6 +46,12 @@ No barrel files (`index.ts`) at the app level. Import directly from the source f
   (`tools/testing/angular-test-host`), which is never built. Each tested
   project lists `angular-test-host` in `implicitDependencies` so a change
   there re-runs their tests
+- `runnerConfig` in the same `targetDefaults` points every Angular test task at
+  one shared Vitest config, `tools/testing/angular-test-host/vitest.config.ts`.
+  It sets `clearMocks: true`, so a mock shared across a spec file starts each
+  test with no recorded calls and a `toHaveBeenCalledWith` can only be
+  satisfied by the test that makes the assertion. Specs do not need their own
+  `vi.clearAllMocks()` or per-mock `mockClear()`
 - A project with no specs has no `test` target: the builder fails on zero
   test files. Add the target together with the first spec
 - The builder type-checks specs, so a spec that does not compile fails the run

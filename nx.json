@@ -47,6 +47,7 @@
       "outputs": ["{workspaceRoot}/coverage/{projectName}"],
       "options": {
         "buildTarget": "angular-test-host:test-build-options:development",
+        "runnerConfig": "tools/testing/angular-test-host/vitest.config.ts",
         "watch": false,
         "isolate": true
       }

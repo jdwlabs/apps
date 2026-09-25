@@ -27,8 +27,6 @@ describe('DynamicRouteLoaderService', () => {
   let mockMfService: MicroFrontendService;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
     mockRouter = {
       resetConfig: vi.fn(),
       config: [],

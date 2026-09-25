@@ -203,11 +203,6 @@ describe('AuthService', () => {
       return TestBed.inject(AuthService);
     };
 
-    beforeEach(() => {
-      mockCookieService.delete.mockClear();
-      mockSnackbarService.success.mockClear();
-    });
-
     it('decodes a valid token', () => {
       const decoded = buildWith('').getDecodedToken(VALID_TOKEN);
       expect(decoded?.user_id).toBe(42);

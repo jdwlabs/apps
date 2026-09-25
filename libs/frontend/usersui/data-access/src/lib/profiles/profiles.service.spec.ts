@@ -189,10 +189,6 @@ describe('ProfilesService', () => {
     it('propagates a genuine no-profile 404 without showing a snackbar', () => {
       const token = 'mockJwtToken';
       authServiceMock.getToken.mockReturnValue(token);
-      // The mocks in this file are shared across `it` blocks and never
-      // reset, so isolate this negative assertion from calls other tests
-      // already made.
-      snackbarServiceMock.error.mockClear();
 
       const outcome = record(service.getProfile('1'));
 
