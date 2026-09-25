@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, InjectionToken } from '@angular/core';
 import { Route, Router } from '@angular/router';
 import { MicroFrontendService } from '../micro-frontend/micro-frontend.service';
 import { loadRemoteModule, setRemoteDefinitions } from '@nx/angular/mf';
@@ -6,6 +6,19 @@ import { MicroFrontendRoute } from '@jdw/frontend-container-util';
 /* eslint-disable @nx/enforce-module-boundaries */
 import { FallbackComponent } from '@jdw/frontend-shared-ui';
 /* eslint-enable @nx/enforce-module-boundaries */
+
+/**
+ * The module-federation runtime, as a token rather than a direct import so a
+ * test can hand the service a fake: the unit-test builder bundles each spec,
+ * which leaves vi.mock no module boundary to replace.
+ */
+export const REMOTE_MODULE_FEDERATION = new InjectionToken<{
+  loadRemoteModule: typeof loadRemoteModule;
+  setRemoteDefinitions: typeof setRemoteDefinitions;
+}>('REMOTE_MODULE_FEDERATION', {
+  providedIn: 'root',
+  factory: () => ({ loadRemoteModule, setRemoteDefinitions }),
+});
 
 function isUsableRoute(route: unknown): route is MicroFrontendRoute {
   if (typeof route !== 'object' || route === null) {
@@ -26,6 +39,7 @@ function isUsableRoute(route: unknown): route is MicroFrontendRoute {
 export class DynamicRouteLoaderService {
   private router: Router = inject(Router);
   private mfService: MicroFrontendService = inject(MicroFrontendService);
+  private federation = inject(REMOTE_MODULE_FEDERATION);
 
   loadRoutes(): Promise<void> {
     return new Promise((resolve) => {
@@ -71,7 +85,8 @@ export class DynamicRouteLoaderService {
       return {
         path: route.path,
         loadChildren: () =>
-          loadRemoteModule(route.remoteName, route.moduleName)
+          this.federation
+            .loadRemoteModule(route.remoteName, route.moduleName)
             .then((m) => m.remoteRoutes)
             .catch((err) => {
               console.error('Failed to load remote', err);
@@ -84,7 +99,7 @@ export class DynamicRouteLoaderService {
       redirectTo: '',
     });
 
-    setRemoteDefinitions(definitions);
+    this.federation.setRemoteDefinitions(definitions);
     this.router.resetConfig([...this.router.config, ...dynamicRoutes]);
   }
 
