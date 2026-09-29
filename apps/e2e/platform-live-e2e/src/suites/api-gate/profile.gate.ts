@@ -46,6 +46,8 @@ test.describe('profile', () => {
           params: { path: { emailAddress } },
         },
       );
+      expect(self.response.status).toBe(200);
+      expect(self.data?.id).toBeDefined();
       const userId = self.data?.id as number;
       const byUser = await asUser.profile.GET(
         '/api/profiles/by-user/{userId}',
@@ -54,6 +56,10 @@ test.describe('profile', () => {
         },
       );
       expect(byUser.response.status).toBe(200);
+      expect(
+        byUser.data?.id,
+        'the seeded user has no profile; phase 0 must create it',
+      ).toBeDefined();
       const profileId = byUser.data?.id as number;
       const byId = await asUser.profile.GET('/api/profiles/{profileId}', {
         params: { path: { profileId } },

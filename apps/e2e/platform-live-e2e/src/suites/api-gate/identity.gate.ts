@@ -87,11 +87,23 @@ test.describe('identity', () => {
         },
       });
       expect(created.response.status).toBe(201);
-      const id = created.data?.id as number;
-      const cleanup = await asAdmin.identity.DELETE('/api/users/{userId}', {
-        params: { path: { userId: id } },
-      });
-      expect(isGoneOrDeleted(cleanup.response.status)).toBe(true);
+      const id = created.data?.id;
+      expect(id).toBeDefined();
+      let bodySucceeded = false;
+      try {
+        const byId = await asAdmin.identity.GET('/api/users/{userId}', {
+          params: { path: { userId: id as number } },
+        });
+        expect(byId.response.status).toBe(200);
+        bodySucceeded = true;
+      } finally {
+        const cleanup = await asAdmin.identity.DELETE('/api/users/{userId}', {
+          params: { path: { userId: id as number } },
+        });
+        if (bodySucceeded) {
+          expect(isGoneOrDeleted(cleanup.response.status)).toBe(true);
+        }
+      }
     },
   );
 
@@ -122,6 +134,7 @@ test.describe('identity', () => {
       expect(created.response.status).toBe(201);
       const roleId = created.data?.id as number;
 
+      let bodySucceeded = false;
       try {
         expect((await asAdmin.identity.GET('/api/roles')).response.status).toBe(
           200,
@@ -182,11 +195,19 @@ test.describe('identity', () => {
             })
           ).response.status,
         ).toBe(200);
+        bodySucceeded = true;
       } finally {
         const deleted = await asAdmin.identity.DELETE('/api/roles/{roleId}', {
           params: { path: { roleId } },
         });
-        expect(deleted.response.status).toBe(204);
+        // Asserting here while the body is failing would replace its error.
+        if (bodySucceeded) {
+          expect(deleted.response.status).toBe(204);
+        } else if (deleted.response.status !== 204) {
+          console.warn(
+            `Role ${roleId} cleanup returned HTTP ${deleted.response.status}`,
+          );
+        }
       }
     },
   );
