@@ -1,0 +1,40 @@
+{
+  "name": "platform-live-e2e",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/e2e/platform-live-e2e/src",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default", "^production"],
+      "options": { "command": "vitest run --root apps/e2e/platform-live-e2e" }
+    },
+    "generate-contract-types": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/e2e/platform-live-e2e/scripts/contract-types.mjs"
+      }
+    },
+    "check-contracts": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "{workspaceRoot}/apps/backend/usersrole/docs/contracts/*.openapi.yaml",
+        "{projectRoot}/src/harness/generated/*.ts",
+        "{projectRoot}/scripts/contract-types.mjs"
+      ],
+      "options": {
+        "command": "node apps/e2e/platform-live-e2e/scripts/contract-types.mjs --check"
+      }
+    },
+    "api-gate": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "playwright test --config apps/e2e/platform-live-e2e/playwright.config.ts --project api-gate"
+      }
+    }
+  },
+  "tags": ["type:e2e", "scope:platform", "framework:playwright"],
+  "implicitDependencies": ["usersrole"]
+}
