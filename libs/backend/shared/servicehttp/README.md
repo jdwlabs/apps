@@ -5,8 +5,7 @@
 
 The HTTP plumbing `identity-service` and `profile-service` serve through:
 request routing, the CORS layer, the security headers and the request-duration
-metric. One
-implementation, two consumers, for the same reason as
+metric. One implementation, two consumers, for the same reason as
 [`backend-shared-auth`](../auth) — the two services were brought into measured
 agreement with the Spring `usersrole` application, and three files they each
 held their own copy of are three files that could drift apart afterwards
@@ -92,7 +91,7 @@ JWT filter, with the origin patterns, methods and headers its
 handler := config.CORS.Handler(next)
 ```
 
-**It must be the outer layer**, matching the JVM's filter order. A browser
+**It must sit outside authentication**, matching the JVM's filter order. A browser
 never puts an `Authorization` header on a preflight, so a preflight that reached
 authentication would be refused and every cross-origin call from the frontends
 would fail at cutover with the request itself perfectly valid. The shared
