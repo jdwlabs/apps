@@ -5,9 +5,9 @@ export const PRD_SAFE = '@prd-safe';
 export const QUARANTINE = '@quarantine';
 export const ADMIN = '@admin';
 
-// The config's grep narrows prd runs to prd-safe tests, but a --grep on the
-// command line replaces it. This check runs inside every test before its
-// first request, so no filter can put a mutating test in front of prd.
+// The config's grep already narrows prd runs to prd-safe tests. This check
+// runs inside every test before its first request so that a config edit, a new
+// project or a dropped filter still cannot put a mutating test in front of prd.
 export function assertAllowed(
   profile: Profile,
   tags: readonly string[],

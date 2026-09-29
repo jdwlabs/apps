@@ -49,6 +49,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker' },
   ],
 
+  // Covers test-scoped fixtures only. A future worker-scoped fixture or
+  // beforeAll hook that makes requests runs outside it and must call
+  // assertAllowed itself.
   guard: [
     async ({ profile }, use, testInfo) => {
       assertAllowed(profile, testInfo.tags, testInfo.title);
@@ -144,8 +147,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       return user;
     });
     // Teardown runs even when the test failed, so a broken gate cannot leave
-    // users behind. Profile first: deleting the user first would make the
-    // profile DELETE unauthorised, since the user row is what authorises it.
+    // users behind. Profile first is belt-and-braces: authorisation compares
+    // the token's stateless user id claim, so either order works today, but
+    // this one never depends on a user delete leaving the profile reachable.
     const leaks: string[] = [];
     for (const { id, credentials, user } of pending) {
       try {
