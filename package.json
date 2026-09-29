@@ -65,6 +65,8 @@
     "ng-packagr": "22.2.1",
     "ngx-cookie-service": "^22.0.0",
     "nx": "23.2.0",
+    "openapi-fetch": "^0.17.0",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.25",
     "postcss-url": "~10.1.3",
     "prettier": "^3.4.2",

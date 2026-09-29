@@ -7,3 +7,4 @@ tsconfig.base.json
 .nx/self-healing
 pnpm-lock.yaml
 LICENSE.md
+/apps/e2e/platform-live-e2e/src/harness/generated
