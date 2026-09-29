@@ -3,8 +3,32 @@ import type { paths as IdentityPaths } from './generated/identity';
 import type { paths as ProfilePaths } from './generated/profile';
 import type { FetchLike } from './request-fetch';
 
-export type IdentityClient = Client<IdentityPaths>;
-export type ProfileClient = Client<ProfilePaths>;
+type OptionalAuthorization<Params> = Params extends {
+  header: infer H;
+}
+  ? H extends { Authorization: string }
+    ? Omit<Params, 'header'> & {
+        header?: Omit<H, 'Authorization'> & { Authorization?: string };
+      }
+    : Params
+  : Params;
+
+// The contracts declare Authorization as a required header parameter, but the
+// bearer middleware supplies it, so call sites must not have to repeat it.
+type BearerSupplied<P> = {
+  [Path in keyof P]: {
+    [Method in keyof P[Path]]: P[Path][Method] extends {
+      parameters: infer Params;
+    }
+      ? Omit<P[Path][Method], 'parameters'> & {
+          parameters: OptionalAuthorization<Params>;
+        }
+      : P[Path][Method];
+  };
+};
+
+export type IdentityClient = Client<BearerSupplied<IdentityPaths>>;
+export type ProfileClient = Client<BearerSupplied<ProfilePaths>>;
 
 export interface ApiClients {
   readonly identity: IdentityClient;
@@ -21,8 +45,14 @@ export function createApiClients(
   baseUrl: string,
   token?: string,
 ): ApiClients {
-  const identity = createClient<IdentityPaths>({ baseUrl, fetch });
-  const profile = createClient<ProfilePaths>({ baseUrl, fetch });
+  const identity = createClient<BearerSupplied<IdentityPaths>>({
+    baseUrl,
+    fetch,
+  });
+  const profile = createClient<BearerSupplied<ProfilePaths>>({
+    baseUrl,
+    fetch,
+  });
   if (token) {
     const bearer = {
       onRequest({ request }: { request: Request }) {

@@ -66,3 +66,25 @@ describe('login', () => {
     await expect(failure).rejects.not.toThrow(/Sup3r\$ecret/);
   });
 });
+
+describe('typed calls', () => {
+  it('accepts authorised operations without an explicit Authorization header', () => {
+    // Compile-time check: a contract regeneration that makes the header
+    // required again fails tsc here.
+    const { identity, profile } = createApiClients(
+      async () => new Response(null, { status: 204 }),
+      'https://h',
+    );
+    const calls = [
+      () =>
+        identity.DELETE('/api/users/{userId}', {
+          params: { path: { userId: 1 } },
+        }),
+      () =>
+        profile.DELETE('/api/profiles/by-user/{userId}', {
+          params: { path: { userId: 1 } },
+        }),
+    ];
+    expect(calls).toHaveLength(2);
+  });
+});
