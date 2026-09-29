@@ -10,7 +10,7 @@ describe('resolveProfile', () => {
 
   it('refuses an unknown profile and lists the valid ones', () => {
     expect(() => resolveProfile({ E2E_PROFILE: 'prod' })).toThrow(
-      /Unknown E2E_PROFILE "prod"/,
+      /Unknown E2E_PROFILE "prod".*non-public, prd-public, non-incluster, prd-incluster/,
     );
   });
 
@@ -18,6 +18,15 @@ describe('resolveProfile', () => {
     for (const name of PROFILE_NAMES) {
       expect(resolveProfile({ E2E_PROFILE: name }).name).toBe(name);
     }
+  });
+
+  it('refuses inherited keys like constructor and __proto__', () => {
+    expect(() => resolveProfile({ E2E_PROFILE: 'constructor' })).toThrow(
+      /Unknown E2E_PROFILE "constructor"/,
+    );
+    expect(() => resolveProfile({ E2E_PROFILE: '__proto__' })).toThrow(
+      /Unknown E2E_PROFILE "__proto__"/,
+    );
   });
 });
 

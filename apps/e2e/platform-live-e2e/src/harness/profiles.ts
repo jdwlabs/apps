@@ -55,7 +55,7 @@ export function resolveProfile(
   if (!requested) {
     throw new Error(`E2E_PROFILE is required; one of: ${valid}`);
   }
-  if (!(requested in PROFILES)) {
+  if (!Object.hasOwn(PROFILES, requested)) {
     throw new Error(`Unknown E2E_PROFILE "${requested}"; one of: ${valid}`);
   }
   return PROFILES[requested as ProfileName];
