@@ -178,7 +178,8 @@
       "ai-sre-relay",
       "frontend-shared-ui",
       "frontend-shared-util",
-      "github-repo-health-exporter"
+      "github-repo-health-exporter",
+      "platform-live-e2e"
     ],
     "git": {
       "commit": false,
