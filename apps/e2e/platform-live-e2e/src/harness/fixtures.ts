@@ -104,7 +104,11 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     if (!profile.allowsEphemeralUsers) {
       throw new Error(`Ephemeral users are never created on ${profile.name}`);
     }
-    const created: { user: EphemeralUser; authorization: string }[] = [];
+    const pending: {
+      id: number;
+      credentials: Credentials;
+      user?: EphemeralUser;
+    }[] = [];
     let n = 0;
     await use(async () => {
       n += 1;
@@ -120,6 +124,12 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
           `Registering ${credentials.emailAddress} failed: HTTP ${response.status}`,
         );
       }
+      // Tracked before login so a failed login still gets the user cleaned up.
+      const entry: (typeof pending)[number] = {
+        id: data.id,
+        credentials,
+      };
+      pending.push(entry);
       const token = await login(anonymous.identity, credentials);
       const user = {
         id: data.id,
@@ -130,35 +140,41 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
           token,
         ),
       };
-      created.push({ user, authorization: `Bearer ${token}` });
+      entry.user = user;
       return user;
     });
     // Teardown runs even when the test failed, so a broken gate cannot leave
-    // users behind. Profile first: the user row is what authorises the call.
+    // users behind. Profile first: deleting the user first would make the
+    // profile DELETE unauthorised, since the user row is what authorises it.
     const leaks: string[] = [];
-    for (const { user, authorization } of created) {
-      // The contract declares Authorization as a required header parameter, so
-      // the typed call needs it even though the client middleware also sets it.
-      const header = { Authorization: authorization };
-      const profileGone = await user.clients.profile.DELETE(
-        '/api/profiles/by-user/{userId}',
-        { params: { header, path: { userId: user.id } } },
-      );
-      const userGone = await user.clients.identity.DELETE(
-        '/api/users/{userId}',
-        {
-          params: { header, path: { userId: user.id } },
-        },
-      );
-      for (const [what, status] of [
-        ['profile', profileGone.response.status],
-        ['user', userGone.response.status],
-      ] as const) {
-        if (!isGoneOrDeleted(status)) {
-          leaks.push(
-            `${user.credentials.emailAddress} ${what}: HTTP ${status}`,
+    for (const { id, credentials, user } of pending) {
+      try {
+        const clients =
+          user?.clients ??
+          createApiClients(
+            requestFetch(apiRequest),
+            profile.apiBaseUrl,
+            await login(anonymous.identity, credentials),
           );
+        const profileGone = await clients.profile.DELETE(
+          '/api/profiles/by-user/{userId}',
+          { params: { path: { userId: id } } },
+        );
+        const userGone = await clients.identity.DELETE('/api/users/{userId}', {
+          params: { path: { userId: id } },
+        });
+        for (const [what, status] of [
+          ['profile', profileGone.response.status],
+          ['user', userGone.response.status],
+        ] as const) {
+          if (!isGoneOrDeleted(status)) {
+            leaks.push(`${credentials.emailAddress} ${what}: HTTP ${status}`);
+          }
         }
+      } catch (error) {
+        leaks.push(
+          `${credentials.emailAddress}: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
     if (leaks.length > 0) {

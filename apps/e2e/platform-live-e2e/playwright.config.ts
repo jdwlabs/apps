@@ -1,6 +1,10 @@
 import { defineConfig } from '@playwright/test';
 import { resolveProfile } from './src/harness/profiles';
 import { gateFilter } from './src/harness/tags';
+import { newRunId } from './src/harness/test-users';
+
+// One id for the whole run: workers inherit the environment, so they share it.
+process.env['E2E_RUN_ID'] ??= newRunId();
 
 const profile = resolveProfile(process.env);
 const { grep, grepInvert } = gateFilter(profile);
