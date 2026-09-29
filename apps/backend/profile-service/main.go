@@ -55,6 +55,7 @@ func run() error {
 		Store:    NewPostgresStore(pool),
 		Verifier: verifier,
 		CORS:     config.CORS,
+		Version:  config.Version,
 	})
 	if err != nil {
 		return err

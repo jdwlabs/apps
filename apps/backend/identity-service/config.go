@@ -34,6 +34,7 @@ const (
 	envCORSOriginPatterns    = "ID_CORS_ALLOWED_ORIGIN_PATTERNS"
 	envCORSAllowedMethods    = "ID_CORS_ALLOWED_METHODS"
 	envCORSAllowedHeaders    = "ID_CORS_ALLOWED_HEADERS"
+	envAppVersion            = "APP_VERSION"
 	envShutdownTimeoutSecond = "ID_SHUTDOWN_TIMEOUT_SECONDS"
 )
 
@@ -79,6 +80,7 @@ type Config struct {
 
 	CORS                   servicehttp.CORS
 	ShutdownTimeoutSeconds int
+	Version                string
 }
 
 func configFromEnvironment() (Config, error) {
@@ -110,6 +112,7 @@ func configFromEnvironment() (Config, error) {
 			AllowedHeaders:        envList(envCORSAllowedHeaders, defaultCORSHeaders),
 		},
 		ShutdownTimeoutSeconds: envInt(envShutdownTimeoutSecond, defaultShutdownTimeoutS),
+		Version:                util.GetEnvOrDefault(envAppVersion, ""),
 	}
 
 	// The issuer origin is required whatever the verification settings say,

@@ -61,6 +61,7 @@ func run() error {
 		Verifier: verifier,
 		Minter:   tokens,
 		CORS:     config.CORS,
+		Version:  config.Version,
 	})
 	if err != nil {
 		return err

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 
 	"libs/backend/shared/auth"
@@ -41,6 +40,10 @@ type ServerConfig struct {
 	Verifier *auth.Verifier
 	Minter   *minter
 	CORS     servicehttp.CORS
+	// Version is the image version /actuator/info reports. It is a field rather
+	// than a read inside NewServer so a test sets it without touching the
+	// process environment.
+	Version string
 	// Metrics is optional. A server built without one registers its own, so a
 	// test never has to and two servers in a process cannot collide.
 	Metrics *servicehttp.Metrics
@@ -95,7 +98,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 		servicehttp.Route{Method: http.MethodGet, Pattern: healthPath, Handler: http.HandlerFunc(health)},
 		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorHealthPath, Handler: http.HandlerFunc(health)},
 		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorMetricsPath, Handler: metrics.Handler()},
-		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorInfoPath, Handler: servicehttp.BuildInfo(os.Getenv("APP_VERSION"))},
+		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorInfoPath, Handler: servicehttp.BuildInfo(config.Version)},
 	)
 
 	router, err := servicehttp.NewRouter(routes)

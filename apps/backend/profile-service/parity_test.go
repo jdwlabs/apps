@@ -112,7 +112,13 @@ func parityVerifier(t *testing.T) *auth.Verifier {
 
 func parityServer(t *testing.T, store Store) http.Handler {
 	t.Helper()
+	return parityServerWithVersion(t, store, "")
+}
+
+func parityServerWithVersion(t *testing.T, store Store, version string) http.Handler {
+	t.Helper()
 	server, err := NewServer(ServerConfig{
+		Version:  version,
 		Store:    store,
 		Verifier: parityVerifier(t),
 		CORS:     springShapedCORS(),
