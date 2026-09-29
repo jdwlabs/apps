@@ -4,7 +4,16 @@
   "projectType": "application",
   "sourceRoot": "apps/e2e/platform-live-e2e/src",
   "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default", "^production"],
+      "options": {
+        "command": "tsc --noEmit -p apps/e2e/platform-live-e2e/tsconfig.json"
+      }
+    },
     "test": {
+      "dependsOn": ["typecheck"],
       "executor": "nx:run-commands",
       "cache": true,
       "inputs": ["default", "^production"],
