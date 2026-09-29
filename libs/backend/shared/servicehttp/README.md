@@ -4,7 +4,8 @@
 ![Nx](https://img.shields.io/badge/Nx-managed-blue)
 
 The HTTP plumbing `identity-service` and `profile-service` serve through:
-request routing, the CORS layer and the request-duration metric. One
+request routing, the CORS layer, the security headers and the request-duration
+metric. One
 implementation, two consumers, for the same reason as
 [`backend-shared-auth`](../auth) — the two services were brought into measured
 agreement with the Spring `usersrole` application, and three files they each
@@ -25,6 +26,7 @@ libs/backend/shared/servicehttp/
 ├── go.mod                # module libs/backend/shared/servicehttp
 ├── router.go             # Spring's path specificity and refusal ordering
 ├── cors.go               # The CorsFilter SecurityConfig installs, reproduced
+├── headers.go            # nosniff and frame-deny, as HeaderWriterFilter sends
 ├── metrics.go            # http_server_requests_seconds, as Micrometer names it
 └── project.json          # Nx project configuration
 ```
@@ -100,6 +102,23 @@ layer owns them.
 `AllowedOriginPatterns` takes Spring's syntax rather than a glob: `*` matches
 any run of characters within the origin, and a trailing `:[...]` names the
 ports, with `[*]` standing for any port or none.
+
+---
+
+## 🛡️ Security headers wrap everything
+
+`SecurityHeaders` sends `X-Content-Type-Options: nosniff` and
+`X-Frame-Options: DENY`, the two headers Spring Security's `HeaderWriterFilter`
+puts on every response the JVM serves.
+
+```go
+handler := servicehttp.SecurityHeaders(config.CORS.Handler(next))
+```
+
+It sets both before the wrapped handler runs, so a refusal written by any inner
+layer — a 401 from authentication, a 403 from CORS, a 404 from the router —
+carries them as the JVM's responses do. It sits outside CORS because the JVM's
+header writer runs ahead of its `CorsFilter`.
 
 ---
 

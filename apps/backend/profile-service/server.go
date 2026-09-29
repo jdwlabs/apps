@@ -46,8 +46,8 @@ type Server struct {
 }
 
 // NewServer wires the layers in the order the JVM filter chain applies them:
-// CORS outermost, then logging and metrics, then authentication, then the
-// router that resolves an operation.
+// the security headers outermost, then CORS, then logging and metrics, then
+// authentication, then the router that resolves an operation.
 //
 // The CORS layer has to sit outside authentication. A browser puts no
 // Authorization header on a preflight, so a preflight that reached the
@@ -103,10 +103,11 @@ func NewServer(config ServerConfig) (*Server, error) {
 	// Preflight is deliberately left nil: the CORS layer below is the outer one
 	// and answers preflights before this middleware sees them.
 
-	handler := config.CORS.Handler(
-		util.Logging(
-			metrics.Middleware(router,
-				middleware.Handler(router))))
+	handler := servicehttp.SecurityHeaders(
+		config.CORS.Handler(
+			util.Logging(
+				metrics.Middleware(router,
+					middleware.Handler(router)))))
 
 	return &Server{operations: operations, metrics: metrics, handler: handler}, nil
 }
