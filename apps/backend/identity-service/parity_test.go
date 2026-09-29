@@ -173,7 +173,13 @@ func parityMinter(t *testing.T) *minter {
 
 func parityServer(t *testing.T, store Store) http.Handler {
 	t.Helper()
+	return parityServerWithVersion(t, store, "")
+}
+
+func parityServerWithVersion(t *testing.T, store Store, version string) http.Handler {
+	t.Helper()
 	server, err := NewServer(ServerConfig{
+		Version:  version,
 		Store:    store,
 		Verifier: parityVerifier(t),
 		Minter:   parityMinter(t),

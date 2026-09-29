@@ -8,8 +8,7 @@ import (
 )
 
 func TestTheInfoEndpointNeedsNoTokenAndCarriesTheImageVersion(t *testing.T) {
-	t.Setenv("APP_VERSION", "9.9.9")
-	server := parityServer(t, stubStore{})
+	server := parityServerWithVersion(t, stubStore{}, "9.9.9")
 	response := httptest.NewRecorder()
 
 	server.ServeHTTP(response, httptest.NewRequest(http.MethodGet, actuatorInfoPath, nil))
