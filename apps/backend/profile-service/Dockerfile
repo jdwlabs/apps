@@ -12,4 +12,6 @@ COPY ./dist/apps/backend/profile-service/profile-service .
 USER 65532:65532
 
 EXPOSE 8080
+ARG APP_VERSION=unknown
+ENV APP_VERSION=${APP_VERSION}
 ENTRYPOINT ["/app/profile-service"]

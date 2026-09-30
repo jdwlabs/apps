@@ -55,6 +55,7 @@ docker buildx build \
   --label "org.opencontainers.image.version=${version}" \
   --label "org.opencontainers.image.revision=${revision}" \
   --label "org.opencontainers.image.created=${created}" \
+  --build-arg "APP_VERSION=${version}" \
   "${@}" \
   .
 
