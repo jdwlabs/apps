@@ -51,7 +51,7 @@
       "options": {
         "commands": [
           {
-            "command": "bash scripts/build-image.sh platform-e2e-api \"$(bash scripts/resolve-version.sh platform-live-e2e)\" {projectRoot}/Dockerfile \"Live API gate for the jdwlabs platform\" --build-arg PLAYWRIGHT_VERSION=$(node -p \"require('@playwright/test/package.json').version\") --build-arg OPENAPI_FETCH_VERSION=$(node -p \"require('openapi-fetch/package.json').version\") --platform linux/amd64,linux/arm64 --push",
+            "command": "GHCR_MIRROR=1 bash scripts/build-image.sh platform-e2e-api \"$(bash scripts/resolve-version.sh platform-live-e2e)\" {projectRoot}/Dockerfile \"Live API gate for the jdwlabs platform\" --build-arg PLAYWRIGHT_VERSION=$(node -p \"require('@playwright/test/package.json').version\") --build-arg OPENAPI_FETCH_VERSION=$(node -p \"require('openapi-fetch/package.json').version\") --platform linux/amd64,linux/arm64 --push",
             "forwardAllArgs": false
           }
         ],
