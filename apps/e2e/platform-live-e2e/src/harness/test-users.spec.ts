@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  cleanupLeaks,
   ephemeralEmail,
   generatePassword,
   isGoneOrDeleted,
@@ -60,5 +61,51 @@ describe('isGoneOrDeleted', () => {
     expect(isGoneOrDeleted(404)).toBe(true);
     expect(isGoneOrDeleted(401)).toBe(false);
     expect(isGoneOrDeleted(500)).toBe(false);
+  });
+});
+
+describe('cleanupLeaks', () => {
+  const neverRelogin = () => {
+    throw new Error('relogin must not run');
+  };
+  const rejected = (status: number) => async () =>
+    ({ kind: 'rejected', status }) as const;
+  const retried = (profile: number, user: number) => async () =>
+    ({ kind: 'ok', retried: { profile, user } }) as const;
+
+  it('treats 204 and 404 as clean without logging in again', async () => {
+    expect(
+      await cleanupLeaks({ profile: 204, user: 404 }, neverRelogin),
+    ).toEqual([]);
+  });
+
+  it('treats 401 followed by a rejected login as already gone', async () => {
+    expect(
+      await cleanupLeaks({ profile: 404, user: 401 }, rejected(401)),
+    ).toEqual([]);
+  });
+
+  it('is clean when a fresh token retries to 204', async () => {
+    expect(
+      await cleanupLeaks({ profile: 401, user: 401 }, retried(204, 204)),
+    ).toEqual([]);
+  });
+
+  it.each([401, 500])('leaks when the retry answers %i', async (status) => {
+    expect(
+      await cleanupLeaks({ profile: 204, user: 401 }, retried(204, status)),
+    ).toEqual([`user: HTTP ${status}`]);
+  });
+
+  it('leaks a 500 without logging in again', async () => {
+    expect(
+      await cleanupLeaks({ profile: 204, user: 500 }, neverRelogin),
+    ).toEqual(['user: HTTP 500']);
+  });
+
+  it('leaks when the login fails with anything but 401', async () => {
+    expect(
+      await cleanupLeaks({ profile: 401, user: 204 }, rejected(503)),
+    ).toEqual(['login: HTTP 503']);
   });
 });

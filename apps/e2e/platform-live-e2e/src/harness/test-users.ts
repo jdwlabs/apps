@@ -65,3 +65,44 @@ export function generatePassword(
 export function isGoneOrDeleted(status: number): boolean {
   return status === 204 || status === 404;
 }
+
+export interface CleanupStatuses {
+  readonly profile: number;
+  readonly user: number;
+}
+
+export type Relogin =
+  | { readonly kind: 'rejected'; readonly status: number }
+  | { readonly kind: 'ok'; readonly retried: CleanupStatuses };
+
+// The JVM identity service answers 401 to a token whose user is already
+// deleted, where the Go service answers 204. A 401 is therefore ambiguous:
+// only a fresh login tells "user is gone" from "token is bad".
+export async function cleanupLeaks(
+  initial: CleanupStatuses,
+  relogin: () => Promise<Relogin>,
+): Promise<string[]> {
+  const entries = [
+    ['profile', initial.profile],
+    ['user', initial.user],
+  ] as const;
+  const leaks: string[] = [];
+  const unauthorized: (typeof entries)[number][0][] = [];
+  for (const [what, status] of entries) {
+    if (status === 401) unauthorized.push(what);
+    else if (!isGoneOrDeleted(status)) leaks.push(`${what}: HTTP ${status}`);
+  }
+  if (unauthorized.length === 0) return leaks;
+  const outcome = await relogin();
+  if (outcome.kind === 'rejected') {
+    if (outcome.status !== 401) {
+      leaks.push(`login: HTTP ${outcome.status}`);
+    }
+    return leaks;
+  }
+  for (const what of unauthorized) {
+    const status = outcome.retried[what];
+    if (!isGoneOrDeleted(status)) leaks.push(`${what}: HTTP ${status}`);
+  }
+  return leaks;
+}

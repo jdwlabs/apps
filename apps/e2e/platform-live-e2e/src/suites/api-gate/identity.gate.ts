@@ -55,7 +55,7 @@ test.describe('identity', () => {
         params: { path: { userId: user.id } },
         body: {
           emailAddress: user.credentials.emailAddress,
-          password: generatePassword(),
+          password: user.credentials.password,
         },
       });
       expect(updated.response.status).toBe(200);
