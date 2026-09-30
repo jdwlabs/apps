@@ -54,11 +54,16 @@ Footers appear after an optional body, separated by a blank line. Common footers
 | `BREAKING CHANGE: <desc>`      | Required when a commit introduces a breaking API/interface change |
 | `Co-Authored-By: Name <email>` | Credit a co-author (human or AI)                                  |
 
-**AI contributor footer** — include when commits were written with AI assistance:
+**AI contributor trailers** — every AI-assisted commit names the agent and the
+model that actually ran (not a copied example):
 
 ```
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Assisted-by: Claude Code:claude-opus-5-5
 ```
+
+Codex: `Co-Authored-By: Codex <codex@openai.com>` and `Assisted-by: Codex:<model-id>`.
+Attribution belongs in commit trailers only, never in PR titles, bodies or comments.
 
 **Full examples with footers:**
 
@@ -69,7 +74,8 @@ Implements silent refresh using a hidden iframe per the OIDC spec.
 Falls back to full re-login if the refresh token is expired.
 
 Refs: JDWLABS-42
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Assisted-by: Claude Code:claude-opus-5-5
 ```
 
 ```
@@ -83,7 +89,7 @@ Closes: #17
 
 ### Rules
 
-- Subject line ≤72 characters, lowercase, no trailing period
+- Header ≤100 characters (commitlint enforces it), lowercase subject, no trailing period
 - Use imperative mood: "add" not "added" / "adds"
 - Scope is optional but encouraged — use the app or lib name
 - Breaking changes: add `!` after type/scope and a `BREAKING CHANGE:` footer
@@ -93,8 +99,9 @@ Closes: #17
 1. Branch from `main`: `git checkout -b feat/short-description`
 2. Keep PRs focused — one logical change per PR
 3. PR title must follow conventional commit format: `type(scope): description`
-4. Fill the PR template completely
-5. Squash-merge to main to keep history clean
+4. Write the body from the PR template, keeping only sections with content (~150 words)
+5. Merges are rebase-only — every commit lands on `main` as-is, so tidy the branch into
+   one logical commit per change before review
 
 ## Development Setup
 
