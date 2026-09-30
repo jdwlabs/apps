@@ -6,11 +6,12 @@ FROM golang:1.27-bookworm AS build
 WORKDIR /src
 COPY libs/backend/shared/auth ./libs/backend/shared/auth
 COPY libs/backend/shared/util ./libs/backend/shared/util
+COPY libs/backend/shared/servicehttp ./libs/backend/shared/servicehttp
 COPY apps/backend/profile-service ./apps/backend/profile-service
-# A workspace of just these three, rather than the repository's go.work: that
+# A workspace of just these four, rather than the repository's go.work: that
 # file names every Go module in the repository and workspace mode fails on any
 # one of them being absent from the image.
-RUN go work init ./apps/backend/profile-service ./libs/backend/shared/auth ./libs/backend/shared/util
+RUN go work init ./apps/backend/profile-service ./libs/backend/shared/auth ./libs/backend/shared/util ./libs/backend/shared/servicehttp
 RUN CGO_ENABLED=0 go build -o /out/profile-service ./apps/backend/profile-service
 
 FROM gcr.io/distroless/base-debian12:nonroot AS runner
