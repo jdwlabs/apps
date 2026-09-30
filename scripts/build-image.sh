@@ -40,11 +40,18 @@ fi
 revision="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+# Opt-in so every existing image keeps publishing exactly where it does today.
+extra_tags=()
+if [[ "${GHCR_MIRROR:-}" == "1" ]]; then
+  extra_tags+=(-t "ghcr.io/jdwlabs/${image}:${version}")
+fi
+
 # licenses is the SPDX id for PolyForm Noncommercial — the org's actual license.
 docker buildx build \
   -f "${dockerfile}" \
   -t "jdwlabs/${image}:latest" \
   -t "jdwlabs/${image}:${version}" \
+  "${extra_tags[@]}" \
   --label "org.opencontainers.image.title=${image}" \
   --label "org.opencontainers.image.description=${description}" \
   --label "org.opencontainers.image.vendor=jdwlabs" \
