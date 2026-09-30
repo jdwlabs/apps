@@ -91,6 +91,7 @@ absent, and record a disproved premise on the ticket.
 ## Tool output traps
 
 RTK-filtered output (`rtk go build`, `rtk gh pr view`) can report success or a
-stale state — use `rtk proxy <cmd>` before acting on a result. This and the
-Windows-checkout traps (pnpm across drives, curl exit codes, CRLF) are in
+stale state — use `rtk proxy <cmd>` before acting on a result. Tool traps:
+`~/.local/share/chezmoi/docs/agent-tooling-traps.md` (dotfiles). Windows
+worktrees must share the repo's drive or pnpm leaves an empty `node_modules`:
 [docs/agent-tooling-traps.md](docs/agent-tooling-traps.md).
