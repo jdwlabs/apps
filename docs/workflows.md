@@ -103,6 +103,14 @@ After merging, CI will:
 2. Run per-project deliver matrix: Docker image build/push, update Helm chart appVersion, update Docker Hub description
 3. Dispatch E2E tests
 
+The release job resolves every project's delivery targets from `nx graph`
+_before_ running `nx release`, because tagging is irreversible and graph
+resolution is not. Once tags exist the job must fail rather than emit an empty
+matrix — a skipped `deliver` reads as benign on the run summary while leaving
+versions tagged with no image behind them. `deliver` and `dispatch-e2e` gate on
+the `released` output, so "nothing to release" and "detection broke" stay
+distinguishable. Partial failures: [release-recovery.md](release-recovery.md).
+
 ### The git tag is the only record of a version
 
 Nothing in the working tree carries a released version. `nx release` runs with
