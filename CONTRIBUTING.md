@@ -48,8 +48,8 @@ Footers appear after an optional body, separated by a blank line. Common footers
 
 | Footer                         | When to use                                                       |
 | ------------------------------ | ----------------------------------------------------------------- |
-| `Refs: JDWLABS-XX`             | Links commit to a Jira issue (does not close it)                  |
-| `Closes: JDWLABS-XX`           | Closes the Jira issue on merge                                    |
+| `Refs: KEY-123`                | Links commit to a Jira issue (does not close it)                  |
+| `Closes: KEY-123`              | Closes the Jira issue on merge                                    |
 | `Closes: #N`                   | Closes a GitHub issue by number                                   |
 | `BREAKING CHANGE: <desc>`      | Required when a commit introduces a breaking API/interface change |
 | `Co-Authored-By: Name <email>` | Credit a co-author (human or AI)                                  |
@@ -73,7 +73,7 @@ feat(authui): add OIDC token refresh flow
 Implements silent refresh using a hidden iframe per the OIDC spec.
 Falls back to full re-login if the refresh token is expired.
 
-Refs: JDWLABS-42
+Refs: KEY-123
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Assisted-by: Claude Code:claude-opus-5-5
 ```
@@ -83,7 +83,7 @@ fix!(usersrole): remove deprecated /users/list endpoint
 
 BREAKING CHANGE: /users/list removed; use /users?page=N instead.
 
-Closes: JDWLABS-38
+Closes: KEY-123
 Closes: #17
 ```
 
