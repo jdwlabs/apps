@@ -10,8 +10,8 @@ import { requestFetch } from './request-fetch';
 import { assertAllowed } from './tags';
 import {
   ephemeralEmail,
+  cleanupLeaks,
   generatePassword,
-  isGoneOrDeleted,
   newRunId,
   seededCredentials,
 } from './test-users';
@@ -150,7 +150,22 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     // users behind. Profile first is belt-and-braces: authorisation compares
     // the token's stateless user id claim, so either order works today, but
     // this one never depends on a user delete leaving the profile reachable.
+    // A test may delete its own user; the JVM identity service then answers
+    // 401 to that user's token where the Go service answers 204, so a 401 is
+    // only a leak if a fresh login still succeeds.
     const leaks: string[] = [];
+    const deleteBoth = async (clients: ApiClients, id: number) => ({
+      profile: (
+        await clients.profile.DELETE('/api/profiles/by-user/{userId}', {
+          params: { path: { userId: id } },
+        })
+      ).response.status,
+      user: (
+        await clients.identity.DELETE('/api/users/{userId}', {
+          params: { path: { userId: id } },
+        })
+      ).response.status,
+    });
     for (const { id, credentials, user } of pending) {
       try {
         const clients =
@@ -160,20 +175,24 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
             profile.apiBaseUrl,
             await login(anonymous.identity, credentials),
           );
-        const profileGone = await clients.profile.DELETE(
-          '/api/profiles/by-user/{userId}',
-          { params: { path: { userId: id } } },
+        const found = await cleanupLeaks(
+          await deleteBoth(clients, id),
+          async () => {
+            const { data, response } = await anonymous.identity.POST(
+              '/auth/authenticate',
+              { body: credentials },
+            );
+            if (!data) return { kind: 'rejected', status: response.status };
+            const fresh = createApiClients(
+              requestFetch(apiRequest),
+              profile.apiBaseUrl,
+              data.jwtToken,
+            );
+            return { kind: 'ok', retried: await deleteBoth(fresh, id) };
+          },
         );
-        const userGone = await clients.identity.DELETE('/api/users/{userId}', {
-          params: { path: { userId: id } },
-        });
-        for (const [what, status] of [
-          ['profile', profileGone.response.status],
-          ['user', userGone.response.status],
-        ] as const) {
-          if (!isGoneOrDeleted(status)) {
-            leaks.push(`${credentials.emailAddress} ${what}: HTTP ${status}`);
-          }
+        for (const leak of found) {
+          leaks.push(`${credentials.emailAddress} ${leak}`);
         }
       } catch (error) {
         leaks.push(
