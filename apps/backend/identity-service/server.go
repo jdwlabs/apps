@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 
 	"libs/backend/shared/auth"
@@ -21,6 +22,7 @@ import (
 const (
 	healthPath          = "/health"
 	actuatorHealthPath  = "/actuator/health"
+	actuatorInfoPath    = "/actuator/info"
 	actuatorMetricsPath = "/actuator/prometheus"
 	actuatorPathPrefix  = "/actuator/"
 	authPathPrefix      = "/auth/"
@@ -80,7 +82,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	}
 	operations := api.operations()
 
-	routes := make([]servicehttp.Route, 0, len(operations)+3)
+	routes := make([]servicehttp.Route, 0, len(operations)+4)
 	for _, operation := range operations {
 		routes = append(routes, servicehttp.Route{
 			Method:   operation.Method,
@@ -93,6 +95,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 		servicehttp.Route{Method: http.MethodGet, Pattern: healthPath, Handler: http.HandlerFunc(health)},
 		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorHealthPath, Handler: http.HandlerFunc(health)},
 		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorMetricsPath, Handler: metrics.Handler()},
+		servicehttp.Route{Method: http.MethodGet, Pattern: actuatorInfoPath, Handler: servicehttp.BuildInfo(os.Getenv("APP_VERSION"))},
 	)
 
 	router, err := servicehttp.NewRouter(routes)
