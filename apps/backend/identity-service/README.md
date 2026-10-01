@@ -33,14 +33,14 @@ apps/backend/identity-service/
 ├── handlers.go             # The eighteen operations and the rule each carries
 ├── main.go                 # Entry point, pool, graceful shutdown
 ├── model.go                # Wire types and the constraints the DTOs declare
-├── server.go               # Layer order: CORS, logging, metrics, auth, router
+├── server.go               # Layer order: headers, CORS, logging, metrics, auth, router
 ├── store.go                # auth.users, auth.roles, auth.users_roles
 ├── token.go                # Minting and bcrypt, the JVM's JwtService reproduced
 └── go.mod                  # Go module dependencies
 ```
 
-The router, the CORS layer and the metrics registry are not here: both Go
-services serve through the one copy in
+The router, the CORS layer, the security headers and the metrics registry
+are not here: both Go services serve through the one copy in
 [`libs/backend/shared/servicehttp`](../../../libs/backend/shared/servicehttp),
 so neither can resolve a path, refuse a request or label a series the other
 would not.

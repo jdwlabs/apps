@@ -32,13 +32,13 @@ apps/backend/profile-service/
 ├── handlers.go             # The fifteen operations and the rule each carries
 ├── main.go                 # Entry point, pool, graceful shutdown
 ├── model.go                # Wire types and the two date formats Jackson writes
-├── server.go               # Layer order: CORS, logging, metrics, auth, router
+├── server.go               # Layer order: headers, CORS, logging, metrics, auth, router
 ├── store.go                # auth.profiles, auth.addresses, auth.profile_icons
 └── go.mod                  # Go module dependencies
 ```
 
-The router, the CORS layer and the metrics registry are not here: both Go
-services serve through the one copy in
+The router, the CORS layer, the security headers and the metrics registry
+are not here: both Go services serve through the one copy in
 [`libs/backend/shared/servicehttp`](../../../libs/backend/shared/servicehttp),
 so neither can resolve a path, refuse a request or label a series the other
 would not.
