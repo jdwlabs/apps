@@ -233,6 +233,6 @@ and both corrections are in `docs/contracts/README.md`.
 - [`backend-shared-auth`](../../../libs/backend/shared/auth): verification and
   the authorization rules both services decide from.
 - [`backend-shared-servicehttp`](../../../libs/backend/shared/servicehttp): the
-  router, CORS layer and metrics both services serve through.
+  router, CORS layer, security headers and metrics both services serve through.
 - [`usersrole`](../usersrole): the Spring service whose behaviour this
   reproduces, and the home of the frozen contracts.
