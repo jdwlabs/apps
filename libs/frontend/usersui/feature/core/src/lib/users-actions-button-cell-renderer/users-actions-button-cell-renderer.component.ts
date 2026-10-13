@@ -44,19 +44,22 @@ export class UsersActionsButtonCellRendererComponent implements ICellRendererAng
   }
 
   deleteUser(): void {
-    const dialogRef = this.dialog.open(UserDialogComponent, {
-      data: {
-        title: 'Delete User',
-        type: 'readonly',
-        action: 'delete',
-        ...this.params.data,
-      },
-      minWidth: '50%',
-    });
-    dialogRef.afterClosed().subscribe((result: User) => {
-      if (result) {
-        this.usersService.deleteUser(result.id).subscribe();
-      }
+    // The grid row comes from the list endpoint, which may carry only profileId.
+    this.usersService.withProfile(this.params.data).subscribe((user) => {
+      const dialogRef = this.dialog.open(UserDialogComponent, {
+        data: {
+          title: 'Delete User',
+          type: 'readonly',
+          action: 'delete',
+          ...user,
+        },
+        minWidth: '50%',
+      });
+      dialogRef.afterClosed().subscribe((result: User) => {
+        if (result) {
+          this.usersService.deleteUser(result.id).subscribe();
+        }
+      });
     });
   }
 }

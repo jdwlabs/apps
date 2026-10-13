@@ -14,15 +14,22 @@ import {
   distinctUntilChanged,
   EMPTY,
   forkJoin,
+  last,
   map,
   Observable,
   of,
   startWith,
+  switchMap,
   tap,
+  timeout,
 } from 'rxjs';
 import { AddUser, EditUser, Profile, User } from '@jdw/frontend-shared-util';
 import { AuthService } from '../auth/auth.service';
 import { SnackbarService } from '../snackbar/snackbar.service';
+
+// Pages that wait for the settled profile would otherwise stay blank for as
+// long as profile-service holds a request open.
+const PROFILE_LOOKUP_TIMEOUT_MS = 10_000;
 
 @Injectable({
   providedIn: 'root',
@@ -82,6 +89,22 @@ export class UsersService {
         startWith(null),
         distinctUntilChanged(),
       );
+  }
+
+  // For pages that need the settled profile on the user object (forms, action
+  // targets), where getUserProfile's provisional null would be wrong to render.
+  withProfile(user: User): Observable<User> {
+    return this.getUserProfile(user).pipe(
+      timeout({ each: PROFILE_LOOKUP_TIMEOUT_MS, with: () => of(null) }),
+      last(),
+      map((profile) => ({ ...user, profile })),
+    );
+  }
+
+  getUserWithProfile(userId: string | number): Observable<User> {
+    return this.getUser(userId).pipe(
+      switchMap((user) => this.withProfile(user)),
+    );
   }
 
   deleteUser(userId: number): Observable<object> {
