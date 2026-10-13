@@ -3,6 +3,7 @@ import {
   AddUser,
   EditUser,
   ENVIRONMENT,
+  Profile,
   User,
 } from '@jdw/frontend-shared-util';
 import {
@@ -665,6 +666,62 @@ describe('UsersService', () => {
         },
         true,
       );
+    });
+  });
+
+  describe('getUserProfile', () => {
+    const profile = { id: 7, firstName: 'Jake' } as unknown as Profile;
+    const url = `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/42`;
+
+    beforeEach(() => mockAuthService.getToken.mockReturnValue('jwt'));
+
+    it('fetches the profile for a user that only carries profileId', () => {
+      const outcome = record(
+        service.getUserProfile({ id: 42, profileId: 7 } as User),
+      );
+
+      const request = httpTesting.expectOne(url);
+      expect(request.request.headers.get('Authorization')).toBe('Bearer jwt');
+      request.flush(profile);
+
+      expect(outcome.values).toEqual([profile]);
+    });
+
+    it('reuses an embedded profile without a request', () => {
+      const outcome = record(
+        service.getUserProfile({ id: 42, profile } as User),
+      );
+
+      httpTesting.expectNone(url);
+      expect(outcome.values).toEqual([profile]);
+    });
+
+    it('treats a null profileId as no profile without a request', () => {
+      const outcome = record(
+        service.getUserProfile({ id: 42, profileId: null } as User),
+      );
+
+      httpTesting.expectNone(url);
+      expect(outcome.values).toEqual([null]);
+    });
+
+    it('degrades to no profile on 404 and on server errors, silently', () => {
+      const missing = record(
+        service.getUserProfile({ id: 42, profileId: 7 } as User),
+      );
+      httpTesting
+        .expectOne(url)
+        .flush('not found', { status: 404, statusText: 'Not Found' });
+      const broken = record(
+        service.getUserProfile({ id: 42, profileId: 7 } as User),
+      );
+      httpTesting
+        .expectOne(url)
+        .flush('boom', { status: 500, statusText: 'Server Error' });
+
+      expect(missing.values).toEqual([null]);
+      expect(broken.values).toEqual([null]);
+      expect(mockSnackbarService.error).not.toHaveBeenCalled();
     });
   });
 });
