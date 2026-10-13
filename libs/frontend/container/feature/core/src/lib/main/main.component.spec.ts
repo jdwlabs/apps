@@ -97,6 +97,33 @@ describe('MainComponent', () => {
       expect(view.iconData).toBe('data:image/png;base64,QUJD');
     });
 
+    it('shows the signed-in fallback while the profile request is pending', () => {
+      const views: AccountView[] = [];
+      component.accountView$.subscribe((v) => views.push(v));
+      httpTesting.expectOne(`${API}/api/users/42`).flush(goUser);
+      const request = httpTesting.expectOne(`${API}/api/profiles/by-user/42`);
+
+      expect(views).toHaveLength(1);
+      expect(views[0].isLoggedIn).toBe(true);
+      expect(views[0].displayName).toBe('jake@example.com');
+
+      request.flush(profile);
+
+      expect(views).toHaveLength(2);
+      expect(views[1].displayName).toBe('Jake Willmsen');
+      expect(views[1].iconData).toBe('data:image/png;base64,QUJD');
+    });
+
+    it('emits once for an embedded profile', () => {
+      const views: AccountView[] = [];
+      component.accountView$.subscribe((v) => views.push(v));
+      httpTesting
+        .expectOne(`${API}/api/users/42`)
+        .flush({ id: 42, emailAddress: 'jake@example.com', profile });
+
+      expect(views).toHaveLength(1);
+    });
+
     it('uses an embedded profile without asking the profile service', () => {
       const view = resolveAccountView({
         id: 42,

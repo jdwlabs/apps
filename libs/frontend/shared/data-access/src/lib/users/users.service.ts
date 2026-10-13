@@ -9,7 +9,17 @@ import {
   Environment,
   getErrorMessage,
 } from '@jdw/frontend-shared-util';
-import { catchError, EMPTY, forkJoin, map, Observable, of, tap } from 'rxjs';
+import {
+  catchError,
+  distinctUntilChanged,
+  EMPTY,
+  forkJoin,
+  map,
+  Observable,
+  of,
+  startWith,
+  tap,
+} from 'rxjs';
 import { AddUser, EditUser, Profile, User } from '@jdw/frontend-shared-util';
 import { AuthService } from '../auth/auth.service';
 import { SnackbarService } from '../snackbar/snackbar.service';
@@ -49,7 +59,9 @@ export class UsersService {
   // question: the JVM service embeds the profile (or null), and the Go service
   // sends a null profileId for a user with no profile. Any failure degrades to
   // "no profile" and stays silent because the caller is decorative chrome that
-  // must not blank or nag over a profile lookup.
+  // must not blank or nag over a profile lookup. A request in flight is
+  // announced with a provisional null so a slow or hung profile service never
+  // holds back the caller's signed-in state; a 404 or error adds no emission.
   getUserProfile(user: User): Observable<Profile | null> {
     if (user.profile !== undefined) {
       return of(user.profile);
@@ -65,7 +77,11 @@ export class UsersService {
         `${this.environment.AUTH_BASE_URL}/api/profiles/by-user/${user.id}`,
         { headers: headers },
       )
-      .pipe(catchError(() => of(null)));
+      .pipe(
+        catchError(() => of(null)),
+        startWith(null),
+        distinctUntilChanged(),
+      );
   }
 
   deleteUser(userId: number): Observable<object> {
