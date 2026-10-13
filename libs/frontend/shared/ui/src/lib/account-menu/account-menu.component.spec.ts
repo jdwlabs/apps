@@ -1,30 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { User } from '@jdw/frontend-shared-util';
+import { Profile, User } from '@jdw/frontend-shared-util';
 import { AccountMenuComponent } from './account-menu.component';
 import { accountViewOf, SIGNED_OUT_VIEW } from './account-view';
 
-const userWithoutIcon = {
-  id: 42,
-  emailAddress: 'jake@example.com',
-  profile: { firstName: 'Jake', lastName: 'Willmsen', icon: null },
-} as unknown as User;
+const user = { id: 42, emailAddress: 'jake@example.com' } as User;
 
-const userWithIcon = {
-  id: 42,
-  emailAddress: 'jake@example.com',
-  profile: { firstName: 'Jake', lastName: 'Willmsen', icon: { icon: 'QUJD' } },
-} as unknown as User;
+const profileWithoutIcon = {
+  firstName: 'Jake',
+  lastName: 'Willmsen',
+  icon: null,
+} as unknown as Profile;
 
-const userWithoutProfile = {
-  id: 42,
-  emailAddress: 'jake@example.com',
-  profile: null,
-} as unknown as User;
+const profileWithIcon = {
+  firstName: 'Jake',
+  lastName: 'Willmsen',
+  icon: { icon: 'QUJD' },
+} as unknown as Profile;
 
 describe('accountViewOf', () => {
   it('shows initials when the user has no stored icon', () => {
-    const view = accountViewOf(userWithoutIcon);
+    const view = accountViewOf(user, profileWithoutIcon);
 
     expect(view.avatarState).toBe('initials');
     expect(view.initials).toBe('JW');
@@ -32,14 +28,14 @@ describe('accountViewOf', () => {
   });
 
   it('shows the stored icon when one exists', () => {
-    const view = accountViewOf(userWithIcon);
+    const view = accountViewOf(user, profileWithIcon);
 
     expect(view.avatarState).toBe('icon');
     expect(view.iconData).toBe('data:image/png;base64,QUJD');
   });
 
   it('falls back to the email initial when there is no profile', () => {
-    const view = accountViewOf(userWithoutProfile);
+    const view = accountViewOf(user, null);
 
     expect(view.initials).toBe('J');
     expect(view.displayName).toBe('jake@example.com');
@@ -82,21 +78,21 @@ describe('AccountMenuComponent', () => {
   });
 
   it('renders initials for a user with no stored icon', () => {
-    component.view = accountViewOf(userWithoutIcon);
+    component.view = accountViewOf(user, profileWithoutIcon);
     fixture.detectChanges();
 
     expect(textOf('[data-cy="avatar-initials"]')).toBe('JW');
   });
 
   it('renders the stored icon when the user has one', () => {
-    component.view = accountViewOf(userWithIcon);
+    component.view = accountViewOf(user, profileWithIcon);
     fixture.detectChanges();
 
     expect(has('[data-cy="avatar-image"]')).toBe(true);
   });
 
   it('names the trigger after the account for screen readers', () => {
-    component.view = accountViewOf(userWithoutIcon);
+    component.view = accountViewOf(user, profileWithoutIcon);
     fixture.detectChanges();
 
     const trigger = (fixture.nativeElement as HTMLElement).querySelector(
@@ -109,7 +105,7 @@ describe('AccountMenuComponent', () => {
   });
 
   it('emits sign out rather than acting on it itself', () => {
-    component.view = accountViewOf(userWithoutIcon);
+    component.view = accountViewOf(user, profileWithoutIcon);
     fixture.detectChanges();
 
     const emitted = vi.fn();
