@@ -684,7 +684,17 @@ describe('UsersService', () => {
       expect(request.request.headers.get('Authorization')).toBe('Bearer jwt');
       request.flush(profile);
 
-      expect(outcome.values).toEqual([profile]);
+      expect(outcome.values).toEqual([null, profile]);
+    });
+
+    it('emits a provisional null while the request is pending', () => {
+      const outcome = record(
+        service.getUserProfile({ id: 42, profileId: 7 } as User),
+      );
+
+      expect(outcome.values).toEqual([null]);
+      expect(outcome.completed).toBe(false);
+      httpTesting.expectOne(url);
     });
 
     it('reuses an embedded profile without a request', () => {
