@@ -734,4 +734,50 @@ describe('UsersService', () => {
       expect(mockSnackbarService.error).not.toHaveBeenCalled();
     });
   });
+
+  describe('withProfile', () => {
+    const profile = { id: 7, firstName: 'Jake' } as unknown as Profile;
+
+    it('settles on the fetched profile without the provisional null', () => {
+      const outcome = record(
+        service.withProfile({ id: 42, profileId: 7 } as User),
+      );
+      httpTesting
+        .expectOne(`${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/42`)
+        .flush(profile);
+
+      expect(outcome.values).toEqual([{ id: 42, profileId: 7, profile }]);
+    });
+
+    it('gives up on a hung lookup and settles with a null profile', () => {
+      vi.useFakeTimers();
+      try {
+        const outcome = record(
+          service.withProfile({ id: 42, profileId: 7 } as User),
+        );
+        httpTesting.expectOne(
+          `${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/42`,
+        );
+
+        vi.advanceTimersByTime(10_000);
+
+        expect(outcome.values).toEqual([
+          { id: 42, profileId: 7, profile: null },
+        ]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('sets profile to null when the lookup fails', () => {
+      const outcome = record(
+        service.withProfile({ id: 42, profileId: 7 } as User),
+      );
+      httpTesting
+        .expectOne(`${environmentMock.AUTH_BASE_URL}/api/profiles/by-user/42`)
+        .flush('x', { status: 404, statusText: 'Not Found' });
+
+      expect(outcome.values[0].profile).toBeNull();
+    });
+  });
 });

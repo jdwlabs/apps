@@ -59,7 +59,7 @@ export class UserComponent implements OnInit {
     this.userId = this.route.snapshot.paramMap.get('userId');
 
     if (this.userId) {
-      this.usersService.getUser(this.userId).subscribe({
+      this.usersService.getUserWithProfile(this.userId).subscribe({
         next: (response) => {
           this.user = response;
           this.populateForm(this.user);

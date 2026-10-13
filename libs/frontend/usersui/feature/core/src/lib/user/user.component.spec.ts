@@ -83,7 +83,7 @@ const mockRole: Role = {
 };
 
 const mockUsersService = {
-  getUser: vi.fn(() => of(mockUser)),
+  getUserWithProfile: vi.fn(() => of(mockUser)),
 };
 
 const mockRolesService = {
@@ -148,8 +148,8 @@ describe('UserComponent', () => {
     expect(component.userId).toBe('1');
   });
 
-  it('should call getUser and populate the form', () => {
-    expect(mockUsersService.getUser).toHaveBeenCalledWith('1');
+  it('should call getUserWithProfile and populate the form', () => {
+    expect(mockUsersService.getUserWithProfile).toHaveBeenCalledWith('1');
     expect(component.userForm.get('emailAddress')?.value).toBe(
       'user@jdwkube.com',
     );
