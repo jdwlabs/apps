@@ -1,4 +1,4 @@
-import { User } from '@jdw/frontend-shared-util';
+import { Profile, User } from '@jdw/frontend-shared-util';
 
 export type AvatarState = 'icon' | 'initials' | 'signed-out';
 
@@ -20,8 +20,7 @@ export const SIGNED_OUT_VIEW: AccountView = {
   initials: '',
 };
 
-function displayNameOf(user: User): string {
-  const profile = user.profile;
+function displayNameOf(user: User, profile: Profile | null): string {
   if (!profile) {
     return user.emailAddress ?? '';
   }
@@ -30,8 +29,7 @@ function displayNameOf(user: User): string {
 
 // Without initials an account with no uploaded icon is indistinguishable from
 // every other account with no uploaded icon.
-function initialsOf(user: User): string {
-  const profile = user.profile;
+function initialsOf(user: User, profile: Profile | null): string {
   if (!profile) {
     return (user.emailAddress ?? '?').charAt(0).toUpperCase();
   }
@@ -43,13 +41,16 @@ function initialsOf(user: User): string {
 // Pure, and deliberately free of any service: a `type:ui` lib cannot reach
 // `type:data-access` — shared-data-access already depends on shared-ui, so the
 // import would close a cycle.
-export function accountViewOf(user: User): AccountView {
+export function accountViewOf(
+  user: User,
+  profile: Profile | null,
+): AccountView {
   return {
     user,
     isLoggedIn: true,
-    avatarState: user.profile?.icon?.icon ? 'icon' : 'initials',
-    iconData: `data:image/png;base64,${user.profile?.icon?.icon ?? ''}`,
-    displayName: displayNameOf(user),
-    initials: initialsOf(user),
+    avatarState: profile?.icon?.icon ? 'icon' : 'initials',
+    iconData: `data:image/png;base64,${profile?.icon?.icon ?? ''}`,
+    displayName: displayNameOf(user, profile),
+    initials: initialsOf(user, profile),
   };
 }

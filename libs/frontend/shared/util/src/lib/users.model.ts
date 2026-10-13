@@ -80,7 +80,9 @@ export type User = {
   password: string;
   status: string;
   roles: UserRole[];
-  profile: Profile | null;
+  // Present on the JVM response only; the Go response carries profileId instead.
+  profile?: Profile | null;
+  profileId?: number | null;
   createdByUserId: number;
   createdTime: string;
   modifiedByUserId: number;

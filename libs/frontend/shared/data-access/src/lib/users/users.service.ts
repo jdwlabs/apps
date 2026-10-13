@@ -9,8 +9,8 @@ import {
   Environment,
   getErrorMessage,
 } from '@jdw/frontend-shared-util';
-import { catchError, EMPTY, forkJoin, map, Observable, tap } from 'rxjs';
-import { AddUser, EditUser, User } from '@jdw/frontend-shared-util';
+import { catchError, EMPTY, forkJoin, map, Observable, of, tap } from 'rxjs';
+import { AddUser, EditUser, Profile, User } from '@jdw/frontend-shared-util';
 import { AuthService } from '../auth/auth.service';
 import { SnackbarService } from '../snackbar/snackbar.service';
 
@@ -43,6 +43,29 @@ export class UsersService {
         headers: headers,
       })
       .pipe(catchError((error) => this.handleError(error)));
+  }
+
+  // Resolves without a request whenever the user body already answers the
+  // question: the JVM service embeds the profile (or null), and the Go service
+  // sends a null profileId for a user with no profile. Any failure degrades to
+  // "no profile" and stays silent because the caller is decorative chrome that
+  // must not blank or nag over a profile lookup.
+  getUserProfile(user: User): Observable<Profile | null> {
+    if (user.profile !== undefined) {
+      return of(user.profile);
+    }
+    if (user.profileId === null) {
+      return of(null);
+    }
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    return this.http
+      .get<Profile>(
+        `${this.environment.AUTH_BASE_URL}/api/profiles/by-user/${user.id}`,
+        { headers: headers },
+      )
+      .pipe(catchError(() => of(null)));
   }
 
   deleteUser(userId: number): Observable<object> {

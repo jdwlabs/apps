@@ -83,7 +83,15 @@ export class MainComponent implements OnInit {
       if (!userId) {
         return of(SIGNED_OUT_VIEW);
       }
-      return this.usersService.getUser(userId).pipe(map(accountViewOf));
+      return this.usersService
+        .getUser(userId)
+        .pipe(
+          switchMap((user) =>
+            this.usersService
+              .getUserProfile(user)
+              .pipe(map((profile) => accountViewOf(user, profile))),
+          ),
+        );
     }),
   );
 
