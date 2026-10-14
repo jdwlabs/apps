@@ -176,6 +176,7 @@
       "usersrole",
       "authdb",
       "ai-sre-relay",
+      "anthropic-spend-exporter",
       "frontend-shared-ui",
       "frontend-shared-util",
       "github-repo-health-exporter",

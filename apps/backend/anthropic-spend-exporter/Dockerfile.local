@@ -1,0 +1,14 @@
+# Self-contained build for local iteration (no prior `nx build` needed).
+FROM golang:1.27-bookworm AS build
+WORKDIR /src
+COPY apps/backend/anthropic-spend-exporter/go.mod ./
+RUN go mod download || true
+COPY apps/backend/anthropic-spend-exporter/ ./
+RUN CGO_ENABLED=0 go build -o /out/anthropic-spend-exporter .
+
+FROM gcr.io/distroless/base-debian12:nonroot AS runner
+WORKDIR /app
+COPY --from=build /out/anthropic-spend-exporter .
+USER nonroot:nonroot
+EXPOSE 9090
+ENTRYPOINT ["/app/anthropic-spend-exporter"]
