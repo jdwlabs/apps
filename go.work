@@ -7,6 +7,7 @@ toolchain go1.26.8
 
 use (
 	./apps/backend/ai-sre-relay
+	./apps/backend/anthropic-spend-exporter
 	./apps/backend/github-repo-health-exporter
 	./apps/backend/identity-service
 	./apps/backend/profile-service

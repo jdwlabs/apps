@@ -1,0 +1,10 @@
+# Distroless final image; consumes the Nx build output at ./dist/...
+# The CI build-image target runs after `nx build`, so dist/ is populated.
+FROM gcr.io/distroless/base-debian12:nonroot AS runner
+
+WORKDIR /app
+COPY ./dist/apps/backend/anthropic-spend-exporter/anthropic-spend-exporter .
+
+USER nonroot:nonroot
+EXPOSE 9090
+ENTRYPOINT ["/app/anthropic-spend-exporter"]
