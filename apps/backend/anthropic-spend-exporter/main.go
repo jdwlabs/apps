@@ -104,9 +104,8 @@ func (r *refresher) refreshOnce(ctx context.Context) {
 		// += because two workspaces can share a display name.
 		costs[series] += usd
 	}
-	r.view.replace(costs, start, end)
+	r.view.replace(costs, start, end, r.now())
 	r.view.refreshesOK.Add(1)
-	r.view.lastRefreshUnix.Store(r.now().Unix())
 }
 
 // run refreshes once at startup, so /metrics has data before the first
