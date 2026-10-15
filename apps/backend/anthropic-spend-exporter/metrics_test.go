@@ -24,10 +24,9 @@ func TestSpendView_WriteTo_FormatAndDeterministicOrder(t *testing.T) {
 		{"agents", "claude-sonnet-5-5", "standard", "tokens"}: 12.34,
 		{"agents", "claude-sonnet-5-5", "batch", "tokens"}:    3,
 		{"default", "", "", "web_search"}:                     0.01,
-	}, viewStart, viewEnd)
+	}, viewStart, viewEnd, time.Unix(1791000000, 0))
 	v.refreshesOK.Add(3)
 	v.refreshesFailed.Add(1)
-	v.lastRefreshUnix.Store(1791000000)
 
 	out := render(v)
 	wantLines := []string{
@@ -64,8 +63,8 @@ func TestSpendView_WriteTo_FormatAndDeterministicOrder(t *testing.T) {
 
 func TestSpendView_ReplaceDropsSeriesThatLeftTheReport(t *testing.T) {
 	v := newSpendView(100)
-	v.replace(map[costSeries]float64{{"old", "m", "standard", "tokens"}: 5}, viewStart, viewEnd)
-	v.replace(map[costSeries]float64{{"new", "m", "standard", "tokens"}: 1}, viewStart, viewEnd)
+	v.replace(map[costSeries]float64{{"old", "m", "standard", "tokens"}: 5}, viewStart, viewEnd, time.Unix(1791000000, 0))
+	v.replace(map[costSeries]float64{{"new", "m", "standard", "tokens"}: 1}, viewStart, viewEnd, time.Unix(1791000600, 0))
 
 	out := render(v)
 	if strings.Contains(out, `workspace="old"`) {
@@ -73,6 +72,9 @@ func TestSpendView_ReplaceDropsSeriesThatLeftTheReport(t *testing.T) {
 	}
 	if !strings.Contains(out, `workspace="new"`) {
 		t.Error("the newest report's series is missing")
+	}
+	if want := "last_refresh_timestamp_seconds 1791000600\n"; !strings.Contains(out, want) {
+		t.Errorf("the refresh time was not swapped with its costs; want %q in:\n%s", want, out)
 	}
 }
 
@@ -98,7 +100,7 @@ func TestSpendView_EscapesLabelValues(t *testing.T) {
 	v := newSpendView(100)
 	v.replace(map[costSeries]float64{
 		{"team \"a\"\\b\nc", "m", "standard", "tokens"}: 1,
-	}, viewStart, viewEnd)
+	}, viewStart, viewEnd, time.Unix(1791000000, 0))
 
 	want := `workspace="team \"a\"\\b\nc"`
 	if out := render(v); !strings.Contains(out, want) {

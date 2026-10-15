@@ -11,14 +11,16 @@ import (
 )
 
 // spendView is the exporter's whole current picture of the billing cycle.
-// The costs and the window they belong to are swapped together: a total
-// from one cycle shown against another cycle's dates would look like a real
-// reading and be wrong.
+// The costs, the window they belong to and the refresh that produced them
+// are swapped together: a total from one cycle shown against another
+// cycle's dates, or a new total stamped with the previous refresh time,
+// would look like a real reading and be wrong.
 type spendView struct {
-	mu         sync.RWMutex
-	costs      map[costSeries]float64
-	cycleStart time.Time
-	cycleEnd   time.Time
+	mu              sync.RWMutex
+	costs           map[costSeries]float64
+	cycleStart      time.Time
+	cycleEnd        time.Time
+	lastRefreshUnix int64
 
 	budgetUSD float64
 
@@ -27,7 +29,6 @@ type spendView struct {
 	// metrics client dependency.
 	refreshesOK     atomic.Int64
 	refreshesFailed atomic.Int64
-	lastRefreshUnix atomic.Int64
 }
 
 func newSpendView(budgetUSD float64) *spendView {
@@ -37,12 +38,13 @@ func newSpendView(budgetUSD float64) *spendView {
 // replace takes ownership of costs. Replacing wholesale is what makes a
 // workspace or model that drops out of the report disappear from /metrics
 // instead of serving its last value forever.
-func (v *spendView) replace(costs map[costSeries]float64, start, end time.Time) {
+func (v *spendView) replace(costs map[costSeries]float64, start, end, refreshedAt time.Time) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	v.costs = costs
 	v.cycleStart = start
 	v.cycleEnd = end
+	v.lastRefreshUnix = refreshedAt.Unix()
 }
 
 // Workspace names are free text chosen in the Console, so they are escaped
@@ -54,6 +56,7 @@ func (v *spendView) writeTo(w io.Writer) {
 	v.mu.RLock()
 	costs := v.costs
 	start, end := v.cycleStart, v.cycleEnd
+	lastRefreshUnix := v.lastRefreshUnix
 	v.mu.RUnlock()
 
 	keys := make([]costSeries, 0, len(costs))
@@ -107,5 +110,5 @@ func (v *spendView) writeTo(w io.Writer) {
 
 	fmt.Fprint(w, "# HELP jdwlabs_anthropic_spend_exporter_last_refresh_timestamp_seconds Unix time of the last refresh that replaced the cost view; 0 until the first.\n")
 	fmt.Fprint(w, "# TYPE jdwlabs_anthropic_spend_exporter_last_refresh_timestamp_seconds gauge\n")
-	fmt.Fprintf(w, "jdwlabs_anthropic_spend_exporter_last_refresh_timestamp_seconds %d\n", v.lastRefreshUnix.Load())
+	fmt.Fprintf(w, "jdwlabs_anthropic_spend_exporter_last_refresh_timestamp_seconds %d\n", lastRefreshUnix)
 }
