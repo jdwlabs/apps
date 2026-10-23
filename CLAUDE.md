@@ -132,7 +132,7 @@ Use `pnpm run commit` for the interactive Commitizen prompt.
 
 ## Versioning / Release
 
-Versioning is managed by `@jscutlery/semver` via the `version` Nx target on each app. It reads conventional commits, bumps semver, tags the repo, and triggers `postTargets` (format, save-version, build-image, update-app). **Do not manually edit version files.**
+Versioning is managed by **Nx Release** (`release` config in `nx.json`). The 7 releasable apps version independently with `{projectName}-{version}` tags, the current version resolved from git tags, the bump type derived from conventional commits, and a `CHANGELOG.md` per project. A custom `versionActions` hook (`tools/release/version-actions.ts`) also writes Angular `public/VERSION` files and the Spring Boot `build.gradle.kts` project version. CI runs `scripts/release.sh --skip-publish --yes` on main pushes, then builds Docker images and updates the deployments repo for each new tag. **Do not manually edit version files.**
 
 ## CI/CD
 
@@ -142,7 +142,7 @@ GitHub Actions on `ubuntu-jdwlabs` (self-hosted ARC runner):
 2. PR only: `commitlint` — validates all commit messages in the PR
 3. `nx affected -t lint test` — affected projects
 4. `nx affected -t build` — affected builds
-5. **Main push only:** Docker image build+push (DockerHub), semver bump, Helm Chart update, push to `develop`
+5. **Main push only:** `nx release` (version + changelog + tag), Docker image build+push (DockerHub), Helm Chart update
 
 ## Do Not
 
@@ -153,4 +153,4 @@ GitHub Actions on `ubuntu-jdwlabs` (self-hosted ARC runner):
 - Add new projects without `type:`, `scope:`, and `framework:` tags in `project.json`
 - Commit anything to `docs/superpowers/` — it is gitignored intentionally (local planning only)
 - Modify `.github/workflows/ci.yml` `build-image` steps without understanding ARC + Kubernetes BuildKit constraints
-- Run `nx affected -t version` locally — semver tagging runs in CI only
+- Run `nx release` against the real repo locally — tagging runs in CI only; use `--dry-run` to preview

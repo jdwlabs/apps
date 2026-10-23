@@ -9,12 +9,11 @@ All scripts are executable and accept arguments described in the usage comment a
 
 | Script              | Purpose                                                                                                    |
 | ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `create-version.sh` | Write a `version.json` file into an app's `public/` dir after a semver release                             |
 | `format.sh`         | Run `nx format:write` across the workspace — called by the Nx `format` target in each app's `project.json` |
 | `prepare-config.sh` | Swap `config.json` to its production values before a Docker image build                                    |
+| `release.sh`        | Wrapper around `nx release` — versioning, changelogs, and tagging per the `release` config in `nx.json`            |
 | `restore-config.sh` | Restore `config.json` to its development defaults after a build                                            |
 | `update-app.sh`     | Bump the `appVersion` in a Helm `Chart.yaml` to match the released semver tag                              |
-| `update-version.sh` | Update the version string in a `build.gradle.kts` (Spring Boot) to match the release tag                   |
 
 ## Docker
 

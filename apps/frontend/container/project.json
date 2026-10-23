@@ -140,17 +140,6 @@
         "port": 4200
       }
     },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": ["format", "save-version", "build-image", "update-app"]
-      }
-    },
-    "save-version": {
-      "command": "bash scripts/create-version.sh {version} {projectRoot}/public {projectName}"
-    },
     "build-image": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build", "prepare-config", "build"],
@@ -165,7 +154,7 @@
             "forwardAllArgs": false
           },
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/container:latest -t jdwlabs/container:{version} --push .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/container:latest -t jdwlabs/container:{args.version} --push .",
             "forwardAllArgs": false
           },
           {
@@ -194,7 +183,7 @@
       }
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/container/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/container/Chart.yaml {args.version} {projectName}"
     },
     "format": {
       "command": "bash scripts/format.sh"

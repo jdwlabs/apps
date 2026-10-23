@@ -74,11 +74,26 @@ jobs:
             qemu.install=true
           platforms: 'linux/amd64,linux/arm64'
       - if: ${{ github.event_name != 'pull_request' }}
-        name: Run Version Upgrades
+        name: Run Nx Release
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions[bot]"
-          pnpm exec nx affected -t version --parallel=1
+          bash scripts/release.sh --skip-publish --yes
+          git push --follow-tags origin main
+      - if: ${{ github.event_name != 'pull_request' }}
+        name: Publish Images & Update Deployments
+        # Tags created by nx release point at HEAD; project names contain no
+        # hyphens, so splitting each {projectName}-{version} tag on the first
+        # hyphen is unambiguous.
+        run: |
+          for tag in $(git tag --points-at HEAD); do
+            project="${tag%%-*}"
+            version="${tag#*-}"
+            pnpm exec nx run "${project}:build-image" --args="--version=${version}"
+            if pnpm exec nx show project "${project}" --json | grep -q '"update-app":'; then
+              pnpm exec nx run "${project}:update-app" --args="--version=${version}"
+            fi
+          done
 
       # Self-heal can loop indefinitely on a hard failure; cap it so it can't
       # consume the whole job budget.

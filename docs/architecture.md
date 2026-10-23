@@ -49,7 +49,7 @@ flowchart LR
     lint --> build["build\naffected"]
 
     merge["Merge to main"]
-    merge --> ver["version bump\n@jscutlery/semver"]
+    merge --> ver["nx release\nversion + changelog + tag"]
     ver --> docker["Docker build + push\nDockerHub"]
     docker --> helm["Helm chart update"]
     helm --> dev["push develop branch"]

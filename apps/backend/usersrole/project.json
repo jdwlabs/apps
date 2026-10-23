@@ -17,19 +17,8 @@
       "cache": true,
       "command": "echo Ignored in project configuration"
     },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": ["format", "update-version", "build-image", "update-app"]
-      }
-    },
-    "update-version": {
-      "command": "bash scripts/update-version.sh {projectRoot}/build.gradle.kts {version} {projectName}"
-    },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/usersrole/Chart.yaml {args.version} {projectName}"
     },
     "format": {
       "command": "bash scripts/format.sh"

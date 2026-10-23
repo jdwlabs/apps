@@ -107,15 +107,16 @@ These are executed automatically during container initialization.
 
 ## 🧪 Versioning
 
-Versioning is handled via [Conventional Commits](https://www.conventionalcommits.org/) and [@jscutlery/semver](https://github.com/jscutlery/semver):
+Versioning is handled via [Conventional Commits](https://www.conventionalcommits.org/) and [Nx Release](https://nx.dev/recipes/nx-release/get-started-with-nx-release), which runs in CI on pushes to `main`:
 
 ```bash
-npx nx run authdb:version
+# Preview locally — writes nothing
+pnpm exec nx release version --dry-run --projects=authdb
 ```
 
-- Tags the repo
-- Pushes a release commit
-- Triggers `format` and `build-image`
+- Bumps the version from conventional commits
+- Updates `CHANGELOG.md` and tags the repo (`authdb-{version}`)
+- CI then runs `build-image` for the new tag
 
 ---
 

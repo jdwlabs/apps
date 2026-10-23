@@ -179,6 +179,31 @@
     },
     "@nx-go/nx-go"
   ],
+  "release": {
+    "projectsRelationship": "independent",
+    "projects": [
+      "authui",
+      "container",
+      "rolesui",
+      "usersui",
+      "authdb",
+      "servicediscovery",
+      "usersrole"
+    ],
+    "releaseTagPattern": "{projectName}-{version}",
+    "git": {
+      "commitMessage": "chore(release): release {projectName} {version}",
+      "tagMessage": "chore(release): release {projectName} {version}"
+    },
+    "changelog": {
+      "workspaceChangelog": false,
+      "projectChangelogs": true
+    },
+    "version": {
+      "conventionalCommits": true,
+      "versionActions": "tools/release/version-actions.ts"
+    }
+  },
   "defaultBase": "main",
   "nxCloudId": "69e5ca23f497e47cfe103a29"
 }

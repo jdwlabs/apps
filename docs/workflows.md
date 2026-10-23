@@ -60,14 +60,38 @@ git commit -m "feat(container): add dark mode toggle"
 
 ## Releasing a New Version
 
-Versioning runs in CI on push to `main`. Do not run `nx run <app>:version` locally.
-After merging, CI will:
+Releases are driven by [Nx Release](https://nx.dev/recipes/nx-release/get-started-with-nx-release),
+configured under the `release` key in `nx.json`:
 
-1. Bump semver (patch/minor/major based on commit types)
-2. Generate CHANGELOG
-3. Push Docker images to DockerHub
-4. Update Helm chart appVersion
-5. Push updated files to `develop` branch
+- **Independent versioning** — each of the 7 releasable apps (`authui`, `container`,
+  `rolesui`, `usersui`, `authdb`, `servicediscovery`, `usersrole`) versions separately
+- **Tag format** — `{projectName}-{version}` (e.g. `usersui-1.3.5`), resolved from
+  existing git tags (`currentVersionResolver: git-tag`)
+- **Conventional commits** — the bump type (patch/minor/major) is derived from commit
+  messages since the last tag
+- **Per-project changelogs** — `CHANGELOG.md` in each project root
+- **Version files** — `tools/release/version-actions.ts` extends the default bump to
+  also write Angular `public/VERSION` files and the Spring Boot `build.gradle.kts`
+  project version; non-JS apps carry a `private` version-tracking `package.json`
+
+Releases run in CI on push to `main` (`bash scripts/release.sh --skip-publish --yes`).
+Do not run `nx release` against the real repo locally — preview with a dry run instead:
+
+```bash
+# Preview version bumps, changelogs, and the release commit — writes nothing
+bash scripts/release.sh --dry-run
+
+# Preview versioning only
+pnpm exec nx release version --dry-run
+
+# Release a subset of projects (CI normally handles this)
+bash scripts/release.sh --projects=usersui --dry-run
+```
+
+After Nx Release commits, tags, and pushes, CI then for each newly tagged project:
+
+1. Builds and pushes the Docker image (`<project>:build-image`)
+2. Updates the Helm chart `appVersion` in the `deployments` repo (`<project>:update-app`)
 
 ## Resetting After a Failed Nx Operation
 

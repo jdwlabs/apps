@@ -32,7 +32,7 @@
       "options": {
         "commands": [
           {
-            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/servicediscovery:latest -t jdwlabs/servicediscovery:{version} --push .",
+            "command": "docker buildx build --platform linux/amd64,linux/arm64 -f {projectRoot}/Dockerfile -t jdwlabs/servicediscovery:latest -t jdwlabs/servicediscovery:{args.version} --push .",
             "forwardAllArgs": false
           }
         ],
@@ -63,19 +63,11 @@
         "parallel": false
       }
     },
-    "version": {
-      "executor": "@jscutlery/semver:version",
-      "options": {
-        "push": true,
-        "preset": "conventionalcommits",
-        "postTargets": ["format", "build-image", "update-app"]
-      }
-    },
     "format": {
       "command": "bash scripts/format.sh"
     },
     "update-app": {
-      "command": "bash scripts/update-app.sh charts/servicediscovery/Chart.yaml {version} {projectName}"
+      "command": "bash scripts/update-app.sh charts/servicediscovery/Chart.yaml {args.version} {projectName}"
     },
     "download": {
       "command": "go mod download"
