@@ -112,10 +112,14 @@
             </mat-error>
           }
         </ng-container>
+        <!-- signUp() already refuses an invalid form, so the control was
+        offering a click that did nothing. Disabling it says so up front, the
+        way every other form in the platform does. -->
         <button
           (click)="signUp()"
+          [disabled]="signUpForm.invalid"
           color="primary"
-          data-cy="sign-up-button"
+          data-cy="submit-button"
           mat-raised-button
           type="submit"
         >

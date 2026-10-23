@@ -115,6 +115,62 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: pnpm exec nx release --dry-run --skip-publish
 
+  # The module-federation contract has no other automated cover: lint, unit
+  # tests and build all pass on a shell that renders a fallback page instead of
+  # every remote, which is how a stale digest and a discovery regression both
+  # shipped green. Deliberately not in `release`'s needs — a browser flake
+  # should block a merge, not a delivery.
+  e2e:
+    # Queued behind the cheap gates rather than beside them: a change that fails
+    # lint has nothing to learn from a browser, and by then this run's Nx cache
+    # entry already holds the four app builds the suite needs.
+    needs: main
+    if: ${{ github.event_name != 'push' || github.triggering_actor != 'jdwlabs-release-bot[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.9
+      - name: Setup Node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      # Restore-only: the main job owns this key, and two jobs saving the same
+      # one collide.
+      - name: Restore Nx cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            nx-${{ runner.os }}-
+      - name: Setup Base and SHAs for 'nx affected'
+        uses: nrwl/nx-set-shas@v5.0.1
+      # The e2e target sets skipInstall, so the browser has to arrive here.
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run E2E
+        run: pnpm exec nx affected -t e2e
+      - if: ${{ always() }}
+        name: Upload Playwright Report
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: playwright-report
+          path: dist/.playwright/apps/e2e/platform-e2e/
+          retention-days: 14
+          if-no-files-found: ignore
+
   release:
     needs: main
     if: ${{ github.event_name == 'push' && github.triggering_actor != 'jdwlabs-release-bot[bot]' }}

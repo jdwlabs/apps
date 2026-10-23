@@ -39,14 +39,18 @@ test.describe('Auth', () => {
       await expect(page.locator('[data-cy="submit-button"]')).toBeDisabled();
     });
 
+    // Focused rather than clicked: an empty outlined field rests its label
+    // across the middle of its own input, so whether a click lands on the input
+    // or on the label comes down to how wide that label's text renders. Focus
+    // marks the control touched the same way and does not depend on the font.
     test('shows validation errors on blur', async ({ page }) => {
-      await page.locator('[data-cy="email-address-field"] input').click();
+      await page.locator('[data-cy="email-address-field"] input').focus();
       await page.locator('[data-cy="email-address-field"] input').blur();
       await expect(
         page.locator('[data-cy="email-address-field"]'),
       ).toContainText('Email is required');
 
-      await page.locator('[data-cy="password-field"] input').click();
+      await page.locator('[data-cy="password-field"] input').focus();
       await page.locator('[data-cy="password-field"] input').blur();
       await expect(page.locator('[data-cy="password-field"]')).toContainText(
         'Password is required',
