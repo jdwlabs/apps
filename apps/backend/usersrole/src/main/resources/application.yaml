@@ -26,7 +26,10 @@ spring:
     multipart:
       enabled: true
       max-file-size: 2MB
-      max-request-size: 2MB
+      # Headroom over max-file-size, not a match for it: the request carries the
+      # part headers and boundaries on top of the file, so an equal ceiling
+      # rejects a file that is itself within the limit.
+      max-request-size: 4MB
 
 springdoc:
   api-docs:
