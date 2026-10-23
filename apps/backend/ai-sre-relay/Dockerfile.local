@@ -9,5 +9,7 @@ RUN CGO_ENABLED=0 go build -o /out/ai-sre-relay .
 FROM gcr.io/distroless/base-debian12:nonroot AS runner
 WORKDIR /app
 COPY --from=build /out/ai-sre-relay .
+# Numeric uid: Kubernetes runAsNonRoot cannot verify a named user.
+USER 65532:65532
 EXPOSE 8080
 ENTRYPOINT ["/app/ai-sre-relay"]
