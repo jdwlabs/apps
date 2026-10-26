@@ -51,4 +51,4 @@ overrides:
   # not implemented in this context". @angular-devkit/build-angular 22.2 pulls
   # 5.111.0, so only those two releases are replaced; a later webpack installs
   # as declared and the production builds in CI decide whether it works.
-  'webpack@>=5.111.0 <5.111.2': '5.112.2'
+  'webpack@>=5.111.0 <5.111.2': '5.110.3'
