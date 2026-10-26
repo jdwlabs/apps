@@ -27,7 +27,12 @@ const isDependencyAware = (input: unknown): boolean => {
  * A target belongs here only when its output genuinely cannot depend on another
  * project — never merely because it is currently failing.
  */
-const EXEMPT = new Map<string, string>();
+const EXEMPT = new Map<string, string>([
+  [
+    'processTestResources',
+    'Gradle resource copy task; its inputs are the project own test resources and cannot depend on another project.',
+  ],
+]);
 
 describe('cacheable targets hash their dependencies', () => {
   it('every cacheable target with declared inputs is dependency-aware', async () => {

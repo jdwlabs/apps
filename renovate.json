@@ -11,6 +11,14 @@
   "minimumReleaseAge": "2 days",
   "packageRules": [
     {
+      "matchPackageNames": ["@angular/build", "@angular-devkit/build-angular"],
+      "allowedVersions": "<=22.2.3"
+    },
+    {
+      "matchPackageNames": ["webpack"],
+      "allowedVersions": "5.110.3"
+    },
+    {
       "description": [
         "The @jdw/* libraries are private workspace packages, versioned in-repo by nx release and never published to any registry.",
         "libs/frontend/shared/ui declares @jdw/frontend-shared-util as a pinned peerDependency, so Renovate resolves it against npm, fails, and reports a repository problem on the dependency dashboard."
