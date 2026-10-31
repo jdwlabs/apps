@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim
+FROM node:26-bookworm-slim
 ARG PLAYWRIGHT_VERSION
 ARG OPENAPI_FETCH_VERSION
 WORKDIR /e2e
