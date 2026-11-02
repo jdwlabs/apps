@@ -1,0 +1,7 @@
+{
+  "name": "module-federation-shared",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "tools/module-federation",
+  "tags": ["type:util", "scope:shared", "framework:angular"]
+}

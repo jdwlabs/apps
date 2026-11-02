@@ -10,6 +10,7 @@
     }
   },
   "tags": ["type:app", "scope:authui", "framework:angular"],
+  "implicitDependencies": ["module-federation-shared"],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",

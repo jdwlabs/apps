@@ -10,7 +10,7 @@
     }
   },
   "tags": ["type:app", "scope:container", "framework:angular"],
-  "implicitDependencies": ["angular-test-host"],
+  "implicitDependencies": ["angular-test-host", "module-federation-shared"],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
