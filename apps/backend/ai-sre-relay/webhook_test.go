@@ -264,3 +264,68 @@ func TestWebhookOverflowIsRefusedAndCounted(t *testing.T) {
 		t.Fatalf("rejection counter missing from /metrics output:\n%s", buf.String())
 	}
 }
+
+func TestCollapseFiring(t *testing.T) {
+	al := func(status, fp, name, ns string) Alert {
+		l := map[string]string{"alertname": name}
+		if ns != "" {
+			l["namespace"] = ns
+		}
+		return Alert{Status: status, Fingerprint: fp, Labels: l}
+	}
+	cases := []struct {
+		name string
+		in   []Alert
+		want []string
+	}{
+		{"same name and namespace collapse to the first", []Alert{
+			al("firing", "a", "KubePodNotReady", "db"), al("firing", "b", "KubePodNotReady", "db"), al("firing", "c", "KubePodNotReady", "db"),
+		}, []string{"a"}},
+		{"different namespaces stay separate", []Alert{
+			al("firing", "a", "KubePodNotReady", "db"), al("firing", "b", "KubePodNotReady", "games"),
+		}, []string{"a", "b"}},
+		{"different alertnames stay separate", []Alert{
+			al("firing", "a", "X", "db"), al("firing", "b", "Y", "db"),
+		}, []string{"a", "b"}},
+		{"cluster-scoped alerts without a namespace collapse by name", []Alert{
+			al("firing", "a", "NodeDown", ""), al("firing", "b", "NodeDown", ""),
+		}, []string{"a"}},
+		{"resolved notifications are never collapsed", []Alert{
+			al("resolved", "a", "X", "db"), al("resolved", "b", "X", "db"), al("firing", "c", "X", "db"), al("firing", "d", "X", "db"),
+		}, []string{"a", "b", "c"}},
+		{"nameless alerts are kept", []Alert{
+			al("firing", "a", "", "db"), al("firing", "b", "", "db"),
+		}, []string{"a", "b"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got []string
+			for _, a := range collapseFiring(tc.in) {
+				got = append(got, a.Fingerprint)
+			}
+			if strings.Join(got, ",") != strings.Join(tc.want, ",") {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// A 52-pod group must fit the queue as a single investigation instead of
+// being refused wholesale.
+func TestWebhookLargeGroupFitsSmallQueue(t *testing.T) {
+	var sb strings.Builder
+	sb.WriteString(`{"alerts":[`)
+	for i := range 52 {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		fmt.Fprintf(&sb, `{"status":"firing","fingerprint":"fp%d","labels":{"alertname":"KubePodNotReady","namespace":"db"}}`, i)
+	}
+	sb.WriteString(`]}`)
+	e := &fakeEnqueuer{capacity: 1}
+	rr := httptest.NewRecorder()
+	newRouter(e, &counters{}, "").ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(sb.String())))
+	if rr.Code != http.StatusAccepted || len(e.got) != 1 {
+		t.Fatalf("code=%d enqueued=%d, want 202 and 1", rr.Code, len(e.got))
+	}
+}

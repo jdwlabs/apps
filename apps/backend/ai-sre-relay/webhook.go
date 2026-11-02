@@ -25,6 +25,30 @@ type enqueuer interface {
 	enqueue(a Alert) bool
 }
 
+// collapseFiring keeps one firing alert per (alertname, namespace) in a batch.
+// A group such as KubePodNotReady can carry dozens of pods, and every one
+// would be queued as its own multi-minute investigation of the same incident
+// (they already land on a single ticket), exhausting the queue and making the
+// sender give up on the whole batch. Order is preserved, and resolved
+// notifications are left alone because closing a ticket is matched by the exact
+// fingerprint that opened it.
+func collapseFiring(alerts []Alert) []Alert {
+	type groupKey struct{ name, namespace string }
+	seen := map[groupKey]struct{}{}
+	out := make([]Alert, 0, len(alerts))
+	for _, a := range alerts {
+		if a.Status == statusFiring && a.Name() != "" {
+			k := groupKey{a.Name(), a.Namespace()}
+			if _, dup := seen[k]; dup {
+				continue
+			}
+			seen[k] = struct{}{}
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
 func newRouter(e enqueuer, c *counters, webhookToken string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -49,7 +73,7 @@ func newRouter(e enqueuer, c *counters, webhookToken string) http.Handler {
 		// The rest of the batch is still offered after a rejection — capacity
 		// freed mid-loop should be used rather than wasted.
 		accepted := true
-		for _, a := range payload.Alerts {
+		for _, a := range collapseFiring(payload.Alerts) {
 			// A resolved notification is the only thing that will ever say the
 			// condition cleared, so it takes the same path as a firing one:
 			// dropping it here is what left closed conditions holding open
