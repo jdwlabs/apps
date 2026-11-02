@@ -1,8 +1,11 @@
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { Route, Router } from '@angular/router';
 import { MicroFrontendService } from '../micro-frontend/micro-frontend.service';
-import { loadRemoteModule, setRemoteDefinitions } from '@nx/angular/mf';
-import { MicroFrontendRoute } from '@jdw/frontend-container-util';
+import {
+  loadRemoteModule,
+  MicroFrontendRoute,
+  setRemoteDefinitions,
+} from '@jdw/frontend-container-util';
 /* eslint-disable @nx/enforce-module-boundaries */
 import { FallbackComponent } from '@jdw/frontend-shared-ui';
 /* eslint-enable @nx/enforce-module-boundaries */
@@ -86,7 +89,10 @@ export class DynamicRouteLoaderService {
         path: route.path,
         loadChildren: () =>
           this.federation
-            .loadRemoteModule(route.remoteName, route.moduleName)
+            .loadRemoteModule<{ remoteRoutes: Route[] }>(
+              route.remoteName,
+              route.moduleName,
+            )
             .then((m) => m.remoteRoutes)
             .catch((err) => {
               console.error('Failed to load remote', err);

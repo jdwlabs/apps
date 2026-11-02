@@ -4,17 +4,18 @@
   "projectType": "library",
   "sourceRoot": "libs/backend/shared/auth",
   "tags": ["type:util", "scope:shared", "framework:go"],
+  "implicitDependencies": ["usersrole"],
   "targets": {
     "test": {
       "executor": "@nx-go/nx-go:test",
-      "options": {
-        "race": true
-      },
       "inputs": [
         "default",
         "^default",
         "{workspaceRoot}/apps/backend/usersrole/docs/contracts/*.openapi.yaml"
-      ]
+      ],
+      "options": {
+        "race": true
+      }
     },
     "lint": {
       "executor": "@nx-go/nx-go:lint",
@@ -26,6 +27,5 @@
     "tidy": {
       "executor": "@nx-go/nx-go:tidy"
     }
-  },
-  "implicitDependencies": ["usersrole"]
+  }
 }

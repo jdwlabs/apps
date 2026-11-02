@@ -144,4 +144,10 @@ export default [
     files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.spec.js', '**/*.spec.jsx'],
     languageOptions: { globals: { ...globals.vitest } },
   },
+  {
+    // Webpack loads these from Node, outside Nx's module graph, so the shared
+    // federation helper is reachable only by relative path.
+    files: ['**/webpack.config.ts', '**/module-federation.config.ts'],
+    rules: { '@nx/enforce-module-boundaries': 'off' },
+  },
 ];

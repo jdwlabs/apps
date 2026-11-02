@@ -26,17 +26,6 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "@nx/eslint:lint": {
-      "cache": true,
-      "inputs": [
-        "default",
-        "^default",
-        "{workspaceRoot}/eslint.config.ts",
-        "{workspaceRoot}/.eslintignore",
-        "{workspaceRoot}/eslint.config.js",
-        "{workspaceRoot}/tools/eslint-rules/**/*"
-      ]
-    },
     "@nx/angular:unit-test": {
       "cache": true,
       "inputs": [
@@ -55,16 +44,7 @@
       "cache": false
     },
     "@nx/angular:webpack-browser": {
-      "inputs": [
-        "production",
-        "^production",
-        {
-          "env": "NX_MF_DEV_SERVER_STATIC_REMOTES"
-        },
-        {
-          "env": "NX_MF_DEV_REMOTES"
-        }
-      ],
+      "inputs": ["production", "^production"],
       "dependsOn": ["^build"],
       "cache": true
     },
@@ -232,12 +212,6 @@
     "@schematics/angular:service": {
       "type": "service"
     },
-    "@nx/angular:scam": {
-      "type": "component"
-    },
-    "@nx/angular:scam-directive": {
-      "type": "directive"
-    },
     "@nx/angular:guard": {
       "typeSeparator": "."
     },
@@ -284,7 +258,18 @@
         "buildTargetName": "build"
       }
     },
-    "@nx-go/nx-go"
+    "@nx-go/nx-go",
+    {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e",
+        "ciTargetName": "e2e-ci"
+      },
+      "include": ["apps/e2e/platform-e2e/**/*"]
+    }
   ],
-  "defaultBase": "main"
+  "defaultBase": "main",
+  "affected": {
+    "legacy": true
+  }
 }

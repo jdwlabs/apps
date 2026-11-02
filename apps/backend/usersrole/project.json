@@ -2,44 +2,44 @@
   "name": "usersrole",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/backend/usersrole/src",
-  "tags": ["type:app", "scope:usersrole", "framework:springboot"],
   "release": {
     "version": {
       "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
+  "tags": ["type:app", "scope:usersrole", "framework:springboot"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "outputs": ["{projectRoot}/build/libs"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "bash gradlew assemble"
-      },
-      "cache": true,
-      "outputs": ["{projectRoot}/build/libs"]
+      }
     },
     "lint": {
       "executor": "nx:run-commands",
-      "options": {
-        "cwd": "{workspaceRoot}",
-        "command": "redocly lint --config {projectRoot}/docs/contracts/redocly.yaml"
-      },
       "cache": true,
       "inputs": [
         "default",
         "^default",
         "{workspaceRoot}/package.json",
         "{workspaceRoot}/pnpm-lock.yaml"
-      ]
+      ],
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "redocly lint --config {projectRoot}/docs/contracts/redocly.yaml"
+      }
     },
     "contract-extract": {
       "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/build/openapi"],
+      "cache": true,
       "options": {
         "cwd": "{projectRoot}",
         "command": "bash gradlew test --tests com.jdw.usersrole.contracts.ServedOpenApiDocumentDumpTests"
-      },
-      "outputs": ["{projectRoot}/build/openapi"],
-      "cache": true
+      }
     },
     "check-contracts": {
       "executor": "nx:run-commands",

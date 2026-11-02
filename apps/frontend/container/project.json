@@ -4,16 +4,18 @@
   "projectType": "application",
   "prefix": "jdw",
   "sourceRoot": "apps/frontend/container/src",
-  "tags": ["type:app", "scope:container", "framework:angular"],
   "release": {
     "version": {
       "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
+  "tags": ["type:app", "scope:container", "framework:angular"],
+  "implicitDependencies": ["angular-test-host"],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
       "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
       "options": {
         "outputPath": "dist/apps/frontend/container",
         "index": "apps/frontend/container/src/index.html",
@@ -60,11 +62,15 @@
           "sourceMap": true,
           "namedChunks": true
         }
-      },
-      "defaultConfiguration": "production"
+      }
     },
     "serve": {
-      "executor": "@nx/angular:module-federation-dev-server",
+      "executor": "@nx/angular:dev-server",
+      "defaultConfiguration": "development",
+      "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
       "options": {
         "port": 4200,
         "publicHost": "http://localhost:4200"
@@ -76,9 +82,7 @@
         "development": {
           "buildTarget": "container:build:development"
         }
-      },
-      "defaultConfiguration": "development",
-      "continuous": true
+      }
     },
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n",
@@ -87,13 +91,27 @@
       }
     },
     "lint": {
-      "executor": "@nx/eslint:lint"
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.ts",
+        "{workspaceRoot}/.eslintignore",
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/eslint-rules/**/*",
+        {
+          "externalDependencies": ["eslint"]
+        }
+      ]
     },
     "test": {
       "executor": "@nx/angular:unit-test"
     },
     "serve-static": {
       "executor": "@nx/web:file-server",
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"],
       "options": {
         "buildTarget": "container:build",
         "port": 4200,
@@ -102,6 +120,9 @@
     },
     "serve-built": {
       "executor": "@nx/web:file-server",
+      "readyWhen": {
+        "signal": true
+      },
       "options": {
         "staticFilePath": "dist/apps/frontend/container",
         "port": 4200,
@@ -197,6 +218,5 @@
         ]
       }
     }
-  },
-  "implicitDependencies": ["angular-test-host"]
+  }
 }

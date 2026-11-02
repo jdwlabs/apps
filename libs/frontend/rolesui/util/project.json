@@ -7,7 +7,17 @@
   "tags": ["type:util", "scope:rolesui", "framework:angular", "library:util"],
   "targets": {
     "lint": {
-      "executor": "@nx/eslint:lint"
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.ts",
+        "{workspaceRoot}/.eslintignore",
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/eslint-rules/**/*",
+        {
+          "externalDependencies": ["eslint"]
+        }
+      ]
     }
   }
 }

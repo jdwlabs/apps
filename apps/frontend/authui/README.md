@@ -29,7 +29,6 @@ apps/frontend/authui/
 ├── start-nginx.sh               # Entrypoint script for Nginx
 ├── module-federation.config.ts  # Module federation configuration
 ├── webpack.config.ts            # Webpack base configuration
-├── webpack.prod.config.ts       # Webpack production configuration
 ├── tsconfig*.json               # TypeScript configuration files
 └── project.json                 # Nx project configuration
 ```

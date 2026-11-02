@@ -3,12 +3,12 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/backend/github-repo-health-exporter",
-  "tags": ["type:app", "scope:github-repo-health-exporter", "framework:go"],
   "release": {
     "version": {
       "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
+  "tags": ["type:app", "scope:github-repo-health-exporter", "framework:go"],
   "targets": {
     "build": {
       "executor": "@nx-go/nx-go:build",
