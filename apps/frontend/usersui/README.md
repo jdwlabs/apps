@@ -46,12 +46,15 @@ apps/frontend/usersui/
 
 ### Development
 
-Install dependencies and serve the app locally:
+Install dependencies and serve the app locally (port 4202):
 
 ```bash
-npm install
-nx serve usersui
+pnpm install
+pnpm exec nx serve usersui
 ```
+
+`nx serve container` does not start this remote. To see it inside the shell,
+serve both: `pnpm exec nx run-many -t serve -p container usersui`.
 
 ### Build
 

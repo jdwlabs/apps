@@ -44,12 +44,15 @@ apps/frontend/rolesui/
 
 ### Development
 
-Install dependencies and serve the app locally:
+Install dependencies and serve the app locally (port 4203):
 
 ```bash
-npm install
-nx serve rolesui
+pnpm install
+pnpm exec nx serve rolesui
 ```
+
+`nx serve container` does not start this remote. To see it inside the shell,
+serve both: `pnpm exec nx run-many -t serve -p container rolesui`.
 
 ### Build
 

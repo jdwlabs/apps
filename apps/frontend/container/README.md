@@ -45,12 +45,19 @@ apps/frontend/container/
 
 ### Development
 
-Install dependencies and serve the app locally:
+Install dependencies and serve the shell together with its remotes:
 
 ```bash
-npm install
-nx serve container
+pnpm install
+pnpm exec nx run-many -t serve -p container authui usersui rolesui
 ```
+
+`nx serve container` starts only the shell (port 4200). It no longer builds or
+serves the remotes listed in `src/module-federation.manifest.json`; start each
+remote you need with its own `serve` target (`authui` 4201, `usersui` 4202,
+`rolesui` 4203). The shell registers remotes at runtime from `servicediscovery`
+(`GET /api/remotes`), falling back to `src/module-federation.manifest.json`
+when that call fails or returns nothing usable.
 
 ### Build
 
@@ -82,14 +89,14 @@ nx run container:serve-container
 
 ## 🌐 Module Federation
 
-This application acts as the **host** in the JDW Platform’s module federation setup. Remote micro frontends are dynamically configured using the `module-federation.manifest.json` file, allowing the shell to load and integrate remote applications (such as AuthUI, UsersUI, and RolesUI) at runtime.
+This application acts as the **host** in the JDW Platform’s module federation setup. Remote micro frontends are registered at runtime from the `servicediscovery` remote map, with `src/module-federation.manifest.json` as the fallback, so the shell can load and integrate remote applications (such as AuthUI, UsersUI, and RolesUI) without rebuilding. Registration and loading live in `libs/frontend/container/util` (`remote-federation.ts`); the webpack federation config for all four apps is built by `tools/module-federation`.
 
 ---
 
 ## 📄 Configurations
 
 - **Runtime Config:** `src/config.json` – dynamically loaded environment configuration.
-- **Remote MFE Config:** `module-federation.manifest.json` – definitions for remote micro frontends.
+- **Remote MFE Config:** `src/module-federation.manifest.json` – fallback definitions for remote micro frontends, used when `servicediscovery` is unreachable.
 - **Web Server Config:** `default.conf` – Nginx configuration used during Docker container startup.
 
 ---
