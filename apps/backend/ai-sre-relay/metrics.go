@@ -66,6 +66,10 @@ type counters struct {
 	// reaches, so without it an overflow is invisible to Prometheus and only a
 	// burst of unread ERROR lines marks the gap.
 	alertsRejected atomic.Int64
+	// commentsSuppressed counts repeat/regroup ticket comments withheld by the
+	// per-ticket bounds. A steady rate is the bound working; it exists so the
+	// silence on a ticket is explainable.
+	commentsSuppressed atomic.Int64
 }
 
 func (c *counters) writeTo(w io.Writer) {
@@ -106,4 +110,7 @@ func (c *counters) writeTo(w io.Writer) {
 	fmt.Fprint(w, "# HELP ai_sre_relay_alerts_rejected_total Refusal responses returned because the investigation queue was full, including repeated sender retries of the same alert; not a count of distinct alerts.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_alerts_rejected_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_alerts_rejected_total %d\n", c.alertsRejected.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_comments_suppressed_total Repeat or regroup Jira comments withheld because the ticket already has that text, got one recently, or hit its ceiling.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_comments_suppressed_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_comments_suppressed_total %d\n", c.commentsSuppressed.Load())
 }

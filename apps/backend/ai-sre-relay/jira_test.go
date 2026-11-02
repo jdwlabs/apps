@@ -286,8 +286,10 @@ func TestJiraUpsertDedupSurvivesSearchIndexLag(t *testing.T) {
 	if creates != 1 {
 		t.Fatalf("created %d issues, want exactly 1", creates)
 	}
-	if comments != 2 {
-		t.Fatalf("expected both refires to comment (2), got %d", comments)
+	// Both refires land on the one ticket, but the second restates the first
+	// inside the rate-limit window, so only one comment is posted.
+	if comments != 1 {
+		t.Fatalf("expected 1 comment (second withheld), got %d", comments)
 	}
 }
 
@@ -732,5 +734,96 @@ func TestJiraCloseHonoursAConfiguredDoneStatus(t *testing.T) {
 	}
 	if transitionID != "71" {
 		t.Fatalf("transition id = %q, want the configured status's transition 71", transitionID)
+	}
+}
+
+func newCommentCounter(t *testing.T, posted *int) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/comment") {
+			*posted++
+			w.WriteHeader(http.StatusCreated)
+			return
+		}
+		t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+	}))
+}
+
+func TestJiraNoisyCommentsAreBounded(t *testing.T) {
+	cases := []struct {
+		name  string
+		steps func(j *JiraClient, at *time.Time) // drives NoteRefire calls
+		want  int
+	}{
+		{"a burst of distinct repeats in one window posts once", func(j *JiraClient, _ *time.Time) {
+			for n := 1; n <= 15; n++ {
+				_ = j.NoteRefire(context.Background(), "K-1", n)
+			}
+		}, 1},
+		{"a repeat after the window posts again", func(j *JiraClient, at *time.Time) {
+			_ = j.NoteRefire(context.Background(), "K-1", 1)
+			*at = at.Add(noisyCommentInterval + time.Minute)
+			_ = j.NoteRefire(context.Background(), "K-1", 2)
+		}, 2},
+		{"the same text is never reposted even after the window", func(j *JiraClient, at *time.Time) {
+			_ = j.NoteRefire(context.Background(), "K-1", 1)
+			*at = at.Add(noisyCommentInterval + time.Minute)
+			_ = j.NoteRefire(context.Background(), "K-1", 1)
+		}, 1},
+		{"tickets are limited independently", func(j *JiraClient, _ *time.Time) {
+			_ = j.NoteRefire(context.Background(), "K-1", 1)
+			_ = j.NoteRefire(context.Background(), "K-2", 1)
+		}, 2},
+		{"the per-ticket ceiling stops commenting", func(j *JiraClient, at *time.Time) {
+			for n := 1; n <= maxNoisyCommentsPerTicket+10; n++ {
+				*at = at.Add(noisyCommentInterval + time.Minute)
+				_ = j.NoteRefire(context.Background(), "K-1", n)
+			}
+		}, maxNoisyCommentsPerTicket},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			posted := 0
+			srv := newCommentCounter(t, &posted)
+			defer srv.Close()
+			j := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client())
+			at := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+			j.now = func() time.Time { return at }
+			tc.steps(j, &at)
+			if posted != tc.want {
+				t.Fatalf("posted %d comments, want %d", posted, tc.want)
+			}
+		})
+	}
+}
+
+func TestJiraLifecycleCommentsAreNotRateLimited(t *testing.T) {
+	posted := 0
+	srv := newCommentCounter(t, &posted)
+	defer srv.Close()
+	j := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client())
+	at := time.Now()
+	for range 3 {
+		if err := j.NoteResolved(context.Background(), "K-1", at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if posted != 3 {
+		t.Fatalf("resolve notes posted %d, want 3", posted)
+	}
+}
+
+func TestJiraWithheldCommentsAreCounted(t *testing.T) {
+	posted := 0
+	srv := newCommentCounter(t, &posted)
+	defer srv.Close()
+	j := NewJiraClient(srv.URL, "e@x", "tok", "JDWLABS", "Task", srv.Client())
+	var c counters
+	j.countSuppressedWith(&c.commentsSuppressed)
+	for n := 1; n <= 5; n++ {
+		_ = j.NoteRefire(context.Background(), "K-1", n)
+	}
+	if got := c.commentsSuppressed.Load(); posted != 1 || got != 4 {
+		t.Fatalf("posted=%d suppressed=%d, want 1 and 4", posted, got)
 	}
 }
