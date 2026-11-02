@@ -4,15 +4,20 @@ import {
 } from '@module-federation/enhanced/runtime';
 
 /**
- * Service discovery hands out either a remote's origin or the full entry URL.
- * The runtime needs the entry file, so a bare origin is completed here.
+ * Service discovery hands out either a remote's base URL or the full entry
+ * URL. The runtime needs the entry file, so a base URL is completed here, with
+ * any query string or fragment kept after the file name. Relative definitions
+ * resolve against the page origin, as `@nx/angular/mf` did.
  */
-export function remoteEntryUrl(url: string): string {
-  const trimmed = url.trim();
-  const { pathname } = new URL(trimmed, 'http://placeholder');
-  return /\.(mjs|js|json)$/.test(pathname)
-    ? trimmed
-    : `${trimmed.replace(/\/+$/, '')}/remoteEntry.mjs`;
+export function remoteEntryUrl(
+  url: string,
+  origin: string = globalThis.location?.origin ?? 'http://localhost',
+): string {
+  const entry = new URL(url.trim(), new URL(origin).origin);
+  if (!/\.(mjs|js|json)$/.test(entry.pathname)) {
+    entry.pathname = `${entry.pathname.replace(/\/+$/, '')}/remoteEntry.mjs`;
+  }
+  return entry.href;
 }
 
 /** Container names are normalised to a valid identifier when the host builds. */
@@ -32,7 +37,9 @@ export function setRemoteDefinitions(
         name: containerName(name),
         entry,
         // A manifest carries its own type; a bare entry file is an ES module.
-        ...(entry.endsWith('.json') ? {} : { type: 'module' as const }),
+        ...(new URL(entry).pathname.endsWith('.json')
+          ? {}
+          : { type: 'module' as const }),
       };
     }),
     { force: true },
