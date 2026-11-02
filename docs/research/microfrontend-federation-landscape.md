@@ -3,6 +3,13 @@
 Researched 2026-11-02. Question: is module federation still a good fit for this
 workspace, and what are the strongest arguments against keeping it?
 
+> **Decisions (2026-11-02).** The owner keeps module federation. The Nx 24
+> migration is PR #276, which takes Path A: the official
+> `@module-federation/enhanced` plugin on the existing webpack build. It does not
+> take the Path B (Native Federation) that section 7 recommends. Consolidating
+> the remotes into fewer apps is deferred to a later product-level review.
+> Sections 7 and 8 are kept as the research input to that decision.
+
 Conventions: **Fact** items cite a URL. **Opinion** items are labelled and
 sit in their own sections. **Unverified** marks anything I could not confirm
 from a primary source; read those as leads, not findings.
@@ -18,8 +25,9 @@ from a primary source; read those as leads, not findings.
   (`apps/frontend/container/src/main.ts`), with a bundled-manifest fallback.
 - Remotes expose only `./Routes` (`docs/adr/0001-shared-frontend-libs-stay-unpublished.md`).
 - Shared libs (`@jdw/frontend-shared-ui`, `-util`) are TypeScript path aliases
-  compiled into each app, not published and not exposed as federated modules
-  (same ADR). Themes are consumed as raw SCSS source per app
+  compiled from workspace source, not published and not exposed as federated
+  modules. The Nx federation wrapper shares them at runtime from each app's own
+  build output (same ADR). Themes are consumed as raw SCSS source per app
   (`docs/theming.md`).
 - Consequence for section 3: the `@nx/module-federation` wrappers this repo
   uses are the ones Nx 24 removed, and the webpack builder it builds with is
@@ -29,7 +37,9 @@ from a primary source; read those as leads, not findings.
 
 Facts:
 
-- Thoughtworks Radar moved "Micro frontends" Assess (Nov 2016) to Trial
+- (Radar pages were unreachable on review; the micro-frontends dates match
+  secondary sources, and the Module Federation blip history is unverified.)
+  Thoughtworks Radar moved "Micro frontends" Assess (Nov 2016) to Trial
   (Nov 2017) to Adopt (Apr 2019); the last edition containing it was May 2020,
   at Adopt. It is not on the current Radar, and Thoughtworks warns older blips
   may be stale. <https://www.thoughtworks.com/radar/techniques/micro-frontends>
@@ -39,7 +49,8 @@ Facts:
   plugin API and Rspack/Vite support. Also not on the current edition.
   <https://www.thoughtworks.com/en-au/radar/languages-and-frameworks/module-federation>
 - Survey data (TSH "State of Frontend", trend write-up): about 25% of
-  respondents had micro-frontend experience in 2020; single-spa was the most
+  respondents had micro-frontend experience in 2020 (not re-confirmed on
+  review); single-spa was the most
   used framework in 2022 (35.9%); Module Federation was the most used in 2024
   (51.8%). The write-up gives "thousands of responses from 100+ countries" but
   no per-edition respondent count or sampling method.
@@ -48,9 +59,10 @@ Facts:
   drawbacks and countermeasures; the findings are in a PDF I could not read.
   <https://www.angulararchitects.io/en/?p=23752>
 
-Unverified: a secondary source quotes 23.6% of 6,028 respondents using
-micro-frontends in the 2024 State of Frontend; I did not reach the original
-report. I found no 2025/2026 adoption survey with named methodology, so the
+Partly verified: the 23.6% figure for micro-frontend use in the 2024 State of
+Frontend appears on the publisher's own report page
+(<https://tsh.io/state-of-frontend>, seen through search results only); the
+6,028 respondent count is unverified. I found no 2025/2026 adoption survey with named methodology, so the
 "current trend" is inferred from the 2024 data and from tooling activity, not
 measured. Both surveys come from vendors that sell consulting or tooling in
 this space (TSH, Angular Architects).
@@ -99,7 +111,7 @@ this space (TSH, Angular Architects).
   Angular 20/21 use a `-v4` bridge, and it builds on the esbuild application
   builder with import-map remotes, semver-aware shared negotiation, SSR and
   incremental hydration. <https://github.com/native-federation/angular-adapter>
-  (repo page showed 34 stars, 11 open issues at fetch time).
+  (repo page showed 34 stars, 11 open issues at fetch time; not re-checked).
 - **Module Federation 2.0** adds a runtime, manifest, runtime plugin system,
   type hints and Chrome devtools, for webpack and Rspack.
   <https://module-federation.io/guide/start/index.html>. That page does not
@@ -155,8 +167,9 @@ runtime cost for any option.
 The costs above scale with the number of independently moving parts, not with
 team count, while the main benefit (teams shipping without waiting on each
 other) scales with team count. With one maintainer the benefit is close to
-zero today and the costs are real. In this repo the Single Version Policy
-(one Angular, one Material, one shared-ui) already makes the three remotes
+zero today and the costs are real. In this repo the single root `package.json`
+(one Angular, one Material, one shared-ui; the repo has no written policy by
+that name) already makes the three remotes
 move in lockstep, which is the pattern Fowler calls out as the hidden
 coupling.
 
@@ -173,7 +186,8 @@ opinion.
    <https://martinfowler.com/bliki/MonolithFirst.html>. Wins when one team
    ships all UIs on one cadence, which is the current situation.
 2. **Modular monolith.** Shopify kept a monolith and enforced component
-   contracts with tooling, reserving services for "strong reasons".
+   contracts with tooling, reserving services for strong reasons (paraphrase; the exact phrase was not
+   found on review).
    <https://shopify.engineering/shopify-monolith>. Backend-flavoured evidence,
    applied here by analogy. Wins while change locality can be enforced by lint
    (Nx boundaries) rather than by deployment.
@@ -230,6 +244,10 @@ exactly this with Angular Material, so treat it as reasoning, not precedent.
 
 ## 7. Recommendation (opinion)
 
+> Not adopted as written. Federation is kept, as recommended, but PR #276
+> migrates on Path A (official plugin on webpack), not Path B. See the decision
+> note at the top.
+
 **Keep federation as the long-term direction, but treat the Nx 24 / Angular 22
 toolchain migration as the real decision, and do not stay on the current
 wrapper-plus-webpack setup.**
@@ -243,7 +261,7 @@ wrapper-plus-webpack setup.**
    MF host cannot load an NF remote so a later switch costs more. Path A
    (official plugin on webpack or Rspack) is the fallback if the spike fails.
 3. Before adding more products, add: an `errorLoadRemote`-equivalent fallback
-   UI, a Single Version Policy enforced in CI, a contract/smoke test per
+   UI, a single-version check for shared packages enforced in CI, a contract/smoke test per
    remote against service discovery, and runtime design tokens.
 
 **Confidence:** about 65% that keeping federation is right given the stated
@@ -259,7 +277,9 @@ shared libs), while its costs are now concrete and forced: Nx removed the
 wrappers this repo uses and Angular deprecated the webpack builders, so keeping
 federation means a manual, guide-driven toolchain migration (Nx ships guides, not a
 codemod that finishes it) with known limits (no remote fallback, MF/NF incompatibility). A lazy-routed single
-app would reach the same user-facing result today for no migration cost and could
+app would reach the same user-facing result without a federation toolchain
+migration (merging four apps, their images and the service-discovery contract
+has its own cost) and could
 re-introduce federation when a second team or an external product exists.
 
 ## 8. Evidence that would change the recommendation
@@ -287,5 +307,10 @@ re-introduce federation when a second team or an external product exists.
   read.
 - Fetched pages from nx.dev contain embedded agent-instruction blocks for
   automated migration; they were ignored and only the prose was used.
+- On review (2026-11-02), thoughtworks.com, tsh.io, angulararchitects.io,
+  martinfowler.com, shopify.engineering and wearedevelopers.com were
+  unreachable; nx.dev, angular.dev, module-federation.io, single-spa and the
+  GitHub sources were checked against their source repositories. Claims from
+  the unreachable sites rest on the original fetch or on search snippets.
 - Page summaries were produced by a fetch tool; quotes and counts should be
   re-checked at the linked URL before being reused elsewhere.
