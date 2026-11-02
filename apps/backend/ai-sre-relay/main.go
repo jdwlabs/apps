@@ -141,6 +141,7 @@ func main() {
 	// bounded; this buffer is not.
 	queueSize := envInt("QUEUE_SIZE", 2*workers)
 	perAlertTO := time.Duration(envInt("INVESTIGATION_TIMEOUT_SECONDS", 240)) * time.Second
+	jira.countSuppressedWith(&pipeline.Counters().commentsSuppressed)
 	disp := newDispatcher(pipeline, workers, queueSize, perAlertTO, pipeline.Counters(), log)
 
 	webhookToken := os.Getenv("WEBHOOK_TOKEN")

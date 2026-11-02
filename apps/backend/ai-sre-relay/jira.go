@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -19,6 +21,28 @@ import (
 // in-process and fall back to the label search below on the next Upsert —
 // the memory ceiling matters more than caching every possible dedup key.
 const maxTrackedDedupKeys = 1024
+
+// Repeat and regroup comments restate what the ticket already says, yet one
+// ticket receives one per fingerprint per notification: a 15-alert group
+// re-notified every repeat_interval posted 15 comments each time until Jira
+// refused further ones at its per-issue limit. They are therefore capped per
+// ticket, while lifecycle comments (resolved, closed, reopened) are not.
+const (
+	// noisyCommentInterval is the minimum gap between two repeat/regroup
+	// comments on one ticket.
+	noisyCommentInterval = 6 * time.Hour
+	// maxNoisyCommentsPerTicket is a ceiling far under Jira's 5000-comment
+	// limit, leaving room for lifecycle comments and human discussion.
+	maxNoisyCommentsPerTicket = 200
+)
+
+// noisyState is what the relay remembers of the repeat/regroup comments it
+// has posted on one ticket.
+type noisyState struct {
+	last  time.Time
+	hash  [sha256.Size]byte
+	count int
+}
 
 // defaultDoneStatus is the status name a close aims for before falling back to
 // any Done-category transition.
@@ -43,6 +67,12 @@ type JiraClient struct {
 	// with their results remembered in-process.
 	mu    sync.Mutex
 	known map[string]IssueKey // dedup label -> issue key created or matched by this process
+
+	// noisy bounds repeat/regroup comments per ticket; guarded by mu. State is
+	// in-process, so a restart resets it, but the interval still caps the rate.
+	noisy      map[IssueKey]noisyState
+	now        func() time.Time
+	suppressed *atomic.Int64
 }
 
 type jiraOption func(*JiraClient)
@@ -55,6 +85,9 @@ func withDoneStatus(name string) jiraOption {
 	}
 }
 
+// countSuppressedWith routes the count of withheld comments to a metric.
+func (j *JiraClient) countSuppressedWith(c *atomic.Int64) { j.suppressed = c }
+
 func NewJiraClient(baseURL, email, token, projectKey, issueType string, hc *http.Client, opts ...jiraOption) *JiraClient {
 	if hc == nil {
 		hc = http.DefaultClient
@@ -63,6 +96,8 @@ func NewJiraClient(baseURL, email, token, projectKey, issueType string, hc *http
 		baseURL: baseURL, email: email, token: token,
 		projectKey: projectKey, issueType: issueType, doneStatus: defaultDoneStatus, hc: hc,
 		known: map[string]IssueKey{},
+		noisy: map[IssueKey]noisyState{},
+		now:   time.Now,
 	}
 	for _, opt := range opts {
 		opt(j)
@@ -274,7 +309,10 @@ func (j *JiraClient) updateIssue(ctx context.Context, key IssueKey, an Analysis,
 		}
 		text = "🔁 Alert re-fired after this ticket was closed; reopening.\n\n" + text
 	}
-	return j.commentOn(ctx, key, text)
+	if done {
+		return j.commentOn(ctx, key, text)
+	}
+	return j.commentNoisy(ctx, key, text)
 }
 
 // IsOpen reports whether an issue is still actionable. It reads the issue
@@ -293,7 +331,7 @@ func (j *JiraClient) IsOpen(ctx context.Context, key IssueKey) (bool, error) {
 func (j *JiraClient) NoteRefire(ctx context.Context, key IssueKey, count int) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	_, err := j.commentOn(ctx, key, fmt.Sprintf(
+	_, err := j.commentNoisy(ctx, key, fmt.Sprintf(
 		"🔁 Still firing — repeat notification %d. Investigation skipped: the alert has not resolved since the analysis above, so re-running it would restate the same root cause.", count))
 	return err
 }
@@ -393,7 +431,40 @@ func (j *JiraClient) FindOpenByFingerprint(ctx context.Context, a Alert) (IssueK
 func stamp(t time.Time) string { return t.UTC().Format(time.RFC3339) }
 
 func (j *JiraClient) groupInto(ctx context.Context, key IssueKey, an Analysis) (IssueKey, error) {
-	return j.commentOn(ctx, key, "🔗 Same alert re-fired with a new fingerprint (different labelset); grouping into this open ticket.\n\n"+an.RootCause)
+	return j.commentNoisy(ctx, key, "🔗 Same alert re-fired with a new fingerprint (different labelset); grouping into this open ticket.\n\n"+an.RootCause)
+}
+
+// commentNoisy posts a repeat/regroup comment unless the ticket already carries
+// that text, got one within noisyCommentInterval, or has reached its ceiling.
+// A withheld comment is not an error: the ticket already records the condition,
+// and failing would make the caller treat a healthy ticket as broken. Callers
+// hold mu.
+func (j *JiraClient) commentNoisy(ctx context.Context, key IssueKey, text string) (IssueKey, error) {
+	h := sha256.Sum256([]byte(text))
+	st, seen := j.noisy[key]
+	reason := ""
+	switch {
+	case seen && st.hash == h:
+		reason = "identical to the last one"
+	case seen && j.now().Sub(st.last) < noisyCommentInterval:
+		reason = "rate limited"
+	case st.count >= maxNoisyCommentsPerTicket:
+		reason = "ticket comment ceiling reached"
+	}
+	if reason != "" {
+		if j.suppressed != nil {
+			j.suppressed.Add(1)
+		}
+		slog.Info("repeat comment withheld", "issue", key, "reason", reason, "posted", st.count)
+		return key, nil
+	}
+	if _, err := j.commentOn(ctx, key, text); err != nil {
+		return "", err
+	}
+	if seen || len(j.noisy) < maxTrackedDedupKeys {
+		j.noisy[key] = noisyState{last: j.now(), hash: h, count: st.count + 1}
+	}
+	return key, nil
 }
 
 func (j *JiraClient) commentOn(ctx context.Context, key IssueKey, text string) (IssueKey, error) {
