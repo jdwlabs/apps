@@ -89,6 +89,11 @@ Environment variables; every one below has a working default.
 | `MAX_CONCURRENT`                | `4`                | Investigation workers                                                       |
 | `QUEUE_SIZE`                    | `2×MAX_CONCURRENT` | Accepted-but-not-started depth; overflow answers 503                        |
 
+Within one webhook, firing alerts sharing an `alertname` and `namespace` are
+investigated once (the first), so a large group takes one queue slot. Repeat
+and regroup comments on a ticket are limited to one per 6h and 200 in total
+(`ai_sre_relay_comments_suppressed_total` counts the rest).
+
 `JIRA_DONE_STATUS` exists because "Won't Do" and "Duplicate" usually sit in
 the Done category too, and closing an incident as a duplicate says something
 the relay does not mean. The named status wins; the category is the fallback
