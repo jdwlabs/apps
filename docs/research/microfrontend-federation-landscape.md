@@ -107,12 +107,12 @@ this space (TSH, Angular Architects).
 
 ### Comparison
 
-| Option | Bundler | Angular builder | Status per sources |
-|---|---|---|---|
-| MF 2.x plugin on webpack (Path A) | webpack 5 | deprecated webpack builders | Nx smallest diff; sits on a deprecated Angular builder |
-| MF 2.x plugin on Rspack (Path A) | Rspack | `@nx/angular-rspack` | Supported path in Nx guide; maturity of Angular on Rspack not independently verified |
-| Native Federation (Path B) | esbuild | `@angular/build:application` | Aligned with Angular's builder; smaller ecosystem; separate org after Sep 2026 |
-| Vite-based federation | Vite | n/a for Angular | Unverified for Angular; Radar lists Vite for MF 2.0 generally |
+| Option                            | Bundler   | Angular builder              | Status per sources                                                                   |
+| --------------------------------- | --------- | ---------------------------- | ------------------------------------------------------------------------------------ |
+| MF 2.x plugin on webpack (Path A) | webpack 5 | deprecated webpack builders  | Nx smallest diff; sits on a deprecated Angular builder                               |
+| MF 2.x plugin on Rspack (Path A)  | Rspack    | `@nx/angular-rspack`         | Supported path in Nx guide; maturity of Angular on Rspack not independently verified |
+| Native Federation (Path B)        | esbuild   | `@angular/build:application` | Aligned with Angular's builder; smaller ecosystem; separate org after Sep 2026       |
+| Vite-based federation             | Vite      | n/a for Angular              | Unverified for Angular; Radar lists Vite for MF 2.0 generally                        |
 
 Not verified: Rspack-for-Angular production maturity, and any Angular-specific
 Vite federation plugin. I did not find an independent benchmark of build or
@@ -216,12 +216,12 @@ Facts:
 
 Options, ordered from loosest to tightest coupling (opinion on trade-offs):
 
-| Approach | Update model | Risk |
-|---|---|---|
+| Approach                                                                                  | Update model                                             | Risk                                                        |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------- |
 | Design tokens as CSS custom properties served by the shell, products consume `var(--...)` | Runtime; product rebuild not needed for a palette change | Token names become a public API; needs a deprecation policy |
-| Versioned shared component library, semver, each product pins | Build time, per product | Version skew across products; needs a support window |
-| Shared component library federated as a singleton | Runtime, one copy | Lockstep upgrades; one bad release hits every product |
-| Copy/vendor components per product | None | Drift |
+| Versioned shared component library, semver, each product pins                             | Build time, per product                                  | Version skew across products; needs a support window        |
+| Shared component library federated as a singleton                                         | Runtime, one copy                                        | Lockstep upgrades; one bad release hits every product       |
+| Copy/vendor components per product                                                        | None                                                     | Drift                                                       |
 
 For a marketplace where products are independently owned, tokens-at-runtime
 plus a semver-versioned component library with a stated support window is the
