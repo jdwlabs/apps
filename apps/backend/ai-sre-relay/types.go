@@ -18,6 +18,11 @@ type Alert struct {
 	// EndsAt on a resolved notification is when the condition actually
 	// cleared, which can be well before the relay is told about it.
 	EndsAt string `json:"endsAt"`
+
+	// Siblings are firing alerts the webhook collapsed into this one because
+	// they describe the same incident. They are not investigated, but each
+	// shares this alert's ticket, so the pipeline tracks them against it.
+	Siblings []Alert `json:"-"`
 }
 
 func (a Alert) Name() string      { return a.Labels["alertname"] }

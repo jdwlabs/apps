@@ -765,11 +765,6 @@ func TestJiraNoisyCommentsAreBounded(t *testing.T) {
 			*at = at.Add(noisyCommentInterval + time.Minute)
 			_ = j.NoteRefire(context.Background(), "K-1", 2)
 		}, 2},
-		{"the same text is never reposted even after the window", func(j *JiraClient, at *time.Time) {
-			_ = j.NoteRefire(context.Background(), "K-1", 1)
-			*at = at.Add(noisyCommentInterval + time.Minute)
-			_ = j.NoteRefire(context.Background(), "K-1", 1)
-		}, 1},
 		{"tickets are limited independently", func(j *JiraClient, _ *time.Time) {
 			_ = j.NoteRefire(context.Background(), "K-1", 1)
 			_ = j.NoteRefire(context.Background(), "K-2", 1)

@@ -187,6 +187,28 @@ func (p *Pipeline) remember(a Alert, issue IssueKey) {
 	p.active[a.Fingerprint] = next
 }
 
+// trackSiblings ties every alert collapsed into a to the same ticket, so its
+// own resolve finds the ticket and the ticket is not closed while it fires.
+func (p *Pipeline) trackSiblings(a Alert, issue IssueKey) {
+	for _, s := range a.Siblings {
+		p.remember(s, issue)
+	}
+}
+
+// othersFiring reports whether another tracked fingerprint on the same ticket
+// has not resolved. Closing then would shut a ticket whose incident is still
+// live, and nothing would reopen it until the next re-fire.
+func (p *Pipeline) othersFiring(due pendingClose) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for fp, f := range p.active {
+		if fp != due.fingerprint && f.issue == due.issue && f.resolvedAt.IsZero() {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *Pipeline) forget(a Alert) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -380,6 +402,12 @@ func (p *Pipeline) closeIfStillDue(ctx context.Context, due pendingClose) {
 		p.clearPendingClose(due.fingerprint, due.resolvedAt)
 		return
 	}
+	if p.othersFiring(due) {
+		// Each fingerprint's own resolve schedules its own close, so the last
+		// one to clear is the one that closes the ticket.
+		log.Info("pending close deferred: other alerts on this ticket are still firing")
+		return
+	}
 	// Re-read after the status round-trip: a re-fire during it has cancelled
 	// this close, and the snapshot is the only thing still claiming the alert
 	// is resolved.
@@ -486,6 +514,9 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 	if issue, cancelled := p.cancelPendingClose(a); cancelled {
 		log.Info("alert re-fired inside the close grace period; pending close cancelled", "issue", issue)
 	}
+	for _, s := range a.Siblings {
+		p.cancelPendingClose(s)
+	}
 
 	// Alertmanager re-notifies a still-firing alert every repeat_interval.
 	// Re-running the investigation produces the same analysis at full LLM
@@ -509,6 +540,7 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 			if nerr := p.jira.NoteRefire(ctx, f.issue, n); nerr != nil {
 				log.Error("refire note failed", "issue", f.issue, "err", nerr)
 			}
+			p.trackSiblings(a, f.issue)
 			p.counters.repeatsSkipped.Add(1)
 			log.Info("alert still firing with an open ticket; skipping investigation",
 				"issue", f.issue, "repeat", n)
@@ -549,6 +581,7 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 	} else {
 		issue = k
 		p.remember(a, issue)
+		p.trackSiblings(a, issue)
 	}
 
 	var prLink *PRLink
