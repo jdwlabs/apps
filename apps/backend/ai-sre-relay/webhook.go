@@ -25,24 +25,28 @@ type enqueuer interface {
 	enqueue(a Alert) bool
 }
 
-// collapseFiring keeps one firing alert per (alertname, namespace) in a batch.
-// A group such as KubePodNotReady can carry dozens of pods, and every one
-// would be queued as its own multi-minute investigation of the same incident
-// (they already land on a single ticket), exhausting the queue and making the
-// sender give up on the whole batch. Order is preserved, and resolved
-// notifications are left alone because closing a ticket is matched by the exact
-// fingerprint that opened it.
+// collapseFiring keeps one firing alert per (alertname, namespace, severity)
+// in a batch and hangs the rest off it as Siblings. A group such as
+// KubePodNotReady can carry dozens of pods, and every one would be queued as
+// its own multi-minute investigation of the same incident (they already land
+// on a single ticket), exhausting the queue and making the sender give up on
+// the whole batch. Severity is part of the key so a critical is never absorbed
+// by a warning. Siblings stay visible to the pipeline so each fingerprint is
+// still tied to the ticket and its own resolve is understood. Order is
+// preserved; resolved notifications pass through untouched.
 func collapseFiring(alerts []Alert) []Alert {
-	type groupKey struct{ name, namespace string }
-	seen := map[groupKey]struct{}{}
+	type groupKey struct{ name, namespace, severity string }
+	first := map[groupKey]int{}
 	out := make([]Alert, 0, len(alerts))
 	for _, a := range alerts {
 		if a.Status == statusFiring && a.Name() != "" {
-			k := groupKey{a.Name(), a.Namespace()}
-			if _, dup := seen[k]; dup {
+			k := groupKey{a.Name(), a.Namespace(), a.Severity()}
+			if i, dup := first[k]; dup {
+				a.Siblings = nil
+				out[i].Siblings = append(out[i].Siblings, a)
 				continue
 			}
-			seen[k] = struct{}{}
+			first[k] = len(out)
 		}
 		out = append(out, a)
 	}

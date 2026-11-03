@@ -25,11 +25,13 @@ const maxTrackedDedupKeys = 1024
 // Repeat and regroup comments restate what the ticket already says, yet one
 // ticket receives one per fingerprint per notification: a 15-alert group
 // re-notified every repeat_interval posted 15 comments each time until Jira
-// refused further ones at its per-issue limit. They are therefore capped per
-// ticket, while lifecycle comments (resolved, closed, reopened) are not.
+// refused further ones at its per-issue limit. Boilerplate notes are therefore
+// rate limited and every comment counts toward a per-ticket ceiling, while an
+// analysis that differs from the last one posted is always worth posting.
+// Lifecycle comments (resolved, closed, reopened) are not limited.
 const (
-	// noisyCommentInterval is the minimum gap between two repeat/regroup
-	// comments on one ticket.
+	// noisyCommentInterval is the minimum gap between two boilerplate notes
+	// ("still firing", regroup) on one ticket.
 	noisyCommentInterval = 6 * time.Hour
 	// maxNoisyCommentsPerTicket is a ceiling far under Jira's 5000-comment
 	// limit, leaving room for lifecycle comments and human discussion.
@@ -39,9 +41,12 @@ const (
 // noisyState is what the relay remembers of the repeat/regroup comments it
 // has posted on one ticket.
 type noisyState struct {
-	last  time.Time
-	hash  [sha256.Size]byte
-	count int
+	lastNote time.Time // last boilerplate note
+	analysis [sha256.Size]byte
+	hasAn    bool
+	count    int
+	// used orders eviction when the table is full.
+	used time.Time
 }
 
 // defaultDoneStatus is the status name a close aims for before falling back to
@@ -302,17 +307,16 @@ func (j *JiraClient) isDone(ctx context.Context, key IssueKey) (bool, error) {
 }
 
 func (j *JiraClient) updateIssue(ctx context.Context, key IssueKey, an Analysis, done bool) (IssueKey, error) {
-	text := an.RootCause
 	if done {
 		if err := j.reopen(ctx, key); err != nil {
 			return "", err
 		}
-		text = "🔁 Alert re-fired after this ticket was closed; reopening.\n\n" + text
 	}
 	if done {
-		return j.commentOn(ctx, key, text)
+		// A reopen is a lifecycle event and always explains itself.
+		return j.commentAnalysis(ctx, key, "🔁 Alert re-fired after this ticket was closed; reopening.\n\n", an.RootCause, true)
 	}
-	return j.commentNoisy(ctx, key, text)
+	return j.commentAnalysis(ctx, key, "", an.RootCause, false)
 }
 
 // IsOpen reports whether an issue is still actionable. It reads the issue
@@ -331,7 +335,7 @@ func (j *JiraClient) IsOpen(ctx context.Context, key IssueKey) (bool, error) {
 func (j *JiraClient) NoteRefire(ctx context.Context, key IssueKey, count int) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	_, err := j.commentNoisy(ctx, key, fmt.Sprintf(
+	_, err := j.commentNote(ctx, key, fmt.Sprintf(
 		"🔁 Still firing — repeat notification %d. Investigation skipped: the alert has not resolved since the analysis above, so re-running it would restate the same root cause.", count))
 	return err
 }
@@ -366,6 +370,9 @@ func (j *JiraClient) Close(ctx context.Context, key IssueKey, resolvedAt time.Ti
 	if err := j.transition(ctx, key, true); err != nil {
 		return err
 	}
+	// A closed ticket takes no more repeat comments, so its state is dead
+	// weight; a reopen starts a fresh budget.
+	delete(j.noisy, key)
 	if _, err := j.commentOn(ctx, key, fmt.Sprintf(
 		"🟢 Closed automatically: the alert resolved at %s and stayed resolved for the grace period. If it fires again this ticket is reopened.",
 		stamp(resolvedAt))); err != nil {
@@ -431,40 +438,79 @@ func (j *JiraClient) FindOpenByFingerprint(ctx context.Context, a Alert) (IssueK
 func stamp(t time.Time) string { return t.UTC().Format(time.RFC3339) }
 
 func (j *JiraClient) groupInto(ctx context.Context, key IssueKey, an Analysis) (IssueKey, error) {
-	return j.commentNoisy(ctx, key, "🔗 Same alert re-fired with a new fingerprint (different labelset); grouping into this open ticket.\n\n"+an.RootCause)
+	return j.commentAnalysis(ctx, key, "🔗 Same alert re-fired with a new fingerprint (different labelset); grouping into this open ticket.\n\n", an.RootCause, false)
 }
 
-// commentNoisy posts a repeat/regroup comment unless the ticket already carries
-// that text, got one within noisyCommentInterval, or has reached its ceiling.
-// A withheld comment is not an error: the ticket already records the condition,
-// and failing would make the caller treat a healthy ticket as broken. Callers
-// hold mu.
-func (j *JiraClient) commentNoisy(ctx context.Context, key IssueKey, text string) (IssueKey, error) {
-	h := sha256.Sum256([]byte(text))
-	st, seen := j.noisy[key]
-	reason := ""
-	switch {
-	case seen && st.hash == h:
-		reason = "identical to the last one"
-	case seen && j.now().Sub(st.last) < noisyCommentInterval:
-		reason = "rate limited"
-	case st.count >= maxNoisyCommentsPerTicket:
-		reason = "ticket comment ceiling reached"
+// withhold records a comment that was deliberately not posted. It is not an
+// error: the ticket already records the condition, and failing would make the
+// caller treat a healthy ticket as broken.
+func (j *JiraClient) withhold(key IssueKey, reason string, posted int) (IssueKey, error) {
+	if j.suppressed != nil {
+		j.suppressed.Add(1)
 	}
-	if reason != "" {
-		if j.suppressed != nil {
-			j.suppressed.Add(1)
-		}
-		slog.Info("repeat comment withheld", "issue", key, "reason", reason, "posted", st.count)
-		return key, nil
+	slog.Info("repeat comment withheld", "issue", key, "reason", reason, "posted", posted)
+	return key, nil
+}
+
+// commentNote posts a boilerplate note ("still firing") at most once per
+// noisyCommentInterval per ticket and never past the ceiling. Callers hold mu.
+func (j *JiraClient) commentNote(ctx context.Context, key IssueKey, text string) (IssueKey, error) {
+	st := j.noisy[key]
+	switch {
+	case st.count >= maxNoisyCommentsPerTicket:
+		return j.withhold(key, "ticket comment ceiling reached", st.count)
+	case !st.lastNote.IsZero() && j.now().Sub(st.lastNote) < noisyCommentInterval:
+		return j.withhold(key, "rate limited", st.count)
 	}
 	if _, err := j.commentOn(ctx, key, text); err != nil {
 		return "", err
 	}
-	if seen || len(j.noisy) < maxTrackedDedupKeys {
-		j.noisy[key] = noisyState{last: j.now(), hash: h, count: st.count + 1}
-	}
+	st.lastNote = j.now()
+	st.count++
+	j.track(key, st)
 	return key, nil
+}
+
+// commentAnalysis posts a root-cause analysis under a header. An analysis that
+// differs from the last one posted on the ticket is new information and is
+// never rate limited; an identical one is withheld. Both stop at the ceiling,
+// except force, which a reopen uses because it must explain itself. Callers
+// hold mu.
+func (j *JiraClient) commentAnalysis(ctx context.Context, key IssueKey, header, rootCause string, force bool) (IssueKey, error) {
+	st := j.noisy[key]
+	h := sha256.Sum256([]byte(rootCause))
+	switch {
+	case !force && st.count >= maxNoisyCommentsPerTicket:
+		return j.withhold(key, "ticket comment ceiling reached", st.count)
+	case !force && st.hasAn && st.analysis == h:
+		return j.withhold(key, "analysis identical to the last one", st.count)
+	}
+	if _, err := j.commentOn(ctx, key, header+rootCause); err != nil {
+		return "", err
+	}
+	st.analysis, st.hasAn = h, true
+	st.count++
+	j.track(key, st)
+	return key, nil
+}
+
+// track stores a ticket's comment state, evicting the least recently used
+// ticket when the table is full. Evicting rather than refusing keeps a new
+// ticket limited; the cost of an eviction is one extra comment on the evicted
+// ticket the next time it is touched.
+func (j *JiraClient) track(key IssueKey, st noisyState) {
+	st.used = j.now()
+	if _, ok := j.noisy[key]; !ok && len(j.noisy) >= maxTrackedDedupKeys {
+		var oldest IssueKey
+		var oldestAt time.Time
+		for k, v := range j.noisy {
+			if oldest == "" || v.used.Before(oldestAt) {
+				oldest, oldestAt = k, v.used
+			}
+		}
+		delete(j.noisy, oldest)
+	}
+	j.noisy[key] = st
 }
 
 func (j *JiraClient) commentOn(ctx context.Context, key IssueKey, text string) (IssueKey, error) {
