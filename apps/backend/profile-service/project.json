@@ -3,12 +3,12 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/backend/profile-service",
-  "tags": ["type:app", "scope:profile-service", "framework:go"],
   "release": {
     "version": {
       "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
+  "tags": ["type:app", "scope:profile-service", "framework:go"],
   "implicitDependencies": ["usersrole", "authdb"],
   "targets": {
     "build": {
@@ -26,15 +26,15 @@
     },
     "test": {
       "executor": "@nx-go/nx-go:test",
-      "options": {
-        "race": true
-      },
       "inputs": [
         "default",
         "^default",
         "{workspaceRoot}/apps/backend/usersrole/docs/contracts/profile-service.openapi.yaml",
         "{workspaceRoot}/apps/database/authdb/src/00_schema.sql"
-      ]
+      ],
+      "options": {
+        "race": true
+      }
     },
     "lint": {
       "executor": "@nx-go/nx-go:lint",

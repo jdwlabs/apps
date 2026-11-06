@@ -3,6 +3,13 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/e2e/platform-live-e2e/src",
+  "release": {
+    "version": {
+      "versionActions": "./tools/release/tag-only-version-actions.ts"
+    }
+  },
+  "tags": ["type:e2e", "scope:platform", "framework:playwright"],
+  "implicitDependencies": ["usersrole"],
   "targets": {
     "typecheck": {
       "executor": "nx:run-commands",
@@ -76,13 +83,6 @@
       "options": {
         "command": "bash scripts/update-description.sh jdwlabs/platform-e2e-api apps/e2e/platform-live-e2e/README.docker.md"
       }
-    }
-  },
-  "tags": ["type:e2e", "scope:platform", "framework:playwright"],
-  "implicitDependencies": ["usersrole"],
-  "release": {
-    "version": {
-      "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   }
 }

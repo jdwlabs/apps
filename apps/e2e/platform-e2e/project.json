@@ -3,19 +3,29 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/e2e/platform-e2e/src",
+  "tags": ["type:e2e", "scope:platform", "framework:playwright"],
+  "implicitDependencies": ["container", "authui", "usersui", "rolesui"],
   "targets": {
     "e2e": {
-      "executor": "@nx/playwright:playwright",
-      "options": {
-        "config": "apps/e2e/platform-e2e/playwright.config.ts",
-        "skipInstall": true
-      },
-      "dependsOn": [{ "target": "build", "projects": "dependencies" }]
+      "dependsOn": [
+        {
+          "target": "build",
+          "dependencies": true
+        }
+      ]
     },
     "lint": {
-      "executor": "@nx/eslint:lint"
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.ts",
+        "{workspaceRoot}/.eslintignore",
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/eslint-rules/**/*",
+        {
+          "externalDependencies": ["eslint"]
+        }
+      ]
     }
-  },
-  "tags": ["type:e2e", "scope:platform", "framework:playwright"],
-  "implicitDependencies": ["container", "authui", "usersui", "rolesui"]
+  }
 }

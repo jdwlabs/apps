@@ -4,16 +4,18 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/frontend/rolesui/src",
-  "tags": ["type:app", "scope:rolesui", "framework:angular"],
   "release": {
     "version": {
       "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
+  "tags": ["type:app", "scope:rolesui", "framework:angular"],
+  "implicitDependencies": ["module-federation-shared"],
   "targets": {
     "build": {
       "executor": "@nx/angular:webpack-browser",
       "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
       "options": {
         "outputPath": "dist/apps/frontend/rolesui",
         "index": "apps/frontend/rolesui/src/index.html",
@@ -50,10 +52,7 @@
               "maximumError": "8kb"
             }
           ],
-          "outputHashing": "all",
-          "customWebpackConfig": {
-            "path": "apps/frontend/rolesui/webpack.prod.config.ts"
-          }
+          "outputHashing": "all"
         },
         "development": {
           "buildOptimizer": false,
@@ -63,14 +62,21 @@
           "sourceMap": true,
           "namedChunks": true
         }
-      },
-      "defaultConfiguration": "production"
+      }
     },
     "serve": {
       "executor": "@nx/angular:dev-server",
+      "defaultConfiguration": "development",
+      "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
       "options": {
         "port": 4203,
-        "publicHost": "http://localhost:4203"
+        "publicHost": "http://localhost:4203",
+        "headers": {
+          "Access-Control-Allow-Origin": "*"
+        }
       },
       "configurations": {
         "production": {
@@ -79,9 +85,7 @@
         "development": {
           "buildTarget": "rolesui:build:development"
         }
-      },
-      "defaultConfiguration": "development",
-      "continuous": true
+      }
     },
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n",
@@ -90,7 +94,17 @@
       }
     },
     "lint": {
-      "executor": "@nx/eslint:lint"
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.ts",
+        "{workspaceRoot}/.eslintignore",
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/eslint-rules/**/*",
+        {
+          "externalDependencies": ["eslint"]
+        }
+      ]
     },
     "serve-static": {
       "executor": "@nx/web:file-server",
@@ -111,6 +125,9 @@
     },
     "serve-built": {
       "executor": "@nx/web:file-server",
+      "readyWhen": {
+        "signal": true
+      },
       "options": {
         "staticFilePath": "dist/apps/frontend/rolesui",
         "port": 4203,

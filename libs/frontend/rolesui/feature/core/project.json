@@ -10,13 +10,23 @@
     "framework:angular",
     "library:feature"
   ],
+  "implicitDependencies": ["angular-test-host"],
   "targets": {
     "test": {
       "executor": "@nx/angular:unit-test"
     },
     "lint": {
-      "executor": "@nx/eslint:lint"
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.ts",
+        "{workspaceRoot}/.eslintignore",
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/eslint-rules/**/*",
+        {
+          "externalDependencies": ["eslint"]
+        }
+      ]
     }
-  },
-  "implicitDependencies": ["angular-test-host"]
+  }
 }

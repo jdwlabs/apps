@@ -3,12 +3,12 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/backend/ai-sre-relay",
-  "tags": ["type:app", "scope:ai-sre-relay", "framework:go"],
   "release": {
     "version": {
       "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
+  "tags": ["type:app", "scope:ai-sre-relay", "framework:go"],
   "targets": {
     "build": {
       "executor": "@nx-go/nx-go:build",

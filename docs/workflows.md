@@ -22,7 +22,13 @@ Then manually:
 
 1. Add tags to `project.json`: `["type:app", "scope:myapp", "framework:angular"]`
 2. Add `scope:myapp` isolation rule to `eslint.config.ts` `depConstraints`
-3. Add remote entry to `container` `webpack.config.ts`
+3. Add the remote to the `servicediscovery` remote map (and to
+   `apps/frontend/container/src/module-federation.manifest.json` for the
+   fallback); the container has no build-time remotes
+4. Add a `module-federation.config.ts` built with
+   `tools/module-federation` (`federationOptions`, `sharedModules`), a
+   `webpack.config.ts` using `withFederation`, and
+   `"implicitDependencies": ["module-federation-shared"]` in `project.json`
 
 ## Running the Local Development Stack
 
@@ -34,6 +40,9 @@ docker compose -f scripts/docker/compose.yaml up -d
 pnpm exec nx show projects --json | grep angular
 pnpm exec nx run-many --target=serve --projects=<comma-separated-app-names> --parallel=4
 ```
+
+`nx serve container` starts only the shell; list every remote you need in
+`--projects` (for example `container,authui,usersui,rolesui`).
 
 ## Running Affected Lint + Tests
 

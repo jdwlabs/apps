@@ -30,7 +30,7 @@ graph TD
 - **Angular apps** (`type:app`, `framework:angular`) depend on Angular libs in their own scope + `scope:shared`
 - **Angular libs** are layered: feature → ui + data-access + util; data-access → util; ui → util
 - **Go and Spring Boot** projects are independent — no cross-language TypeScript imports
-- **Module federation:** `container` lists remotes in `webpack.config.ts`; remotes are loaded at runtime from their deployed URLs (configured in `src/config.json`)
+- **Module federation:** built on `@module-federation/enhanced` through the `tools/module-federation` helper (project `module-federation-shared`, an implicit dependency of all four frontends). `container` has no build-time remotes; it registers them at runtime from `servicediscovery` (`GET /api/remotes`, base URL in `src/config.json`), falling back to `src/module-federation.manifest.json`
 
 Run `pnpm exec nx graph` to visualise the live project dependency graph.
 

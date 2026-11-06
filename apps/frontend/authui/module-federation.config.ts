@@ -1,10 +1,16 @@
-import { ModuleFederationConfig } from '@nx/module-federation';
+import { federationOptions } from '../../../tools/module-federation/webpack';
+import {
+  commonShared,
+  remoteShared,
+  sharedModules,
+} from '../../../tools/module-federation/shared';
 
-const config: ModuleFederationConfig = {
+export default federationOptions({
   name: 'authui',
   exposes: {
     './Routes': 'apps/frontend/authui/src/app/remote-entry/entry.routes.ts',
   },
-};
-
-export default config;
+  shared: sharedModules(commonShared, remoteShared, [
+    '@jdw/frontend-authui-feature-core',
+  ]),
+});

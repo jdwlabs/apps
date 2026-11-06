@@ -1,4 +1,4 @@
-import { setRemoteDefinitions } from '@nx/angular/mf';
+import { setRemoteDefinitions } from '@jdw/frontend-container-util';
 
 import fallbackDefinitions from './module-federation.manifest.json';
 import config from './config.json';

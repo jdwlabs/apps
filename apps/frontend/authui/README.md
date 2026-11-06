@@ -29,7 +29,6 @@ apps/frontend/authui/
 ├── start-nginx.sh               # Entrypoint script for Nginx
 ├── module-federation.config.ts  # Module federation configuration
 ├── webpack.config.ts            # Webpack base configuration
-├── webpack.prod.config.ts       # Webpack production configuration
 ├── tsconfig*.json               # TypeScript configuration files
 └── project.json                 # Nx project configuration
 ```
@@ -47,12 +46,15 @@ apps/frontend/authui/
 
 ### Development
 
-Install dependencies and serve the app locally:
+Install dependencies and serve the app locally (port 4201):
 
 ```bash
-npm install
-nx serve authui
+pnpm install
+pnpm exec nx serve authui
 ```
+
+`nx serve container` does not start this remote. To see it inside the shell,
+serve both: `pnpm exec nx run-many -t serve -p container authui`.
 
 ### Build
 

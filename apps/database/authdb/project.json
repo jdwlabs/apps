@@ -4,12 +4,12 @@
   "projectType": "application",
   "prefix": "jdw",
   "sourceRoot": "apps/database/authdb/src",
-  "tags": ["type:app", "scope:authdb", "framework:database"],
   "release": {
     "version": {
       "versionActions": "./tools/release/tag-only-version-actions.ts"
     }
   },
+  "tags": ["type:app", "scope:authdb", "framework:database"],
   "targets": {
     "lint": {
       "cache": true,

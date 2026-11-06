@@ -5,9 +5,23 @@
   "prefix": "lib",
   "projectType": "library",
   "tags": ["type:util", "scope:container", "framework:angular"],
+  "implicitDependencies": ["angular-test-host"],
   "targets": {
     "lint": {
-      "executor": "@nx/eslint:lint"
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.ts",
+        "{workspaceRoot}/.eslintignore",
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/eslint-rules/**/*",
+        {
+          "externalDependencies": ["eslint"]
+        }
+      ]
+    },
+    "test": {
+      "executor": "@nx/angular:unit-test"
     }
   }
 }

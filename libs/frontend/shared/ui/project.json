@@ -5,10 +5,12 @@
   "prefix": "jdw",
   "projectType": "library",
   "tags": ["type:ui", "scope:shared", "framework:angular"],
+  "implicitDependencies": ["angular-test-host"],
   "targets": {
     "build": {
       "executor": "@nx/angular:package",
       "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
+      "defaultConfiguration": "production",
       "options": {
         "project": "libs/frontend/shared/ui/ng-package.json",
         "tsConfig": "libs/frontend/shared/ui/tsconfig.lib.json"
@@ -18,12 +20,10 @@
           "tsConfig": "libs/frontend/shared/ui/tsconfig.lib.prod.json"
         },
         "development": {}
-      },
-      "defaultConfiguration": "production"
+      }
     },
     "test": {
       "executor": "@nx/angular:unit-test"
     }
-  },
-  "implicitDependencies": ["angular-test-host"]
+  }
 }

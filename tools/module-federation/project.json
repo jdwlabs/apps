@@ -1,0 +1,24 @@
+{
+  "name": "module-federation-shared",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "tools/module-federation",
+  "tags": ["type:util", "scope:shared", "framework:angular"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production",
+        { "externalDependencies": ["typescript"] }
+      ],
+      "options": {
+        "command": "tsc -p tools/module-federation/tsconfig.json"
+      }
+    },
+    "lint": {
+      "dependsOn": ["typecheck"]
+    }
+  }
+}
