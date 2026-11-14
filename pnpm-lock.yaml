@@ -294,8 +294,8 @@ importers:
         specifier: ^2.1.0
         version: 2.9.2(@rspack/core@2.2.9(@module-federation/runtime-tools@2.9.2)(@swc/helpers@0.5.23))(typescript@6.0.3)(webpack@5.110.3)
       '@nx-go/nx-go':
-        specifier: ^4.0.0
-        version: 4.1.1(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))
+        specifier: ^24.0.0
+        version: 24.0.0(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))
       '@nx-tools/container-metadata':
         specifier: ^7.0.0
         version: 7.3.0(@nx/devkit@23.3.1(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23))))(tslib@2.8.1)
@@ -725,6 +725,7 @@ packages:
   '@angular/platform-browser-dynamic@22.2.3':
     resolution: {integrity: sha512-+WBe2JjaEeK0NpMlBzV7UBkO+ltUBYTDtMfGYkew2xHdIviITnzXX7yUXijB1Y6jxALgz3jEuJa9iLid8s11rg==}
     engines: {node: ^22.22.3 || ^24.15.0 || >=26.0.0}
+    deprecated: '@angular/platform-browser-dynamic is deprecated. Use `@angular/platform-browser` instead.'
     peerDependencies:
       '@angular/common': 22.2.3
       '@angular/compiler': 22.2.3
@@ -2931,8 +2932,8 @@ packages:
     resolution: {integrity: sha512-sXiVUI18qaCei5Y5qXty7xfEKrk4Vx89qKNZkG2sGWZG/iTThO3Xmnp5IjQpXCy941IksVDcl41HhvWRuhDLyw==}
     engines: {node: '>= 12'}
 
-  '@nx-go/nx-go@4.1.1':
-    resolution: {integrity: sha512-1mCg671yWfI/n03DmzcxTzuHCikf00uybueMLnkGVYnRv1NT/vqLznw/5YJk2NJlPr54gv54eycU7Yad39xcfQ==}
+  '@nx-go/nx-go@24.0.0':
+    resolution: {integrity: sha512-mZsrQp4tUwnxTc+L1Tva3DxlG9wtVkz8lsBrSSLDL8dtCPWL3jnWYSdya12CVKlqH1QGzqzkvdIrUbbyNP+ZzA==}
 
   '@nx-tools/ci-context@7.3.0':
     resolution: {integrity: sha512-RkLjAqrtIw2qmhBWYy+8iojLNNsX56r1lx1PY+RjKFI/nqrT8NP9zhy8gC3kxZKTb+fDjwKQZVcKukj0Rd+0iw==}
@@ -3000,15 +3001,15 @@ packages:
       webpack-merge:
         optional: true
 
-  '@nx/devkit@22.7.12':
-    resolution: {integrity: sha512-/etFiGyWL1Ad9ZuMUBCqgsEXe5hTxxenb8LLVar4VdQBGWYvwLw/T2ZmeZnNvc0Vi8cjhNC/HF7lR1bTsXDRNw==}
-    peerDependencies:
-      nx: '>= 21 <= 23 || ^22.0.0-0'
-
   '@nx/devkit@23.3.1':
     resolution: {integrity: sha512-Cw6YISZUjit22Trfo/p6rnrNklIKHYgRyp2IyOgr0i9naDgO3Ufllib9D/v0SInwX2zKevaWJWMyreqVvHRU0w==}
     peerDependencies:
       nx: '>= 22 <= 24 || ^23.0.0-0'
+
+  '@nx/devkit@24.0.6':
+    resolution: {integrity: sha512-b/VfBRKLcjQm3w8m+tsQCpUIq8ChTiAghMFk2zgNDwXHFkQNblAA96Hm7a7+kbX2diPsQ7a1HpMXPp0iNbL6AA==}
+    peerDependencies:
+      nx: '>= 23 <= 25 || ^24.0.0-0'
 
   '@nx/eslint-plugin@23.3.1':
     resolution: {integrity: sha512-RP5nHw6AK6sCftZRxwEVfOi6FLhuB4xD6rZ7puP+hVMWXOasH2HZp1mGJFy8+9tXFCXbJUAgO/eyB2AhecSYEw==}
@@ -5292,10 +5293,6 @@ packages:
     resolution: {integrity: sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw==}
     engines: {node: '>=10.13.0'}
 
-  enquirer@2.3.6:
-    resolution: {integrity: sha512-yjNnPr315/FjS4zIsUxYguYUPP2e1NK4d7E7ZOLiyYCcbFBiTMyID+2wvm2w6+pZ/odMA7cRkjhsPbltwBOrLg==}
-    engines: {node: '>=8.6'}
-
   entities@2.2.0:
     resolution: {integrity: sha512-p92if5Nz619I0w+akJrLZH0MX0Pb5DX39XOwQTtXSdQQOaYH03S1uIQp4mhOZtAXrxq4ViO67YTiLBo2638o9A==}
 
@@ -6589,6 +6586,7 @@ packages:
 
   node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
+    deprecated: This package is no longer needed on supported Node.js versions. Node.js 16+ includes AbortController and AbortSignal as built-in globals. All Node.js versions requiring this polyfill are end-of-life. Use the built-in globals instead.
 
   node-addon-api@6.1.0:
     resolution: {integrity: sha512-+eawOlIgy680F0kBzPUNFhMZGtJ1YmqM6l4+Crf4IkImjYrO/mqPwRMh352g23uIaQKFItcQ64I7KMaJxHgAVA==}
@@ -11379,9 +11377,9 @@ snapshots:
       '@node-rs/xxhash-win32-ia32-msvc': 1.7.8
       '@node-rs/xxhash-win32-x64-msvc': 1.7.8
 
-  '@nx-go/nx-go@4.1.1(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))':
+  '@nx-go/nx-go@24.0.0(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))':
     dependencies:
-      '@nx/devkit': 22.7.12(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))
+      '@nx/devkit': 24.0.6(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))
       tslib: 2.8.1
     transitivePeerDependencies:
       - nx
@@ -11473,18 +11471,16 @@ snapshots:
       - typescript
       - verdaccio
 
-  '@nx/devkit@22.7.12(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))':
+  '@nx/devkit@23.3.1(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))':
     dependencies:
-      '@zkochan/js-yaml': 0.0.7
       ejs: 5.0.1
-      enquirer: 2.3.6
       minimatch: 10.2.5
       nx: 23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23))
       semver: 7.8.5
       tslib: 2.8.1
       yargs-parser: 21.1.1
 
-  '@nx/devkit@23.3.1(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))':
+  '@nx/devkit@24.0.6(nx@23.3.1(@swc-node/register@1.12.1(@swc/core@1.16.20(@swc/helpers@0.5.23))(@swc/types@0.1.28)(supports-color@10.2.2)(typescript@6.0.3))(@swc/core@1.16.20(@swc/helpers@0.5.23)))':
     dependencies:
       ejs: 5.0.1
       minimatch: 10.2.5
@@ -13734,10 +13730,6 @@ snapshots:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
-
-  enquirer@2.3.6:
-    dependencies:
-      ansi-colors: 4.1.3
 
   entities@2.2.0: {}
 
