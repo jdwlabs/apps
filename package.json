@@ -25,7 +25,7 @@
     "@commitlint/config-conventional": "^21.0.0",
     "@eslint/js": "10.0.1",
     "@module-federation/enhanced": "^2.1.0",
-    "@nx-go/nx-go": "^4.0.0",
+    "@nx-go/nx-go": "^24.0.0",
     "@nx-tools/container-metadata": "^7.0.0",
     "@nx-tools/nx-container": "^7.0.0",
     "@nx/angular": "23.3.1",
