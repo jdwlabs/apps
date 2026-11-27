@@ -76,6 +76,8 @@ type JiraClient struct {
 	// noisy bounds repeat/regroup comments per ticket; guarded by mu. State is
 	// in-process, so a restart resets it, but the interval still caps the rate.
 	noisy      map[IssueKey]noisyState
+	dataloss   datalossPolicy
+	escalated  map[IssueKey]struct{} // tickets already raised to data-loss priority; guarded by mu
 	now        func() time.Time
 	suppressed *atomic.Int64
 }
@@ -88,6 +90,12 @@ func withDoneStatus(name string) jiraOption {
 			j.doneStatus = name
 		}
 	}
+}
+
+// withDatalossPolicy sets which alerts are data-loss alerts, whose tickets are
+// raised to High and labelled for a human.
+func withDatalossPolicy(p datalossPolicy) jiraOption {
+	return func(j *JiraClient) { j.dataloss = p }
 }
 
 // countSuppressedWith routes the count of withheld comments to a metric.
@@ -103,6 +111,9 @@ func NewJiraClient(baseURL, email, token, projectKey, issueType string, hc *http
 		known: map[string]IssueKey{},
 		noisy: map[IssueKey]noisyState{},
 		now:   time.Now,
+
+		dataloss:  defaultDatalossPolicy(),
+		escalated: map[IssueKey]struct{}{},
 	}
 	for _, opt := range opts {
 		opt(j)
@@ -174,6 +185,14 @@ func (j *JiraClient) do(ctx context.Context, method, path string, body any) (*ht
 func (j *JiraClient) Upsert(ctx context.Context, a Alert, an Analysis) (IssueKey, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
+	key, err := j.upsertLocked(ctx, a, an)
+	if err == nil && key != "" && j.dataloss.isDataLoss(a) {
+		j.escalateDataLoss(ctx, key)
+	}
+	return key, err
+}
+
+func (j *JiraClient) upsertLocked(ctx context.Context, a Alert, an Analysis) (IssueKey, error) {
 
 	if key, ok := j.known[j.label(a)]; ok {
 		done, err := j.isDone(ctx, key)
@@ -349,6 +368,79 @@ func (j *JiraClient) NoteResolved(ctx context.Context, key IssueKey, resolvedAt 
 		"✅ Alertmanager reported this alert resolved at %s. This ticket closes automatically if the alert stays resolved; a re-fire before then cancels the close.",
 		stamp(resolvedAt)))
 	return err
+}
+
+// NoteDataLossResolved records that a data-loss alert cleared. The ticket is
+// left open on purpose: the alert resolving only means its evidence window
+// passed, and only a human can confirm the data was restored.
+func (j *JiraClient) NoteDataLossResolved(ctx context.Context, key IssueKey, resolvedAt time.Time) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	_, err := j.commentOn(ctx, key, fmt.Sprintf(
+		"⚠️ Alert resolved at %s; needs human confirmation that data was restored. This ticket will not be closed automatically and a human may close it once the data is confirmed restored.",
+		stamp(resolvedAt)))
+	return err
+}
+
+// escalateDataLoss raises a data-loss ticket to High and labels it for a
+// human. It never lowers a priority already above High, and it is best effort:
+// a project whose screens lack the priority field must not lose the comment
+// the upsert already posted. Once per ticket per process, so a human who
+// deliberately changes the priority is not overruled on every re-fire.
+// Callers hold mu.
+func (j *JiraClient) escalateDataLoss(ctx context.Context, key IssueKey) {
+	if _, done := j.escalated[key]; done {
+		return
+	}
+	fields := map[string]any{}
+	if cur, err := j.priority(ctx, key); err == nil && !strings.EqualFold(cur, "Highest") && !strings.EqualFold(cur, "Critical") && !strings.EqualFold(cur, datalossPriority) {
+		fields["priority"] = map[string]string{"name": datalossPriority}
+	}
+	body := map[string]any{
+		"update": map[string]any{"labels": []any{
+			map[string]string{"add": datalossLabel},
+			map[string]string{"add": needsHumanLabel},
+		}},
+	}
+	if len(fields) > 0 {
+		body["fields"] = fields
+	}
+	resp, err := j.do(ctx, http.MethodPut, fmt.Sprintf("/rest/api/3/issue/%s", key), body)
+	if err != nil {
+		slog.Error("data-loss escalation failed", "issue", key, "err", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		slog.Error("data-loss escalation failed", "issue", key, "status", resp.StatusCode)
+		return
+	}
+	if len(j.escalated) < maxTrackedDedupKeys {
+		j.escalated[key] = struct{}{}
+	}
+}
+
+// priority reads an issue's current priority name.
+func (j *JiraClient) priority(ctx context.Context, key IssueKey) (string, error) {
+	resp, err := j.do(ctx, http.MethodGet, fmt.Sprintf("/rest/api/3/issue/%s?fields=priority", key), nil)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return "", fmt.Errorf("jira priority: status %d", resp.StatusCode)
+	}
+	var out struct {
+		Fields struct {
+			Priority struct {
+				Name string `json:"name"`
+			} `json:"priority"`
+		} `json:"fields"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return "", err
+	}
+	return out.Fields.Priority.Name, nil
 }
 
 // ErrClosedWithoutNote reports a ticket that reached Done but whose closing

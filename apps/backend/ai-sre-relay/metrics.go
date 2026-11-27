@@ -52,6 +52,11 @@ type counters struct {
 	// while its alert is firing, and no later notification repairs it.
 	ticketReopens       atomic.Int64
 	ticketReopensFailed atomic.Int64
+	// datalossKeptOpen counts data-loss resolves left on an open ticket for a
+	// human; datalossGrowth counts repeats re-investigated because the
+	// alert's value grew.
+	datalossKeptOpen atomic.Int64
+	datalossGrowth   atomic.Int64
 	// fingerprintsUntracked counts alerts that could not be tracked because
 	// the bounded table was full. Each one silently loses both repeat
 	// suppression and auto-close, so any nonzero value is a reason to raise
@@ -104,6 +109,12 @@ func (c *counters) writeTo(w io.Writer) {
 	fmt.Fprint(w, "# TYPE ai_sre_relay_ticket_reopens_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_ticket_reopens_total{result=\"ok\"} %d\n", c.ticketReopens.Load())
 	fmt.Fprintf(w, "ai_sre_relay_ticket_reopens_total{result=\"failed\"} %d\n", c.ticketReopensFailed.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_dataloss_kept_open_total Data-loss alert resolves recorded on a ticket that was deliberately left open for human confirmation.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_dataloss_kept_open_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_dataloss_kept_open_total %d\n", c.datalossKeptOpen.Load())
+	fmt.Fprint(w, "# HELP ai_sre_relay_dataloss_growth_total Repeat data-loss alerts re-investigated because their value grew materially.\n")
+	fmt.Fprint(w, "# TYPE ai_sre_relay_dataloss_growth_total counter\n")
+	fmt.Fprintf(w, "ai_sre_relay_dataloss_growth_total %d\n", c.datalossGrowth.Load())
 	fmt.Fprint(w, "# HELP ai_sre_relay_fingerprints_untracked_total Alerts left untracked because the fingerprint table was at its ceiling; each loses repeat suppression and auto-close.\n")
 	fmt.Fprint(w, "# TYPE ai_sre_relay_fingerprints_untracked_total counter\n")
 	fmt.Fprintf(w, "ai_sre_relay_fingerprints_untracked_total %d\n", c.fingerprintsUntracked.Load())

@@ -33,6 +33,9 @@ type jiraUpserter interface {
 	// NoteResolved records that Alertmanager reported the alert resolved, so
 	// the pending close is on the ticket before it happens.
 	NoteResolved(ctx context.Context, key IssueKey, resolvedAt time.Time) error
+	// NoteDataLossResolved records that a data-loss alert resolved and that
+	// the ticket stays open for a human to confirm the data was restored.
+	NoteDataLossResolved(ctx context.Context, key IssueKey, resolvedAt time.Time) error
 	// Close transitions the issue to Done, naming the resolve time. A ticket
 	// that reached Done but could not be commented on reports
 	// ErrClosedWithoutNote, which the caller must not retry.
@@ -63,6 +66,14 @@ type firing struct {
 	// pending-close clock and the time named on the ticket; a re-fire clears
 	// it again.
 	resolvedAt time.Time
+	// value is the headline number of the last investigated firing, so a
+	// repeat whose value grew is not mistaken for a repeat of the same news.
+	value    float64
+	hasValue bool
+	// datalossNoted is when a data-loss resolve was recorded on the ticket.
+	// It is deliberately not resolvedAt: that is the pending-close clock, and
+	// a data-loss ticket never closes itself.
+	datalossNoted time.Time
 }
 
 // resolveHandlingTimeout bounds the Jira and Discord work one resolve
@@ -84,6 +95,7 @@ type Pipeline struct {
 
 	closeGrace time.Duration
 	now        func() time.Time
+	dataloss   datalossPolicy
 
 	counters counters
 
@@ -102,6 +114,10 @@ func withCloseGrace(d time.Duration) pipelineOption {
 	return func(p *Pipeline) { p.closeGrace = d }
 }
 
+func withDataloss(d datalossPolicy) pipelineOption {
+	return func(p *Pipeline) { p.dataloss = d }
+}
+
 func withClock(now func() time.Time) pipelineOption {
 	return func(p *Pipeline) { p.now = now }
 }
@@ -111,6 +127,7 @@ func NewPipeline(h holmesInvestigator, pg patcher, j jiraUpserter, gh prOpener, 
 		holmes: h, patch: pg, jira: j, github: gh, discord: d, log: log,
 		closeGrace: defaultCloseGrace,
 		now:        time.Now,
+		dataloss:   defaultDatalossPolicy(),
 		active:     map[string]firing{},
 	}
 	for _, opt := range opts {
@@ -143,6 +160,16 @@ func (p *Pipeline) repeatOf(a Alert) (firing, bool) {
 // forget one between the repeat check and here — because writing the entry
 // back would insert one with no issue key, unusable and holding a slot a real
 // alert then cannot have.
+// grewSince reports whether a data-loss alert's value grew materially over the
+// one recorded at the last investigation.
+func (p *Pipeline) grewSince(a Alert, f firing) bool {
+	if !f.hasValue || !p.dataloss.isDataLoss(a) {
+		return false
+	}
+	next, ok := p.dataloss.value(a)
+	return ok && p.dataloss.grew(f.value, next)
+}
+
 func (p *Pipeline) countRepeat(a Alert) (int, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -175,16 +202,24 @@ func (p *Pipeline) remember(a Alert, issue IssueKey) {
 				"fingerprint", a.Fingerprint, "alert", a.Name(), "issue", issue, "tracked", len(p.active))
 			return
 		}
-		p.active[a.Fingerprint] = firing{startsAt: a.StartsAt, issue: issue}
+		p.active[a.Fingerprint] = p.withValue(firing{startsAt: a.StartsAt, issue: issue}, a)
 		return
 	}
-	next := firing{startsAt: a.StartsAt, issue: issue, resolvedAt: f.resolvedAt}
+	next := p.withValue(firing{startsAt: a.StartsAt, issue: issue, resolvedAt: f.resolvedAt, datalossNoted: f.datalossNoted}, a)
 	// Repeat numbering belongs to one firing episode; a new episode starts
 	// again at one.
 	if f.startsAt == a.StartsAt {
 		next.repeats = f.repeats
 	}
 	p.active[a.Fingerprint] = next
+}
+
+// withValue records the alert's headline value, for data-loss alerts only.
+func (p *Pipeline) withValue(f firing, a Alert) firing {
+	if p.dataloss.isDataLoss(a) {
+		f.value, f.hasValue = p.dataloss.value(a)
+	}
+	return f
 }
 
 // trackSiblings ties every alert collapsed into a to the same ticket, so its
@@ -281,6 +316,10 @@ func (p *Pipeline) cancelPendingClose(a Alert) (IssueKey, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	f, ok := p.active[a.Fingerprint]
+	if ok && !f.datalossNoted.IsZero() {
+		f.datalossNoted = time.Time{}
+		p.active[a.Fingerprint] = f
+	}
 	if !ok || f.resolvedAt.IsZero() {
 		return "", false
 	}
@@ -457,6 +496,10 @@ func (p *Pipeline) handleResolved(ctx context.Context, a Alert) error {
 	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), resolveHandlingTimeout)
 	defer cancel()
 
+	if p.dataloss.isDataLoss(a) {
+		return p.handleDatalossResolved(rctx, a)
+	}
+
 	issue, at, first := p.markResolved(a)
 	if issue == "" {
 		// Nothing tracked here: either this process never filed the ticket, or
@@ -494,6 +537,71 @@ func (p *Pipeline) handleResolved(ctx context.Context, a Alert) error {
 	return nil
 }
 
+// handleDatalossResolved records the resolve and leaves the ticket open. The
+// alert clearing means its evidence window has passed, not that the data is
+// back, so no close is ever scheduled.
+func (p *Pipeline) handleDatalossResolved(ctx context.Context, a Alert) error {
+	log := p.log.With("fingerprint", a.Fingerprint, "alert", a.Name())
+	issue, at, first := p.noteDatalossResolve(a)
+	if issue == "" {
+		found, err := p.jira.FindOpenByFingerprint(ctx, a)
+		switch {
+		case err != nil:
+			log.Error("data-loss resolve: fingerprint lookup failed; ticket left open", "err", err)
+			return nil
+		case found == "":
+			log.Info("data-loss resolve for an alert with no open ticket; nothing to note")
+			return nil
+		}
+		issue, at, first = found, p.resolveTime(a), true
+		p.adoptDatalossResolve(a, found, at)
+	}
+	if !first {
+		return nil
+	}
+	if err := p.jira.NoteDataLossResolved(ctx, issue, at); err != nil {
+		log.Error("data-loss resolve note failed", "issue", issue, "err", err)
+	}
+	if derr := p.discord.Notify(ctx, a, Analysis{RootCause: datalossResolveNotice(issue, stamp(at))}, issue, nil, nil); derr != nil {
+		log.Error("discord data-loss resolve notice failed", "issue", issue, "err", derr)
+	}
+	p.counters.datalossKeptOpen.Add(1)
+	log.Warn("data-loss alert resolved; ticket kept open for human confirmation", "issue", issue, "resolved_at", at)
+	return nil
+}
+
+// noteDatalossResolve stamps the resolve on a tracked firing and reports
+// whether this notification is the first for it.
+func (p *Pipeline) noteDatalossResolve(a Alert) (IssueKey, time.Time, bool) {
+	if a.Fingerprint == "" {
+		return "", time.Time{}, false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	f, ok := p.active[a.Fingerprint]
+	if !ok || f.issue == "" {
+		return "", time.Time{}, false
+	}
+	if !f.datalossNoted.IsZero() {
+		return f.issue, f.datalossNoted, false
+	}
+	f.datalossNoted = p.resolveTime(a)
+	p.active[a.Fingerprint] = f
+	return f.issue, f.datalossNoted, true
+}
+
+func (p *Pipeline) adoptDatalossResolve(a Alert, issue IssueKey, at time.Time) {
+	if a.Fingerprint == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if _, known := p.active[a.Fingerprint]; !known && len(p.active) >= maxTrackedFirings {
+		return
+	}
+	p.active[a.Fingerprint] = firing{startsAt: a.StartsAt, issue: issue, datalossNoted: at}
+}
+
 func resolveNotice(issue IssueKey, at time.Time, grace time.Duration) string {
 	return fmt.Sprintf("✅ Resolved at %s. %s closes automatically after %s unless the alert fires again.",
 		at.UTC().Format(time.RFC3339), issue, grace.String())
@@ -522,12 +630,20 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 	// Re-running the investigation produces the same analysis at full LLM
 	// cost, so a repeat of a firing episode this process already investigated
 	// is recorded on the existing ticket instead.
+	var growth string
 	if f, ok := p.repeatOf(a); ok {
 		open, err := p.jira.IsOpen(ctx, f.issue)
 		switch {
 		case err != nil:
 			// Unknown ticket state is not a reason to skip work.
 			log.Error("refire ticket check failed; investigating", "issue", f.issue, "err", err)
+		case open && p.grewSince(a, f):
+			// A data-loss value that grew is a new fact, not a repeat. Fall
+			// through to a full investigation; the note rides on its output.
+			next, _ := p.dataloss.value(a)
+			growth = growthNote(f.value, next)
+			p.counters.datalossGrowth.Add(1)
+			log.Warn("data-loss value grew; re-investigating", "issue", f.issue, "from", f.value, "to", next)
 		case open:
 			n, tracked := p.countRepeat(a)
 			if !tracked {
@@ -565,6 +681,10 @@ func (p *Pipeline) Handle(ctx context.Context, a Alert) error {
 			log.Error("discord failure notice failed", "err", derr)
 		}
 		return err
+	}
+
+	if growth != "" {
+		an.RootCause = growth + "\n\n" + an.RootCause
 	}
 
 	// Structured patch is best-effort; nil is the common case.

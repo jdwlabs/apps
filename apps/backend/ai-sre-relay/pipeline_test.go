@@ -33,8 +33,9 @@ type fakeJira struct {
 	openErr  error
 	refireOn bool // records that IsOpen was consulted at all
 
-	resolveNotes []time.Time
-	closes       []time.Time
+	resolveNotes  []time.Time
+	datalossNotes []time.Time
+	closes        []time.Time
 	// closeErr fails the transition, closeCommentErr the closing comment, so
 	// a test can tell a ticket left open from one closed without its note.
 	closeErr        error
@@ -89,6 +90,11 @@ func (f *fakeJira) Reopen(context.Context, IssueKey) error {
 
 func (f *fakeJira) NoteRefire(_ context.Context, _ IssueKey, count int) error {
 	f.refires = append(f.refires, count)
+	return nil
+}
+
+func (f *fakeJira) NoteDataLossResolved(_ context.Context, _ IssueKey, at time.Time) error {
+	f.datalossNotes = append(f.datalossNotes, at)
 	return nil
 }
 
@@ -209,6 +215,10 @@ func (fakeJiraErr) IsOpen(context.Context, IssueKey) (bool, error) {
 }
 
 func (fakeJiraErr) NoteRefire(context.Context, IssueKey, int) error {
+	return errors.New("jira down")
+}
+
+func (fakeJiraErr) NoteDataLossResolved(context.Context, IssueKey, time.Time) error {
 	return errors.New("jira down")
 }
 

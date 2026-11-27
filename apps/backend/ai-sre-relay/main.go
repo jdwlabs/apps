@@ -100,8 +100,12 @@ func main() {
 	// Jira rejects creates with an unknown type (400).
 	// JIRA_DONE_STATUS names the status an automatic close aims for; the Done
 	// category alone also covers "Won't Do" and "Duplicate".
+	// Alerts whose resolve does not mean the data is back; their tickets are
+	// never auto-closed and a growing value is re-investigated.
+	datalossPolicy := newDatalossPolicy(splitList(os.Getenv("DATALOSS_ALERTS")),
+		os.Getenv("DATALOSS_VALUE_ANNOTATION"), float64(envInt("DATALOSS_GROWTH_PERCENT", defaultDataLossGrowthPct)))
 	jira := NewJiraClient(jiraURL, mustEnv("JIRA_USERNAME"), mustEnv("JIRA_API_TOKEN"), env("JIRA_PROJECT", "JDWLABS"), env("JIRA_ISSUE_TYPE", "Task"), hc,
-		withDoneStatus(env("JIRA_DONE_STATUS", defaultDoneStatus)))
+		withDoneStatus(env("JIRA_DONE_STATUS", defaultDoneStatus)), withDatalossPolicy(datalossPolicy))
 	githubAPI := env("GITHUB_API", "https://api.github.com")
 	githubTokens, err := newGitHubTokenSource(githubAPI, hc)
 	if err != nil {
@@ -129,7 +133,7 @@ func main() {
 	// How long an alert must stay resolved before the relay closes the ticket
 	// it opened for it.
 	closeGrace := envDuration("RESOLVED_CLOSE_GRACE", defaultCloseGrace)
-	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log, withCloseGrace(closeGrace))
+	pipeline := NewPipeline(holmes, patchGen, jira, github, discord, log, withCloseGrace(closeGrace), withDataloss(datalossPolicy))
 
 	workers := envInt("MAX_CONCURRENT", 4)
 	// The queue only has to keep workers fed between HTTP accept and pickup;

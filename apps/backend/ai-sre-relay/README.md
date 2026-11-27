@@ -80,14 +80,17 @@ retry it, because the ticket is already Done.
 
 Environment variables; every one below has a working default.
 
-| Variable                        | Default            | Meaning                                                                     |
-| ------------------------------- | ------------------ | --------------------------------------------------------------------------- |
-| `RESOLVED_CLOSE_GRACE`          | `6h`               | How long an alert must stay resolved before its ticket is closed            |
-| `RESOLVED_SWEEP_INTERVAL`       | `10m`              | How often pending closes are re-evaluated, independent of incoming webhooks |
-| `JIRA_DONE_STATUS`              | `Done`             | Status name an automatic close aims for before falling back to the category |
-| `INVESTIGATION_TIMEOUT_SECONDS` | `240`              | Per-alert deadline for the whole pipeline                                   |
-| `MAX_CONCURRENT`                | `4`                | Investigation workers                                                       |
-| `QUEUE_SIZE`                    | `2×MAX_CONCURRENT` | Accepted-but-not-started depth; overflow answers 503                        |
+| Variable                        | Default                                         | Meaning                                                                                                                                                                                                                                              |
+| ------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RESOLVED_CLOSE_GRACE`          | `6h`                                            | How long an alert must stay resolved before its ticket is closed                                                                                                                                                                                     |
+| `DATALOSS_ALERTS`               | Minecraft world/chunk/corruption/archive alerts | Comma-separated alertname suffixes treated as data loss: tickets are raised to High, labelled `dataloss` and `needs-human`, never auto-closed, and a growing value is re-investigated. A `dataloss="true"` label or annotation also opts an alert in |
+| `DATALOSS_VALUE_ANNOTATION`     | `summary`                                       | Annotation whose first number is the alert's value                                                                                                                                                                                                   |
+| `DATALOSS_GROWTH_PERCENT`       | `10`                                            | Growth over the last investigated value that counts as material                                                                                                                                                                                      |
+| `RESOLVED_SWEEP_INTERVAL`       | `10m`                                           | How often pending closes are re-evaluated, independent of incoming webhooks                                                                                                                                                                          |
+| `JIRA_DONE_STATUS`              | `Done`                                          | Status name an automatic close aims for before falling back to the category                                                                                                                                                                          |
+| `INVESTIGATION_TIMEOUT_SECONDS` | `240`                                           | Per-alert deadline for the whole pipeline                                                                                                                                                                                                            |
+| `MAX_CONCURRENT`                | `4`                                             | Investigation workers                                                                                                                                                                                                                                |
+| `QUEUE_SIZE`                    | `2×MAX_CONCURRENT`                              | Accepted-but-not-started depth; overflow answers 503                                                                                                                                                                                                 |
 
 Within one webhook, firing alerts sharing an `alertname` and `namespace` are
 investigated once (the first), so a large group takes one queue slot; the
